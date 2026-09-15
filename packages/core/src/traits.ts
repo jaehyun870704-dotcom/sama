@@ -51,6 +51,8 @@ export interface TraitHooks {
   counterLimit?(param: number): number;
   /** 이동 시 지형 비용을 무시 */
   ignoresRoughTerrain?: boolean;
+  /** 인접 아군이 받는 피해를 대신 받는다 (M-20 GUARD_LINK) */
+  redirectsAdjacentDamage?: boolean;
 }
 
 export interface TraitDef {
@@ -107,6 +109,10 @@ export function counterLimitOf(unit: Unit): number {
 
 export function ignoresRough(unit: Unit): boolean {
   return unit.traits.some((id) => getTrait(id).hooks.ignoresRoughTerrain === true);
+}
+
+export function guardsAdjacent(unit: Unit): boolean {
+  return unit.traits.some((id) => getTrait(id).hooks.redirectsAdjacentDamage === true);
 }
 
 // ─────────────────────────────────────────────────────────── 기본 특성 정의
@@ -371,8 +377,9 @@ defineTrait({
 defineTrait({
   id: "guardian",
   name: "호위",
-  description: "인접 아군이 받는 피해를 대신 받는다. (M-20 GUARD_LINK)",
-  hooks: {},
+  description:
+    "인접 아군이 받는 피해를 대신 받는다. 관통 공격에는 무력하다. (M-20 GUARD_LINK)",
+  hooks: { redirectsAdjacentDamage: true },
 });
 
 defineTrait({

@@ -223,6 +223,50 @@ function flatBreakdown(base: number): DamageBreakdown {
   return { base, matchup: 1, terrain: 1, elevation: 1, morale: 1, variance: 1, reduction: 0 };
 }
 
+/**
+ * RNG를 소비하지 않는 기대 피해 추정. AI의 행동 선택에만 쓴다.
+ * 실제 피해와 같은 계수를 통과하되 분산은 1.0, 회심은 기대값으로 반영하고
+ * 마지막에 명중 확률을 곱한다.
+ */
+export function estimatePhysical(attacker: Unit, defender: Unit, map: BattleMap): number {
+  const ctx = createDamageContext(attacker, defender, "physical");
+  applyTraitHooks(ctx);
+  if (ctx.immune) return 0;
+
+  const atk = attacker.stats.attack * ctx.attackMul;
+  const def = defender.stats.defense * (1 - ctx.defenseIgnore);
+  const base = Math.max(MIN_DAMAGE, atk - def);
+
+  const raw =
+    base *
+    matchupMultiplier(attacker.unitClass, defender.unitClass) *
+    map.terrainAffinity(attacker.unitClass, attacker.pos) *
+    elevationMultiplier(map.heightAt(attacker.pos), map.heightAt(defender.pos)) *
+    moraleMultiplier(attacker.stats.morale) *
+    (1 - ctx.reduction) *
+    (1 + (Math.min(100, ctx.criticalChance) / 100) * (CRITICAL_MULTIPLIER - 1));
+
+  const hitRate = ctx.alwaysHit ? 1 : accuracy(ctx, map) / 100;
+  return Math.max(0, raw * hitRate);
+}
+
+export function estimateStrategy(
+  caster: Unit,
+  target: Unit,
+  strategy: StrategyDef,
+  map: BattleMap,
+): number {
+  const ctx = createDamageContext(caster, target, "strategy");
+  applyTraitHooks(ctx);
+  if (ctx.immune) return 0;
+
+  const power = caster.stats.intellect * (strategy.power / 100) * ctx.attackMul;
+  const base = Math.max(MIN_DAMAGE, power - target.stats.spirit * 0.5);
+  const raw = base * elementalMultiplier(strategy, map, target) * (1 - ctx.reduction);
+  const hitRate = ctx.alwaysHit ? 1 : accuracy(ctx, map) / 100;
+  return Math.max(0, raw * hitRate);
+}
+
 export function clamp(v: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, v));
 }

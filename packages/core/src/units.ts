@@ -3,7 +3,7 @@
  * 능력치는 레벨 곡선 × 병종 계수로 파생시킨다 — 32스테이지 × 2난이도의
  * 적 배치를 수작업 수치로 관리하면 밸런싱이 불가능하다. (PRD R6)
  */
-import type { Unit, UnitClass, UnitStats, Side, AiBehavior } from "./types.ts";
+import type { Unit, UnitClass, UnitStats, Side, AiBehavior, Coord } from "./types.ts";
 
 interface ClassProfile {
   hp: number;
@@ -70,6 +70,12 @@ export interface MakeUnitOptions {
   /** 편입 아군은 도구를 쓸 수 없다. PRD §3.3 */
   canUseItems?: boolean;
   statOverrides?: Partial<UnitStats>;
+  /** race/flee/escortee의 목표 영역 */
+  goalRegion?: string;
+  /** 순찰 경로 (M-02) */
+  patrolRoute?: Coord[];
+  /** 시야 범위 (M-02) */
+  visionRange?: number;
 }
 
 export function makeUnit(o: MakeUnitOptions): Unit {
@@ -96,6 +102,12 @@ export function makeUnit(o: MakeUnitOptions): Unit {
     canUseItems: o.canUseItems ?? o.side === "player",
   };
   if (o.behavior !== undefined) unit.behavior = o.behavior;
+  if (o.goalRegion !== undefined) unit.goalRegion = o.goalRegion;
+  if (o.visionRange !== undefined) unit.visionRange = o.visionRange;
+  if (o.patrolRoute !== undefined) {
+    unit.patrolRoute = o.patrolRoute.map((c) => ({ ...c }));
+    unit.patrolIndex = 0;
+  }
   return unit;
 }
 

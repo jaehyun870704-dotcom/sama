@@ -163,7 +163,12 @@ export function isHostile(a: import("./types.ts").Side, b: import("./types.ts").
   return aEnemy !== bEnemy;
 }
 
-/** 지정한 타일들을 모두 감싸는 인접 타일 집합 (M-09 ENCIRCLE_LOCK 판정용). */
-export function surrounding(c: Coord): Coord[] {
-  return adjacent(c);
+/**
+ * 해당 유닛이 이 타일에 진입할 수 있는가.
+ * M-09(포위 구속) 판정에서 "벽도 봉쇄의 일부"로 치기 위해 필요하다 —
+ * 실제 플레이에서는 지형에 몰아붙여 가두는 것이 정석 해법이다.
+ */
+export function passableFor(map: BattleMap, unitClass: UnitClass, c: Coord): boolean {
+  if (!map.inBounds(c)) return false;
+  return Number.isFinite(map.moveCost(unitClass, c));
 }

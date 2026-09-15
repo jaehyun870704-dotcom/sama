@@ -14,6 +14,7 @@ import { loadMap, type MapFile } from "../packages/core/src/mapio.ts";
 import { validateStage, type StageDef } from "../packages/core/src/stage.ts";
 import { parseSeal } from "../packages/core/src/conditions.ts";
 import { allTraitIds } from "../packages/core/src/traits.ts";
+import { DialogueScript } from "../packages/core/src/dialogue.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const stagesDir = join(root, "packages/data/stages");
@@ -72,6 +73,34 @@ for (const f of stageFiles) {
   if (map) {
     for (const r of regionsUsed) {
       if (!map.regions.has(r)) errors.push(`[${stage.id}] 맵에 없는 영역 참조: "${r}"`);
+    }
+  }
+
+  // 대화 정의가 구조적으로 온전한가 (끊긴 링크 · 빈 선택지)
+  let script: DialogueScript | null = null;
+  try {
+    script = new DialogueScript(stage.dialogues ?? []);
+  } catch (e) {
+    errors.push(`[${stage.id}] ${(e as Error).message}`);
+  }
+
+  // 이벤트가 참조하는 대화 노드/선택지가 실재하는가.
+  // 오타 하나로 해당 이벤트가 영영 발동하지 않으면 플레이어는 진행 불가에 갇힌다.
+  if (script) {
+    for (const ev of stage.events ?? []) {
+      const { type, nodeId, optionId } = ev.trigger;
+      if (type === "dialogue_choice" && nodeId) {
+        if (!script.has(nodeId)) {
+          errors.push(`[${stage.id}] 이벤트가 없는 대화 노드를 참조: "${nodeId}"`);
+        } else if (optionId && !script.node(nodeId).options.some((o) => o.id === optionId)) {
+          errors.push(`[${stage.id}] 대화 "${nodeId}"에 없는 선택지를 참조: "${optionId}"`);
+        }
+      }
+      for (const a of ev.actions) {
+        if (a.type === "play_dialogue" && a.dialogueId && !script.has(a.dialogueId)) {
+          errors.push(`[${stage.id}] play_dialogue가 없는 노드를 참조: "${a.dialogueId}"`);
+        }
+      }
     }
   }
 

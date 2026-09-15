@@ -150,14 +150,24 @@ export interface Unit {
   canUseItems: boolean;
   /** AI 행동 방침. player/ally는 무시된다. */
   behavior?: AiBehavior;
+  /** 이동 목표 영역 이름. race/flee/escortee가 사용한다. */
+  goalRegion?: string;
+  /** 순찰 경로 (M-02). behavior "patrol" 전용. */
+  patrolRoute?: Coord[];
+  /** 순찰 경로상의 현재 목표 인덱스. */
+  patrolIndex?: number;
+  /** 시야 범위 (M-02). 이 거리 안의 적대 유닛을 발각한다. */
+  visionRange?: number;
 }
 
 export type AiBehavior =
   | "advance"   // 최단 경로로 전진하며 교전
   | "hold"      // 제자리 방어, 사거리 내만 공격
   | "escort"    // 호위 대상 추종
+  | "escortee"  // 보호 대상 — 목적지로 자동 전진, 교전하지 않음 (M-05)
   | "race"      // 목표 지점으로 직행 (M-07)
   | "flee"      // 출구로 도주 (M-21)
+  | "patrol"    // 정해진 경로를 순찰 (M-02)
   | "passive";  // 공격하지 않음
 
 // ─────────────────────────────────────────────────────────── 전투 결과

@@ -4,7 +4,8 @@
  * 스테이지는 코드가 아니라 데이터다. 새 스테이지를 추가할 때
  * packages/core 안의 파일은 단 한 줄도 바뀌지 않아야 한다. (PRD R7)
  */
-import type { Side, UnitClass, StatusKind, HazardKind, TerrainKind } from "./types.ts";
+import type { Side, UnitClass, StatusKind, HazardKind, TerrainKind, Coord } from "./types.ts";
+import type { DialogueNode } from "./dialogue.ts";
 
 export type Arc = "upper" | "middle" | "lower";
 export type Difficulty = "normal" | "extreme";
@@ -49,7 +50,10 @@ export interface Trigger {
     | "dialogue_choice"
     | "units_adjacent"
     | "survive_turns"
-    | "hp_below";
+    | "hp_below"
+    | "unit_surrounded"
+    | "region_held"
+    | "unit_spotted";
   turn?: number;
   every?: number;
   unit?: string;
@@ -62,6 +66,8 @@ export interface Trigger {
   optionId?: string;
   ratio?: number;
   side?: Side;
+  /** unit_spotted: 발각한 순찰 유닛 (생략 시 아무 순찰 유닛이나) */
+  watcher?: string;
 }
 
 export interface Action {
@@ -91,6 +97,8 @@ export interface Action {
   conditions?: VictoryCondition[];
   dialogueId?: string;
   toClass?: UnitClass;
+  /** apply_effect에서 최대 HP 비율만큼 즉시 피해를 준다 (M-03 오답 페널티) */
+  hpRatioDamage?: number;
 }
 
 export interface UnitSpawnSpec {
@@ -104,6 +112,9 @@ export interface UnitSpawnSpec {
   traits?: string[];
   traitParams?: Record<string, number>;
   behavior?: string;
+  goalRegion?: string;
+  patrolRoute?: Coord[];
+  visionRange?: number;
 }
 
 export interface StageEvent {
@@ -152,6 +163,7 @@ export interface StageDef {
       level?: number;
       traits?: string[];
       behavior?: string;
+      goalRegion?: string;
     }>;
   };
   victory: VictoryCondition[];
@@ -160,6 +172,7 @@ export interface StageDef {
   difficulty: Record<Difficulty, DifficultyTier>;
   gimmicks?: string[];
   events?: StageEvent[];
+  dialogues?: DialogueNode[];
   perf: { maxSimultaneousUnits: number; tier: PerfTier };
 }
 
@@ -192,6 +205,16 @@ export function validateStage(stage: StageDef): string[] {
   }
   if (stage.victory.length === 0) errors.push(`[${stage.id}] 승리 조건 없음`);
   if (stage.defeat.length === 0) errors.push(`[${stage.id}] 패배 조건 없음`);
+
+  // turn_limit은 "N턴 이내"라는 뜻이라 1턴차에 이미 참이다.
+  // 승리/패배 조건에 쓰면 전투가 시작하자마자 끝난다 — 인장 전용 술어다.
+  for (const [group, conds] of [["승리", stage.victory], ["패배", stage.defeat]] as const) {
+    if (conds.some((c) => c.type === "turn_limit")) {
+      errors.push(
+        `[${stage.id}] ${group} 조건에 turn_limit 사용 — 1턴차에 즉시 충족되어 전투가 바로 끝납니다. 인장에만 사용하세요`,
+      );
+    }
+  }
 
   return errors;
 }

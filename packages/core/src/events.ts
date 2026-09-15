@@ -7,7 +7,7 @@
 import type { BattleState } from "./state.ts";
 import type { StageEvent, Trigger, Action } from "./stage.ts";
 import { makeUnit } from "./units.ts";
-import { adjacent, sameCoord, key } from "./grid.ts";
+import { adjacent, sameCoord, key, manhattan, passableFor, isHostile } from "./grid.ts";
 import type { Side, UnitClass } from "./types.ts";
 
 export interface EventPhase {
@@ -92,6 +92,40 @@ function matches(state: BattleState, trig: Trigger, phase: EventPhase): boolean 
       return state.choices.some(
         (c) => c.nodeId === trig.nodeId && (!trig.optionId || c.optionId === trig.optionId),
       );
+
+    // M-09 ENCIRCLE_LOCK — 대상의 인접 4칸이 모두 막혀 있는가.
+    // 유닛뿐 아니라 통행 불가 지형과 맵 경계도 봉쇄로 인정한다.
+    case "unit_surrounded": {
+      if (!trig.unit) return false;
+      const u = state.find(trig.unit);
+      if (!u?.alive) return false;
+      return adjacent(u.pos).every((c) => {
+        if (!passableFor(state.map, u.unitClass, c)) return true;
+        const blocker = state.unitAt(c);
+        if (!blocker) return false;
+        return trig.by ? blocker.side === trig.by : isHostile(u.side, blocker.side);
+      });
+    }
+
+    // M-08 CONSTRUCT — 특정 진영이 영역을 N턴 연속 점유했는가
+    case "region_held": {
+      if (!trig.region) return false;
+      return state.heldTurns(trig.region, trig.by ?? "player") >= (trig.n ?? 1);
+    }
+
+    // M-02 PATROL_STEALTH — 순찰 유닛의 시야에 적대 유닛이 들어왔는가
+    case "unit_spotted": {
+      const watchers = trig.watcher
+        ? [state.find(trig.watcher)].filter((u): u is NonNullable<typeof u> => u?.alive === true)
+        : state.living().filter((u) => u.behavior === "patrol");
+      return watchers.some((w) => {
+        const vision = w.visionRange ?? 0;
+        if (vision <= 0) return false;
+        return state
+          .living()
+          .some((t) => isHostile(w.side, t.side) && manhattan(w.pos, t.pos) <= vision);
+      });
+    }
   }
 }
 
@@ -124,6 +158,9 @@ export function applyAction(state: BattleState, action: Action): void {
             traits: spec.traits ?? [],
             traitParams: spec.traitParams ?? {},
             behavior: (spec.behavior as never) ?? "advance",
+            ...(spec.goalRegion !== undefined ? { goalRegion: spec.goalRegion } : {}),
+            ...(spec.visionRange !== undefined ? { visionRange: spec.visionRange } : {}),
+            ...(spec.patrolRoute !== undefined ? { patrolRoute: spec.patrolRoute } : {}),
           });
           state.add(u);
           occupied.set(key(c), u);
@@ -138,8 +175,13 @@ export function applyAction(state: BattleState, action: Action): void {
     }
 
     case "apply_effect": {
-      if (!action.effect) break;
       for (const u of resolveTargets(state, action)) {
+        if (action.hpRatioDamage !== undefined) {
+          const dmg = Math.round(u.stats.maxHp * action.hpRatioDamage);
+          u.hp -= dmg;
+          if (u.hp <= 0) state.retreat(u);
+        }
+        if (!action.effect || !u.alive) continue;
         state.applyStatus(u, {
           kind: action.effect,
           turns: action.duration ?? 1,
@@ -208,8 +250,13 @@ export function applyAction(state: BattleState, action: Action): void {
       break;
     }
 
-    case "telegraph_aoe":
     case "play_dialogue":
+      // M-03 — 대화를 활성화한다. 선택지 처리는 choose 명령이 담당한다.
+      state.activeDialogue = action.dialogueId ?? null;
+      if (state.activeDialogue) state.push({ t: "dialogue", node: state.activeDialogue });
+      break;
+
+    case "telegraph_aoe":
     case "start_duel":
     case "move_unit":
       // 연출 계층에서 처리. 코어는 상태만 관리한다.
