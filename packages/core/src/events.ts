@@ -88,10 +88,13 @@ function matches(state: BattleState, trig: Trigger, phase: EventPhase): boolean 
       return start !== undefined && state.turn - start >= (trig.n ?? 0);
     }
 
-    case "dialogue_choice":
-      return state.choices.some(
+    // n을 주면 "n회 이상 선택" — 한정 자원(지참금 등)의 소진을 표현한다.
+    case "dialogue_choice": {
+      const hits = state.choices.filter(
         (c) => c.nodeId === trig.nodeId && (!trig.optionId || c.optionId === trig.optionId),
-      );
+      ).length;
+      return hits >= (trig.n ?? 1);
+    }
 
     // M-09 ENCIRCLE_LOCK — 대상의 인접 4칸이 모두 막혀 있는가.
     // 유닛뿐 아니라 통행 불가 지형과 맵 경계도 봉쇄로 인정한다.
