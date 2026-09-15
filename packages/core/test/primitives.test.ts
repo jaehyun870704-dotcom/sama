@@ -440,6 +440,35 @@ describe("M-03 대화 시스템", () => {
     expect(state.activeDialogue).toBeNull();
   });
 
+  it("dialogue_choice의 n은 누적 선택 횟수를 센다 — 한정 자원 소진 표현", () => {
+    const nodes = [
+      { id: "gate", text: "", options: [{ id: "pay", text: "", correct: true }] },
+    ];
+    const stage = minimalStage({
+      dialogues: nodes,
+      events: [
+        { id: "open", trigger: { type: "battle_start" }, actions: [{ type: "play_dialogue", dialogueId: "gate" }] },
+        {
+          id: "broke",
+          trigger: { type: "dialogue_choice", nodeId: "gate", optionId: "pay", n: 2 },
+          actions: [{ type: "apply_effect", targets: ["hero"], effect: "bleed", duration: 2 }],
+        },
+      ],
+    });
+    const state = new BattleState(stage, flatMap(6, 6), 1);
+    state.add(makeUnit({ id: "hero", side: "player", unitClass: "strategist", level: 40, pos: { x: 1, y: 1 } }));
+    state.add(sentinel({ x: 5, y: 5 }));
+    const battle = new Battle(state, { seed: 1 });
+    battle.start();
+
+    battle.execute({ kind: "choose", nodeId: "gate", optionId: "pay" });
+    expect(state.firedEvents.has("broke")).toBe(false); // 1회로는 발동하지 않는다
+
+    state.activeDialogue = "gate"; // 두 번째 조우
+    battle.execute({ kind: "choose", nodeId: "gate", optionId: "pay" });
+    expect(state.firedEvents.has("broke")).toBe(true);
+  });
+
   it("끊긴 링크는 로드 시점에 거부된다", () => {
     expect(() =>
       new DialogueScript([{ id: "a", text: "", options: [{ id: "x", text: "", next: "없는노드" }] }]),

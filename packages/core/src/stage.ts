@@ -64,6 +64,7 @@ export interface Trigger {
   by?: Side;
   nodeId?: string;
   optionId?: string;
+  /** dialogue_choice: n회 이상 선택했을 때 발동 (기본 1) */
   ratio?: number;
   side?: Side;
   /** unit_spotted: 발각한 순찰 유닛 (생략 시 아무 순찰 유닛이나) */
