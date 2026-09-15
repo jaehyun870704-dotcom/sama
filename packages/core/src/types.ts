@@ -1,0 +1,185 @@
+/** 전투 도메인 핵심 타입. */
+
+// ─────────────────────────────────────────────────────────── 좌표 · 지형
+
+export interface Coord {
+  readonly x: number;
+  readonly y: number;
+}
+
+/** 지형 종류. 이동 비용 · 회피 · 병종 상성에 관여한다. */
+export type TerrainKind =
+  | "plain"     // 평지
+  | "forest"    // 숲
+  | "mountain"  // 산지
+  | "hill"      // 구릉
+  | "water"     // 수상
+  | "rapids"    // 완류 (낙뢰 발생 지대)
+  | "road"      // 길
+  | "fort"      // 성채
+  | "gate"      // 성문
+  | "wall"      // 벽 (통행 불가)
+  | "bridge";   // 다리
+
+/** 타일 위에 얹히는 일시적 위험 지대 (M-19 HAZARD_FIELD). */
+export type HazardKind = "fire" | "trap" | "lightning" | "none";
+
+export interface Tile {
+  readonly terrain: TerrainKind;
+  /** 고도. 공격 시 고저차 보정에 사용. */
+  readonly height: number;
+  hazard: HazardKind;
+  /** hazard 잔여 턴. 0이면 소멸. */
+  hazardTurns: number;
+}
+
+// ─────────────────────────────────────────────────────────── 병종
+
+export type UnitClass =
+  | "infantry"    // 보병
+  | "spearman"    // 창병
+  | "cavalry"     // 경기병
+  | "heavyCav"    // 중기병
+  | "archer"      // 궁병
+  | "crossbow"    // 노병
+  | "strategist"  // 책사
+  | "fengshui"    // 풍수사
+  | "catapult"    // 포차
+  | "engineer"    // 공병
+  | "navy"        // 수군
+  | "civilian";   // 민중 (M-01 전환 대상)
+
+// ─────────────────────────────────────────────────────────── 진영
+
+/**
+ * 진영. `ally`(편입 아군)는 조작 가능하지만 도구를 쓸 수 없고,
+ * 아군 생존 카운트에 포함된다. PRD §3.3 / R-5.5.
+ */
+export type Side = "player" | "ally" | "allyAi" | "enemy";
+
+export const CONTROLLABLE: ReadonlySet<Side> = new Set<Side>(["player", "ally"]);
+export const COUNTS_AS_ALLY_LOSS: ReadonlySet<Side> = new Set<Side>(["player", "ally"]);
+
+// ─────────────────────────────────────────────────────────── 책략
+
+export type StrategyElement = "wind" | "fire" | "water" | "thunder" | "earth" | "support";
+export type StrategyShape = "single" | "cross" | "spread" | "line" | "global";
+
+export interface StrategyDef {
+  readonly id: string;
+  readonly name: string;
+  readonly element: StrategyElement;
+  readonly shape: StrategyShape;
+  /** 시전 사거리 */
+  readonly range: number;
+  /** 효과 반경 (shape에 따라 해석) */
+  readonly radius: number;
+  readonly mpCost: number;
+  /** 위력 계수 (100 = 기준) */
+  readonly power: number;
+  /** 명중 시 부여하는 상태이상 */
+  readonly inflicts?: readonly StatusKind[];
+  /** 지형 변화 (예: 화계 → fire) */
+  readonly leavesHazard?: HazardKind;
+  readonly targetSides: readonly Side[];
+}
+
+// ─────────────────────────────────────────────────────────── 상태이상
+
+export type StatusKind =
+  | "confusion"   // 혼란
+  | "immobile"    // 부동
+  | "bound"       // 포박
+  | "bleed"       // 출혈
+  | "burn"        // 화상
+  | "shock"       // 감전
+  | "seal"        // 책략 봉인
+  | "guard"       // 견고 (방어 상승)
+  | "haste"       // 강행 (이동력 상승)
+  | "rally";      // 사기 상승
+
+export interface Status {
+  readonly kind: StatusKind;
+  turns: number;
+  readonly magnitude: number;
+}
+
+// ─────────────────────────────────────────────────────────── 유닛
+
+export interface UnitStats {
+  maxHp: number;
+  maxMp: number;
+  /** 공격력 */
+  attack: number;
+  /** 방어력 */
+  defense: number;
+  /** 지력 — 책략 위력 및 책략 저항 */
+  intellect: number;
+  /** 정신력 — 책략 피해 감소 */
+  spirit: number;
+  /** 순발력 — 명중/회피/행동 순서 */
+  agility: number;
+  /** 이동력 */
+  movement: number;
+  /** 사기 (0~100) */
+  morale: number;
+}
+
+export interface Unit {
+  readonly id: string;
+  readonly name: string;
+  side: Side;
+  unitClass: UnitClass;
+  level: number;
+  pos: Coord;
+  hp: number;
+  mp: number;
+  stats: UnitStats;
+  /** 특성 ID 목록. traits.ts의 레지스트리와 대응. */
+  traits: string[];
+  /** 특성별 수치 파라미터 (예: "critical" → 15 = 15%) */
+  traitParams: Record<string, number>;
+  statuses: Status[];
+  strategies: string[];
+  /** 공격 사거리 [최소, 최대] */
+  range: readonly [number, number];
+  hasMoved: boolean;
+  hasActed: boolean;
+  alive: boolean;
+  /** 도구 사용 가능 여부. 편입 아군은 false. PRD §3.3 */
+  canUseItems: boolean;
+  /** AI 행동 방침. player/ally는 무시된다. */
+  behavior?: AiBehavior;
+}
+
+export type AiBehavior =
+  | "advance"   // 최단 경로로 전진하며 교전
+  | "hold"      // 제자리 방어, 사거리 내만 공격
+  | "escort"    // 호위 대상 추종
+  | "race"      // 목표 지점으로 직행 (M-07)
+  | "flee"      // 출구로 도주 (M-21)
+  | "passive";  // 공격하지 않음
+
+// ─────────────────────────────────────────────────────────── 전투 결과
+
+export type BattleOutcome = "ongoing" | "victory" | "defeat";
+
+export interface DamageResult {
+  readonly attacker: string;
+  readonly defender: string;
+  readonly hit: boolean;
+  readonly damage: number;
+  readonly critical: boolean;
+  readonly lethal: boolean;
+  readonly breakdown: DamageBreakdown;
+}
+
+export interface DamageBreakdown {
+  readonly base: number;
+  readonly matchup: number;
+  readonly terrain: number;
+  readonly elevation: number;
+  readonly morale: number;
+  readonly variance: number;
+  readonly reduction: number;
+}

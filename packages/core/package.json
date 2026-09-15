@@ -1,0 +1,11 @@
+{
+  "name": "@sama/core",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "결정론적 전투 코어 — 렌더러 비의존, 헤드리스 실행 가능",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "scripts": { "build": "tsc -b" },
+  "sideEffects": false
+}

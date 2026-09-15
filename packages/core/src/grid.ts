@@ -1,0 +1,169 @@
+import type { Coord, Tile, TerrainKind, UnitClass, Unit } from "./types.ts";
+
+export const key = (c: Coord): string => `${c.x},${c.y}`;
+export const manhattan = (a: Coord, b: Coord): number =>
+  Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+export const sameCoord = (a: Coord, b: Coord): boolean => a.x === b.x && a.y === b.y;
+
+const NEIGHBORS: readonly Coord[] = [
+  { x: 0, y: -1 },
+  { x: 1, y: 0 },
+  { x: 0, y: 1 },
+  { x: -1, y: 0 },
+];
+
+export const adjacent = (c: Coord): Coord[] =>
+  NEIGHBORS.map((d) => ({ x: c.x + d.x, y: c.y + d.y }));
+
+/** 병종별 지형 이동 비용. Infinity = 진입 불가. */
+const MOVE_COST: Record<UnitClass, Partial<Record<TerrainKind, number>>> = {
+  infantry:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
+  spearman:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
+  cavalry:    { plain: 1, road: 1, forest: 3, hill: 3, mountain: 5, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
+  heavyCav:   { plain: 1, road: 1, forest: 4, hill: 4, mountain: 6, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
+  archer:     { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
+  crossbow:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 4, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
+  strategist: { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
+  fengshui:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
+  catapult:   { plain: 2, road: 1, forest: 4, hill: 4, mountain: Infinity, water: Infinity, rapids: Infinity, bridge: 2, fort: 1, gate: 1 },
+  engineer:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
+  navy:       { plain: Infinity, road: Infinity, forest: Infinity, hill: Infinity, mountain: Infinity, water: 1, rapids: 2, bridge: Infinity, fort: Infinity, gate: Infinity },
+  civilian:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
+};
+
+/** 병종 × 지형 전투 상성 계수 (공격 위력 배율). */
+const TERRAIN_AFFINITY: Record<UnitClass, Partial<Record<TerrainKind, number>>> = {
+  infantry:   { plain: 1.0, forest: 1.1, mountain: 1.0, hill: 1.05, fort: 1.1 },
+  spearman:   { plain: 1.0, forest: 1.0, mountain: 1.1, hill: 1.2, fort: 1.1 },
+  cavalry:    { plain: 1.2, road: 1.2, forest: 0.8, mountain: 0.6, hill: 0.8 },
+  heavyCav:   { plain: 1.25, road: 1.2, forest: 0.7, mountain: 0.5, hill: 0.7 },
+  archer:     { plain: 1.0, forest: 1.1, mountain: 1.2, hill: 1.15 },
+  crossbow:   { plain: 1.05, forest: 1.0, mountain: 1.1, hill: 1.1, fort: 1.2 },
+  strategist: { plain: 1.0, forest: 1.05, mountain: 1.05, hill: 1.05 },
+  fengshui:   { plain: 1.0, forest: 1.05, mountain: 1.05, hill: 1.05 },
+  catapult:   { plain: 1.1, road: 1.1, hill: 1.15, fort: 1.0 },
+  engineer:   { plain: 1.0 },
+  navy:       { water: 1.3, rapids: 1.15 },
+  civilian:   { plain: 0.5 },
+};
+
+/** 회피 보너스 (백분율 포인트). 방어자가 서 있는 지형. */
+const TERRAIN_EVASION: Partial<Record<TerrainKind, number>> = {
+  forest: 15,
+  mountain: 20,
+  hill: 10,
+  fort: 10,
+  rapids: -5,
+};
+
+export class BattleMap {
+  readonly width: number;
+  readonly height: number;
+  private readonly tiles: Tile[];
+  /** 이름 붙은 영역 (승리 조건 · 이벤트 트리거 대상) */
+  readonly regions: Map<string, Coord[]>;
+
+  constructor(width: number, height: number, tiles: Tile[], regions: Map<string, Coord[]> = new Map()) {
+    if (tiles.length !== width * height) {
+      throw new Error(`BattleMap: 타일 수 불일치 (기대 ${width * height}, 실제 ${tiles.length})`);
+    }
+    this.width = width;
+    this.height = height;
+    this.tiles = tiles;
+    this.regions = regions;
+  }
+
+  inBounds(c: Coord): boolean {
+    return c.x >= 0 && c.y >= 0 && c.x < this.width && c.y < this.height;
+  }
+
+  tileAt(c: Coord): Tile {
+    if (!this.inBounds(c)) throw new Error(`BattleMap: 범위 밖 좌표 ${key(c)}`);
+    return this.tiles[c.y * this.width + c.x]!;
+  }
+
+  moveCost(unitClass: UnitClass, c: Coord, ignoreRough = false): number {
+    const t = this.tileAt(c);
+    const cost = MOVE_COST[unitClass][t.terrain] ?? Infinity;
+    // 험로 이동 특성: 유한한 비용은 모두 1로 압축
+    if (ignoreRough && Number.isFinite(cost)) return 1;
+    return cost;
+  }
+
+  terrainAffinity(unitClass: UnitClass, c: Coord): number {
+    return TERRAIN_AFFINITY[unitClass][this.tileAt(c).terrain] ?? 1.0;
+  }
+
+  evasionBonus(c: Coord): number {
+    return TERRAIN_EVASION[this.tileAt(c).terrain] ?? 0;
+  }
+
+  heightAt(c: Coord): number {
+    return this.tileAt(c).height;
+  }
+
+  regionCoords(name: string): Coord[] {
+    const r = this.regions.get(name);
+    if (!r) throw new Error(`BattleMap: 정의되지 않은 영역 "${name}"`);
+    return r;
+  }
+
+  /**
+   * 이동 가능 범위 계산 (다익스트라).
+   * 적 유닛이 점유한 타일은 통과 불가, 아군 점유 타일은 통과 가능하되 정지 불가.
+   */
+  reachable(unit: Unit, occupancy: Map<string, Unit>, ignoreRough = false): Map<string, number> {
+    const budget = effectiveMovement(unit);
+    const dist = new Map<string, number>([[key(unit.pos), 0]]);
+    // 소규모 그리드이므로 단순 정렬 큐로 충분 (유닛당 최대 수백 타일)
+    const queue: Array<{ c: Coord; d: number }> = [{ c: unit.pos, d: 0 }];
+
+    while (queue.length > 0) {
+      queue.sort((a, b) => a.d - b.d);
+      const { c, d } = queue.shift()!;
+      if (d > (dist.get(key(c)) ?? Infinity)) continue;
+
+      for (const n of adjacent(c)) {
+        if (!this.inBounds(n)) continue;
+        const blocker = occupancy.get(key(n));
+        if (blocker && isHostile(unit.side, blocker.side)) continue;
+
+        const cost = this.moveCost(unit.unitClass, n, ignoreRough);
+        if (!Number.isFinite(cost)) continue;
+
+        const nd = d + cost;
+        if (nd > budget) continue;
+        if (nd < (dist.get(key(n)) ?? Infinity)) {
+          dist.set(key(n), nd);
+          queue.push({ c: n, d: nd });
+        }
+      }
+    }
+
+    // 다른 유닛이 점유한 타일에는 정지할 수 없다
+    for (const k of [...dist.keys()]) {
+      if (k !== key(unit.pos) && occupancy.has(k)) dist.delete(k);
+    }
+    return dist;
+  }
+}
+
+export function effectiveMovement(unit: Unit): number {
+  let mv = unit.stats.movement;
+  for (const s of unit.statuses) {
+    if (s.kind === "haste") mv += s.magnitude;
+    if (s.kind === "immobile" || s.kind === "bound") return 0;
+  }
+  return Math.max(0, mv);
+}
+
+export function isHostile(a: import("./types.ts").Side, b: import("./types.ts").Side): boolean {
+  const aEnemy = a === "enemy";
+  const bEnemy = b === "enemy";
+  return aEnemy !== bEnemy;
+}
+
+/** 지정한 타일들을 모두 감싸는 인접 타일 집합 (M-09 ENCIRCLE_LOCK 판정용). */
+export function surrounding(c: Coord): Coord[] {
+  return adjacent(c);
+}

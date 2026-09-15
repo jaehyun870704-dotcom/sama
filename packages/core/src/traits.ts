@@ -1,0 +1,395 @@
+/**
+ * 특성(트레이트) 레지스트리.
+ *
+ * 설계 원칙: 특성은 피해 파이프라인의 정해진 훅에만 개입한다.
+ * 전투 로직 안에 `if (hasTrait("..."))` 분기를 넣지 않는다 —
+ * 특성이 100개를 넘어가면 그 방식은 유지 불가능해진다. (PRD R7)
+ */
+import type { Unit, DamageBreakdown } from "./types.ts";
+
+export type AttackKind = "physical" | "strategy" | "special";
+
+/** 피해 계산 중 특성이 읽고 쓰는 컨텍스트. */
+export interface DamageContext {
+  readonly attacker: Unit;
+  readonly defender: Unit;
+  readonly kind: AttackKind;
+  /** 공격자와 방어자의 거리 */
+  readonly distance: number;
+  /** 누적 공격 배율 (기본 1.0) */
+  attackMul: number;
+  /** 누적 피해 감소율 0~1 (최종적으로 1-reduction 이 곱해짐) */
+  reduction: number;
+  /** 명중률 가산 (백분율 포인트) */
+  accuracyMod: number;
+  /** 방어력 무시 비율 0~1 */
+  defenseIgnore: number;
+  /** 회심(치명타) 확률 */
+  criticalChance: number;
+  /** true면 이 공격은 무효 (면역) */
+  immune: boolean;
+  /** 방어자가 반격할 수 없음 */
+  suppressCounter: boolean;
+  /** 명중 판정을 건너뛰고 무조건 명중 */
+  alwaysHit: boolean;
+  /** 방어자가 공격자에게 되돌릴 피해 비율 (반사) */
+  reflect: number;
+  /** 공격자가 피해량의 이 비율만큼 HP 회복 */
+  lifesteal: number;
+  /** 즉사 판정 확률 */
+  instantKillChance: number;
+}
+
+export interface TraitHooks {
+  /** 이 특성 보유자가 공격할 때 */
+  onAttack?(ctx: DamageContext, self: Unit, param: number): void;
+  /** 이 특성 보유자가 피격당할 때 */
+  onDefend?(ctx: DamageContext, self: Unit, param: number): void;
+  /** 매 턴 시작 시 */
+  onTurnStart?(self: Unit, param: number): void;
+  /** 반격 횟수 상한을 덮어씀 (기본 1) */
+  counterLimit?(param: number): number;
+  /** 이동 시 지형 비용을 무시 */
+  ignoresRoughTerrain?: boolean;
+}
+
+export interface TraitDef {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly hooks: TraitHooks;
+}
+
+const REGISTRY = new Map<string, TraitDef>();
+
+export function defineTrait(def: TraitDef): TraitDef {
+  if (REGISTRY.has(def.id)) throw new Error(`중복 특성 ID: ${def.id}`);
+  REGISTRY.set(def.id, def);
+  return def;
+}
+
+export function getTrait(id: string): TraitDef {
+  const t = REGISTRY.get(id);
+  if (!t) throw new Error(`정의되지 않은 특성: ${id}`);
+  return t;
+}
+
+export function hasTrait(unit: Unit, id: string): boolean {
+  return unit.traits.includes(id);
+}
+
+export function traitParam(unit: Unit, id: string, fallback = 0): number {
+  return unit.traitParams[id] ?? fallback;
+}
+
+export function allTraitIds(): string[] {
+  return [...REGISTRY.keys()];
+}
+
+/** 공격자 → 방어자 순으로 모든 훅을 적용한다. */
+export function applyTraitHooks(ctx: DamageContext): void {
+  for (const id of ctx.attacker.traits) {
+    getTrait(id).hooks.onAttack?.(ctx, ctx.attacker, traitParam(ctx.attacker, id));
+  }
+  for (const id of ctx.defender.traits) {
+    getTrait(id).hooks.onDefend?.(ctx, ctx.defender, traitParam(ctx.defender, id));
+  }
+}
+
+export function counterLimitOf(unit: Unit): number {
+  let limit = 1;
+  for (const id of unit.traits) {
+    const fn = getTrait(id).hooks.counterLimit;
+    if (fn) limit = Math.max(limit, fn(traitParam(unit, id)));
+  }
+  return limit;
+}
+
+export function ignoresRough(unit: Unit): boolean {
+  return unit.traits.some((id) => getTrait(id).hooks.ignoresRoughTerrain === true);
+}
+
+// ─────────────────────────────────────────────────────────── 기본 특성 정의
+
+// 피해 감소 계열
+defineTrait({
+  id: "physicalDamageReduction",
+  name: "물리 피해 감소",
+  description: "물리 피해를 param% 감소시킨다.",
+  hooks: {
+    onDefend(ctx, _self, param) {
+      if (ctx.kind === "physical") ctx.reduction = combine(ctx.reduction, param / 100);
+    },
+  },
+});
+
+defineTrait({
+  id: "strategyDamageReduction",
+  name: "책략 피해 감소",
+  description: "책략 피해를 param% 감소시킨다.",
+  hooks: {
+    onDefend(ctx, _self, param) {
+      if (ctx.kind === "strategy") ctx.reduction = combine(ctx.reduction, param / 100);
+    },
+  },
+});
+
+// 면역 계열
+defineTrait({
+  id: "physicalImmunity",
+  name: "물리 공격 면역",
+  description: "물리 공격을 무효화한다.",
+  hooks: {
+    onDefend(ctx) {
+      if (ctx.kind === "physical") ctx.immune = true;
+    },
+  },
+});
+
+defineTrait({
+  id: "strategyImmunity",
+  name: "완전 책략 면역",
+  description: "책략을 무효화한다. 단, 인접 시 해제되는 변형이 존재한다.",
+  hooks: {
+    onDefend(ctx) {
+      if (ctx.kind === "strategy") ctx.immune = true;
+    },
+  },
+});
+
+defineTrait({
+  id: "strategyImmunityRanged",
+  name: "완전 책략 면역 (원거리 한정)",
+  description: "인접하지 않은 책략만 무효화한다. (PRD 1-11 엄준 패턴)",
+  hooks: {
+    onDefend(ctx) {
+      if (ctx.kind === "strategy" && ctx.distance > 1) ctx.immune = true;
+    },
+  },
+});
+
+defineTrait({
+  id: "specialImmunity",
+  name: "특수 공격 면역",
+  description: "특수 효과(상태이상 부여 등)를 무효화한다.",
+  hooks: {
+    onDefend(ctx) {
+      if (ctx.kind === "special") ctx.immune = true;
+    },
+  },
+});
+
+// 공격 계열
+defineTrait({
+  id: "critical",
+  name: "회심 공격",
+  description: "param% 확률로 회심(1.5배) 공격.",
+  hooks: {
+    onAttack(ctx, _self, param) {
+      ctx.criticalChance += param;
+    },
+  },
+});
+
+defineTrait({
+  id: "noCounterAttack",
+  name: "무반격 공격",
+  description: "이 유닛의 공격에는 반격당하지 않는다.",
+  hooks: {
+    onAttack(ctx) {
+      ctx.suppressCounter = true;
+    },
+  },
+});
+
+defineTrait({
+  id: "alwaysHit",
+  name: "공격 필중",
+  description: "명중 판정을 생략한다.",
+  hooks: {
+    onAttack(ctx) {
+      ctx.alwaysHit = true;
+    },
+  },
+});
+
+defineTrait({
+  id: "penetrate",
+  name: "관통 공격",
+  description: "방어력을 param% 무시한다.",
+  hooks: {
+    onAttack(ctx, _self, param) {
+      ctx.defenseIgnore = Math.max(ctx.defenseIgnore, param / 100);
+    },
+  },
+});
+
+defineTrait({
+  id: "lifesteal",
+  name: "흡혈 공격",
+  description: "입힌 피해의 param%만큼 HP를 회복한다.",
+  hooks: {
+    onAttack(ctx, _self, param) {
+      ctx.lifesteal += param / 100;
+    },
+  },
+});
+
+defineTrait({
+  id: "instantKill",
+  name: "금격 공격",
+  description: "param% 확률로 즉사시킨다.",
+  hooks: {
+    onAttack(ctx, _self, param) {
+      ctx.instantKillChance += param;
+    },
+  },
+});
+
+// 반격 계열
+defineTrait({
+  id: "unlimitedCounter",
+  name: "무제한 반격",
+  description: "턴당 반격 횟수 제한이 없다.",
+  hooks: { counterLimit: () => 99 },
+});
+
+defineTrait({
+  id: "reCounter",
+  name: "재반격",
+  description: "반격에 대해 다시 반격한다.",
+  hooks: {},
+});
+
+defineTrait({
+  id: "counterBoost",
+  name: "반격 강화",
+  description: "반격 시 위력이 param% 증가한다.",
+  hooks: {},
+});
+
+// 반사 계열
+defineTrait({
+  id: "physicalReflect",
+  name: "물리 피해 반사",
+  description: "받은 물리 피해의 param%를 공격자에게 되돌린다.",
+  hooks: {
+    onDefend(ctx, _self, param) {
+      if (ctx.kind === "physical") ctx.reflect += param / 100;
+    },
+  },
+});
+
+defineTrait({
+  id: "strategyReflect",
+  name: "책략 피해 반사",
+  description: "받은 책략 피해의 param%를 시전자에게 되돌린다.",
+  hooks: {
+    onDefend(ctx, _self, param) {
+      if (ctx.kind === "strategy") ctx.reflect += param / 100;
+    },
+  },
+});
+
+// 조건부 강화
+defineTrait({
+  id: "lastStand",
+  name: "국사무쌍",
+  description: "HP가 낮을수록 공격력이 상승한다 (최대 param% 가산).",
+  hooks: {
+    onAttack(ctx, self, param) {
+      const missing = 1 - self.hp / self.stats.maxHp;
+      ctx.attackMul *= 1 + (param / 100) * missing;
+    },
+  },
+});
+
+defineTrait({
+  id: "veteran",
+  name: "역전용사",
+  description: "HP가 50% 이하일 때 피해를 param% 감소시킨다.",
+  hooks: {
+    onDefend(ctx, self, param) {
+      if (self.hp <= self.stats.maxHp / 2) ctx.reduction = combine(ctx.reduction, param / 100);
+    },
+  },
+});
+
+defineTrait({
+  id: "turnaround",
+  name: "전화위복",
+  description: "HP가 50% 이하일 때 공격력이 param% 상승한다.",
+  hooks: {
+    onAttack(ctx, self, param) {
+      if (self.hp <= self.stats.maxHp / 2) ctx.attackMul *= 1 + param / 100;
+    },
+  },
+});
+
+defineTrait({
+  id: "strategyEvasion",
+  name: "책략 방어술",
+  description: "param% 확률로 책략을 회피한다 (명중률 차감으로 구현).",
+  hooks: {
+    onDefend(ctx, _self, param) {
+      if (ctx.kind === "strategy") ctx.accuracyMod -= param;
+    },
+  },
+});
+
+// 이동 계열
+defineTrait({
+  id: "roughTerrainMove",
+  name: "험로 이동",
+  description: "모든 통행 가능 지형의 이동 비용이 1이 된다.",
+  hooks: { ignoresRoughTerrain: true },
+});
+
+// 보조 계열
+defineTrait({
+  id: "attackBoost",
+  name: "공격력 보조",
+  description: "공격력이 param 만큼 증가한다.",
+  hooks: {
+    onAttack(ctx, _self, param) {
+      ctx.attackMul *= 1 + param / 100;
+    },
+  },
+});
+
+defineTrait({
+  id: "defenseBoost",
+  name: "방어력 보조",
+  description: "받는 피해가 param% 감소한다.",
+  hooks: {
+    onDefend(ctx, _self, param) {
+      ctx.reduction = combine(ctx.reduction, param / 100);
+    },
+  },
+});
+
+defineTrait({
+  id: "guardian",
+  name: "호위",
+  description: "인접 아군이 받는 피해를 대신 받는다. (M-20 GUARD_LINK)",
+  hooks: {},
+});
+
+defineTrait({
+  id: "damageShare",
+  name: "피해 분배",
+  description: "받는 피해의 param%를 인접 아군에게 분산한다.",
+  hooks: {
+    onDefend(ctx, _self, param) {
+      ctx.reduction = combine(ctx.reduction, param / 100);
+    },
+  },
+});
+
+/**
+ * 감소율 합성. 단순 덧셈은 100%를 넘겨 무적이 되므로 곱연산으로 합친다.
+ * 두 개의 50% 감소는 75% 감소가 된다.
+ */
+export function combine(a: number, b: number): number {
+  return 1 - (1 - a) * (1 - b);
+}

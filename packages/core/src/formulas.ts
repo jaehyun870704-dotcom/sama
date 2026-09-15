@@ -1,0 +1,230 @@
+/**
+ * 전투 수식. 모든 수치 밸런스의 단일 출처(single source of truth).
+ * 상세 근거는 docs/tech/전투규칙-사양.md 참조.
+ */
+import type { Unit, UnitClass, DamageResult, DamageBreakdown, StrategyDef } from "./types.ts";
+import type { BattleMap } from "./grid.ts";
+import { manhattan } from "./grid.ts";
+import type { Rng } from "./rng.ts";
+import { applyTraitHooks, combine, type AttackKind, type DamageContext } from "./traits.ts";
+
+/** 최소 보장 피해. 방어력이 아무리 높아도 이만큼은 들어간다. */
+export const MIN_DAMAGE = 1;
+export const CRITICAL_MULTIPLIER = 1.5;
+export const BASE_ACCURACY = 90;
+
+/**
+ * 병종 상성표 [공격자][방어자] → 배율.
+ * 조조전 계열의 가위바위보 구조를 따른다:
+ *   창병 > 기병 > 궁병/책사 > 보병 > 창병
+ */
+const MATCHUP: Record<UnitClass, Partial<Record<UnitClass, number>>> = {
+  infantry:   { spearman: 1.3, catapult: 1.3, engineer: 1.5, cavalry: 0.8, heavyCav: 0.7 },
+  spearman:   { cavalry: 1.5, heavyCav: 1.5, infantry: 0.8, archer: 0.9 },
+  cavalry:    { archer: 1.4, crossbow: 1.4, strategist: 1.4, fengshui: 1.4, catapult: 1.3, spearman: 0.6 },
+  heavyCav:   { archer: 1.4, crossbow: 1.4, strategist: 1.5, fengshui: 1.5, catapult: 1.4, spearman: 0.5 },
+  archer:     { infantry: 1.2, spearman: 1.2, navy: 1.3, cavalry: 0.9 },
+  crossbow:   { heavyCav: 1.3, infantry: 1.2, cavalry: 1.2, strategist: 0.9 },
+  strategist: { infantry: 1.1, spearman: 1.1, heavyCav: 1.2 },
+  fengshui:   { infantry: 1.1, spearman: 1.1, heavyCav: 1.2 },
+  catapult:   { infantry: 1.3, spearman: 1.3, crossbow: 1.2, cavalry: 0.7 },
+  engineer:   {},
+  navy:       { infantry: 1.2, cavalry: 1.3 },
+  civilian:   {},
+};
+
+export function matchupMultiplier(attacker: UnitClass, defender: UnitClass): number {
+  return MATCHUP[attacker][defender] ?? 1.0;
+}
+
+/** 사기 보정. 사기 0 → 0.8배, 50 → 1.0배, 100 → 1.2배 */
+export function moraleMultiplier(morale: number): number {
+  return 0.8 + (clamp(morale, 0, 100) / 100) * 0.4;
+}
+
+/** 고저차 보정. 한 칸 높을 때마다 +10%, 낮을 때마다 -10% (±30% 상한) */
+export function elevationMultiplier(attackerHeight: number, defenderHeight: number): number {
+  return clamp(1 + 0.1 * (attackerHeight - defenderHeight), 0.7, 1.3);
+}
+
+export function createDamageContext(
+  attacker: Unit,
+  defender: Unit,
+  kind: AttackKind,
+): DamageContext {
+  return {
+    attacker,
+    defender,
+    kind,
+    distance: manhattan(attacker.pos, defender.pos),
+    attackMul: 1,
+    reduction: 0,
+    accuracyMod: 0,
+    defenseIgnore: 0,
+    criticalChance: 0,
+    immune: false,
+    suppressCounter: false,
+    alwaysHit: false,
+    reflect: 0,
+    lifesteal: 0,
+    instantKillChance: 0,
+  };
+}
+
+/**
+ * 명중률 (%).
+ *   기본 90 + (공격자 순발력 - 방어자 순발력) * 0.5 - 방어자 지형 회피 + 특성 보정
+ */
+export function accuracy(ctx: DamageContext, map: BattleMap): number {
+  const agiDiff = ctx.attacker.stats.agility - ctx.defender.stats.agility;
+  const raw =
+    BASE_ACCURACY + agiDiff * 0.5 - map.evasionBonus(ctx.defender.pos) + ctx.accuracyMod;
+  return clamp(raw, 5, 100);
+}
+
+/** 물리 공격 피해 계산. */
+export function computePhysical(
+  attacker: Unit,
+  defender: Unit,
+  map: BattleMap,
+  rng: Rng,
+  opts: { isCounter?: boolean } = {},
+): DamageResult {
+  const ctx = createDamageContext(attacker, defender, "physical");
+  applyTraitHooks(ctx);
+
+  if (ctx.immune) return miss(attacker, defender, true);
+
+  const hit = ctx.alwaysHit || rng.chance(accuracy(ctx, map));
+  if (!hit) return miss(attacker, defender, false);
+
+  if (ctx.instantKillChance > 0 && rng.chance(ctx.instantKillChance)) {
+    return {
+      attacker: attacker.id,
+      defender: defender.id,
+      hit: true,
+      damage: defender.hp,
+      critical: true,
+      lethal: true,
+      breakdown: flatBreakdown(defender.hp),
+    };
+  }
+
+  const atk = attacker.stats.attack * ctx.attackMul;
+  const def = defender.stats.defense * (1 - ctx.defenseIgnore);
+  const base = Math.max(MIN_DAMAGE, atk - def);
+
+  const matchup = matchupMultiplier(attacker.unitClass, defender.unitClass);
+  const terrain = map.terrainAffinity(attacker.unitClass, attacker.pos);
+  const elevation = elevationMultiplier(map.heightAt(attacker.pos), map.heightAt(defender.pos));
+  const morale = moraleMultiplier(attacker.stats.morale);
+  const variance = 0.95 + rng.next() * 0.1;
+  const critical = ctx.criticalChance > 0 && rng.chance(ctx.criticalChance);
+
+  let dmg = base * matchup * terrain * elevation * morale * variance * (1 - ctx.reduction);
+  if (critical) dmg *= CRITICAL_MULTIPLIER;
+  if (opts.isCounter) dmg *= counterMultiplier(attacker);
+
+  const damage = Math.max(MIN_DAMAGE, Math.round(dmg));
+  return {
+    attacker: attacker.id,
+    defender: defender.id,
+    hit: true,
+    damage,
+    critical,
+    lethal: damage >= defender.hp,
+    breakdown: { base, matchup, terrain, elevation, morale, variance, reduction: ctx.reduction },
+  };
+}
+
+/** 책략 피해 계산. 지력 기반, 정신력으로 경감. */
+export function computeStrategy(
+  caster: Unit,
+  target: Unit,
+  strategy: StrategyDef,
+  map: BattleMap,
+  rng: Rng,
+): DamageResult {
+  const ctx = createDamageContext(caster, target, "strategy");
+  applyTraitHooks(ctx);
+
+  if (ctx.immune) return miss(caster, target, true);
+
+  const hit = ctx.alwaysHit || rng.chance(accuracy(ctx, map));
+  if (!hit) return miss(caster, target, false);
+
+  const power = caster.stats.intellect * (strategy.power / 100) * ctx.attackMul;
+  const resist = target.stats.spirit * 0.5;
+  const base = Math.max(MIN_DAMAGE, power - resist);
+
+  const elemental = elementalMultiplier(strategy, map, target);
+  const variance = 0.95 + rng.next() * 0.1;
+  const damage = Math.max(
+    MIN_DAMAGE,
+    Math.round(base * elemental * variance * (1 - ctx.reduction)),
+  );
+
+  return {
+    attacker: caster.id,
+    defender: target.id,
+    hit: true,
+    damage,
+    critical: false,
+    lethal: damage >= target.hp,
+    breakdown: {
+      base,
+      matchup: elemental,
+      terrain: 1,
+      elevation: 1,
+      morale: 1,
+      variance,
+      reduction: ctx.reduction,
+    },
+  };
+}
+
+/** 계열 × 대상 지형 보정. 화계는 숲에서, 수계는 수상에서 강해진다. */
+function elementalMultiplier(strategy: StrategyDef, map: BattleMap, target: Unit): number {
+  const terrain = map.tileAt(target.pos).terrain;
+  switch (strategy.element) {
+    case "fire":
+      return terrain === "forest" ? 1.4 : terrain === "water" || terrain === "rapids" ? 0.6 : 1.0;
+    case "water":
+      return terrain === "water" || terrain === "rapids" ? 1.3 : 1.0;
+    case "thunder":
+      return terrain === "water" || terrain === "rapids" ? 1.3 : 1.0;
+    case "earth":
+      return terrain === "mountain" || terrain === "hill" ? 1.2 : 1.0;
+    case "wind":
+      return 1.0; // 지형 무관 — 범용 딜링 계열 (사마의 주력)
+    case "support":
+      return 1.0;
+  }
+}
+
+function counterMultiplier(attacker: Unit): number {
+  const boost = attacker.traitParams["counterBoost"];
+  return attacker.traits.includes("counterBoost") ? 1 + (boost ?? 0) / 100 : 1;
+}
+
+function miss(attacker: Unit, defender: Unit, immune: boolean): DamageResult {
+  return {
+    attacker: attacker.id,
+    defender: defender.id,
+    hit: false,
+    damage: 0,
+    critical: false,
+    lethal: false,
+    breakdown: { ...flatBreakdown(0), reduction: immune ? 1 : 0 },
+  };
+}
+
+function flatBreakdown(base: number): DamageBreakdown {
+  return { base, matchup: 1, terrain: 1, elevation: 1, morale: 1, variance: 1, reduction: 0 };
+}
+
+export function clamp(v: number, lo: number, hi: number): number {
+  return Math.min(hi, Math.max(lo, v));
+}
+
+export { combine };
