@@ -10,6 +10,7 @@ import type { Unit, Coord } from "./types.ts";
 import type { Command } from "./commands.ts";
 import { manhattan, key, sameCoord, isHostile } from "./grid.ts";
 import { ignoresRough } from "./traits.ts";
+import { estimatePhysical, estimateStrategy } from "./formulas.ts";
 
 /** 유닛 1기의 다음 행동을 결정한다. 상태를 변경하지 않는다. */
 export function decide(state: BattleState, unit: Unit): Command[] {
@@ -22,14 +23,33 @@ export function decide(state: BattleState, unit: Unit): Command[] {
   const reach = state.map.reachable(unit, state.occupancy(), ignoresRough(unit));
   const hostiles = state.enemiesOf(unit.side);
 
-  // 목표 지점 위에 서 있다면 점령이 최우선이다.
+  // M-05 ESCORT — 보호 대상은 교전하지 않고 목적지로만 전진한다.
+  // 공격하게 두면 적진에 스스로 걸어 들어가 호위가 성립하지 않는다.
+  if (behavior === "escortee") {
+    const goal = goalCoord(state, unit, unit.goalRegion ?? "escort_goal");
+    const step = goal ? bestStepToward(reach, goal) : null;
+    return step
+      ? [{ kind: "move", unit: unit.id, to: step }, { kind: "wait", unit: unit.id }]
+      : [{ kind: "wait", unit: unit.id }];
+  }
+
+  // M-02 PATROL_STEALTH — 순찰 경로를 따라 이동한다.
+  // 시야 안에 적이 들어오면 순찰을 멈추고 교전 판단으로 넘어간다.
+  if (behavior === "patrol" && !hasSpotted(state, unit)) {
+    return patrolStep(state, unit, reach);
+  }
+
+  // 목표 지점 위에 서 있다면 목표 달성이 최우선이다.
   const objective = objectiveRegion(state, unit);
-  if (objective && onRegion(state, unit, objective)) {
-    return [{ kind: "capture", unit: unit.id, region: objective }];
+  if (objective && onRegion(state, unit, objective.region)) {
+    // reach 목표는 서 있는 것만으로 충족된다 — 점령 명령을 낼 대상이 아니다.
+    return objective.kind === "capture"
+      ? [{ kind: "capture", unit: unit.id, region: objective.region }]
+      : [{ kind: "wait", unit: unit.id }];
   }
 
   if (behavior === "race" || behavior === "flee") {
-    const goal = raceGoal(state, unit, objective);
+    const goal = raceGoal(state, unit, objective?.region ?? null);
     if (goal) {
       const step = bestStepToward(reach, goal);
       return step ? [{ kind: "move", unit: unit.id, to: step }, { kind: "wait", unit: unit.id }]
@@ -37,12 +57,29 @@ export function decide(state: BattleState, unit: Unit): Command[] {
     }
   }
 
-  // 현재 위치 또는 이동 후 공격 가능한 최적의 대상을 찾는다
-  const best = bestAttack(state, unit, reach, hostiles);
+  // 점령·도달이 승패를 가르는 전투에서는 목표가 교전보다 우선한다.
+  // 전원이 목표로 달리면 전멸하므로, 목표에 가장 가까운 한 명만 담당시킨다.
+  if (objective && isObjectiveCarrier(state, unit, objective)) {
+    const goal = goalCoord(state, unit, objective.region);
+    const step = goal ? bestStepToward(reach, goal) : null;
+    if (step && !sameCoord(step, unit.pos)) {
+      return [{ kind: "move", unit: unit.id, to: step }, { kind: "wait", unit: unit.id }];
+    }
+    // 전진할 수 없으면 아래 교전 판단으로 넘어간다 (길이 막힌 경우)
+  }
+
+  // 현재 위치 또는 이동 후 취할 수 있는 최선의 공격 수단을 찾는다.
+  // 책략과 평타를 같은 저울(기대 피해)에 올려 비교한다 — 책사에게 평타를
+  // 치게 두면 최소 피해만 넣고 반격으로 녹는다.
+  const best = bestAction(state, unit, reach, hostiles);
   if (best) {
     const cmds: Command[] = [];
     if (!sameCoord(best.from, unit.pos)) cmds.push({ kind: "move", unit: unit.id, to: best.from });
-    cmds.push({ kind: "attack", unit: unit.id, target: best.target.id });
+    cmds.push(
+      best.kind === "strategy"
+        ? { kind: "strategy", unit: unit.id, strategy: best.strategyId, at: best.target.pos }
+        : { kind: "attack", unit: unit.id, target: best.target.id },
+    );
     return cmds;
   }
 
@@ -50,7 +87,7 @@ export function decide(state: BattleState, unit: Unit): Command[] {
 
   // 교전 불가 → 목표 지점이 있으면 그쪽으로, 없으면 가장 가까운 적 쪽으로 전진
   const goal = objective
-    ? closestCoord(unit.pos, state.map.regionCoords(objective))
+    ? goalCoord(state, unit, objective.region)
     : (closest(unit.pos, hostiles)?.pos ?? null);
   if (!goal) return [{ kind: "wait", unit: unit.id }];
   const step = bestStepToward(reach, goal);
@@ -59,18 +96,33 @@ export function decide(state: BattleState, unit: Unit): Command[] {
     : [{ kind: "wait", unit: unit.id }];
 }
 
+interface Objective {
+  region: string;
+  kind: "capture" | "reach";
+}
+
 /**
- * 이 유닛이 노려야 할 점령 목표.
- * 승리 조건(자기 진영이 점령)과 패배 조건(적대 진영이 점령)을 모두 읽는다 —
- * 후자가 곧 상대 진영에게는 승리 목표이기 때문이다. (M-07 RACE_CAPTURE)
+ * 이 유닛이 노려야 할 지점 목표.
+ *
+ * 승리 조건과 패배 조건을 모두 읽는다 — 상대 진영이 점령하면 내가 진다는 것은
+ * 곧 상대에게는 그것이 승리 목표라는 뜻이다. (M-07 RACE_CAPTURE)
+ * reach는 해당 유닛 본인에게만 목표가 된다.
  */
-function objectiveRegion(state: BattleState, unit: Unit): string | null {
+function objectiveRegion(state: BattleState, unit: Unit): Objective | null {
   for (const cond of [...state.victory, ...state.defeat]) {
-    if (cond.type !== "capture" || !cond.target) continue;
-    const by = cond.by ?? "player";
-    if (by === unit.side) return cond.target;
-    // 편입 아군은 플레이어 목표를 공유한다
-    if (by === "player" && unit.side === "ally") return cond.target;
+    if (!cond.target) continue;
+
+    if (cond.type === "capture") {
+      const by = cond.by ?? "player";
+      // 편입 아군은 플레이어의 목표를 공유한다
+      if (by === unit.side || (by === "player" && unit.side === "ally")) {
+        return { region: cond.target, kind: "capture" };
+      }
+    }
+
+    if (cond.type === "reach" && cond.unit === unit.id) {
+      return { region: cond.target, kind: "reach" };
+    }
   }
   return null;
 }
@@ -79,39 +131,153 @@ function onRegion(state: BattleState, unit: Unit, region: string): boolean {
   return state.map.regionCoords(region).some((c) => sameCoord(c, unit.pos));
 }
 
-interface AttackPlan {
-  from: Coord;
-  target: Unit;
-  score: number;
+/**
+ * 이 유닛이 목표를 책임지는 담당인가.
+ *
+ * reach 목표는 조건이 그 유닛을 지목하므로 언제나 담당이다.
+ * capture 목표는 누구나 점령할 수 있으므로, 같은 목표를 공유하는 유닛 중
+ * 가장 가까운 한 명만 담당으로 뽑는다 — 동점은 ID로 갈라 결정론을 지킨다.
+ */
+function isObjectiveCarrier(state: BattleState, unit: Unit, objective: Objective): boolean {
+  if (objective.kind === "reach") return true;
+
+  const coords = state.map.regionCoords(objective.region);
+  const distanceOf = (u: Unit) =>
+    coords.reduce((min, c) => Math.min(min, manhattan(u.pos, c)), Infinity);
+
+  const mine = distanceOf(unit);
+  for (const other of state.living()) {
+    if (other.id === unit.id) continue;
+    const theirs = objectiveRegion(state, other);
+    if (theirs?.region !== objective.region || theirs.kind !== "capture") continue;
+    const d = distanceOf(other);
+    if (d < mine || (d === mine && other.id < unit.id)) return false;
+  }
+  return true;
 }
 
-function bestAttack(
+type ActionPlan =
+  | { kind: "attack"; from: Coord; target: Unit; score: number }
+  | { kind: "strategy"; from: Coord; target: Unit; strategyId: string; score: number };
+
+/**
+ * 최선의 공격 행동을 고른다.
+ *
+ * 점수 = 기대 피해 + 처치 보너스 − 예상 반격 피해.
+ * 반격을 뺀 덕분에 사거리 밖에서 때리는 선택과 무반격 공격이 자연히 선호된다.
+ */
+function bestAction(
   state: BattleState,
   unit: Unit,
   reach: Map<string, number>,
   hostiles: Unit[],
-): AttackPlan | null {
+): ActionPlan | null {
   const [minR, maxR] = unit.range;
   const positions: Coord[] = [unit.pos, ...decodeAll(reach)];
-  let best: AttackPlan | null = null;
+  const usable = unit.strategies
+    .map((id) => state.strategies.get(id))
+    .filter((d): d is NonNullable<typeof d> => d !== undefined && d.mpCost <= unit.mp);
 
+  let best: ActionPlan | null = null;
+  const consider = (plan: ActionPlan) => {
+    if (!best || plan.score > best.score) best = plan;
+  };
+
+  const original = { ...unit.pos };
   for (const from of positions) {
     for (const target of hostiles) {
-      const d = manhattan(from, target.pos);
-      if (d < minR || d > maxR) continue;
-      // 점수: 처치 가능성 > 낮은 HP > 가까움
-      const ratio = target.hp / target.stats.maxHp;
-      const score = (1 - ratio) * 100 + (target.hp <= unit.stats.attack ? 500 : 0) - d;
-      if (!best || score > best.score) best = { from, target, score };
+      const dist = manhattan(from, target.pos);
+
+      // 평타 — 사거리 안이면 반격 위험을 감안해 평가한다
+      if (dist >= minR && dist <= maxR) {
+        unit.pos = from; // 지형/고저 보정을 이동 후 위치로 계산
+        const dealt = estimatePhysical(unit, target, state.map);
+        const [tMin, tMax] = target.range;
+        const counter =
+          dist >= tMin && dist <= tMax ? estimatePhysical(target, unit, state.map) : 0;
+        unit.pos = original;
+        consider({
+          kind: "attack",
+          from,
+          target,
+          score: dealt + (dealt >= target.hp ? 500 : 0) - counter,
+        });
+      }
+
+      // 책략 — 반격이 없으므로 같은 피해면 언제나 우월하다
+      for (const def of usable) {
+        if (manhattan(from, target.pos) > def.range) continue;
+        if (!def.targetSides.includes(target.side)) continue;
+        unit.pos = from;
+        const dealt = estimateStrategy(unit, target, def, state.map);
+        unit.pos = original;
+        consider({
+          kind: "strategy",
+          from,
+          target,
+          strategyId: def.id,
+          score: dealt + (dealt >= target.hp ? 500 : 0),
+        });
+      }
     }
   }
   return best;
 }
 
 function raceGoal(state: BattleState, unit: Unit, objective: string | null): Coord | null {
-  const regionName = unit.behavior === "flee" ? "exit" : (objective ?? "objective");
-  if (!state.map.regions.has(regionName)) return null;
-  return closestCoord(unit.pos, state.map.regionCoords(regionName));
+  const fallback = unit.behavior === "flee" ? "exit" : (objective ?? "objective");
+  return goalCoord(state, unit, unit.goalRegion ?? fallback);
+}
+
+/**
+ * 지정 영역에서 유닛이 실제로 설 수 있는 가장 가까운 좌표.
+ *
+ * 다른 유닛이 이미 점유한 칸을 목표로 잡으면 그 칸에 정지할 수 없어
+ * 제자리걸음에 빠진다 — 목표 영역이 좁을수록(성문 2칸 등) 확실히 재현된다.
+ * 빈 칸이 하나도 없을 때만 점유된 칸으로 되돌아간다.
+ */
+function goalCoord(state: BattleState, unit: Unit, region: string): Coord | null {
+  if (!state.map.regions.has(region)) return null;
+  const coords = state.map.regionCoords(region);
+  const free = coords.filter((c) => {
+    const occupant = state.unitAt(c);
+    return !occupant || occupant.id === unit.id;
+  });
+  return closestCoord(unit.pos, free.length > 0 ? free : coords);
+}
+
+/** 순찰 유닛의 시야에 적대 유닛이 들어왔는가. */
+export function hasSpotted(state: BattleState, watcher: Unit): boolean {
+  const vision = watcher.visionRange ?? 0;
+  if (vision <= 0) return false;
+  return state
+    .living()
+    .some((t) => isHostile(watcher.side, t.side) && manhattan(watcher.pos, t.pos) <= vision);
+}
+
+/**
+ * 순찰 한 걸음. 경로상의 현재 목표에 도달하면 다음 지점으로 넘어간다.
+ * patrolIndex를 여기서 갱신하므로 decide()의 "상태를 바꾸지 않는다" 규칙에서
+ * 유일하게 예외다 — 순찰 진행도는 결정이 아니라 유닛 자신의 상태이기 때문.
+ */
+function patrolStep(state: BattleState, unit: Unit, reach: Map<string, number>): Command[] {
+  const route = unit.patrolRoute ?? [];
+  if (route.length === 0) return [{ kind: "wait", unit: unit.id }];
+
+  const index = unit.patrolIndex ?? 0;
+  const target = route[index % route.length]!;
+  if (sameCoord(unit.pos, target)) {
+    unit.patrolIndex = (index + 1) % route.length;
+    const next = route[unit.patrolIndex]!;
+    const step = bestStepToward(reach, next);
+    return step
+      ? [{ kind: "move", unit: unit.id, to: step }, { kind: "wait", unit: unit.id }]
+      : [{ kind: "wait", unit: unit.id }];
+  }
+  const step = bestStepToward(reach, target);
+  return step
+    ? [{ kind: "move", unit: unit.id, to: step }, { kind: "wait", unit: unit.id }]
+    : [{ kind: "wait", unit: unit.id }];
 }
 
 function bestStepToward(reach: Map<string, number>, goal: Coord): Coord | null {

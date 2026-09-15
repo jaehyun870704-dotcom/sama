@@ -25,12 +25,29 @@ const STRATEGIES = new Map<string, StrategyDef>([
   }],
 ]);
 
-/** 임시 로스터. 육성 시스템이 붙기 전까지 권장 레벨 기준으로 대체한다. */
-function roster(level: number): RosterEntry[] {
-  return [
-    { id: "sima_yi", name: "사마의", unitClass: "strategist", level, strategies: ["windDragon"] },
-    { id: "cao_zhen", name: "조진", unitClass: "cavalry", level },
-  ];
+/**
+ * 임시 로스터. 육성 시스템이 붙기 전까지 권장 레벨 기준으로 대체한다.
+ * 스테이지의 강제 출진 목록에서 필요한 장수만 만들어 준다.
+ */
+const CHARACTERS: Record<string, { name: string; unitClass: RosterEntry["unitClass"]; strategies?: string[] }> = {
+  sima_yi:   { name: "사마의", unitClass: "strategist", strategies: ["windDragon"] },
+  sima_lang: { name: "사마랑", unitClass: "fengshui" },
+  cao_zhen:  { name: "조진", unitClass: "cavalry" },
+  cao_pi:    { name: "조비", unitClass: "archer" },
+  zhang_he:  { name: "장합", unitClass: "cavalry" },
+};
+
+function roster(ids: readonly string[], level: number): RosterEntry[] {
+  return ids.map((id) => {
+    const c = CHARACTERS[id] ?? { name: id, unitClass: "infantry" as const };
+    return {
+      id,
+      name: c.name,
+      unitClass: c.unitClass,
+      level,
+      ...(c.strategies ? { strategies: c.strategies } : {}),
+    };
+  });
 }
 
 const [stageFilter, runsArg] = process.argv.slice(2);
@@ -53,7 +70,7 @@ for (const f of files) {
       runs,
       difficulty,
       setup: (seed) => ({
-        state: assemble({ stage, map, difficulty, seed, roster: roster(tier.recommendedLevel) }),
+        state: assemble({ stage, map, difficulty, seed, roster: roster(stage.deployment.forced, tier.recommendedLevel) }),
         options: { seed, strategies: STRATEGIES, maxTurns: 60 },
       }),
     });

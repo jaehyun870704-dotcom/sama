@@ -13,4 +13,5 @@ export * from "./battle.ts";
 export * from "./ai.ts";
 export * from "./mapio.ts";
 export * from "./loader.ts";
+export * from "./dialogue.ts";
 export * from "./sim.ts";

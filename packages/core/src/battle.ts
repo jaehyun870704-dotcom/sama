@@ -5,7 +5,8 @@ import { BattleState, PHASE_ORDER, type BattleSnapshot } from "./state.ts";
 import type { Command, CommandResult } from "./commands.ts";
 import { ok, fail } from "./commands.ts";
 import { computePhysical, computeStrategy } from "./formulas.ts";
-import { counterLimitOf, ignoresRough, hasTrait } from "./traits.ts";
+import { counterLimitOf, ignoresRough, hasTrait, guardsAdjacent } from "./traits.ts";
+import { DialogueScript } from "./dialogue.ts";
 import { runEvents } from "./events.ts";
 import { evaluateGroup } from "./conditions.ts";
 import { manhattan, key, sameCoord, adjacent } from "./grid.ts";
@@ -24,7 +25,7 @@ export interface BattleOptions {
 
 export class Battle {
   readonly state: BattleState;
-  private readonly strategies: Map<string, StrategyDef>;
+  readonly dialogue: DialogueScript;
   private readonly undoStack: BattleSnapshot[] = [];
   private readonly undoDepth: number;
   private readonly maxTurns: number;
@@ -33,13 +34,15 @@ export class Battle {
 
   constructor(state: BattleState, opts: BattleOptions) {
     this.state = state;
-    this.strategies = opts.strategies ?? new Map();
+    state.strategies = opts.strategies ?? new Map();
+    this.dialogue = new DialogueScript(state.stage.dialogues ?? []);
     this.undoDepth = opts.undoDepth ?? 20;
     this.maxTurns = opts.maxTurns ?? 200;
   }
 
   /** 전투 시작. battle_start 이벤트를 발화시킨다. */
   start(): void {
+    this.state.updateRegionHolds();
     runEvents(this.state, { kind: "battle_start" });
     this.beginPhase();
   }
@@ -68,9 +71,7 @@ export class Battle {
       case "strategy":  return this.doStrategy(cmd.unit, cmd.strategy, cmd.at);
       case "capture":   return this.doCapture(cmd.unit, cmd.region);
       case "wait":      return this.doWait(cmd.unit);
-      case "choose":
-        this.state.choices.push({ nodeId: cmd.nodeId, optionId: cmd.optionId });
-        return ok;
+      case "choose":  return this.doChoose(cmd.nodeId, cmd.optionId);
       case "item":      return ok; // 도구 시스템은 M2 마일스톤
       case "endPhase":  this.endPhase(); return ok;
     }
@@ -133,7 +134,7 @@ export class Battle {
     if (c.side !== this.state.currentSide) return fail("현재 페이즈의 유닛이 아님");
     if (c.hasActed) return fail("이미 행동함");
 
-    const def = this.strategies.get(strategyId);
+    const def = this.state.strategies.get(strategyId);
     if (!def) return fail(`정의되지 않은 책략: ${strategyId}`);
     if (!c.strategies.includes(strategyId)) return fail("보유하지 않은 책략");
     if (c.mp < def.mpCost) return fail(`MP 부족 (필요 ${def.mpCost}, 보유 ${c.mp})`);
@@ -185,6 +186,38 @@ export class Battle {
     return ok;
   }
 
+  /**
+   * 선택지 선택 (M-03). 활성 대화의 유효한 선택지만 받는다.
+   * 검증 없이 기록만 하면 스테이지 데이터의 오타가 조용히 통과하고,
+   * 그 선택을 기다리는 이벤트가 영영 발동하지 않는다.
+   */
+  private doChoose(nodeId: string, optionId: string): CommandResult {
+    if (this.dialogue.size === 0) {
+      // 대화 정의가 없는 스테이지는 자유 기록을 허용한다 (테스트·연출용)
+      this.state.choices.push({ nodeId, optionId });
+      return ok;
+    }
+    if (this.state.activeDialogue !== nodeId) {
+      return fail(`활성 대화가 아님 (현재: ${this.state.activeDialogue ?? "없음"}, 요청: ${nodeId})`);
+    }
+    if (!this.dialogue.has(nodeId)) return fail(`정의되지 않은 대화 노드: ${nodeId}`);
+
+    const option = this.dialogue.node(nodeId).options.find((o) => o.id === optionId);
+    if (!option) return fail(`대화 "${nodeId}"에 선택지 "${optionId}"가 없음`);
+
+    this.state.choices.push({ nodeId, optionId });
+    this.state.push(
+      option.correct === undefined
+        ? { t: "choice", node: nodeId, option: optionId }
+        : { t: "choice", node: nodeId, option: optionId, correct: option.correct },
+    );
+    this.state.activeDialogue = option.next ?? null;
+    if (this.state.activeDialogue) {
+      this.state.push({ t: "dialogue", node: this.state.activeDialogue });
+    }
+    return ok;
+  }
+
   private doWait(unitId: string): CommandResult {
     const u = this.state.find(unitId);
     if (!u?.alive) return fail("유닛 없음");
@@ -202,12 +235,35 @@ export class Battle {
   }
 
   private damage(target: Unit, amount: number, source: Unit): void {
-    target.hp -= amount;
+    const recipient = this.redirectToGuardian(target, source);
+    recipient.hp -= amount;
     if (hasTrait(source, "lifesteal")) {
       const pct = source.traitParams["lifesteal"] ?? 0;
       source.hp = Math.min(source.stats.maxHp, source.hp + Math.round(amount * (pct / 100)));
     }
-    if (target.hp <= 0) this.state.retreat(target);
+    if (recipient.hp <= 0) this.state.retreat(recipient);
+  }
+
+  /**
+   * M-20 GUARD_LINK — 인접한 호위 아군이 피해를 대신 받는다.
+   *
+   * 관통 공격(penetrate)은 호위를 무시한다. 이 예외가 없으면 호위 유닛 하나로
+   * 전선이 영구히 잠겨 전투가 성립하지 않는다 — 상대에게 반드시 대응 수단이 있어야 한다.
+   * 전환은 1단계만 일어난다(호위가 호위를 부르지 않는다).
+   */
+  private redirectToGuardian(target: Unit, source: Unit): Unit {
+    if (guardsAdjacent(target)) return target;
+    if (hasTrait(source, "penetrate")) return target;
+
+    for (const c of adjacent(target.pos)) {
+      const neighbor = this.state.unitAt(c);
+      if (!neighbor?.alive) continue;
+      if (neighbor.side !== target.side) continue;
+      if (!guardsAdjacent(neighbor)) continue;
+      this.state.push({ t: "guard", protector: neighbor.id, protected: target.id });
+      return neighbor;
+    }
+    return target;
   }
 
   private applyTileHazard(u: Unit): void {
@@ -246,6 +302,7 @@ export class Battle {
       this.state.phaseIndex = 0;
       this.state.turn++;
       this.tickHazards();
+      this.state.updateRegionHolds();
       if (this.state.turn > this.maxTurns) {
         this.state.outcome = "defeat";
         this.state.push({ t: "outcome", outcome: "defeat" });

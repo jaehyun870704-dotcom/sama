@@ -90,6 +90,7 @@ export function assemble(opts: AssembleOptions): BattleState {
           traits: g.traits ?? [],
           behavior: (g.behavior as AiBehavior) ?? "advance",
           canUseItems: false,
+          ...(g.goalRegion !== undefined ? { goalRegion: g.goalRegion } : {}),
         }),
       );
     }
