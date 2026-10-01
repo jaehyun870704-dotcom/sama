@@ -5,11 +5,11 @@ import { BattleState, PHASE_ORDER, type BattleSnapshot } from "./state.ts";
 import type { Command, CommandResult } from "./commands.ts";
 import { ok, fail } from "./commands.ts";
 import { computePhysical, computeStrategy } from "./formulas.ts";
-import { counterLimitOf, ignoresRough, hasTrait, guardsAdjacent } from "./traits.ts";
+import { counterLimitOf, ignoresRough, hasTrait, guardsAdjacent, getTrait, traitParam } from "./traits.ts";
 import { DialogueScript } from "./dialogue.ts";
 import { runEvents } from "./events.ts";
 import { evaluateGroup } from "./conditions.ts";
-import { manhattan, key, sameCoord, adjacent } from "./grid.ts";
+import { manhattan, key, sameCoord, adjacent, isHostile } from "./grid.ts";
 import { CONTROLLABLE } from "./types.ts";
 import type { Unit, Coord, StrategyDef } from "./types.ts";
 import { decide } from "./ai.ts";
@@ -51,6 +51,17 @@ export class Battle {
 
   execute(cmd: Command): CommandResult {
     if (this.state.outcome !== "ongoing") return fail("전투가 이미 종료됨");
+    if (this.state.activeDialogue && cmd.kind !== 'choose') return fail('먼저 대화를 마쳐 주세요.');
+    if ('unit' in cmd) {
+      const u = this.state.find(cmd.unit);
+      if (!u?.alive || u.side !== this.state.currentSide || u.hasActed) return fail('지금 행동할 수 없는 부대');
+      if (this.state.hasStatus(u, 'confusion') && cmd.kind !== 'wait') return fail('혼란 상태');
+      if (u.unitClass === 'civilian' && ['attack', 'strategy', 'item'].includes(cmd.kind)) return fail('비전투 인물은 이 명령을 사용할 수 없습니다.');
+      if (cmd.kind === 'attack') {
+        const target = this.state.find(cmd.target);
+        if (!target || !isHostile(u.side, target.side)) return fail('적 부대를 선택해 주세요.');
+      }
+    }
     if (this.undoDepth > 0 && cmd.kind !== "endPhase") this.pushUndo();
 
     const result = this.dispatch(cmd);
@@ -72,7 +83,7 @@ export class Battle {
       case "capture":   return this.doCapture(cmd.unit, cmd.region);
       case "wait":      return this.doWait(cmd.unit);
       case "choose":  return this.doChoose(cmd.nodeId, cmd.optionId);
-      case "item":      return ok; // 도구 시스템은 M2 마일스톤
+      case "item":      return fail('지원되지 않는 도구');
       case "endPhase":  this.endPhase(); return ok;
     }
   }
@@ -227,6 +238,7 @@ export class Battle {
   }
 
   private canCounter(defender: Unit, attacker: Unit, dist: number): boolean {
+    if (defender.unitClass === 'civilian') return false;
     const [minR, maxR] = defender.range;
     if (dist < minR || dist > maxR) return false;
     if (hasTrait(attacker, "noCounterAttack")) return false;
@@ -285,6 +297,7 @@ export class Battle {
       u.hasMoved = false;
       u.hasActed = false;
       this.tickStatuses(u);
+      if(u.alive)for(const id of u.traits)getTrait(id).hooks.onTurnStart?.(u,traitParam(u,id));
     }
     this.state.push({ t: "turnStart", turn: this.state.turn, side });
     runEvents(this.state, { kind: "turn_start", side });
@@ -292,10 +305,12 @@ export class Battle {
   }
 
   endPhase(): void {
+    if (this.state.activeDialogue || this.state.outcome !== 'ongoing') return;
+    const segment = this.state.scenarioPhase;
     const side = this.state.currentSide;
     runEvents(this.state, { kind: "turn_end", side });
     this.checkOutcome();
-    if (this.state.outcome !== "ongoing") return;
+    if (this.state.outcome !== "ongoing" || this.state.activeDialogue || this.state.scenarioPhase !== segment) return;
 
     this.state.phaseIndex++;
     if (this.state.phaseIndex >= PHASE_ORDER.length) {
@@ -314,6 +329,7 @@ export class Battle {
 
   /** AI 페이즈를 자동 진행한다. 한 번 호출 = 한 유닛 처리 (PF-05 시간 분할). */
   stepAi(): boolean {
+    if (this.state.activeDialogue || this.state.outcome !== 'ongoing') return false;
     const side = this.state.currentSide;
     if (CONTROLLABLE.has(side)) return false;
     const next = this.state.living(side).find((u) => !u.hasActed);
@@ -321,7 +337,11 @@ export class Battle {
       this.endPhase();
       return false;
     }
-    for (const cmd of decide(this.state, next)) this.execute(cmd);
+    const segment = this.state.scenarioPhase;
+    for (const cmd of decide(this.state, next)) {
+      if (this.state.activeDialogue || this.state.outcome !== 'ongoing' || this.state.scenarioPhase !== segment) break;
+      this.execute(cmd);
+    }
     next.hasActed = true;
     return true;
   }

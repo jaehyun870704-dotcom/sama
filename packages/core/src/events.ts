@@ -17,8 +17,11 @@ export interface EventPhase {
 
 export function runEvents(state: BattleState, phase: EventPhase): void {
   const events = state.stage.events ?? [];
+  const segment = state.scenarioPhase;
   for (let i = 0; i < events.length; i++) {
     const ev = events[i]!;
+    if (state.scenarioPhase !== segment) break;
+    if (ev.phase !== undefined && ev.phase !== segment) continue;
     const id = ev.id ?? `${state.stage.id}#${i}`;
     const once = ev.once ?? true;
     if (once && state.firedEvents.has(id)) continue;
@@ -122,6 +125,7 @@ function matches(state: BattleState, trig: Trigger, phase: EventPhase): boolean 
         ? [state.find(trig.watcher)].filter((u): u is NonNullable<typeof u> => u?.alive === true)
         : state.living().filter((u) => u.behavior === "patrol");
       return watchers.some((w) => {
+        if (state.hasStatus(w, 'confusion')) return false;
         const vision = w.visionRange ?? 0;
         if (vision <= 0) return false;
         return state
@@ -134,6 +138,30 @@ function matches(state: BattleState, trig: Trigger, phase: EventPhase): boolean 
 
 export function applyAction(state: BattleState, action: Action): void {
   switch (action.type) {
+    case "set_phase":
+      if (action.phase) state.scenarioPhase = action.phase;
+      break;
+    case "recover_units":
+      for (const u of resolveTargets(state, action)) {
+        u.hp = u.stats.maxHp;
+        u.mp = u.stats.maxMp;
+        u.statuses = [];
+      }
+      break;
+    case "dismiss_units":
+      // Scripted departure is not a combat loss or a retreat trigger.
+      for (const u of resolveTargets(state, action)) state.units.delete(u.id);
+      break;
+    case "move_unit":
+      if (action.at && state.map.inBounds(action.at) && !state.unitAt(action.at)) {
+        const u = resolveTargets(state, action)[0];
+        if (u && passableFor(state.map, u.unitClass, action.at)) {
+          const from = u.pos;
+          u.pos = { ...action.at };
+          state.push({ t: 'move', unit: u.id, from, to: u.pos });
+        }
+      }
+      break;
     case "spawn_units": {
       const spawned: string[] = [];
       for (const spec of action.units ?? []) {
@@ -261,7 +289,6 @@ export function applyAction(state: BattleState, action: Action): void {
 
     case "telegraph_aoe":
     case "start_duel":
-    case "move_unit":
       // 연출 계층에서 처리. 코어는 상태만 관리한다.
       break;
   }
