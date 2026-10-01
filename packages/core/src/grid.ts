@@ -111,6 +111,47 @@ export class BattleMap {
   }
 
   /**
+   * 목표 지점들로부터의 실제 이동 거리 장(場). (다익스트라, 유닛 무시)
+   *
+   * AI의 전진을 맨해튼 거리로 재면 벽을 돌아가야 하는 지형에서 지역 최소값에
+   * 갇힌다 — 우회로의 모든 칸이 목표와의 직선 거리가 "더 멀어" 보이기 때문이다.
+   * 실제로 S1-04(벽 뒤 어전)에서 유닛이 52턴을 제자리에 서 있었다.
+   * 유닛 점유는 넣지 않는다. 장은 지형만 반영해야 턴마다 흔들리지 않는다.
+   */
+  travelField(unitClass: UnitClass, goals: Coord[], ignoreRough = false): Map<string, number> {
+    const dist = new Map<string, number>();
+    const queue: Array<{ c: Coord; d: number }> = [];
+    for (const g of goals) {
+      if (!this.inBounds(g)) continue;
+      dist.set(key(g), 0);
+      queue.push({ c: g, d: 0 });
+    }
+
+    while (queue.length > 0) {
+      queue.sort((a, b) => a.d - b.d);
+      const { c, d } = queue.shift()!;
+      if (d > (dist.get(key(c)) ?? Infinity)) continue;
+
+      // 진입 비용은 "들어가는 칸"의 비용이다. 장은 목표에서 거꾸로 퍼지므로
+      // 이웃 n에서 c로 들어오는 비용, 즉 c의 비용을 더한다.
+      const cost = this.moveCost(unitClass, c, ignoreRough);
+      if (!Number.isFinite(cost)) continue;
+
+      for (const n of adjacent(c)) {
+        if (!this.inBounds(n)) continue;
+        if (!Number.isFinite(this.moveCost(unitClass, n, ignoreRough))) continue;
+
+        const nd = d + cost;
+        if (nd < (dist.get(key(n)) ?? Infinity)) {
+          dist.set(key(n), nd);
+          queue.push({ c: n, d: nd });
+        }
+      }
+    }
+    return dist;
+  }
+
+  /**
    * 이동 가능 범위 계산 (다익스트라).
    * 적 유닛이 점유한 타일은 통과 불가, 아군 점유 타일은 통과 가능하되 정지 불가.
    */

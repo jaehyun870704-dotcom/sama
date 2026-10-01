@@ -11,6 +11,7 @@ import type { Command } from "./commands.ts";
 import { manhattan, key, sameCoord, isHostile } from "./grid.ts";
 import { ignoresRough } from "./traits.ts";
 import { estimatePhysical, estimateStrategy } from "./formulas.ts";
+import { evaluate } from "./conditions.ts";
 
 /** 유닛 1기의 다음 행동을 결정한다. 상태를 변경하지 않는다. */
 export function decide(state: BattleState, unit: Unit): Command[] {
@@ -27,7 +28,7 @@ export function decide(state: BattleState, unit: Unit): Command[] {
   // 공격하게 두면 적진에 스스로 걸어 들어가 호위가 성립하지 않는다.
   if (behavior === "escortee") {
     const goal = goalCoord(state, unit, unit.goalRegion ?? "escort_goal");
-    const step = goal ? bestStepToward(reach, goal) : null;
+    const step = goal ? bestStepToward(state, unit, reach, goal) : null;
     return step
       ? [{ kind: "move", unit: unit.id, to: step }, { kind: "wait", unit: unit.id }]
       : [{ kind: "wait", unit: unit.id }];
@@ -51,7 +52,7 @@ export function decide(state: BattleState, unit: Unit): Command[] {
   if (behavior === "race" || behavior === "flee") {
     const goal = raceGoal(state, unit, objective?.region ?? null);
     if (goal) {
-      const step = bestStepToward(reach, goal);
+      const step = bestStepToward(state, unit, reach, goal);
       return step ? [{ kind: "move", unit: unit.id, to: step }, { kind: "wait", unit: unit.id }]
                   : [{ kind: "wait", unit: unit.id }];
     }
@@ -61,11 +62,20 @@ export function decide(state: BattleState, unit: Unit): Command[] {
   // 전원이 목표로 달리면 전멸하므로, 목표에 가장 가까운 한 명만 담당시킨다.
   if (objective && isObjectiveCarrier(state, unit, objective)) {
     const goal = goalCoord(state, unit, objective.region);
-    const step = goal ? bestStepToward(reach, goal) : null;
+    const step = goal ? bestStepToward(state, unit, reach, goal) : null;
     if (step && !sameCoord(step, unit.pos)) {
       return [{ kind: "move", unit: unit.id, to: step }, { kind: "wait", unit: unit.id }];
     }
     // 전진할 수 없으면 아래 교전 판단으로 넘어간다 (길이 막힌 경우)
+  }
+
+  // 비전투 유닛은 교전하지 않는다 — 목표를 맡지 않았다면 적에게서 멀어진다.
+  // hold는 "제자리를 지킨다"는 명시적 지시이므로 회피보다 우선한다.
+  if (isNonCombatant(unit) && behavior !== "hold") {
+    const away = stepAwayFrom(reach, hostiles);
+    return away && !sameCoord(away, unit.pos)
+      ? [{ kind: "move", unit: unit.id, to: away }, { kind: "wait", unit: unit.id }]
+      : [{ kind: "wait", unit: unit.id }];
   }
 
   // 현재 위치 또는 이동 후 취할 수 있는 최선의 공격 수단을 찾는다.
@@ -90,10 +100,36 @@ export function decide(state: BattleState, unit: Unit): Command[] {
     ? goalCoord(state, unit, objective.region)
     : (closest(unit.pos, hostiles)?.pos ?? null);
   if (!goal) return [{ kind: "wait", unit: unit.id }];
-  const step = bestStepToward(reach, goal);
+  const step = bestStepToward(state, unit, reach, goal);
   return step
     ? [{ kind: "move", unit: unit.id, to: step }, { kind: "wait", unit: unit.id }]
     : [{ kind: "wait", unit: unit.id }];
+}
+
+/** 적대 유닛에게서 가장 멀어지는 한 걸음. 비전투 유닛의 회피용. */
+function stepAwayFrom(reach: Map<string, number>, hostiles: Unit[]): Coord | null {
+  if (hostiles.length === 0) return null;
+  let best: Coord | null = null;
+  let bestDist = -Infinity;
+  for (const c of decodeAll(reach)) {
+    const d = hostiles.reduce((min, h) => Math.min(min, manhattan(c, h.pos)), Infinity);
+    if (d > bestDist || (d === bestDist && best !== null && key(c) < key(best))) {
+      bestDist = d;
+      best = c;
+    }
+  }
+  return best;
+}
+
+/**
+ * 교전 수단이 없는 유닛인가.
+ *
+ * 민간인은 공격 계수가 최소치여서 피해는 거의 주지 못하고 반격으로 먼저
+ * 쓰러진다. 보호 대상이 스스로 적진에 걸어 들어가면 호위가 성립하지 않는다 —
+ * M-05 escortee와 같은 이유다. 사거리 0(무장 해제)도 같이 본다.
+ */
+function isNonCombatant(unit: Unit): boolean {
+  return unit.unitClass === "civilian" || unit.range[1] <= 0;
 }
 
 interface Objective {
@@ -111,6 +147,9 @@ interface Objective {
 function objectiveRegion(state: BattleState, unit: Unit): Objective | null {
   for (const cond of [...state.victory, ...state.defeat]) {
     if (!cond.target) continue;
+    // 이미 충족된 목표는 건너뛴다. 건너뛰지 않으면 점령을 끝낸 유닛이 같은
+    // 영역에 선 채로 매 턴 점령 명령만 되풀이해 순차 목표가 영구히 멈춘다.
+    if (evaluate(state, cond)) continue;
 
     if (cond.type === "capture") {
       const by = cond.by ?? "player";
@@ -269,24 +308,52 @@ function patrolStep(state: BattleState, unit: Unit, reach: Map<string, number>):
   if (sameCoord(unit.pos, target)) {
     unit.patrolIndex = (index + 1) % route.length;
     const next = route[unit.patrolIndex]!;
-    const step = bestStepToward(reach, next);
+    const step = bestStepToward(state, unit, reach, next);
     return step
       ? [{ kind: "move", unit: unit.id, to: step }, { kind: "wait", unit: unit.id }]
       : [{ kind: "wait", unit: unit.id }];
   }
-  const step = bestStepToward(reach, target);
+  const step = bestStepToward(state, unit, reach, target);
   return step
     ? [{ kind: "move", unit: unit.id, to: step }, { kind: "wait", unit: unit.id }]
     : [{ kind: "wait", unit: unit.id }];
 }
 
-function bestStepToward(reach: Map<string, number>, goal: Coord): Coord | null {
-  let best: Coord | null = null;
+function bestStepToward(
+  state: BattleState,
+  unit: Unit,
+  reach: Map<string, number>,
+  goal: Coord,
+): Coord | null {
+  let greedy: Coord | null = null;
   let bestDist = Infinity;
   for (const c of decodeAll(reach)) {
     const d = manhattan(c, goal);
     if (d < bestDist) {
       bestDist = d;
+      greedy = c;
+    }
+  }
+  if (greedy && !sameCoord(greedy, unit.pos)) return greedy;
+
+  // 맨해튼 거리로는 더 가까워질 칸이 없다 — 벽을 돌아가야 하는 지형에서는
+  // 우회로의 모든 칸이 "더 멀어" 보이기 때문이다. 이때만 지형을 통과하는
+  // 실제 이동 거리로 다시 재서 지역 최소값을 벗어난다. 그리디가 전진할 수
+  // 있는 상황의 판단은 그대로 둔다 — 전선의 거리감이 바뀌면 안 된다.
+  const field = state.map.travelField(unit.unitClass, [goal], ignoresRough(unit));
+  const detour = nearestBy(reach, (c) => field.get(key(c)) ?? Infinity);
+  return detour ?? greedy;
+}
+
+/** 측정값이 가장 작은 도달 가능 칸. 동점은 좌표 순으로 갈라 결정론을 지킨다. */
+function nearestBy(reach: Map<string, number>, measure: (c: Coord) => number): Coord | null {
+  let best: Coord | null = null;
+  let bestValue = Infinity;
+  for (const c of decodeAll(reach)) {
+    const value = measure(c);
+    if (!Number.isFinite(value)) continue;
+    if (value < bestValue || (value === bestValue && best !== null && key(c) < key(best))) {
+      bestValue = value;
       best = c;
     }
   }
