@@ -74,6 +74,9 @@ export interface Trigger {
 export interface Action {
   type:
     | "spawn_units"
+    | "set_phase"
+    | "recover_units"
+    | "dismiss_units"
     | "apply_effect"
     | "remove_effect"
     | "change_victory"
@@ -87,6 +90,8 @@ export interface Action {
     | "revoke_control"
     | "telegraph_aoe";
   units?: UnitSpawnSpec[];
+  phase?: string;
+  at?: Coord;
   side?: Side;
   targets?: string[];
   effect?: StatusKind;
@@ -120,6 +125,8 @@ export interface UnitSpawnSpec {
 
 export interface StageEvent {
   id?: string;
+  /** Only active in this scenario segment; independent from side turns. */
+  phase?: string;
   trigger: Trigger;
   actions: Action[];
   once?: boolean;
@@ -141,6 +148,7 @@ export interface DifficultyTier {
 
 export interface StageDef {
   id: string;
+  initialPhase?: string;
   arc: Arc;
   order: number;
   title: string;

@@ -140,7 +140,10 @@ describe("무르기", () => {
     const state = duelState(5);
     const battle = new Battle(state, { seed: 5, undoDepth: 2 });
     battle.start();
-    for (let i = 0; i < 5; i++) battle.execute({ kind: "wait", unit: "hero" });
+    for (let i = 0; i < 5; i++) {
+      expect(battle.execute({ kind: "wait", unit: "hero" }).ok).toBe(true);
+      for (let phase = 0; phase < 4; phase++) battle.execute({ kind: 'endPhase' });
+    }
     expect(battle.undo()).toBe(true);
     expect(battle.undo()).toBe(true);
     expect(battle.undo()).toBe(false);

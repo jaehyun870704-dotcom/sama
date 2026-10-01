@@ -243,6 +243,9 @@
           "once": {
             "type": "boolean",
             "default": true
+          },
+          "phase": {
+            "type": "string"
           }
         }
       }
@@ -320,6 +323,9 @@
           }
         }
       }
+    },
+    "initialPhase": {
+      "type": "string"
     }
   },
   "$defs": {
@@ -484,7 +490,10 @@
             "start_duel",
             "grant_control",
             "revoke_control",
-            "telegraph_aoe"
+            "telegraph_aoe",
+            "set_phase",
+            "recover_units",
+            "dismiss_units"
           ]
         },
         "units": {
@@ -496,7 +505,8 @@
         "side": {
           "enum": [
             "player",
-            "ally_ai",
+            "ally",
+            "allyAi",
             "enemy"
           ]
         },
@@ -546,6 +556,25 @@
             "lightning",
             "none"
           ]
+        },
+        "phase": {
+          "type": "string"
+        },
+        "at": {
+          "type": "object",
+          "required": [
+            "x",
+            "y"
+          ],
+          "properties": {
+            "x": {
+              "type": "integer"
+            },
+            "y": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
         }
       }
     }

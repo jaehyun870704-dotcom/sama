@@ -44,6 +44,7 @@ export class BattleState {
 
   units: Map<string, Unit> = new Map();
   turn = 1;
+  scenarioPhase: string;
   phaseIndex = 0;
   outcome: BattleOutcome = "ongoing";
   log: LogEntry[] = [];
@@ -72,6 +73,7 @@ export class BattleState {
 
   constructor(stage: StageDef, map: BattleMap, seed: number, difficulty: Difficulty = "normal") {
     this.stage = stage;
+    this.scenarioPhase = stage.initialPhase ?? '';
     this.map = map;
     this.rng = new Rng(seed);
     this.difficulty = difficulty;
@@ -166,6 +168,7 @@ export class BattleState {
     return {
       units: structuredClone([...this.units.values()]),
       turn: this.turn,
+      scenarioPhase: this.scenarioPhase,
       phaseIndex: this.phaseIndex,
       outcome: this.outcome,
       logLength: this.log.length,
@@ -185,6 +188,7 @@ export class BattleState {
   restore(snap: BattleSnapshot): void {
     this.units = new Map(snap.units.map((u) => [u.id, structuredClone(u)]));
     this.turn = snap.turn;
+    this.scenarioPhase = snap.scenarioPhase;
     this.phaseIndex = snap.phaseIndex;
     this.outcome = snap.outcome;
     this.log.length = snap.logLength;
@@ -230,6 +234,7 @@ export class BattleState {
 }
 
 export interface BattleSnapshot {
+  scenarioPhase: string;
   units: Unit[];
   turn: number;
   phaseIndex: number;

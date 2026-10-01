@@ -400,3 +400,13 @@ defineTrait({
 export function combine(a: number, b: number): number {
   return 1 - (1 - a) * (1 - b);
 }
+
+defineTrait({id:'siegeRam',name:'공성 충격',description:'성문·감시탑에 물리 피해 3배, 방어 50% 무시.',hooks:{onAttack(ctx){if(ctx.kind==='physical'&&/^(gate|tower)_\d+_\d+$/.test(ctx.defender.id)){ctx.attackMul*=3;ctx.defenseIgnore=Math.max(ctx.defenseIgnore,.5);}}}});
+defineTrait({id:'simaPatience',name:'은인자중',description:'책략 피해 15% 감소, 턴 시작 MP 3 회복.',hooks:{onDefend(ctx){if(ctx.kind==='strategy')ctx.reduction=combine(ctx.reduction,.15);},onTurnStart(u){u.mp=Math.min(u.stats.maxMp,u.mp+3);}}});
+defineTrait({id:'caoVanguard',name:'선봉 지휘',description:'물리 공격 피해 12% 증가.',hooks:{onAttack(ctx){if(ctx.kind==='physical')ctx.attackMul*=1.12;}}});
+defineTrait({id:'familyShield',name:'가문의 방패',description:'물리 피해 15% 감소.',hooks:{onDefend(ctx){if(ctx.kind==='physical')ctx.reduction=combine(ctx.reduction,.15);}}});
+defineTrait({id:'commandDefense',name:'지휘관의 수비',description:'물리 피해 10% 감소.',hooks:{onDefend(ctx){if(ctx.kind==='physical')ctx.reduction=combine(ctx.reduction,.1);}}});
+defineTrait({id:'westernValor',name:'서량의 맹장',description:'물리 공격 피해 10% 증가.',hooks:{onAttack(ctx){if(ctx.kind==='physical')ctx.attackMul*=1.1;}}});
+defineTrait({id:'flyingGeneral',name:'비장의 무위',description:'물리 공격 피해 18% 증가.',hooks:{onAttack(ctx){if(ctx.kind==='physical')ctx.attackMul*=1.18;}}});
+defineTrait({id:'strategicGuard',name:'냉철한 간파',description:'책략 피해 15% 감소.',hooks:{onDefend(ctx){if(ctx.kind==='strategy')ctx.reduction=combine(ctx.reduction,.15);}}});
+defineTrait({id:'zhouStrategy',name:'주랑의 계책',description:'책략 공격 피해 12% 증가.',hooks:{onAttack(ctx){if(ctx.kind==='strategy')ctx.attackMul*=1.12;}}});

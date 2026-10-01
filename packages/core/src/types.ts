@@ -44,6 +44,7 @@ export type UnitClass =
   | "crossbow"    // 노병
   | "strategist"  // 책사
   | "fengshui"    // 풍수사
+  | "ram"         // 충차
   | "catapult"    // 포차
   | "engineer"    // 공병
   | "navy"        // 수군

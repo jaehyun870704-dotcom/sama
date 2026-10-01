@@ -27,6 +27,7 @@ const PROFILES: Record<UnitClass, ClassProfile> = {
   crossbow:   { hp: 0.90, mp: 0.5, attack: 1.05, defense: 0.85, intellect: 0.8, spirit: 0.9, agility: 0.9, movement: 4, range: [2, 3], canUseStrategy: false },
   strategist: { hp: 0.75, mp: 1.3, attack: 0.60, defense: 0.70, intellect: 1.3, spirit: 1.2, agility: 1.0, movement: 5, range: [1, 1], canUseStrategy: true },
   fengshui:   { hp: 0.80, mp: 1.4, attack: 0.60, defense: 0.75, intellect: 1.2, spirit: 1.3, agility: 1.0, movement: 5, range: [1, 1], canUseStrategy: true },
+  ram: { hp:1.5, mp:0.2, attack:.85, defense:1.4, intellect:.4, spirit:.8, agility:.5, movement:3, range:[1,1], canUseStrategy:false },
   catapult:   { hp: 0.95, mp: 0.3, attack: 1.10, defense: 0.75, intellect: 0.6, spirit: 0.8, agility: 0.6, movement: 3, range: [2, 4], canUseStrategy: false },
   engineer:   { hp: 0.80, mp: 0.3, attack: 0.50, defense: 0.80, intellect: 0.7, spirit: 0.9, agility: 0.8, movement: 5, range: [1, 1], canUseStrategy: false },
   navy:       { hp: 1.00, mp: 0.5, attack: 1.00, defense: 0.95, intellect: 0.8, spirit: 0.9, agility: 1.0, movement: 6, range: [1, 2], canUseStrategy: false },

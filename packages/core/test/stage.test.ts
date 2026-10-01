@@ -78,11 +78,11 @@ describe("맵 로더", () => {
       readFileSync(join(DATA, "maps/hanzhong-central-fort.json"), "utf8"),
     ) as MapFile;
     const map = loadMap(file);
-    expect(map.width).toBe(22);
-    expect(map.height).toBe(13);
-    expect(map.regionCoords("central_fort")).toHaveLength(4);
-    expect(map.tileAt({ x: 10, y: 6 }).terrain).toBe("fort");
-    expect(map.heightAt({ x: 0, y: 0 })).toBe(3);
+    expect(map.width).toBe(48);
+    expect(map.height).toBe(36);
+    expect(map.regionCoords("central_fort")).toHaveLength(9);
+    expect(map.tileAt({ x: 37, y: 9 }).terrain).toBe("fort");
+    expect(map.tileAt({ x: 0, y: 0 }).terrain).toBe("mountain");
   });
 
   it("범례에 없는 문자를 거부한다", () => {

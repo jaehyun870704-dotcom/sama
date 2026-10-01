@@ -104,8 +104,8 @@
     },
     {
       "slot": 2,
-      "normal": "turn_limit:12",
-      "extreme": "turn_limit:10"
+      "normal": "turn_limit:24",
+      "extreme": "turn_limit:22"
     },
     {
       "slot": 3,
@@ -197,7 +197,7 @@
       "id": "S1-08/reinforcement",
       "trigger": {
         "type": "turn_start",
-        "every": 4,
+        "every": 6,
         "side": "enemy"
       },
       "once": false,

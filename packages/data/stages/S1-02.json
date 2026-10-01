@@ -4,7 +4,7 @@
   "order": 2,
   "title": "피난의 연속",
   "subtitle": "낙양 탈출전",
-  "synopsis": "순찰을 피해 남문으로. 지참금은 단 한 번뿐이라, 두 번 발각되면 문지기를 통과할 수 없다.",
+  "synopsis": "두 형제의 남문 탈출. 지참금 3,000전 중 통행료 1,000전을 남겨야 한다. 첫 매수는 1,000전, 다음 매수는 1,500전이다.",
   "mapId": "luoyang-escape",
   "deployment": {
     "forced": [
@@ -26,6 +26,11 @@
       "unit": "sima_lang",
       "target": "south_gate",
       "order": 2
+    },
+    {
+      "type": "dialogue_complete",
+      "target": "gate_payment",
+      "order": 3
     }
   ],
   "defeat": [
@@ -46,13 +51,14 @@
     },
     {
       "slot": 2,
-      "normal": "turn_limit:9",
-      "extreme": "turn_limit:8"
+      "normal": "no_player_losses",
+      "extreme": "no_player_losses"
     },
     {
       "slot": 3,
       "normal": "no_player_losses",
-      "extreme": "no_player_losses"
+      "extreme": "no_player_losses",
+      "note": "웹 시나리오 인장: 무발각 및 형제 HP 50% 이상을 별도 판정한다."
     }
   ],
   "difficulty": {
@@ -115,6 +121,16 @@
           "id": "commit",
           "text": "그래도 벤다.",
           "correct": false
+        }
+      ]
+    },
+    {
+      "id": "gate_payment",
+      "text": "남문 너머로 피난길이 이어진다. 문지기가 통행료 1,000전을 요구한다.",
+      "options": [
+        {
+          "id": "pay_gate",
+          "text": "통행료를 내고 형제와 함께 성을 떠난다."
         }
       ]
     }
@@ -347,39 +363,6 @@
               "count": 2,
               "region": "plaza",
               "behavior": "advance"
-            }
-          ]
-        },
-        {
-          "type": "change_victory",
-          "conditions": [
-            {
-              "type": "annihilate",
-              "side": "enemy"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "S1-02/funds-exhausted",
-      "trigger": {
-        "type": "dialogue_choice",
-        "nodeId": "bribe",
-        "optionId": "pay",
-        "n": 2
-      },
-      "actions": [
-        {
-          "type": "spawn_units",
-          "side": "enemy",
-          "units": [
-            {
-              "template": "crossbow",
-              "level": 17,
-              "count": 2,
-              "region": "gate_block",
-              "behavior": "hold"
             }
           ]
         },
