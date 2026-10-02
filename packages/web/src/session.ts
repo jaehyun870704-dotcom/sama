@@ -34,6 +34,8 @@ import wuweiStage from '../../data/stages/S2-01.json';
 import wuweiMap from '../../data/maps/wuwei-citadel.json';
 import dongkouStage from '../../data/stages/S2-02.json';
 import dongkouMap from '../../data/maps/dongkou-river.json';
+import guanglingStage from '../../data/stages/S2-03.json';
+import guanglingMap from '../../data/maps/guangling-camp.json';
 import legacyFortMap from './legacy/hanzhong-map-v2.json';
 import legacyFortStage from './legacy/hanzhong-stage-v2.json';
 import { makeUnit, awardedSeals } from '../../core/src/index.ts';
@@ -52,9 +54,10 @@ export const chapters = [
   {stage:courtStage as StageDef,map:courtMap as MapFile,year:'건안 이십사년 · 219년',label:'논거와 설득',quote:'칼 한 자루보다, 맞는 말 한마디가 강을 건넌다.'},
   {stage:wuweiStage as StageDef,map:wuweiMap as MapFile,year:'황초 원년 · 220년',label:'성채 사수와 반사 책략',quote:'세게 친다고 이기는 것이 아니다. 무엇이 되돌아오는지 먼저 보라.'},
   {stage:dongkouStage as StageDef,map:dongkouMap as MapFile,year:'황초 삼년 · 222년',label:'폭풍 속 철수',quote:'하늘의 칼은 피할 수 있다. 미리 보았다면.'},
+  {stage:guanglingStage as StageDef,map:guanglingMap as MapFile,year:'황초 육년 · 225년',label:'야습과 황제 탈출',quote:'곁에 없다 해도, 길러 둔 손발이 대신 싸운다.'},
 ];
 // Stable indices preserve the existing v2 command saves.
-export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12];
+export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13];
 export type Preparation='survival'|'strategy'|'command';
 export const strategies: StrategyDef[] = [
   {id:'windDragon',name:'풍룡',element:'wind',shape:'spread',range:4,radius:1,mpCost:18,power:130,targetSides:['enemy']},
