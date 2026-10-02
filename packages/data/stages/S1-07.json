@@ -111,8 +111,8 @@
             },
             {
               "id": "vanguard_bow",
-              "name": "숲길 궁병",
-              "template": "archer",
+              "name": "오두미도 제주",
+              "template": "taoist",
               "at": {
                 "x": 11,
                 "y": 8

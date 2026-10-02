@@ -125,7 +125,7 @@
             {
               "id": "ridge_guard",
               "name": "산길 약탈자",
-              "template": "infantry",
+              "template": "bandit",
               "level": 14,
               "at": {
                 "x": 9,
