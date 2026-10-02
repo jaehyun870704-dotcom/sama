@@ -211,9 +211,8 @@ export class Battlefield {
       const route=enemy.patrolRoute??[];
       if(route.length){const first=iso(enemy.pos);this.ranges.moveTo(first.x,first.y);for(const at of route){const p=iso(at);this.ranges.lineTo(p.x,p.y);}this.ranges.stroke({color:0xffd082,width:2,alpha:.7});}
     }
-    if(state.stage.id==='S1-08')for(const racer of state.living('allyAi').filter(u=>u.behavior==='race')){
-      const goal=state.map.regions.get('central_fort')?.[0];if(goal){const p=iso(racer.pos),end=iso(goal);this.ranges.moveTo(p.x,p.y).lineTo(end.x,end.y).stroke({color:0xf4cc75,width:1,alpha:.4});}
-    }
+    // S1-08 racers: a gold ring under each competing ally instead of a line across the map.
+    if(state.stage.id==='S1-08')for(const racer of state.living('allyAi').filter(u=>u.behavior==='race')){const p=iso(racer.pos);diamond(this.ranges,p.x,p.y,0xf4cc75,.12).stroke({color:0xf4cc75,width:1.5,alpha:.7});}
     if(showThreat)for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){
       const c={x,y};if(state.living('enemy').some(e=>manhattan(e.pos,c)<=(e.visionRange??e.range[1]))){const p=iso(c);diamond(this.ranges,p.x,p.y,0xd36a5e,.22);}
     }

@@ -12,7 +12,7 @@ import {spriteAtlas} from './sprite-atlas.ts';
 import {coachStep,COACH_KEY} from './tutorial.ts';
 import {loadSettings,saveSettings} from './settings.ts';
 import {SLOT_COUNT,slotKey,readSlot,slotLabel} from './save-slots.ts';
-import {encounterLevels,structureKind,structureFrame} from './campaign-rules.ts';
+import {encounterLevels,structureKind,structureFrame,raceGap} from './campaign-rules.ts';
 import {readCampaign,writeCampaign,deployment,levelInfo,award,equip,equipSlot,treasureInfo,type GearSlot,treasures,OFFICERS} from './progression.ts';
 import {storyBeats,storyLocations,storyBackdrop,acts,stories} from './story.ts';
 import './style.css';
@@ -22,7 +22,7 @@ import { Battlefield, classNames, terrainNames, unitName } from './battlefield.t
 import { Soundscape } from './audio.ts';
 import {placeFor,bossNear} from './music.ts';
 import { CONTROLLABLE, ignoresRough, awardedSeals, estimatePhysical, estimateStrategy, previewAttack, manhattan } from '../../core/src/index.ts';
-import type { Command, Coord, LogEntry, TerrainKind, Unit } from '../../core/src/index.ts';
+import type { BattleState, Command, Coord, LogEntry, TerrainKind, Unit } from '../../core/src/index.ts';
 
 const $=<T extends HTMLElement=HTMLElement>(selector:string)=>document.querySelector<T>(selector)!;
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -193,13 +193,14 @@ function portraitFor(u:Unit,reaction=false):string{
   const extra=['crossbow','heavyCav','engineer','fengshui'].indexOf(u.unitClass),row=extra>=0?extra:['strategist','civilian'].includes(u.unitClass)?4:u.unitClass==='spearman'?1:u.unitClass==='archer'?2:u.unitClass==='cavalry'?3:u.unitClass==='catapult'?5:0;
   return `<span class="battle-model" role="img" aria-label="${unitName(u)}" style="background-image:var(--${extra>=0?'extra':'base'}-atlas);background-size:400% ${extra>=0?400:600}%;background-position:0 ${row/(extra>=0?3:5)*100}%"></span>`;
 }
+function raceLabel(s:BattleState){const g=raceGap(s);if(!g||g.ally===undefined)return '우군 선점 저지';return `경쟁 우군 성채까지 ${g.ally}칸 · 사마의 ${g.hero??'-'}칸${g.hero!==undefined&&g.ally<g.hero?' ⚠ 우군이 앞섬':''}`;}
 function render(){
   const s=session.state,c=session.deployment?.mission?{...chapters[session.chapter]!,stage:s.stage,year:'외전 · 수련과 인연'}:chapters[session.chapter]!;
   $('#stage-title').textContent=c.stage.title;$('#stage-subtitle').textContent=`제 ${c.stage.order}장 · ${s.difficulty==='normal'?'일반':'극한'}`;
   $('#map-name').textContent=c.stage.subtitle??c.stage.title;$('#year').textContent=`${c.year} · ${s.map.width}×${s.map.height}`;
   document.body.classList.toggle('nightmare',session.chapter===4);
   $('.weather').textContent=session.chapter===4?'☾ 흉몽 · 짙은 안개':'☀ 맑음 · 바람 약함';
-  const objective=(session.deployment?.mission?.version??1)>=3?trialProgress(s):session.chapter===6?`${session.phase} · 조조 HP ${s.find('cao_cao')?.hp??0}/180 · 3턴 후방 복병`:session.chapter===5?`${session.phase} · 수송대 ${s.living('allyAi').length}/2 생존`:session.chapter===3?`${session.phase} · 추격 압박 ${session.pressure}/${session.pressureLimit}`:session.chapter===0?`${session.phase} · 지참금 ${session.funds}전`:session.chapter===1?`${session.phase} · 우군 선점 저지`:`${session.phase} · 남은 적 ${s.living('enemy').length}부대`;
+  const objective=(session.deployment?.mission?.version??1)>=3?trialProgress(s):session.chapter===6?`${session.phase} · 조조 HP ${s.find('cao_cao')?.hp??0}/180 · 3턴 후방 복병`:session.chapter===5?`${session.phase} · 수송대 ${s.living('allyAi').length}/2 생존`:session.chapter===3?`${session.phase} · 추격 압박 ${session.pressure}/${session.pressureLimit}`:session.chapter===0?`${session.phase} · 지참금 ${session.funds}전`:session.chapter===1?`${session.phase} · ${raceLabel(s)}`:`${session.phase} · 남은 적 ${s.living('enemy').length}부대`;
   $('#compact-objective').textContent=objective;
   $('#objectives').innerHTML=`<p><b>◇</b> ${objective}</p><small>${c.stage.deployment.forced.map(id=>officerNames[id]).join(' · ')} 생존 필수</small><div class="resource-strip">구급약 ${session.medicine} · ${session.scouted?'정찰 완료':'살피기로 경로 확인'}</div>`;
   $('#turn').textContent=String(s.turn).padStart(2,'0');$('#phase').textContent=`${sideNames[s.currentSide]}의 차례`;
@@ -249,7 +250,10 @@ function act(command:Command){
   if(command.kind==='move')mode=session.state.find(selected)?.strategies[0]??'attack';
   persist();render();pump();
 }
-function pump(){clearTimeout(aiTimer);if(menuOpen||field.busy||$<HTMLDialogElement>('#modal').open||session.state.outcome!=='ongoing'||session.activeDuel)return;aiTimer=setTimeout(()=>{const side=session.state.currentSide;if(session.tick()){if(side!==session.state.currentSide){const next=session.state.living(session.state.currentSide).find(u=>!u.hasActed);if(next){selected=next.id;mode='move';field.focusUnit(next.pos);}}persist();render();pump();}},450/speed);}
+/** AI pacing: a unit that does something gets its beat; one that only holds its ground
+ * leaves no log entry, and the next unit follows at once instead of an empty pause. */
+let quietTick=false;
+function pump(){clearTimeout(aiTimer);if(menuOpen||field.busy||$<HTMLDialogElement>('#modal').open||session.state.outcome!=='ongoing'||session.activeDuel)return;aiTimer=setTimeout(()=>{const side=session.state.currentSide,logged=session.state.log.length;if(session.tick()){quietTick=session.state.log.length===logged&&side===session.state.currentSide;if(side!==session.state.currentSide){const next=session.state.living(session.state.currentSide).find(u=>!u.hasActed);if(next){selected=next.id;mode='move';field.focusUnit(next.pos);}}persist();render();pump();}},quietTick?30:450/speed);}
 function undo(){if(field.busy)return;if(session.undo()){activate();persist();toast('직전 명령을 되돌렸습니다.');}}
 function showDuel(){
   const d=session.activeDuel??session.lastDuel;if(!d)return;clearTimeout(aiTimer);const labels=duelActionNames(d.kind),energyName=d.kind==='debate'?'논거':'기합';

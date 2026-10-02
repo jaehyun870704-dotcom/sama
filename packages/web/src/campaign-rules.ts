@@ -57,3 +57,12 @@ export function addSiegeCompany(state:BattleState){
     const tower=makeUnit({id:`tower_${at.x}_${at.y}`,name:'감시탑',side,unitClass:'crossbow',level:hero.level,pos:at,behavior:state.stage.id==='S1-02'?'passive':'hold',traits:['alwaysHit'],statOverrides:{maxHp:110,attack:26,defense:12,movement:0}});tower.range=[1,4];state.add(tower);
   }
 }
+
+/** S1-08 race: tiles left for the competing ally and for Sima Yi to reach the central fort. */
+export function raceGap(state:BattleState){
+  const fort=state.map.regionCoords('central_fort');if(!fort.length)return undefined;
+  const dist=(p:{x:number;y:number})=>Math.min(...fort.map(f=>Math.abs(f.x-p.x)+Math.abs(f.y-p.y)));
+  const racers=state.living('allyAi').filter(u=>u.behavior==='race');
+  const hero=state.find('sima_yi');
+  return {ally:racers.length?Math.min(...racers.map(u=>dist(u.pos))):undefined,hero:hero?.alive?dist(hero.pos):undefined};
+}
