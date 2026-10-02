@@ -98,3 +98,12 @@ describe('S1-08 race readout',()=>{
   expect(g.ally).toBeGreaterThan(0);expect(g.hero).toBeGreaterThan(0);
  });
 });
+import {dueLines,battleLines} from '../src/battle-lines.ts';
+describe('battle chatter',()=>{
+ it('fires opening lines once and has lines for the quiet stages',()=>{
+  for(const id of ['S1-01','S1-07','S1-08'])expect(battleLines[id]!.length).toBeGreaterThanOrEqual(5);
+  const s=new Session(7,'normal',215,'survival',4,deployment(freshCampaign(),true)),first=dueLines(s.state.stage.id,s.state,new Set());
+  expect(first.map(l=>l.id)).toEqual(['open-1','open-2']);
+  expect(dueLines(s.state.stage.id,s.state,new Set(first.map(l=>l.id)))).toEqual([]);
+ });
+});

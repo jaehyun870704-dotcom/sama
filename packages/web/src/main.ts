@@ -10,6 +10,7 @@ import {officerFeatures,talentTree,strategyHint,martialPower} from './officers.t
 import {actionNames,duelActionNames,duelLine,type DuelAction} from './duel.ts';
 import {spriteAtlas} from './sprite-atlas.ts';
 import {coachStep,COACH_KEY} from './tutorial.ts';
+import {dueLines} from './battle-lines.ts';
 import {loadSettings,saveSettings} from './settings.ts';
 import {SLOT_COUNT,slotKey,readSlot,slotLabel} from './save-slots.ts';
 import {encounterLevels,structureKind,structureFrame,raceGap} from './campaign-rules.ts';
@@ -37,7 +38,7 @@ const sideNames={player:'아군',ally:'편입 아군',enemy:'적군',allyAi:'우
 
 $('#app').innerHTML=`<header class="topbar"><button id="brand" class="brand" aria-label="연의 지도"><span class="seal-logo">司</span><span>사마의전<small>SIMA YI CHRONICLE</small></span></button><div class="chapter-breadcrumb">상편 <span>/</span> 살아남는 자</div><nav><button id="sound-toggle" title="전체 소리 켜기/끄기">♪ <span>소리 켜짐</span></button><button id="help">도움말 <kbd>?</kbd></button><button id="settings" aria-label="설정">⚙</button><button id="menu">연의 지도</button></nav></header>
 <main class="layout"><aside class="left-panel"><div class="eyebrow">CHAPTER Ⅰ <span>상편</span></div><h1 id="stage-title"></h1><p id="stage-subtitle" class="muted"></p><div class="rule"></div><section class="mission"><div class="section-label">전투 목표 <span>OBJECTIVES</span></div><div id="objectives"></div></section><section class="turn-card"><div class="turn-number"><span>TURN</span><strong id="turn">01</strong><span>/ 60</span></div><div id="phase" class="phase"></div><div class="phase-track"><i></i><i></i><i></i><i></i></div></section><section><div class="section-label">현재 차례 부대 <span id="unit-count"></span></div><div id="roster" class="roster"></div></section><p class="roster-note">청록 · 아군 &nbsp; 파랑 · 편입 아군<br>황금 · 자동 우군 &nbsp; 붉은색 · 적군</p><div class="left-bottom"><span class="small-seal">忍</span><p>칼을 거두고,<br>때를 기다린다.</p></div></aside>
-<section class="battle-panel"><div class="battle-heading"><div><span class="eyebrow" id="year"></span><h2 id="map-name"></h2></div><span class="weather">☀ &nbsp; 맑음 <span>·</span> 바람 약함</span></div><p id="compact-objective"></p><div id="map" class="map"><div class="map-vignette"></div><div class="compass"><span>北</span><b>✧</b></div><div class="map-controls"><button id="zoom-out" aria-label="축소">−</button><button id="zoom-reset" aria-label="지도 전체 보기">⌖</button><button id="zoom-in" aria-label="확대">＋</button></div><div class="map-legend"><i class="dot teal"></i> 이동 가능 <i class="dot red"></i> 적 시야 / 사거리 <i class="dot gold"></i> 목표</div><div id="tile-info">장수를 선택해 첫 수를 두세요.</div><div id="phase-banner" aria-live="polite"></div><div id="coach" class="coach" role="status" hidden><p></p><button id="coach-close" aria-label="안내 닫기">닫기</button></div></div><div class="battle-toolbar"><button id="undo">↶ <span>무르기</span> <kbd>Z</kbd></button><button id="threat" aria-pressed="false">◎ <span>위험 범위</span></button><button id="speed">▷ <span>1× 속도</span></button><span id="save-status" role="status">자동 저장 준비</span><button id="end-phase" class="primary">아군 턴 종료 <span>→</span></button></div><div class="dispatch"><span>軍報</span><p id="latest-log" aria-live="polite">전장을 살피고 명령을 내려 주십시오.</p><button id="log-button">전투 기록 ↗</button></div></section>
+<section class="battle-panel"><div class="battle-heading"><div><span class="eyebrow" id="year"></span><h2 id="map-name"></h2></div><span class="weather">☀ &nbsp; 맑음 <span>·</span> 바람 약함</span></div><p id="compact-objective"></p><div id="map" class="map"><div class="map-vignette"></div><div class="compass"><span>北</span><b>✧</b></div><div class="map-controls"><button id="zoom-out" aria-label="축소">−</button><button id="zoom-reset" aria-label="지도 전체 보기">⌖</button><button id="zoom-in" aria-label="확대">＋</button></div><div class="map-legend"><i class="dot teal"></i> 이동 가능 <i class="dot red"></i> 적 시야 / 사거리 <i class="dot gold"></i> 목표</div><div id="tile-info">장수를 선택해 첫 수를 두세요.</div><div id="phase-banner" aria-live="polite"></div><div id="battle-line" class="battle-line" aria-live="polite" hidden></div><div id="coach" class="coach" role="status" hidden><p></p><button id="coach-close" aria-label="안내 닫기">닫기</button></div></div><div class="battle-toolbar"><button id="undo">↶ <span>무르기</span> <kbd>Z</kbd></button><button id="threat" aria-pressed="false">◎ <span>위험 범위</span></button><button id="speed">▷ <span>1× 속도</span></button><span id="save-status" role="status">자동 저장 준비</span><button id="end-phase" class="primary">아군 턴 종료 <span>→</span></button></div><div class="dispatch"><span>軍報</span><p id="latest-log" aria-live="polite">전장을 살피고 명령을 내려 주십시오.</p><button id="log-button">전투 기록 ↗</button></div></section>
 <aside class="right-panel"><div class="section-label">장수 정보 <span>OFFICER</span></div><div id="unit-detail"></div><div class="section-label command-label">전술 명령 <span>COMMAND</span></div><div id="commands" class="commands"></div><p id="command-hint" class="command-hint"></p><div class="tactic-note"><span>策</span><div><strong>전장을 읽는 법</strong><p id="tactical-tip"></p></div></div></aside></main><footer><span>삼국지 · 사마의전</span><span>상편 · 대표 전장 ${chapters.length}개</span><span>선택 → 이동 → 행동 → 턴 종료</span></footer>
 <dialog id="modal"><div id="modal-content"></div></dialog><div id="toast" role="status"></div>`;
 
@@ -169,6 +170,8 @@ function activate(){
   lastLog=session.state.log.length;field.load(session.state);const u=session.state.find(selected);if(u)field.focusUnit(u.pos);
   const m=session.state.map,terrain:TerrainKind[]=[];for(let y=0;y<m.height;y++)for(let x=0;x<m.width;x++)terrain.push(m.tileAt({x,y}).terrain);
   sound.scene='battle';sound.place=placeFor(session.state.stage.id,terrain);sound.focus=undefined;sound.combat=session.chapter!==0;void sound.start().then(()=>{updateSound();if(!session.journal.length)sound.event({kind:'battle-start'});});
+  // A resumed battle should not replay every line whose moment has already passed.
+  lineSeen=new Set(session.journal.length?dueLines(session.state.stage.id,session.state,new Set()).map(l=>l.id):[]);lineQueue=[];
   $<HTMLDialogElement>('#modal').close();render();pump();
 }
 function persist(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(session.save()));saveAvailable=true;$('#save-status').textContent='✓ 자동 저장됨';}catch{$('#save-status').textContent='저장 공간 사용 불가';}}
@@ -213,8 +216,20 @@ function render(){
   $<HTMLButtonElement>('#undo').disabled=!session.checkpoints.length||field.busy;
   $('#tactical-tip').textContent=session.revision===4&&session.chapter===4?'여포는 물리 공격이 강합니다. 무력보다 지력 차이를 활용해 설전 승리와 혼란을 노리세요. 각 대결이 끝나면 체력·MP가 회복됩니다.':session.revision===4?'일기토는 인접한 적, 설전은 3칸 이내 적을 선택합니다. 충차는 성문·감시탑에 피해 3배. 풍수사는 MP 8로 3칸 이내 아군을 치유합니다.':'목표와 승리 조건을 확인하세요. 본대 다음 편입 아군을 직접 지휘합니다.';
   sound.scene=s.outcome!=='ongoing'?'result':session.chapter===4?'dream':s.living('player').some(u=>u.hp<u.stats.maxHp*.35)?'crisis':bossNear(s.living())?'boss':'battle';
-  renderCoach();
+  renderCoach();queueLines();
   consumeLog();field.render(s,selected,mode,threat,session.scouted);checkModal();
+}
+let lineSeen=new Set<string>(),lineQueue:{speaker:string;text:string}[]=[],lineTimer:ReturnType<typeof setTimeout>|undefined;
+function queueLines(){
+  if(session.deployment?.mission||session.state.outcome!=='ongoing')return;
+  for(const l of dueLines(session.state.stage.id,session.state,lineSeen)){lineSeen.add(l.id);lineQueue.push(l);}
+  if(!lineTimer)showNextLine();
+}
+function showNextLine(){
+  const el=$('#battle-line'),next=lineQueue.shift();
+  if(!next){el.hidden=true;lineTimer=undefined;return;}
+  el.innerHTML=dialogueCaption(next.speaker,next.text);el.hidden=false;$('#latest-log').textContent=`${next.speaker}: ${next.text}`;
+  lineTimer=setTimeout(showNextLine,Math.min(6500,2600+next.text.length*45));
 }
 function coachDone(){try{return localStorage.getItem(COACH_KEY)==='1';}catch{return false;}}
 function finishCoach(){try{localStorage.setItem(COACH_KEY,'1');}catch{/* Storage may be blocked; the coach simply shows again. */}$('#coach').hidden=true;}
