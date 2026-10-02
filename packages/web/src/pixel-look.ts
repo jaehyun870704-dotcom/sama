@@ -1,7 +1,7 @@
-/** Ground art is 16 dots per tile drawn three times larger. When a dot covers a whole
+/** Ground art is 24 dots per tile drawn twice as large. When a dot covers a whole
  * number of device pixels every dot is the same size; otherwise neighbours alternate
  * between two widths and the dithering shimmers. Zoom steps snap to those sizes. */
-export const ART_SCALE=3;
+export const ART_SCALE=2;
 export function crispZoom(z:number,resolution=1,direction=0,max=1.8){
   const unit=ART_SCALE*resolution,k=z*unit;
   if(k<2)return z;
