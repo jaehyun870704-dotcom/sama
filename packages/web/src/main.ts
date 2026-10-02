@@ -10,6 +10,8 @@ import {officerFeatures,talentTree,strategyHint,martialPower} from './officers.t
 import {actionNames,duelActionNames,duelLine,type DuelAction} from './duel.ts';
 import {spriteAtlas} from './sprite-atlas.ts';
 import {coachStep,COACH_KEY} from './tutorial.ts';
+import {loadSettings,saveSettings} from './settings.ts';
+import {SLOT_COUNT,slotKey,readSlot,slotLabel} from './save-slots.ts';
 import {encounterLevels,structureKind,structureFrame} from './campaign-rules.ts';
 import {readCampaign,writeCampaign,deployment,levelInfo,award,equip,equipSlot,treasureInfo,type GearSlot,treasures,OFFICERS} from './progression.ts';
 import {storyBeats,storyLocations,storyBackdrop,acts,stories} from './story.ts';
@@ -19,7 +21,7 @@ import { Session, chapters, campaignOrder, type Preparation } from './session.ts
 import { Battlefield, classNames, terrainNames, unitName } from './battlefield.ts';
 import { Soundscape } from './audio.ts';
 import {placeFor} from './music.ts';
-import { CONTROLLABLE, ignoresRough, awardedSeals, estimatePhysical, estimateStrategy, manhattan } from '../../core/src/index.ts';
+import { CONTROLLABLE, ignoresRough, awardedSeals, estimatePhysical, estimateStrategy, previewAttack, manhattan } from '../../core/src/index.ts';
 import type { Command, Coord, LogEntry, TerrainKind, Unit } from '../../core/src/index.ts';
 
 const $=<T extends HTMLElement=HTMLElement>(selector:string)=>document.querySelector<T>(selector)!;
@@ -82,7 +84,7 @@ function showMenu(){
     const i=chapters.findIndex(x=>x.stage.id===c.id),ready=i>=0,open=ready&&unlocked(i),won=ready&&cleared(i);
     const act=acts.find(a=>a.arc===menuArc&&a.from===Number(c.id.slice(-2)));
     return `${act?'<h3 class="act-title">'+act.title+'</h3>':''}<button class="journey-node ${won?'cleared':''}" data-chapter="${i}" ${open?'':'disabled'}><span class="chapter-no">${c.id.slice(-2)}</span><span><strong>${c.name}</strong><small>${ready?won?'완료 · 일반 / 극한 재도전':open?'출진 가능 · 권장 Lv.'+encounterLevels[c.id]+' · '+chapters[i]!.label:'앞선 대표 전장 완료 후 개방':'제작 예정'}</small></span><b>${won?'◆':open?'→':'·'}</b></button>`;
-  }).join('')}</div><div class="menu-actions">${saveAvailable?'<button id="resume" class="primary">전투 이어하기 →</button>':''}${hasStarted?'<button id="back-battle">현재 전장</button>':''}${devMode?'<button id="art-preview">개발 · 한중 바로 체험</button>':''}<button id="expeditions">수련 · 보물 인연</button><button id="troop-gallery">병종 도감</button><button id="officer-gallery">장수 외형</button><button id="chronicle">연의 기록</button></div><p class="prototype-note">현재 수비전 → 낙양 → 육혼산 → 흉몽 → 장강 → 동관 → 한중 上 → 한중 下 순서로 대표 전장을 체험합니다.<br>사이의 미제작 전장은 건너뜁니다. 기록은 이 브라우저에 저장됩니다.</p></div></div>`,false);
+  }).join('')}</div><div class="menu-actions">${saveAvailable?'<button id="resume" class="primary">전투 이어하기 →</button>':''}${hasStarted?'<button id="back-battle">현재 전장</button>':''}${devMode?'<button id="art-preview">개발 · 한중 바로 체험</button>':''}<button id="save-slots">저장 칸</button><button id="expeditions">수련 · 보물 인연</button><button id="troop-gallery">병종 도감</button><button id="officer-gallery">장수 외형</button><button id="chronicle">연의 기록</button></div><p class="prototype-note">현재 수비전 → 낙양 → 육혼산 → 흉몽 → 장강 → 동관 → 한중 上 → 한중 下 순서로 대표 전장을 체험합니다.<br>사이의 미제작 전장은 건너뜁니다. 기록은 이 브라우저에 저장됩니다.</p></div></div>`,false);
   document.querySelectorAll<HTMLButtonElement>('[data-chapter]').forEach(b=>b.onclick=()=>storyScene(Number(b.dataset.chapter)));
   document.querySelectorAll<HTMLButtonElement>('[data-arc]').forEach(b=>b.onclick=()=>{menuArc=Number(b.dataset.arc);showMenu();});
   $('#expeditions').onclick=showExpeditions;
@@ -91,6 +93,21 @@ function showMenu(){
   $('#chronicle').onclick=()=>{modal(`<div class="briefing"><div class="eyebrow">연의 기록</div><h2>지나온 전장</h2>${campaignOrder.map(i=>`<p>${chapters[i]!.stage.subtitle} · ${cleared(i)?'일반 완료':'미완료'} · 인장 ${(p[chapters[i]!.stage.id+':normal']??[]).length}/3</p>`).join('')}<p>동료는 이야기에 따라 합류합니다. 패배해도 다음 출진의 기본 보급은 줄어들지 않습니다.</p><button id="record-back">← 연의 지도</button></div>`,false);$('#record-back').onclick=showMenu;};
   $('#resume')?.addEventListener('click',()=>{try{session=Session.load(JSON.parse(localStorage.getItem(SAVE_KEY)??'null'));activate();toast('저장한 전투를 불러왔습니다.');}catch{toast('현재 버전의 저장 기록을 읽지 못했습니다.');}});
   $('#back-battle')?.addEventListener('click',()=>{menuOpen=false;closeModal();});
+  $('#save-slots').onclick=showSlots;
+}
+function readStore(key:string){try{return localStorage.getItem(key);}catch{return null;}}
+function showSlots(){
+  const rows=Array.from({length:SLOT_COUNT},(_,i)=>{const r=readSlot(readStore(slotKey(i+1)));return `<div class="slot-row"><div><strong>${i+1}번 칸</strong><small>${slotLabel(r)}</small></div><div class="slot-actions">${hasStarted&&session.state.outcome==='ongoing'?`<button data-slot-save="${i+1}">현재 전투 저장</button>`:''}${r?`<button data-slot-load="${i+1}">불러오기</button><button data-slot-clear="${i+1}" aria-label="${i+1}번 칸 지우기">지우기</button>`:''}</div></div>`;}).join('');
+  modal(`<div class="briefing"><div class="eyebrow">기록</div><h2>저장 칸</h2><p class="muted">자동 저장은 매 행동마다 이어하기 칸에 남습니다. 갈림길 앞에서는 수동 칸에 따로 저장해 두세요. 연의 진행(완료·성장·보물)은 모든 칸이 함께 씁니다.</p>${rows}<button id="slots-back">← 연의 지도</button></div>`,false);
+  document.querySelectorAll<HTMLButtonElement>('[data-slot-save]').forEach(b=>b.onclick=()=>{
+    const c=chapters[session.chapter]!,title=session.deployment?.mission?'외전':c.stage.subtitle??c.stage.title;
+    try{localStorage.setItem(slotKey(Number(b.dataset.slotSave)),JSON.stringify({meta:{title,turn:session.state.turn,difficulty:session.difficulty,at:Date.now()},save:session.save()}));toast(`${b.dataset.slotSave}번 칸에 저장했습니다.`);}catch{toast('이 브라우저에서는 저장할 수 없습니다.');}
+    showSlots();});
+  document.querySelectorAll<HTMLButtonElement>('[data-slot-load]').forEach(b=>b.onclick=()=>{
+    const r=readSlot(readStore(slotKey(Number(b.dataset.slotLoad))));
+    try{session=Session.load(r!.save as Parameters<typeof Session.load>[0]);activate();toast(`${b.dataset.slotLoad}번 칸을 불러왔습니다.`);}catch{toast('이 칸은 현재 버전에서 읽을 수 없습니다.');}});
+  document.querySelectorAll<HTMLButtonElement>('[data-slot-clear]').forEach(b=>b.onclick=()=>{try{localStorage.removeItem(slotKey(Number(b.dataset.slotClear)));}catch{/* nothing to clear */}showSlots();});
+  $('#slots-back').onclick=showMenu;
 }
 
 function briefing(chapter:number,expeditionId?:string){
@@ -273,17 +290,20 @@ field.onCell=at=>{
     if(!target&&mode==='move'){act({kind:'move',unit:u.id,to:at});return;}
   }if(target)select(target.id);
 };
-field.onHover=at=>{if(!at){$('#tile-info').textContent='휠 확대 · 드래그 이동 · 미니맵 클릭 · 전체 보기';return;}const s=session.state,u=s.find(selected),target=s.unitAt(at);let line=`${terrainNames[s.map.tileAt(at).terrain]} · (${at.x+1}, ${at.y+1}) · 회피 +${s.map.evasionBonus(at)}%`;if(target)line+=` · ${unitName(target)} ${target.hp} HP`;if(u&&target?.side==='enemy'){const d=s.strategies.get(mode);if(d&&manhattan(u.pos,at)<=d.range)line+=` · 예상 피해 ≈${estimateStrategy(u,target,d,s.map)}`;else if(mode==='attack'&&manhattan(u.pos,at)<=u.range[1])line+=` · 예상 피해 ≈${estimatePhysical(u,target,s.map)}`;}if(u&&mode==='move'){const cost=s.map.moveCost(u.unitClass,at,ignoresRough(u));line+=' · 이동 비용 '+(Number.isFinite(cost)?cost:'진입 불가')+' · 지형 위력 ×'+s.map.terrainAffinity(u.unitClass,at).toFixed(2);}if(u&&target?.side==='enemy'&&mode==='attack'&&!structureKind(target.id))line+=' · '+physicalMatchup(u.unitClass,target.unitClass);$('#tile-info').textContent=line;};
+field.onHover=at=>{if(!at){$('#tile-info').textContent='휠 확대 · 드래그 이동 · 미니맵 클릭 · 전체 보기';return;}const s=session.state,u=s.find(selected),target=s.unitAt(at);let line=`${terrainNames[s.map.tileAt(at).terrain]} · (${at.x+1}, ${at.y+1}) · 회피 +${s.map.evasionBonus(at)}%`;if(target)line+=` · ${unitName(target)} ${target.hp} HP`;if(u&&target?.side==='enemy'){const d=s.strategies.get(mode);if(d&&manhattan(u.pos,at)<=d.range)line+=` · 예상 피해 ≈${estimateStrategy(u,target,d,s.map)}`;else if(mode==='attack'&&manhattan(u.pos,at)<=u.range[1]&&manhattan(u.pos,at)>=u.range[0]){const v=previewAttack(u,target,s.map,session.battle.wouldCounter(target,u));line+=` · 명중 ${v.hit}% · 피해 ${v.damage}${v.lethal?' (격파)':''}${v.counter?` · 반격 ${v.counter.damage} (명중 ${v.counter.hit}%)`:' · 반격 없음'}`;}}if(u&&mode==='move'){const cost=s.map.moveCost(u.unitClass,at,ignoresRough(u));line+=' · 이동 비용 '+(Number.isFinite(cost)?cost:'진입 불가')+' · 지형 위력 ×'+s.map.terrainAffinity(u.unitClass,at).toFixed(2);}if(u&&target?.side==='enemy'&&mode==='attack'&&!structureKind(target.id))line+=' · '+physicalMatchup(u.unitClass,target.unitClass);$('#tile-info').textContent=line;};
 function updateSound(){$('#sound-toggle').innerHTML=`♪ <span>${sound.enabled?'소리 켜짐':'음소거'}</span>`;}
-$('#sound-toggle').onclick=()=>{sound.enabled=!sound.enabled;void sound.start().then(updateSound);};
+$('#sound-toggle').onclick=()=>{sound.enabled=!sound.enabled;storeSettings();void sound.start().then(updateSound);};
 $('#menu').onclick=showMenu;$('#brand').onclick=showMenu;$('#undo').onclick=undo;
 $('#end-phase').onclick=()=>act({kind:'endPhase'});
 $('#coach-close').onclick=finishCoach;
 $('#zoom-in').onclick=()=>field.zoomBy(.2);$('#zoom-out').onclick=()=>field.zoomBy(-.2);$('#zoom-reset').onclick=()=>field.reset();
 $('#threat').onclick=()=>{threat=!threat;$('#threat').setAttribute('aria-pressed',String(threat));render();};
-$('#speed').onclick=()=>{speed=speed===1?2:speed===2?3:1;field.playbackRate=speed;$('#speed').innerHTML=`▷ ${speed}× 속도`;};
+function applySpeed(){field.playbackRate=speed;$('#speed').innerHTML=`▷ ${speed}× 속도`;}
+$('#speed').onclick=()=>{speed=speed===1?2:speed===2?3:1;applySpeed();storeSettings();};
+function storeSettings(){saveSettings({music:sound.musicVolume,effects:sound.effectsVolume,sound:sound.enabled,speed:speed as 1|2|3});}
+{const saved=loadSettings();sound.musicVolume=saved.music;sound.effectsVolume=saved.effects;sound.enabled=saved.sound;speed=saved.speed;applySpeed();updateSound();}
 $('#help').onclick=()=>modal('<div class="dialogue"><h2>전장의 길잡이</h2><p>부대 선택 → 이동 → 공격·책략·대기 → 턴 종료. 본대 다음 편입 아군을 직접 조작합니다.</p><p>1 이동 · 2 공격 · 3 첫 책략 · W 대기 · Z 무르기 · E 턴 종료 · N 다음 부대 · Esc 명령 취소. 휠 확대, 드래그 이동, 미니맵으로 먼 지역을 살피세요.</p><p>일기토(무력)는 인접, 설전(지력)은 3칸 이내. 일기토는 공격·방어·기합·필살기, 설전은 논박·반론·숙고·논파를 선택합니다.</p></div>');
-$('#settings').onclick=()=>{modal(`<div class="dialogue"><h2>소리 설정</h2><label>배경음 <input id="music-volume" type="range" min="0" max="1" step=".01" value="${sound.musicVolume}"></label><label>효과음 <input id="effects-volume" type="range" min="0" max="1" step=".01" value="${sound.effectsVolume}"></label></div>`);$<HTMLInputElement>('#music-volume').oninput=e=>{sound.musicVolume=Number((e.target as HTMLInputElement).value);sound.update();};$<HTMLInputElement>('#effects-volume').oninput=e=>{sound.effectsVolume=Number((e.target as HTMLInputElement).value);sound.update();};};
+$('#settings').onclick=()=>{modal(`<div class="dialogue"><h2>소리 설정</h2><label>배경음 <input id="music-volume" type="range" min="0" max="1" step=".01" value="${sound.musicVolume}"></label><label>효과음 <input id="effects-volume" type="range" min="0" max="1" step=".01" value="${sound.effectsVolume}"></label></div>`);$<HTMLInputElement>('#music-volume').oninput=e=>{sound.musicVolume=Number((e.target as HTMLInputElement).value);sound.update();storeSettings();};$<HTMLInputElement>('#effects-volume').oninput=e=>{sound.effectsVolume=Number((e.target as HTMLInputElement).value);sound.update();storeSettings();};};
 $('#log-button').onclick=()=>modal(`<div class="dialogue"><h2>전투 기록</h2>${session.state.log.map(describe).filter(Boolean).slice(-60).map(t=>`<p>${esc(t)}</p>`).join('')}</div>`);
 document.addEventListener('visibilitychange',()=>void sound.visibility(document.hidden));
 // Every button answers with a soft wood-block click.

@@ -283,3 +283,26 @@ export function clamp(v: number, lo: number, hi: number): number {
 }
 
 export { combine };
+
+/** What the player sees before attacking: hit chance and damage on a normal hit,
+ * plus the counterattack if the defender survives and can answer. No RNG is drawn. */
+export interface AttackPreview { hit: number; damage: number; lethal: boolean; counter?: { hit: number; damage: number } }
+function hitPreview(attacker: Unit, defender: Unit, map: BattleMap): { hit: number; damage: number } {
+  const ctx = createDamageContext(attacker, defender, "physical");
+  applyTraitHooks(ctx);
+  if (ctx.immune) return { hit: 0, damage: 0 };
+  const atk = attacker.stats.attack * ctx.attackMul;
+  const def = defender.stats.defense * (1 - ctx.defenseIgnore);
+  const dmg = Math.max(MIN_DAMAGE, atk - def) *
+    matchupMultiplier(attacker.unitClass, defender.unitClass) *
+    map.terrainAffinity(attacker.unitClass, attacker.pos) *
+    elevationMultiplier(map.heightAt(attacker.pos), map.heightAt(defender.pos)) *
+    moraleMultiplier(attacker.stats.morale) * (1 - ctx.reduction);
+  return { hit: ctx.alwaysHit ? 100 : Math.round(accuracy(ctx, map)), damage: Math.max(MIN_DAMAGE, Math.round(dmg)) };
+}
+export function previewAttack(attacker: Unit, defender: Unit, map: BattleMap, canCounter: boolean): AttackPreview {
+  const strike = hitPreview(attacker, defender, map), lethal = strike.hit > 0 && strike.damage >= defender.hp;
+  if (!canCounter || lethal) return { ...strike, lethal };
+  const back = hitPreview(defender, attacker, map);
+  return { ...strike, lethal, counter: { hit: back.hit, damage: Math.max(MIN_DAMAGE, Math.round(back.damage * counterMultiplier(defender))) } };
+}
