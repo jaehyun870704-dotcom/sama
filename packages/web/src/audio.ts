@@ -1,7 +1,7 @@
 import {placeThemes,familyMotifs,classFamily,midiToHz,degree,type Place,type Lead,type Family} from './music.ts';
 import {renderVariants,zhengNote,SR} from './sound-bank.ts';
 import {soundsFor,type SoundEvent,type SoundShot} from './sound-events.ts';
-import {SAMPLE_GROUPS,SAMPLE_LAYERS} from './sound-samples.ts';
+import {SAMPLE_GROUPS,SAMPLE_LAYERS,leadIn} from './sound-samples.ts';
 import type {Unit} from '../../core/src/index.ts';
 
 export type Cue='select'|'move'|'attack'|'magic'|'turn'|'victory'|'defeat'|'breach'|'repair';
@@ -70,9 +70,10 @@ export class Soundscape {
   }
   /** Fetch and decode the recorded groups in the background; synthesis covers the gap. */
   async loadSamples(){
+    const trimmed=(ctx:AudioContext,b:AudioBuffer)=>{const skip=leadIn(b.getChannelData(0),b.sampleRate);if(!skip)return b;const out=ctx.createBuffer(b.numberOfChannels,b.length-skip,b.sampleRate);for(let c=0;c<b.numberOfChannels;c++)out.getChannelData(c).set(b.getChannelData(c).subarray(skip));return out;};
     const ctx=this.ctx;if(!ctx)return;
     await Promise.all(Object.entries(SAMPLE_GROUPS).map(async([group,{files}])=>{
-      try{const takes=await Promise.all(files.map(async f=>ctx.decodeAudioData(await (await fetch(this.sampleBase+f)).arrayBuffer())));this.samples.set(group,takes);}catch{/* keep the synthesized fallback */}
+      try{const takes=await Promise.all(files.map(async f=>trimmed(ctx,await ctx.decodeAudioData(await (await fetch(this.sampleBase+f)).arrayBuffer()))));this.samples.set(group,takes);}catch{/* keep the synthesized fallback */}
     }));
   }
   private take(group:string){const takes=this.samples.get(group)!;let k=Math.floor(Math.random()*takes.length);if(takes.length>1&&k===this.lastTake.get(group))k=(k+1)%takes.length;this.lastTake.set(group,k);return takes[k]!;}

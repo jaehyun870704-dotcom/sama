@@ -42,10 +42,10 @@ describe('battle sound events',()=>{
 import {SAMPLE_GROUPS,SAMPLE_LAYERS,SAMPLE_ORIGINS} from '../src/sound-samples.ts';
 import {existsSync,readFileSync} from 'node:fs';
 describe('recorded CC0 samples',()=>{
- it('ships every listed take as a mono 16-bit WAV',()=>{
+ it('ships every listed take as a small MP3',()=>{
   for(const [group,{files,midi}] of Object.entries(SAMPLE_GROUPS)){
    expect(files.length,group).toBeGreaterThan(0);if(midi)expect(midi).toHaveLength(files.length);
-   for(const f of files){const path=new URL('../public/sfx/'+f,import.meta.url);expect(existsSync(path),f).toBe(true);const b=readFileSync(path);expect(b.toString('ascii',0,4)).toBe('RIFF');expect(b.readUInt16LE(22)).toBe(1);expect(b.readUInt16LE(34)).toBe(16);}
+   for(const f of files){const path=new URL('../public/sfx/'+f,import.meta.url);expect(existsSync(path),f).toBe(true);const b=readFileSync(path);expect(b[0]===0xff&&(b[1]!&0xe0)===0xe0||b.toString('ascii',0,3)==='ID3',f+' is MP3').toBe(true);expect(b.length,f).toBeLessThan(120_000);}
    expect(SAMPLE_ORIGINS[group]!.length).toBeGreaterThan(0);
   }
  });
@@ -58,5 +58,14 @@ describe('recorded CC0 samples',()=>{
  });
  it('keeps origins inside CC0 packs',()=>{
   for(const origins of Object.values(SAMPLE_ORIGINS))for(const o of origins)expect(o).toMatch(/^(VCSL\/|cc0sounds\/(kenney_|80-CC0|75-cc0|100-CC0|40-cc0|25-CC0|Micro Pack - |warfork-cc0\/sounds))/);
+ });
+});
+
+import {leadIn} from '../src/sound-samples.ts';
+describe('mp3 lead-in trim',()=>{
+ it('skips encoder silence but keeps the attack',()=>{
+  const rate=32000,d=new Float32Array(rate/2);for(let i=1120;i<d.length;i++)d[i]=Math.sin(i/5)*.5;
+  expect(leadIn(d,rate)).toBe(1120-64);expect(leadIn(new Float32Array(rate),rate)).toBe(0);
+  const loud=new Float32Array(100).fill(.4);expect(leadIn(loud,rate)).toBe(0);
  });
 });
