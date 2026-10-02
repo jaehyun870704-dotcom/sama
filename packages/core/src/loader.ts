@@ -59,11 +59,12 @@ export function assemble(opts: AssembleOptions): BattleState {
 
   // 2. 편입 아군 — 조작 가능, 도구 불가, 아군 손실 카운트 포함 (PRD §3.3)
   const levelShift = state.enemyLevelShift;
+  const grantedCounts = new Map<string, number>();
   for (const g of stage.deployment.grantedUnits ?? []) {
     for (let i = 0; i < g.count; i++) {
       state.add(
         makeUnit({
-          id: `granted_${g.type}_${i}`,
+          id: `granted_${g.type}_${(grantedCounts.get(g.type) ?? 0) + i}`,
           name: g.type,
           side: "ally",
           unitClass: g.type,
@@ -74,6 +75,7 @@ export function assemble(opts: AssembleOptions): BattleState {
         }),
       );
     }
+    grantedCounts.set(g.type, (grantedCounts.get(g.type) ?? 0) + g.count);
   }
 
   // 3. AI 우군

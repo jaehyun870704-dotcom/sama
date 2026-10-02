@@ -17,8 +17,8 @@ export const officerFeatures:Record<string,{name:string;description:string;trait
 export interface Talent {name:string;description:string;trait:string;level:number;requirement:string;ready:boolean}
 export function talentTree(id:string,level:number,growth:Growth):Talent[]{const f=officerFeatures[id];if(!f)return [];return [
  {name:f.name,description:f.description,trait:f.trait,level:3,requirement:'Lv.3 · 본편 1승',ready:level>=3&&growth.storyWins>=1},
- {name:{sima_yi:'정중동',cao_zhen:'철벽 선봉',sima_lang:'후방의 버팀목',sima_fang:'노장의 침착'}[id]??'전장의 단련',description:'물리 피해 10% 감소',trait:'commandDefense',level:6,requirement:'Lv.6 · 수련 3승',ready:level>=6&&growth.trainingWins>=3},
- {name:{sima_yi:'심모원려',cao_zhen:'상승장군',sima_lang:'가문의 기둥',sima_fang:'병법의 전수'}[id]??'대가의 경지',description:id==='sima_yi'?'책략 공격 피해 12% 증가':'물리 공격 피해 10% 증가',trait:id==='sima_yi'?'zhouStrategy':'westernValor',level:10,requirement:'Lv.10 · 보물 외전 3개 완료',ready:level>=10&&growth.questWins>=3},
+ {name:{sima_yi:'정중동',cao_zhen:'철벽 선봉',sima_lang:'후방의 버팀목',sima_fang:'노장의 침착'}[id]??'전장의 단련',description:'물리 피해 10% 감소',trait:'commandDefense',level:6,requirement:'첫 특성 해금 · Lv.6 · 수련 3승',ready:level>=6&&growth.storyWins>=1&&growth.trainingWins>=3},
+ {name:{sima_yi:'심모원려',cao_zhen:'상승장군',sima_lang:'가문의 기둥',sima_fang:'병법의 전수'}[id]??'대가의 경지',description:id==='sima_yi'?'책략 공격 피해 12% 증가':'물리 공격 피해 10% 증가',trait:id==='sima_yi'?'zhouStrategy':'westernValor',level:10,requirement:'둘째 특성 해금 · Lv.10 · 보물 외전 3개 완료',ready:level>=10&&growth.storyWins>=1&&growth.trainingWins>=3&&growth.questWins>=3},
  ];}
 export function applyOfficerFeatures(units:Unit[],growth?:Growth){for(const u of units){const feature=officerFeatures[u.id];if(!feature)continue;const ids=growth&&['sima_yi','cao_zhen','sima_lang','sima_fang'].includes(u.id)?talentTree(u.id,u.level,growth).filter(t=>t.ready).map(t=>t.trait):growth&&u.level<4?[]:[feature.trait];for(const trait of ids)if(!u.traits.includes(trait))u.traits.push(trait);}}
 export function martialPower(u:Unit){return (officerFeatures[u.id]?.strength??Math.min(95,40+u.stats.attack))+u.level;}

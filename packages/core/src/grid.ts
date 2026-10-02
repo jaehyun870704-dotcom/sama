@@ -30,6 +30,13 @@ const MOVE_COST: Record<UnitClass, Partial<Record<TerrainKind, number>>> = {
   engineer:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
   navy:       { plain: Infinity, road: Infinity, forest: Infinity, hill: Infinity, mountain: Infinity, water: 1, rapids: 2, bridge: Infinity, fort: Infinity, gate: Infinity },
   civilian:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
+  shaman: { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
+  maiden:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
+  taoist: { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
+  physician:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
+  monk:   { plain: 1, road: 1, forest: 1, hill: 2, mountain: 2, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
+  horseArcher:    { plain: 1, road: 1, forest: 3, hill: 3, mountain: 5, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
+  bandit:   { plain: 1, road: 1, forest: 1, hill: 2, mountain: 2, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
 };
 
 /** 병종 × 지형 전투 상성 계수 (공격 위력 배율). */
@@ -47,6 +54,13 @@ const TERRAIN_AFFINITY: Record<UnitClass, Partial<Record<TerrainKind, number>>> 
   engineer:   { plain: 1.0 },
   navy:       { water: 1.3, rapids: 1.15 },
   civilian:   { plain: 0.5 },
+  shaman: { plain: 1.0, forest: 1.05, mountain: 1.05, hill: 1.05 },
+  maiden:   { plain: 1.0, forest: 1.05, mountain: 1.05, hill: 1.05 },
+  taoist: { plain: 1.0, forest: 1.05, mountain: 1.05, hill: 1.05 },
+  physician:   { plain: 1.0, forest: 1.05, mountain: 1.05, hill: 1.05 },
+  monk:   { plain: 1.0, forest: 1.1, mountain: 1.0, hill: 1.05, fort: 1.1 },
+  horseArcher:    { plain: 1.2, road: 1.2, forest: 0.8, mountain: 0.6, hill: 0.8 },
+  bandit:   { plain: 1.0, forest: 1.3, mountain: 1.25, hill: 1.05, fort: 1.1 },
 };
 
 /** 회피 보너스 (백분율 포인트). 방어자가 서 있는 지형. */

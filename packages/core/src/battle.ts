@@ -4,8 +4,8 @@
 import { BattleState, PHASE_ORDER, type BattleSnapshot } from "./state.ts";
 import type { Command, CommandResult } from "./commands.ts";
 import { ok, fail } from "./commands.ts";
-import { computePhysical, computeStrategy } from "./formulas.ts";
-import { counterLimitOf, ignoresRough, hasTrait, guardsAdjacent, getTrait, traitParam } from "./traits.ts";
+import { computePhysical, computeStrategy, createDamageContext } from "./formulas.ts";
+import { applyTraitHooks, counterLimitOf, ignoresRough, hasTrait, guardsAdjacent, getTrait, traitParam } from "./traits.ts";
 import { DialogueScript } from "./dialogue.ts";
 import { runEvents } from "./events.ts";
 import { evaluateGroup } from "./conditions.ts";
@@ -100,6 +100,7 @@ export class Battle {
     const from = { ...u.pos };
     u.pos = { ...to };
     u.hasMoved = true;
+    u.movedThisTurn = true;
     this.state.push({ t: "move", unit: u.id, from, to: u.pos });
     this.applyTileHazard(u);
     return ok;
@@ -241,7 +242,8 @@ export class Battle {
     if (defender.unitClass === 'civilian') return false;
     const [minR, maxR] = defender.range;
     if (dist < minR || dist > maxR) return false;
-    if (hasTrait(attacker, "noCounterAttack")) return false;
+    const context=createDamageContext(attacker,defender,"physical");applyTraitHooks(context);
+    if (context.suppressCounter) return false;
     const used = this.counters.get(defender.id) ?? 0;
     return used < counterLimitOf(defender);
   }
@@ -295,6 +297,7 @@ export class Battle {
     this.counters.clear();
     for (const u of this.state.living(side)) {
       u.hasMoved = false;
+      u.movedThisTurn = false;
       u.hasActed = false;
       this.tickStatuses(u);
       if(u.alive)for(const id of u.traits)getTrait(id).hooks.onTurnStart?.(u,traitParam(u,id));

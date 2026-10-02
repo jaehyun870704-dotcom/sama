@@ -15,3 +15,5 @@ export * from "./mapio.ts";
 export * from "./loader.ts";
 export * from "./dialogue.ts";
 export * from "./sim.ts";
+
+export * from "./treasure-traits.ts";
