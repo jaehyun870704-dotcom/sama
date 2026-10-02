@@ -3,7 +3,7 @@
 게임의 녹음 효과음은 모두 **CC0 1.0 퍼블릭 도메인 기증** 음원이다. 출처 표기 의무는 없지만 감사의 뜻으로 남긴다.
 수집 경로: [lavenderdotpet/CC0-Public-Domain-Sounds](https://github.com/lavenderdotpet/CC0-Public-Domain-Sounds)(각 팩의 License/README 동봉), [sgossner/VCSL](https://github.com/sgossner/VCSL)(CC0 LICENSE).
 
-모든 파일은 모노·16비트 WAV로 변환하고 앞뒤 무음을 잘라 정규화했다(`packages/web/public/sfx`). 말발굽·말 울음·환호는 비슷한 CC0 녹음을 찾지 못해 합성음을 쓴다.
+모든 파일은 모노로 변환하고 앞뒤 무음을 잘라 정규화한 뒤 64kbps MP3로 압축했다(2026-10-03, 9.2MB → 1.4MB; 재생 때 인코더 앞 무음은 잘라 냄)(`packages/web/public/sfx`). 말발굽·말 울음·환호는 비슷한 CC0 녹음을 찾지 못해 합성음을 쓴다.
 
 ## 팩
 
