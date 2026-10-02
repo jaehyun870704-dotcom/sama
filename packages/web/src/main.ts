@@ -15,7 +15,7 @@ import {loadSettings,saveSettings} from './settings.ts';
 import {SLOT_COUNT,slotKey,readSlot,slotLabel} from './save-slots.ts';
 import {encounterLevels,structureKind,structureFrame,raceGap} from './campaign-rules.ts';
 import {readCampaign,writeCampaign,deployment,levelInfo,award,equip,equipSlot,treasureInfo,type GearSlot,treasures,OFFICERS} from './progression.ts';
-import {storyBeats,storyLocations,storyBackdrop,acts,stories} from './story.ts';
+import {storyBeats,storyLocations,storyBackdrop,storyAftermath,acts,stories} from './story.ts';
 import './style.css';
 import catalogue from './campaign.json';
 import { Session, chapters, campaignOrder, type Preparation } from './session.ts';
@@ -288,7 +288,9 @@ function checkModal(){
     if(reward?.xp)saveCampaign();
     if(win)try{const p=progress(),k=s.stage.id+':'+s.difficulty;p[k]=[...new Set([...(p[k]??[]),...seals])];localStorage.setItem(PROGRESS_KEY,JSON.stringify(p));}catch{/* optional persistence */}
     sound.sfx(win?'victory':'defeat');
-    modal(`<div class="result"><div class="result-character">${win?'승':'패'}</div><h2>${win?'판을 읽었다.':'아직, 끝이 아니다.'}</h2><p>${s.stage.subtitle} · ${s.turn}턴</p>${reward?.xp?`<p class="growth-summary">경험치 +${reward.xp} · ${growthText()}</p><p class="treasure-reward">보물: ${treasures.filter(t=>t.stage===s.stage.id).map(t=>t.name).join(' · ')}</p>`:''}${milestoneMarkup(growthMilestones(before,campaign))}<div class="seals">${session.sealNames.map((name,i)=>`<div class="${seals.includes(i+1)?'earned':''}"><b>◆</b><span>${name}</span></div>`).join('')}</div><p>${win?'전투 기록과 인장이 저장되었습니다.':esc(session.failure)}</p><div class="modal-actions"><button id="result-undo">↶ 마지막 수 무르기</button>${session.phaseCheckpoint!==null?'<button id="phase-restore">목표 전환 직전으로</button>':''}<button id="retry">다시 도전</button><button id="result-menu">연의 지도</button>${win&&campaignOrder.indexOf(session.chapter)<campaignOrder.length-1?'<button id="next-chapter" class="primary">다음 전장 →</button>':''}</div></div>`,false);
+    const after=win?storyAftermath[s.stage.id]:undefined;
+    modal(`<div class="result">${after?`<div class="aftermath"><div class="aftermath-stage" style="${storyBackdrop(after.art)}"><span class="story-location">${after.name}</span></div><div id="aftermath-line">${dialogueCaption(after.beats[0]!.speaker,after.beats[0]!.line)}</div>${after.beats.length>1?'<button id="aftermath-next">다음 장면 →</button>':''}</div>`:''}<div class="result-character">${win?'승':'패'}</div><h2>${win?'판을 읽었다.':'아직, 끝이 아니다.'}</h2><p>${s.stage.subtitle} · ${s.turn}턴</p>${reward?.xp?`<p class="growth-summary">경험치 +${reward.xp} · ${growthText()}</p><p class="treasure-reward">보물: ${treasures.filter(t=>t.stage===s.stage.id).map(t=>t.name).join(' · ')}</p>`:''}${milestoneMarkup(growthMilestones(before,campaign))}<div class="seals">${session.sealNames.map((name,i)=>`<div class="${seals.includes(i+1)?'earned':''}"><b>◆</b><span>${name}</span></div>`).join('')}</div><p>${win?'전투 기록과 인장이 저장되었습니다.':esc(session.failure)}</p><div class="modal-actions"><button id="result-undo">↶ 마지막 수 무르기</button>${session.phaseCheckpoint!==null?'<button id="phase-restore">목표 전환 직전으로</button>':''}<button id="retry">다시 도전</button><button id="result-menu">연의 지도</button>${win&&campaignOrder.indexOf(session.chapter)<campaignOrder.length-1?'<button id="next-chapter" class="primary">다음 전장 →</button>':''}</div></div>`,false);
+    if(after){let k=0;$('#aftermath-next')?.addEventListener('click',e=>{k=(k+1)%after.beats.length;const b=after.beats[k]!;$('#aftermath-line').innerHTML=dialogueCaption(b.speaker,b.line);(e.currentTarget as HTMLButtonElement).textContent=k===after.beats.length-1?'↺ 처음 장면':'다음 장면 →';});}
     $('#result-undo').onclick=undo;$('#result-menu').onclick=showMenu;
     $('#phase-restore')?.addEventListener('click',()=>{if(session.restorePhase()){activate();persist();}});
     $('#retry').onclick=()=>{session=new Session(session.chapter,session.difficulty,215,session.preparation,session.revision,session.deployment?deployment(campaign,true):undefined);activate();persist();};
@@ -340,4 +342,6 @@ document.addEventListener('keydown',e=>{if($<HTMLDialogElement>('#modal').open||
 // Story and gallery art reads the cut sheets through CSS; a blob URL avoids encoding megapixels into a string.
 const atlasUrl=(canvas:HTMLCanvasElement)=>new Promise<string>(resolve=>canvas.toBlob(blob=>resolve(blob?URL.createObjectURL(blob):canvas.toDataURL())));
 async function boot(){try{await Promise.all([...[['officer-story','/officer-story-v1.png',2,4],['base','/units-v3.png',6,4],['extra','/units-extra-v1.png',4,4],['ram','/ram-v1.png',2,2],...troopSheets.map(s=>[s.id,s.url,s.rows,4])].map(async([name,url,rows,columns])=>{const atlas=await spriteAtlas(String(url),Number(rows),Number(columns));document.documentElement.style.setProperty('--'+name+'-atlas','url('+await atlasUrl(atlas)+')');}),field.init($('#map'))]);field.load(session.state);render();showMenu();}catch(error){$('#map').innerHTML='<p class="render-error">전장 그래픽을 초기화하지 못했습니다. 새로고침해 주세요.</p>';console.error(error);}}
+// ?dev only: a handle for QA scripts to inspect or nudge the running battle.
+if(devMode)Object.assign(window,{__sama:{get session(){return session;},render}});
 void boot();

@@ -107,3 +107,10 @@ describe('battle chatter',()=>{
   expect(dueLines(s.state.stage.id,s.state,new Set(first.map(l=>l.id)))).toEqual([]);
  });
 });
+import {storyAftermath} from '../src/story.ts';
+import {chapters} from '../src/session.ts';
+describe('aftermath scenes',()=>{
+ it('every playable main battle has a scene after victory, in Korean',()=>{
+  for(const c of chapters){const a=storyAftermath[c.stage.id];expect(a,c.stage.id).toBeDefined();expect(a!.beats.length).toBeGreaterThanOrEqual(2);for(const b of a!.beats)expect(b.line).not.toMatch(/[一-鿿]/);}
+ });
+});
