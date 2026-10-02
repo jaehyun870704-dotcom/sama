@@ -3,6 +3,7 @@ import {troopFacing,troopWalkPose,troopReaction,troopReactionPose,retreatMotion}
 import {troopRoles,visualClass,troopArt,troopSheets,basicReactionArt} from './troops.ts';
 import {spriteAtlas} from './sprite-atlas.ts';
 import {cryFor,reactions,isCrisis,type Emote} from './emotes.ts';
+import type {SoundEvent} from './sound-events.ts';
 import {navalAtlas,navalCrewRow,NAVAL_WATERLINE} from './naval-art.ts';
 import {structureKind,structureFrame} from './campaign-rules.ts';
 import { Application, Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
@@ -50,7 +51,9 @@ export class Battlefield {
   private statusSeen=new Map<string,Set<string>>();
   busy=false;
   playbackRate=1;
-  onCue:(kind:'move'|'attack'|'magic'|'breach'|'repair',actor?:Unit,target?:Unit)=>void=()=>{};
+  onSound:(e:SoundEvent)=>void=()=>{};
+  /** Stereo position of a tile on screen, −0.85 (left) … 0.85 (right). */
+  private panOf(at:Coord){const p=this.world.toGlobal({x:(at.x+.5)*W,y:0});return Math.max(-.85,Math.min(.85,p.x/Math.max(1,this.app.screen.width)*2-1));}
   onAnimationEnd:()=>void=()=>{};
   private observer:ResizeObserver|undefined;
   private zoom=1;
@@ -248,7 +251,8 @@ export class Battlefield {
       const actor=this.actors.get(e.unit);if(!actor)return;
       const mechanical=!!structureKind(e.unit)||['ram','catapult'].includes(actor.unit.unitClass)||e.unit.startsWith('convoy_');
       this.focusUnit(actor.unit.pos);const kind=structureKind(e.unit);this.burst(actor.unit.pos,kind==='gate'?'성문 돌파!':kind?'파괴':'퇴각',kind==='gate'?0xffd27a:0xd4c2a2);
-      if(kind){this.debris(actor.unit.pos,kind==='gate'?26:16);if(kind==='gate'){this.onCue('breach',actor.unit);this.emote(actor.unit.pos,reactions.breach!);}void this.shake(kind==='gate'?9:5,520,epoch);}
+      if(kind){this.debris(actor.unit.pos,kind==='gate'?26:16);if(kind==='gate'){this.onSound({kind:'breach',pan:this.panOf(actor.unit.pos)});this.emote(actor.unit.pos,reactions.breach!);}void this.shake(kind==='gate'?9:5,520,epoch);}
+      this.onSound({kind:'retreat',unitClass:actor.unit.unitClass,structure:!!kind&&kind!=='gate',pan:this.panOf(actor.unit.pos)});
       if(!kind)this.emote(actor.unit.pos,reactions.retreat!);
       if(this.hasReaction(actor.unit))actor.sprite.texture=this.unitTexture(actor.unit,10);
       await this.tween(720,epoch,p=>{const m=retreatMotion(p,mechanical);actor.sprite.rotation=m.rotation;actor.sprite.y=8+m.drop;actor.piece.alpha=m.alpha;});
@@ -261,7 +265,7 @@ export class Battlefield {
       if(epoch===this.animationEpoch){protector.sprite.texture=this.unitTexture(protector.unit,facing);protector.sprite.scale.x=scale;}return;
     }
     if(e.t==='move'){
-      const actor=this.actors.get(e.unit);if(!actor)return;this.onCue('move',actor.unit);const from=iso(e.from),to=iso(e.to);this.focusUnit(e.to);const facing=troopFacing(to.x-from.x,to.y-from.y);if(troopArt[actor.unit.unitClass]){this.facing.set(e.unit,facing.pose);actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*facing.flip;}else if(actor.unit.unitClass==='navy'&&to.x!==from.x)actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*(to.x<from.x?-1:1);
+      const actor=this.actors.get(e.unit);if(!actor)return;this.onSound({kind:'move',unitClass:actor.unit.unitClass,pan:this.panOf(e.from)});const from=iso(e.from),to=iso(e.to);this.focusUnit(e.to);const facing=troopFacing(to.x-from.x,to.y-from.y);if(troopArt[actor.unit.unitClass]){this.facing.set(e.unit,facing.pose);actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*facing.flip;}else if(actor.unit.unitClass==='navy'&&to.x!==from.x)actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*(to.x<from.x?-1:1);
       await this.tween(420,epoch,p=>{actor.piece.position.set(from.x+(to.x-from.x)*p,from.y+(to.y-from.y)*p);actor.sprite.y=8-Math.abs(Math.sin(p*Math.PI*4))*3;actor.sprite.rotation=Math.sin(p*Math.PI*4)*.025;if(troopArt[actor.unit.unitClass])actor.sprite.texture=this.unitTexture(actor.unit,troopWalkPose(facing.pose,p));else if(actor.unit.id.startsWith('convoy_'))actor.sprite.texture=this.unitTexture(actor.unit,1+Math.floor(p*6)%2);else if(actor.unit.unitClass==='navy'){actor.sprite.texture=this.unitTexture(actor.unit,1+Math.floor(p*6)%2);actor.sprite.y=8-Math.sin(p*Math.PI*3)*2;}});
       if(epoch===this.animationEpoch){actor.sprite.y=8;actor.sprite.rotation=0;actor.sprite.texture=this.unitTexture(actor.unit,this.facing.get(e.unit)??0);}return;
     }
@@ -278,6 +282,7 @@ export class Battlefield {
       return {victim,kind,scale:victim?.sprite.scale.x??1,tint:victim?.sprite.tint??0xffffff,texture:victim?.sprite.texture};
     });
     let hit=false;
+    this.onSound(e.t==='strategy'?{kind:'strategy-start',unitClass:actor.unit.unitClass,strategy:e.strategy,pan:this.panOf(actor.unit.pos)}:{kind:'attack-start',unitClass:actor.unit.unitClass,pan:this.panOf(actor.unit.pos)});
     this.emote(actor.unit.pos,e.t==='counter'?reactions.counter!:cryFor(actor.unit.unitClass,e.t==='strategy',e.t==='strategy'?e.strategy:''));
     await this.tween(e.t==='strategy'?950:760,epoch,p=>{
       const pose=troopArt[actor.unit.unitClass]?(p<.2||p>.9?0:e.t==='strategy'?3:2):(p<.22?1:p<.65?2:p<.92?3:0);actor.sprite.texture=this.unitTexture(actor.unit,pose);
@@ -294,7 +299,7 @@ export class Battlefield {
         if(p>=.6&&p<.94){const q=(p-.6)/.34;if(this.hasReaction(v.unit)){v.sprite.texture=this.unitTexture(v.unit,troopReactionPose(r.kind,q));v.sprite.scale.x=Math.abs(r.scale)*(actor.unit.pos.x<v.unit.pos.x?-1:1);}v.sprite.x=r.kind==='hurt'?Math.sin(q*Math.PI*3)*5:0;v.sprite.tint=r.kind==='hurt'?0xffd5b3:r.tint;}
         else if(p>=.94){v.sprite.x=0;v.sprite.scale.x=r.scale;v.sprite.tint=r.tint;if(r.texture)v.sprite.texture=r.texture;}
       }
-      if(p>=.6&&!hit){hit=true;if(e.t==='attack'&&e.critical&&e.hit)this.emote(target.pos,reactions.critical!,-26);if((e.t==='attack'||e.t==='counter')&&!e.hit)this.emote(target.pos,reactions.evade!);for(const r of reactions_)if(r.victim){if(r.kind==='guard')this.emote(r.victim.unit.pos,reactions.guard!);else{const dmg=e.t==='strategy'?(e.damage[e.targets.indexOf(r.victim.unit.id)]??0):e.damage;if(isCrisis(r.victim.unit.hp,r.victim.unit.stats.maxHp,dmg))this.emote(r.victim.unit.pos,reactions.crisis!,-24);}}this.onCue(e.t==='strategy'?(e.strategy==='repair'?'repair':'magic'):'attack',actor.unit,target);if(e.t!=='strategy'&&e.hit&&(structureKind(target.id)||['ram','catapult'].includes(actor.unit.unitClass))){this.debris(target.pos,actor.unit.unitClass==='ram'?18:10);if(actor.unit.unitClass==='ram'||actor.unit.unitClass==='catapult')void this.shake(actor.unit.unitClass==='ram'?7:4,300,epoch);}if(e.t==='strategy')e.targets.forEach((id,i)=>{const u=this.state?.find(id);if(u)this.burst(u.pos,(e.strategy==='heal'||e.damage.some(d=>d<0))?'+'+Math.abs(e.damage[i]??0):String(e.damage[i]??0),e.strategy==='fire'?0xffb071:0xb9efe4);});else this.burst(target.pos,e.hit?'−'+e.damage:'회피',0xffd0ab);}
+      if(p>=.6&&!hit){hit=true;if(e.t==='attack'&&e.critical&&e.hit)this.emote(target.pos,reactions.critical!,-26);if((e.t==='attack'||e.t==='counter')&&!e.hit)this.emote(target.pos,reactions.evade!);for(const r of reactions_)if(r.victim){if(r.kind==='guard')this.emote(r.victim.unit.pos,reactions.guard!);else{const dmg=e.t==='strategy'?(e.damage[e.targets.indexOf(r.victim.unit.id)]??0):e.damage;if(isCrisis(r.victim.unit.hp,r.victim.unit.stats.maxHp,dmg))this.emote(r.victim.unit.pos,reactions.crisis!,-24);}}if(e.t==='strategy')this.onSound({kind:e.strategy==='repair'?'repair':'strategy',strategy:e.strategy,unitClass:actor.unit.unitClass,pan:this.panOf(target.pos)});else this.onSound({kind:'impact',unitClass:actor.unit.unitClass,target:{id:target.id,unitClass:target.unitClass},hit:e.hit,critical:e.t==='attack'&&e.critical,guard:reactions_.some(r=>r.kind==='guard'),heavy:e.damage>=target.stats.maxHp*.3,structure:!!structureKind(target.id),pan:this.panOf(target.pos)});if(e.t!=='strategy'&&e.hit&&(structureKind(target.id)||['ram','catapult'].includes(actor.unit.unitClass))){this.debris(target.pos,actor.unit.unitClass==='ram'?18:10);if(actor.unit.unitClass==='ram'||actor.unit.unitClass==='catapult')void this.shake(actor.unit.unitClass==='ram'?7:4,300,epoch);}if(e.t==='strategy')e.targets.forEach((id,i)=>{const u=this.state?.find(id);if(u)this.burst(u.pos,(e.strategy==='heal'||e.damage.some(d=>d<0))?'+'+Math.abs(e.damage[i]??0):String(e.damage[i]??0),e.strategy==='fire'?0xffb071:0xb9efe4);});else this.burst(target.pos,e.hit?'−'+e.damage:'회피',0xffd0ab);}
     });
     if(epoch!==this.animationEpoch)return;
     fx.destroy();actor.sprite.x=0;actor.sprite.y=8;actor.sprite.texture=this.unitTexture(actor.unit);
