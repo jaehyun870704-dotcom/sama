@@ -127,3 +127,4 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
 .coach{position:absolute;left:16px;top:64px;z-index:5;max-width:min(360px,calc(100% - 32px));display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:#14201ef2;border:1px solid #d8be86;box-shadow:0 4px 16px #0008;color:#f1e6c8;font-size:13px;line-height:1.6}.coach p{margin:0;flex:1}.coach button{min-height:32px;padding:0 10px;font-size:12px;background:transparent;color:#d8be86;border:1px solid #d8be8666}
 .coach[hidden]{display:none}
 @media(max-width:580px){.coach{top:132px;font-size:12px}}
+.slot-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid #77705444}.slot-row strong{display:block;color:#e9d9af}.slot-row small{color:#b8ae92}.slot-actions{display:flex;flex-wrap:wrap;gap:6px}.slot-actions button{min-height:38px;font-size:12px}

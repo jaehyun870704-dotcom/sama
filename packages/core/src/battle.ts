@@ -238,6 +238,11 @@ export class Battle {
     return ok;
   }
 
+  /** Would `defender` strike back if `attacker` hit it from where it stands now? For previews. */
+  wouldCounter(defender: Unit, attacker: Unit): boolean {
+    return this.canCounter(defender, attacker, manhattan(attacker.pos, defender.pos));
+  }
+
   private canCounter(defender: Unit, attacker: Unit, dist: number): boolean {
     if (defender.unitClass === 'civilian') return false;
     const [minR, maxR] = defender.range;

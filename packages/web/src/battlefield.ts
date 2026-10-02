@@ -83,14 +83,34 @@ export class Battlefield {
     this.app.canvas.tabIndex=0;
     this.app.stage.addChild(this.world);this.world.addChild(this.ground,this.rubble,this.ranges,this.pieces,this.cursor,this.effects);
     const canvas=this.app.canvas;
-    canvas.addEventListener('pointerdown',e=>{this.drag={x:e.clientX,y:e.clientY,px:this.pan.x,py:this.pan.y};this.dragged=false;canvas.setPointerCapture(e.pointerId);});
-    canvas.addEventListener('pointermove',e=>{
-      if(this.drag){const dx=e.clientX-this.drag.x,dy=e.clientY-this.drag.y;if(Math.hypot(dx,dy)>5)this.dragged=true;if(this.dragged){this.pan={x:this.drag.px+dx,y:this.drag.py+dy};this.fit();return;}}
-      const r=canvas.getBoundingClientRect();this.setHover(this.fromPoint(e.clientX-r.left,e.clientY-r.top));
+    // Touch: one finger drags, two fingers pinch-zoom around their midpoint, and a
+    // long press shows the tile under the finger the way hovering does with a mouse.
+    const fingers=new Map<number,{x:number;y:number}>();let pinch:{dist:number;zoom:number}|undefined,hold:ReturnType<typeof setTimeout>|undefined,held=false;
+    const local=(e:{clientX:number;clientY:number})=>{const r=canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};};
+    const spread=()=>{const [a,b]=[...fingers.values()];return {dist:Math.hypot(a!.x-b!.x,a!.y-b!.y),mid:{x:(a!.x+b!.x)/2,y:(a!.y+b!.y)/2}};};
+    canvas.addEventListener('pointerdown',e=>{
+      fingers.set(e.pointerId,local(e));canvas.setPointerCapture(e.pointerId);clearTimeout(hold);held=false;
+      if(fingers.size===2){pinch={dist:spread().dist,zoom:this.zoom};this.drag=undefined;this.dragged=true;return;}
+      this.drag={x:e.clientX,y:e.clientY,px:this.pan.x,py:this.pan.y};this.dragged=false;
+      if(e.pointerType==='touch'){const at=local(e);hold=setTimeout(()=>{if(!this.dragged&&fingers.size===1){held=true;this.setHover(this.fromPoint(at.x,at.y));}},450);}
     });
-    canvas.addEventListener('pointerup',e=>{if(!this.dragged){const r=canvas.getBoundingClientRect();const c=this.fromPoint(e.clientX-r.left,e.clientY-r.top);if(c)this.onCell(c);}this.drag=undefined;});
-    canvas.addEventListener('pointercancel',()=>{this.drag=undefined;});
-    canvas.addEventListener('pointerleave',()=>{if(!this.drag)this.setHover(undefined);});
+    canvas.addEventListener('pointermove',e=>{
+      if(fingers.has(e.pointerId))fingers.set(e.pointerId,local(e));
+      if(pinch&&fingers.size===2){const {dist,mid}=spread();if(pinch.dist>0)this.zoomAt(pinch.zoom*dist/pinch.dist,mid,false);return;}
+      if(this.drag){const dx=e.clientX-this.drag.x,dy=e.clientY-this.drag.y;if(Math.hypot(dx,dy)>5){this.dragged=true;clearTimeout(hold);}if(this.dragged){this.pan={x:this.drag.px+dx,y:this.drag.py+dy};this.fit();return;}}
+      if(e.pointerType!=='touch'){const at=local(e);this.setHover(this.fromPoint(at.x,at.y));}
+    });
+    const release=(e:PointerEvent,cancel:boolean)=>{
+      const was=fingers.size;fingers.delete(e.pointerId);clearTimeout(hold);
+      if(pinch){if(fingers.size<2){const s=spread0();this.zoomAt(this.zoom,s,true);pinch=undefined;}this.drag=undefined;return;}
+      if(!cancel&&was===1&&!this.dragged&&!held){const at=local(e),c=this.fromPoint(at.x,at.y);if(c)this.onCell(c);}
+      this.drag=undefined;
+    };
+    // After a pinch the zoom settles on the nearest crisp step around the screen centre.
+    const spread0=()=>({x:this.app.screen.width/2,y:this.app.screen.height/2});
+    canvas.addEventListener('pointerup',e=>release(e,false));
+    canvas.addEventListener('pointercancel',e=>release(e,true));
+    canvas.addEventListener('pointerleave',e=>{if(!this.drag&&e.pointerType!=='touch')this.setHover(undefined);});
     canvas.addEventListener('wheel',e=>{e.preventDefault();this.setZoom(this.zoom*(e.deltaY>0?.9:1.1));},{passive:false});
     canvas.addEventListener('keydown',e=>{
       const moves:Record<string,Coord>={ArrowRight:{x:1,y:0},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowUp:{x:0,y:-1}};
@@ -128,6 +148,13 @@ export class Battlefield {
     this.zoom=crispZoom(Math.max(.22,Math.min(1.8,z)),this.app.renderer.resolution,Math.sign(z-this.zoom));this.fit();this.focus({x:center.x/W-.5,y:center.y/H-.5});
   }
   zoomBy(d:number){this.setZoom(this.zoom+d);}
+  /** Zoom keeping the world point under `at` (screen space) fixed; snap only when the gesture ends. */
+  zoomAt(z:number,at:{x:number;y:number},snap:boolean){
+    if(!this.state)return;this.overview=false;
+    const before=this.world.toLocal(at),clamped=Math.max(.22,Math.min(1.8,z));
+    this.zoom=snap?crispZoom(clamped,this.app.renderer.resolution):clamped;this.fit();
+    const now=this.world.toGlobal(before);this.pan={x:this.pan.x+at.x-now.x,y:this.pan.y+at.y-now.y};this.fit();
+  }
   reset(){if(!this.state)return;this.overview=true;this.zoom=crispZoom(Math.min((this.app.screen.width-40)/(this.state.map.width*W),(this.app.screen.height-70)/(this.state.map.height*H)),this.app.renderer.resolution,-1);this.pan={x:0,y:0};this.fit();}
   focusUnit(at:Coord){this.overview=false;this.zoom=Math.max(this.zoom,crispZoom(this.app.screen.width<500?.85:1,this.app.renderer.resolution));this.focus(at);}
   focus(at:Coord){

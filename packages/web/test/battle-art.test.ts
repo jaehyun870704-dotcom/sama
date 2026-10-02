@@ -66,3 +66,19 @@ describe('first battle coach',()=>{
   expect(coachStep(2,true,[u('a')],'a')).toBeUndefined();expect(coachStep(1,false,[u('a')],'a')).toBeUndefined();
  });
 });
+import {parseSettings,DEFAULT_SETTINGS} from '../src/settings.ts';
+describe('saved settings',()=>{
+ it('restores volumes, mute and speed and repairs bad values',()=>{
+  expect(parseSettings(null)).toEqual(DEFAULT_SETTINGS);expect(parseSettings('{oops')).toEqual(DEFAULT_SETTINGS);
+  expect(parseSettings(JSON.stringify({music:.1,effects:2,sound:false,speed:3}))).toEqual({music:.1,effects:1,sound:false,speed:3});
+  expect(parseSettings(JSON.stringify({speed:7,music:'x'})).speed).toBe(1);
+ });
+});
+import {readSlot,slotLabel} from '../src/save-slots.ts';
+describe('save slots',()=>{
+ it('labels filled slots and ignores broken ones',()=>{
+  const r={meta:{title:'장강 퇴각전',turn:4,difficulty:'extreme',at:0},save:{version:2}};
+  expect(slotLabel(readSlot(JSON.stringify(r)),5*60000)).toBe('장강 퇴각전 · 4턴 · 극한 · 5분 전');
+  expect(readSlot('{bad')).toBeUndefined();expect(readSlot(JSON.stringify({meta:{}}))).toBeUndefined();expect(slotLabel(undefined)).toBe('비어 있음');
+ });
+});
