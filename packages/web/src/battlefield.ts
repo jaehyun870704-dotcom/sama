@@ -187,6 +187,12 @@ export class Battlefield {
     this.terrainTextures.forEach((texture,i)=>texture.destroy(i===0));this.terrainTextures=[];
     this.paintTerrain();this.zoom=crispZoom(this.app.screen.width<500?.78:1,this.app.renderer.resolution);this.focus(state.living('player')[0]?.pos??{x:0,y:0});
   }
+  /** A bridge was built or the river rose: repaint the ground from the changed map. */
+  repaintTerrain(){
+    if(!this.state)return;clear(this.ground);
+    this.terrainTextures.forEach((texture,i)=>texture.destroy(i===0));this.terrainTextures=[];
+    this.paintTerrain();this.fit();
+  }
   private paintTerrain(){
     const result=terrainLayer(this.state!,this.scenery!);this.ground.addChild(result.layer);this.terrainTextures=[result.texture,...result.frames];
     const m=this.state!.map;const labels=this.state!.stage.id==='S1-07'?[{at:m.regions.get('enemy_camp')?.[0],text:'전초 수비 진지'},{at:m.regions.get('forest_route')?.[0],text:'보병 숲길'},{at:m.regions.get('main_route')?.[0],text:'기병 큰길'}]:this.state!.stage.id==='S1-05'?[{at:m.regions.get('escort_goal')?.[0],text:'동쪽 교량 출구'},{at:m.regions.get('south_exit')?.[0],text:'남쪽 강변 출구'}]:this.state!.stage.id==='S1-03'?[{at:m.regions.get('east_pass')?.[0],text:'동쪽 고개'},{at:m.regions.get('ravine_exit')?.[0],text:'남쪽 계곡'}]:[{at:m.regions.get('objective')?.[0],text:this.state!.stage.id==='S1-06'?'관문 돌파 구역':this.state!.stage.id==='S1-04'?'황제에게 접근':this.state!.stage.id==='S1-02'?'남문':this.state!.stage.id==='S1-01'?'창고':'중앙 성채'}];

@@ -29,7 +29,8 @@ export type TerrainKind =
 export type HazardKind = "fire" | "trap" | "lightning" | "none";
 
 export interface Tile {
-  readonly terrain: TerrainKind;
+  /** Mutable only through the terrain_change action (bridges built, rivers flooding). */
+  terrain: TerrainKind;
   /** 고도. 공격 시 고저차 보정에 사용. */
   readonly height: number;
   hazard: HazardKind;

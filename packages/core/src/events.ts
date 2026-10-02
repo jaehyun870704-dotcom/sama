@@ -273,11 +273,14 @@ export function applyAction(state: BattleState, action: Action): void {
       if (!action.region) break;
       for (const c of state.map.regionCoords(action.region)) {
         const tile = state.map.tileAt(c);
+        // M-08 CONSTRUCT / flooding: the ground itself changes (a bridge over water, water over a field).
+        if (action.terrain) tile.terrain = action.terrain;
         if (action.hazard) {
           tile.hazard = action.hazard;
           tile.hazardTurns = action.duration ?? 3;
         }
       }
+      if (action.terrain) state.push({ t: "terrain", region: action.region, terrain: action.terrain });
       break;
     }
 

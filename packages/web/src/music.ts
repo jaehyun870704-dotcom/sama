@@ -24,7 +24,7 @@ export const placeThemes:Record<Place,PlaceTheme>={
   court:   {name:'흉몽의 궁정',root:58,mode:JUE,tempo:.62,lead:'bell',counter:'erhu',pulse:'temple',pad:'drone',phrase:[0,1,3,2,0,-1,-2,0,1,2,4,3,1,0,-1,0]},
   field:   {name:'들판의 결전',root:62,mode:YU,tempo:.4,lead:'erhu',counter:'zheng',pulse:'march',pad:'drone',phrase:[0,2,3,4,2,3,1,0,2,4,5,6,4,3,2,0]},
 };
-const stagePlaces:Record<string,Place>={'S1-01':'estate','S1-02':'city','S1-03':'mountain','S1-04':'court','S1-05':'river','S1-06':'fortress','S1-07':'forest','S1-08':'fortress'};
+const stagePlaces:Record<string,Place>={'S1-01':'estate','S1-02':'city','S1-03':'mountain','S1-04':'court','S1-05':'river','S1-06':'fortress','S1-07':'forest','S1-08':'fortress','S1-09':'river'};
 const landscapePlaces={field:'field',forest:'forest',river:'river',pass:'mountain',court:'court',fort:'fortress',naval:'naval'} as const;
 
 /** Stage first, then the expedition landscape, then what the map is made of. */
@@ -67,7 +67,7 @@ export function midiToHz(m:number){return 440*2**((m-69)/12);}
 export function degree(theme:PlaceTheme,step:number){const n=theme.mode.length,oct=Math.floor(step/n),i=((step%n)+n)%n;return theme.root+oct*12+theme.mode[i]!;}
 
 /** Named enemy commanders whose approach turns the battle music toward a duel. */
-export const BOSSES=new Set(['ma_chao','lu_bu','xu_chu','yang_ang','zhang_lu','chen_gong','zhou_yu']);
+export const BOSSES=new Set(['ma_chao','lu_bu','xu_chu','yang_ang','zhang_lu','chen_gong','zhou_yu','huang_zhong','zhao_yun']);
 export function bossNear(units:{id:string;side:string;alive:boolean;pos:{x:number;y:number}}[],range=5){
   const players=units.filter(u=>u.alive&&u.side==='player');
   return units.some(b=>b.alive&&b.side==='enemy'&&BOSSES.has(b.id)&&players.some(p=>Math.abs(p.pos.x-b.pos.x)+Math.abs(p.pos.y-b.pos.y)<=range));

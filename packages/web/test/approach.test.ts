@@ -62,7 +62,7 @@ describe('한중 정벌전 上 · 산길의 수비망',()=>{
     for(const p of st.map.regionCoords('forest_route'))expect(seen.has(key(p))).toBe(true);
     expect([st.map.width,st.map.height]).toEqual([26,20]);
     expect(chapters.slice(0,7).map(c=>c.stage.id)).toEqual(['S1-02','S1-08','S1-01','S1-03','S1-04','S1-05','S1-06']);
-    expect(campaignOrder.slice(-3)).toEqual([6,7,1]);
+    expect(campaignOrder.slice(5,8)).toEqual([6,7,1]);
   });
   it('awards the new armor once and carries it into the next battle',()=>{
     const c=freshCampaign(),reward=award(c,'S1-07','normal',['sima_yi','cao_zhen'],[1]);

@@ -527,3 +527,24 @@ describe("지형 기믹", () => {
     expect(flatMap(3, 3, "plank").evasionBonus(at)).toBe(-10);
   });
 });
+
+describe("terrain_change", () => {
+  it("builds a bridge over water once the bank is held, and logs it", () => {
+    const regions = new Map<string, Coord[]>([["bank", [{ x: 2, y: 2 }]], ["span", [{ x: 3, y: 2 }]], ["objective", [{ x: 6, y: 6 }]]]);
+    const stage = minimalStage({
+      events: [{ id: "bridge", trigger: { type: "region_held", region: "bank", by: "player", n: 2 }, actions: [{ type: "terrain_change", region: "span", terrain: "bridge" }] }],
+    });
+    const map = mapWithWalls(8, 8, [], regions);
+    (map.tileAt({ x: 3, y: 2 }) as { terrain: string }).terrain = "water";
+    const state = new BattleState(stage, map, 1);
+    state.add(makeUnit({ id: "eng", side: "player", unitClass: "engineer", level: 20, pos: { x: 2, y: 2 } }));
+    state.add(sentinel({ x: 7, y: 0 }));
+    const battle = new Battle(state, { seed: 1 });
+    battle.start();
+    expect(Number.isFinite(map.moveCost("infantry", { x: 3, y: 2 }))).toBe(false);
+    for (let i = 0; i < 4; i++) battle.endPhase();
+    expect(map.tileAt({ x: 3, y: 2 }).terrain).toBe("bridge");
+    expect(Number.isFinite(map.moveCost("infantry", { x: 3, y: 2 }))).toBe(true);
+    expect(state.log.some((e) => e.t === "terrain" && e.region === "span")).toBe(true);
+  });
+});
