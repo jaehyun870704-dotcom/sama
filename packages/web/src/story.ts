@@ -8,6 +8,7 @@ export function storyBackdrop(index:number){
 }
 /** Atlas cell + narrative location per beat, independent of saved chapter indexes. */
 export const storyLocations:Record<string,Array<{art:number;name:string;companion:string;actor?:number}>>={
+  'S2-02':[{art:14,name:'수춘 · 동정의 군막',companion:'조진'},{art:7,name:'동구 · 폭풍 전야의 강',companion:'조진'},{art:15,name:'동구 · 북쪽 강둑',companion:'조진'}],
   'S1-07':[
     {art:14,name:'출정 전 · 조비의 군막',companion:'조비',actor:0},
     {art:6,name:'본영 · 출정의 아침',companion:'조비',actor:0},
@@ -29,6 +30,11 @@ export const storyLocations:Record<string,Array<{art:number;name:string;companio
   'S1-09':[{art:14,name:'한중 · 철수 군의',companion:'조진'},{art:15,name:'한수 · 불탄 부교터',companion:'조진'},{art:7,name:'한수 · 강변 정찰',companion:'조진'}],
 };
 export const storyBeats:Record<string,StoryBeat[]>={
+  'S2-02':[
+    {speaker:'조진',line:'폐하께서 친히 강동을 치러 나서셨네. 동구의 함대가 강을 건너려는데 하늘이 심상치 않아.',pose:'enter',actor:3},
+    {speaker:'사마의',line:'폭풍이 옵니다. 번개는 같은 자리를 두 번 치지 않지만, 칠 자리는 미리 하늘이 알려 줍니다. 그 칸에 서 있지만 않으면 됩니다.',pose:'speak',actor:4},
+    {speaker:'조진',line:'함선은 잃어도 폐하는 잃을 수 없네. 북서쪽 길로 모시세.',pose:'resolve',actor:3},
+  ],
   'S1-07':[
     {speaker:'조비',line:'아버지께서는 한중으로 향하신다. 사람들은 공을 세우라 하지만, 나는 내 곁에 남을 사람이 누구인지 먼저 알고 싶다.',pose:'enter',actor:0},
     {speaker:'사마의',line:'마음을 말로 칠할 수는 없습니다. 맡기신 병사들을 돌려보내는 것으로 제 뜻을 보이겠습니다.',pose:'speak',actor:4},
@@ -112,10 +118,14 @@ export const stories=[
   ['범람','한수 진영의 밤, 백마의 장수가 진영을 가른다. 조운의 창은 막을 수 없고, 쏟아지는 비에 강물은 둑을 넘는다. 들판이 물에 잠기기 전에 그의 사방을 막고, 조조를 북쪽 고개로 모셔야 한다.'],
   ['혀에 걸린 사활','관우가 번성을 물에 잠기게 했다. 조정은 흔들리고, 사마의는 건업의 손권 조정에 사신으로 든다. 적벽을 기억하는 장소, 형주를 노리는 여몽, 유비와의 신의를 따지는 제갈근, 그리고 모욕을 삼킨 손권. 칼 대신 말로 강을 건너야 한다.'],
   ['되돌아오는 화살','220년, 조조가 죽고 조비가 한의 제위를 넘겨받았다. 새 왕조가 서던 해, 양주의 호족들이 무위에서 들고일어난다. 반란군 속에는 책략의 힘을 되돌리는 무당이 섞여 있다. 강하게 치는 것만이 답이 아니다.'],
+  ['하늘의 칼','222년, 황제 조비가 강동 원정에 나섰다. 동구에 모인 위의 함대 위로 폭풍이 몰려온다. 번개가 떨어질 자리는 하늘이 먼저 알려 준다. 오군 상륙대가 퇴로를 막기 전에 황제를 북서쪽으로 모셔야 한다.'],
 ];
 
 /** After a main-battle victory: where the story picks up, and what changed. */
 export const storyAftermath:Record<string,{art:number;name:string;beats:Array<{speaker:string;line:string}>}>={
+  'S2-02':{art:15,name:'동구 · 폭풍이 지난 강둑',beats:[
+    {speaker:'조진',line:'폐하께서 무사히 물러나셨네. 함선 몇 척은 남쪽 기슭으로 떠밀려 갔지만.'},
+    {speaker:'사마의',line:'폐하께서는 다시 강을 건너려 하실 겁니다. 다음에는 제가 곁에 없을 수도 있습니다. 조 장군께 맡기겠습니다.'}]},
   'S1-01':{art:0,name:'하내 · 불길이 지난 뜰',beats:[
     {speaker:'사마방',line:'의야, 오늘 너는 칼보다 눈으로 싸웠다. 그것을 잊지 마라.'},
     {speaker:'사마의',line:'창고는 지켰지만 황건의 불길은 낙양까지 번질 것입니다. 가문을 옮길 준비를 해야 합니다.'}]},

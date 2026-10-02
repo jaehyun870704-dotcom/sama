@@ -13,3 +13,12 @@ describe('중편 · 무위 반란 진압전',()=>{
   expect(s.sealNames[0]).toBe('반란 진압');
  });
 });
+describe('중편 · 동구 전투',()=>{
+ it('launches the granted ships on the river, not the bank',()=>{
+  const s=open('S2-02'),ships=s.state.living('ally').filter(u=>u.unitClass==='navy');
+  expect(ships).toHaveLength(2);for(const b of ships)expect(s.state.map.tileAt(b.pos).terrain).toBe('water');
+ });
+ it('warns of the first lightning on turn one so it can be dodged',()=>{
+  const s=open('S2-02');expect(s.state.telegraphs).toHaveLength(1);expect(s.state.telegraphs[0]!.at).toBe(2);expect(s.state.telegraphs[0]!.label).toBe('낙뢰');
+ });
+});

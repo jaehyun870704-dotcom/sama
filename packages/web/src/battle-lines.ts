@@ -15,6 +15,13 @@ export type LineWhen=
 export interface BattleLine {id:string;when:LineWhen;speaker:string;text:string}
 
 export const battleLines:Record<string,BattleLine[]>={
+  'S2-02':[
+    {id:'open-1',when:{turn:1},speaker:'사마의',text:'붉게 표시된 칸에 번개가 떨어집니다. 다음 턴 전에 비우십시오.'},
+    {id:'open-2',when:{turn:1},speaker:'조진',text:'폐하는 북서쪽 출구로! 함선은 강 위에서 적선을 막아라.'},
+    {id:'landing',when:{turn:3},speaker:'여범',text:'위의 황제가 도망친다! 상륙대는 북쪽 길목을 막아라!'},
+    {id:'block',when:{turn:4},speaker:'사마의',text:'상륙대가 출구를 막았습니다. 폐하보다 한 걸음 앞서 길을 여십시오.'},
+    {id:'lu-fan',when:{retreat:'lu_fan'},speaker:'조진',text:'여범의 기함이 물러났다! 강 위가 조용해졌다.'},
+  ],
   'S1-01':[
     {id:'open-1',when:{turn:1},speaker:'사마방',text:'창고를 내주면 마을이 굶는다. 랑아, 의를 잘 지켜라.'},
     {id:'open-2',when:{turn:1},speaker:'사마의',text:'아버님, 습격대는 세 갈래입니다. 가까운 무리부터 끊으면 나머지는 머뭇거릴 겁니다.'},

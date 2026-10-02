@@ -35,8 +35,14 @@ export function assemble(opts: AssembleOptions): BattleState {
   const state = new BattleState(stage, map, seed, difficulty);
   const occupied = new Set<string>();
 
-  const place = (region: string): Coord => {
-    const coords = map.regionCoords(region);
+  // A class-specific start (e.g. "navy_start" for boats) wins over the shared one.
+  const place = (region: string, unitClass?: UnitClass): Coord => {
+    // Only maps that define a class start use it; other maps keep their exact placement
+    // so old saves replay unchanged.
+    const own = unitClass ? map.regions.get(`${unitClass}_start`) ?? [] : [];
+    const coords = own.length
+      ? [...own, ...map.regionCoords(region)].filter((c) => Number.isFinite(map.moveCost(unitClass!, c)))
+      : map.regionCoords(region);
     for (const c of coords) {
       if (!occupied.has(key(c))) {
         occupied.add(key(c));
@@ -69,7 +75,7 @@ export function assemble(opts: AssembleOptions): BattleState {
           side: "ally",
           unitClass: g.type,
           level: (g.level ?? 1) + levelShift,
-          pos: place("player_start"),
+          pos: place("player_start", g.type),
           traits: g.traits ?? [],
           canUseItems: false,
         }),
