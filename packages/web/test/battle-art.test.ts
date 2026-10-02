@@ -89,3 +89,12 @@ describe('portraits without painted art',()=>{
   expect(officerPortrait('사마의')).toContain('data-officer="sima_yi"');expect(officerPortrait('꿈속의 목소리')).toContain('夢');
  });
 });
+import {raceGap} from '../src/campaign-rules.ts';
+import {Session} from '../src/session.ts';
+import {freshCampaign,deployment} from '../src/progression.ts';
+describe('S1-08 race readout',()=>{
+ it('reports how far the competing ally and Sima Yi are from the fort',()=>{
+  const s=new Session(1,'normal',215,'survival',4,deployment(freshCampaign(),true)),g=raceGap(s.state)!;
+  expect(g.ally).toBeGreaterThan(0);expect(g.hero).toBeGreaterThan(0);
+ });
+});
