@@ -156,18 +156,18 @@ export class Soundscape {
     if(!this.ctx||!this.enabled||!this.effects)return;const t=this.ctx.currentTime,fx=this.effects,family=classFamily(cls);
     if(kind==='select'){const m=family?familyMotifs[family]:undefined;if(!m){this.pluck(660,t,.12,fx,.3,5000);return;}m.notes.slice(0,3).forEach((n,i)=>this.voice(m.lead,midiToHz(74+n),t+i*.07,.35,.09,fx));return;}
     if(kind==='move'){
-      if(family==='horse')for(let i=0;i<6;i++)this.block(t+i*.07+(i%2)*.025,.07,520+(i%3)*60,fx);
-      else if(family==='boat'){this.noiseBurst(t,.5,.12,'lowpass',600,1,fx,1800);this.noiseBurst(t+.25,.35,.08,'bandpass',900,2,fx);}
+      if(family==='horse')for(let i=0;i<6;i++)this.block(t+i*.07+(i%2)*.025,.16,520+(i%3)*60,fx);
+      else if(family==='boat'){this.noiseBurst(t,.5,.3,'lowpass',600,1,fx,1800);this.noiseBurst(t+.25,.35,.2,'bandpass',900,2,fx);}
       else if(family==='siege'){const o=this.osc('sawtooth',58,t,.6),lp=this.ctx.createBiquadFilter(),g=this.env(t,.05,.6,.08);lp.type='lowpass';lp.frequency.value=260;o.frequency.linearRampToValueAtTime(72,t+.3);o.frequency.linearRampToValueAtTime(55,t+.6);o.connect(lp);lp.connect(g);this.out(g,fx);this.drum(t+.1,true,.12,fx);}
       else if(family==='sage')this.noiseBurst(t,.35,.05,'highpass',3000,1,fx);
-      else for(let i=0;i<3;i++)this.noiseBurst(t+i*.13,.07,.09,'lowpass',420,1,fx);
+      else for(let i=0;i<3;i++){this.noiseBurst(t+i*.13,.08,.35,'lowpass',700,1,fx);this.drum(t+i*.13,false,.05,fx);}
       return;
     }
     if(kind==='attack'){
       const structure=!!target&&/^(gate|tower|barricade)_/.test(target.id);
       if(cls==='ram'){this.drum(t,true,.45,fx);this.noiseBurst(t,.5,.22,'lowpass',500,1,fx,120);this.crack(t+.05,fx);}
       else if(cls==='catapult'){this.noiseBurst(t,.4,.12,'bandpass',300,1,fx,1600);this.drum(t+.05,true,.4,fx);this.noiseBurst(t+.05,.8,.16,'lowpass',400,1,fx,90);}
-      else if(family==='bow'){this.noiseBurst(t,.18,.12,'bandpass',2600,3,fx,700);this.block(t+.17,.08,300,fx);}
+      else if(family==='bow'){this.noiseBurst(t,.2,.35,'bandpass',2600,2,fx,700);this.block(t+.19,.18,300,fx);}
       else if(family==='boat'){this.noiseBurst(t,.4,.14,'lowpass',900,1,fx,300);this.clash(t+.12,fx);}
       else this.clash(t,fx);
       if(structure)this.crack(t+.08,fx);
