@@ -1,6 +1,7 @@
 import {placeThemes,familyMotifs,classFamily,midiToHz,degree,type Place,type Lead,type Family} from './music.ts';
 import {renderVariants,zhengNote,SR} from './sound-bank.ts';
 import {soundsFor,type SoundEvent,type SoundShot} from './sound-events.ts';
+import {SAMPLE_GROUPS,SAMPLE_LAYERS} from './sound-samples.ts';
 import type {Unit} from '../../core/src/index.ts';
 
 export type Cue='select'|'move'|'attack'|'magic'|'turn'|'victory'|'defeat'|'breach'|'repair';
@@ -8,9 +9,10 @@ export type {SoundEvent} from './sound-events.ts';
 /** Pre-rendered recipes in rough order of first use, warmed in the background. */
 const WARM=['ui-click','ui-open','page','swing','clash','armor-hit','evade','guard','march','gallop','bow-release','arrow-hit','shout','pain','death','war-drum','enemy-drum','horn','taiko','taiko-small','woodblock','cast','fire','wind','water','thunder','earth','confuse','heal','buff','stab','heavy-hit','neigh','crossbow-release','arrow-volley','robe','oars','wheels','catapult-launch','boulder-hit','ram-hit','repair','crumble','gong','temple-bell','battle-cry','cheer','fanfare','lament'];
 
-/** Soundtrack and effects. Effects are synthesized offline (sound-bank.ts) into
- * several takes each, then played with small pitch/gain changes, stereo position
- * from the battlefield and a shared generated-hall reverb. No recordings. */
+/** Soundtrack and effects. Recorded CC0 samples (public/sfx, sound-samples.ts) are
+ * layered where a close recording exists; everything else is synthesized offline
+ * (sound-bank.ts). Every play varies take, pitch and gain, follows the unit's
+ * screen position and shares a generated-hall reverb. */
 export class Soundscape {
   private ctx:AudioContext|undefined;
   private master:GainNode|undefined;
@@ -21,6 +23,10 @@ export class Soundscape {
   private timer:ReturnType<typeof setInterval>|undefined;
   private bank=new Map<string,AudioBuffer[]>();
   private notes=new Map<number,AudioBuffer>();
+  private samples=new Map<string,AudioBuffer[]>();
+  private lastTake=new Map<string,number>();
+  /** Base URL for recorded samples; tests and offline renders can point elsewhere. */
+  sampleBase='/sfx/';
   private active=0;
   private beat=0;
   private next=0;
@@ -41,7 +47,7 @@ export class Soundscape {
         this.effects=ctx.createGain();this.effects.connect(comp);
         const conv=ctx.createConvolver();conv.buffer=this.hall(ctx,2.6);this.reverb=ctx.createGain();this.reverb.gain.value=.5;this.reverb.connect(conv);conv.connect(comp);
         this.next=ctx.currentTime+.1;this.timer=setInterval(()=>this.schedule(),100);
-        this.warm(0);
+        this.warm(0);void this.loadSamples();
       }
       this.update();if(this.enabled)await this.ctx.resume();
     }catch{this.enabled=false;}
@@ -62,6 +68,14 @@ export class Soundscape {
       for(const [at,g] of [[.011,.6],[.019,.45],[.029,.35],[.043,.25]] as const){const i=Math.floor(at*(ch?1.13:1)*ctx.sampleRate);d[i]=d[i]!+g;}}
     return ir;
   }
+  /** Fetch and decode the recorded groups in the background; synthesis covers the gap. */
+  async loadSamples(){
+    const ctx=this.ctx;if(!ctx)return;
+    await Promise.all(Object.entries(SAMPLE_GROUPS).map(async([group,{files}])=>{
+      try{const takes=await Promise.all(files.map(async f=>ctx.decodeAudioData(await (await fetch(this.sampleBase+f)).arrayBuffer())));this.samples.set(group,takes);}catch{/* keep the synthesized fallback */}
+    }));
+  }
+  private take(group:string){const takes=this.samples.get(group)!;let k=Math.floor(Math.random()*takes.length);if(takes.length>1&&k===this.lastTake.get(group))k=(k+1)%takes.length;this.lastTake.set(group,k);return takes[k]!;}
   /** Render the next recipe in the warm list without blocking a frame for long. */
   private warm(i:number){if(i>=WARM.length)return;setTimeout(()=>{this.load(WARM[i]!);this.warm(i+1);},i<6?0:25);}
   private load(name:string){
@@ -75,11 +89,24 @@ export class Soundscape {
   /** Play one take of a recipe. Takes rotate so the same take never repeats twice in a row. */
   play(name:string,opt:{at?:number;gain?:number;rate?:number;pan?:number;wet?:number;bus?:'effects'|'music';priority?:number}={}){
     const ctx=this.ctx;if(!ctx||!this.enabled)return;
+    const layers=SAMPLE_LAYERS[name];
+    if(layers&&layers.every(l=>l.synth||this.samples.has(l.group!))){
+      const at=opt.at??ctx.currentTime;
+      for(const l of layers){const o={...opt,at:at+(l.delay??0),gain:(opt.gain??1)*(l.gain??1),rate:(opt.rate??1)*(l.rate??1)};if(l.synth)this.synth(name,o);else this.voiceBuffer(this.take(l.group!),o);}
+      return;
+    }
+    this.synth(name,opt);
+  }
+  private synth(name:string,opt:{at?:number;gain?:number;rate?:number;pan?:number;wet?:number;bus?:'effects'|'music';priority?:number}){
     const takes=this.load(name);if(!takes?.length)return;
     if(this.active>18&&(opt.priority??1)<2)return;
     let k=Math.floor(Math.random()*takes.length);if(takes.length>1&&k===this.lastVariant.get(name))k=(k+1)%takes.length;this.lastVariant.set(name,k);
+    this.voiceBuffer(takes[k]!,opt);
+  }
+  private voiceBuffer(buffer:AudioBuffer,opt:{at?:number;gain?:number;rate?:number;pan?:number;wet?:number;bus?:'effects'|'music';priority?:number}){
+    const ctx=this.ctx!;if(this.active>18&&(opt.priority??1)<2)return;
     const src=ctx.createBufferSource(),g=ctx.createGain(),pan=ctx.createStereoPanner(),t=opt.at??ctx.currentTime;
-    src.buffer=takes[k]!;src.playbackRate.value=(opt.rate??1)*(1+(Math.random()-.5)*.08);
+    src.buffer=buffer;src.playbackRate.value=(opt.rate??1)*(1+(Math.random()-.5)*.08);
     g.gain.value=(opt.gain??1)*(.88+Math.random()*.24);pan.pan.value=Math.max(-1,Math.min(1,opt.pan??0));
     src.connect(g);g.connect(pan);pan.connect(opt.bus==='music'?this.music!:this.effects!);
     const wet=ctx.createGain();wet.gain.value=opt.wet??.18;pan.connect(wet);wet.connect(this.reverb!);
@@ -106,7 +133,12 @@ export class Soundscape {
   }
   /** Guzheng from pre-rendered Karplus–Strong notes. */
   private zheng(m:number,t:number,v:number,bus=this.music,d=1.8){
-    if(!this.ctx||!bus)return;const b=this.note(Math.round(m));if(!b)return;const src=this.ctx.createBufferSource(),g=this.ctx.createGain();src.buffer=b;g.gain.setValueAtTime(v*3,t);g.gain.setTargetAtTime(.0001,t+d,.25);src.connect(g);this.out(g,bus,.35);src.start(t);src.stop(t+d+1.2);
+    if(!this.ctx||!bus)return;
+    // Recorded đàn tranh (a close cousin of the guzheng) when loaded, else Karplus–Strong.
+    const rec=this.samples.get('zheng'),pitches=SAMPLE_GROUPS.zheng?.midi;let b:AudioBuffer|undefined,rate=1,gain=v*3;
+    if(rec&&pitches){let best=0;pitches.forEach((p,i)=>{if(Math.abs(p-m)<Math.abs(pitches[best]!-m))best=i;});b=rec[best];rate=2**((m-pitches[best]!)/12);gain=v*2.2;}
+    else b=this.note(Math.round(m));
+    if(!b)return;const src=this.ctx.createBufferSource(),g=this.ctx.createGain();src.buffer=b;src.playbackRate.value=rate;g.gain.setValueAtTime(gain,t);g.gain.setTargetAtTime(.0001,t+d,.25);src.connect(g);this.out(g,bus,.35);src.start(t);src.stop(t+d+1.2);
   }
   private flute(f:number,t:number,d:number,v:number,bus=this.music){
     if(!this.ctx||!bus)return;const o=this.osc('sine',f,t,d),o3=this.osc('sine',f*2,t,d);this.vibrato(o,t,d,5.4,f*.012);
