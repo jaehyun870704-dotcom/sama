@@ -1,18 +1,20 @@
 import {playbackEvents} from './battle-playback.ts';
 import {troopFacing,troopWalkPose,troopReaction,troopReactionPose,retreatMotion} from './troop-motion.ts';
 import {troopRoles,visualClass,troopArt,troopSheets,basicReactionArt} from './troops.ts';
-import {spriteAtlas} from './sprite-atlas.ts';
+import {spriteAtlas,outlinedCanvas} from './sprite-atlas.ts';
 import {cryFor,reactions,isCrisis,type Emote} from './emotes.ts';
 import type {SoundEvent} from './sound-events.ts';
 import {navalAtlas,navalCrewRow,NAVAL_WATERLINE} from './naval-art.ts';
 import {structureKind,structureFrame} from './campaign-rules.ts';
-import { Application, Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
+import { Application, CanvasSource, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 import {terrainLayer} from './terrain.ts';
+import {crispZoom,groundScaleMode,unitTint} from './pixel-look.ts';
 import type {LogEntry} from '../../core/src/index.ts';
 import { key, manhattan, ignoresRough } from '../../core/src/index.ts';
 import type { BattleState, Coord, Unit, TerrainKind } from '../../core/src/index.ts';
 
 const W=48,H=48;
+async function imageCanvas(url:string){const img=new Image();img.src=url;await img.decode();const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;c.getContext('2d')!.drawImage(img,0,0);return c;}
 const colors:Record<TerrainKind,number>={plain:0x6b7560,road:0xada084,forest:0x435f50,mountain:0x69736d,hill:0x83846a,water:0x3d6770,rapids:0x3d6770,bridge:0x98846a,fort:0xab9e7b,gate:0x8b8a77,wall:0x777f74,cliff:0x5b554b,marsh:0x6f8a5c,plank:0x8a6a45,ford:0x6f9ea3};
 const sides={player:0x68c9bf,ally:0x86b7d9,allyAi:0xd3b06b,enemy:0xe78b79};
 export const terrainNames:Record<TerrainKind,string>={plain:'평지',road:'길',forest:'숲',mountain:'산지',hill:'구릉',water:'수상',rapids:'완류',bridge:'다리',fort:'성채',gate:'성문',wall:'성벽',cliff:'절벽(통행 불가)',marsh:'갈대늪',plank:'잔도',ford:'여울'};
@@ -66,14 +68,17 @@ export class Battlefield {
   onCell:(c:Coord)=>void=()=>{};
   onHover:(c:Coord|undefined)=>void=()=>{};
   async init(privateHost:HTMLElement){
-    await this.app.init({resizeTo:privateHost,backgroundAlpha:0,antialias:false,resolution:Math.min(devicePixelRatio,2),autoDensity:true,preference:'webgl'});
-    await Promise.all(troopSheets.map(async sheet=>{const texture=Texture.from(await spriteAtlas(sheet.url,sheet.rows));texture.source.scaleMode='nearest';this.troopTextures.set(sheet.id,texture);}));
-    this.ram=Texture.from(await spriteAtlas('/ram-v1.png',2,2));this.ram.source.scaleMode='nearest';
-    this.naval=Texture.from(await navalAtlas());this.naval.source.scaleMode='nearest';
-    this.convoys=await Assets.load<Texture>('/convoys-v1.png');this.convoys.source.scaleMode='nearest';
-    this.extra=Texture.from(await spriteAtlas('/units-extra-v1.png',4));this.extra.source.scaleMode='nearest';
-    this.atlas=Texture.from(await spriteAtlas('/units-v3.png',6));this.atlas.source.scaleMode='nearest';
-    this.scenery=await Assets.load<Texture>('/scenery-v3.png');this.scenery.source.scaleMode='nearest';
+    await this.app.init({resizeTo:privateHost,backgroundAlpha:0,antialias:false,resolution:Math.min(devicePixelRatio,3),autoDensity:true,preference:'webgl'});
+    // Painted art is far larger than its cell on screen: mipmapped smooth reduction keeps
+    // every stroke instead of dropping random pixels, and the dark rim keeps the dot look.
+    const smooth=(canvas:HTMLCanvasElement,rim=true)=>new Texture({source:new CanvasSource({resource:rim?outlinedCanvas(canvas):canvas,autoGenerateMipmaps:true,scaleMode:'linear'})});
+    await Promise.all(troopSheets.map(async sheet=>{this.troopTextures.set(sheet.id,smooth(await spriteAtlas(sheet.url,sheet.rows)));}));
+    this.ram=smooth(await spriteAtlas('/ram-v1.png',2,2));
+    this.naval=smooth(await navalAtlas());
+    this.convoys=smooth(await imageCanvas('/convoys-v1.png'));
+    this.extra=smooth(await spriteAtlas('/units-extra-v1.png',4));
+    this.atlas=smooth(await spriteAtlas('/units-v3.png',6));
+    this.scenery=smooth(await imageCanvas('/scenery-v3.png'),false);
     privateHost.appendChild(this.app.canvas);
     this.minimap=document.createElement('canvas');this.minimap.className='tactical-minimap';this.minimap.width=192;this.minimap.height=144;this.minimap.setAttribute('aria-label','전체 전황 지도. 클릭하면 해당 위치로 이동합니다.');privateHost.appendChild(this.minimap);
     this.minimap.addEventListener('pointerdown',e=>{e.stopPropagation();if(!this.state)return;const r=this.minimap!.getBoundingClientRect();this.focus({x:(e.clientX-r.left)/r.width*this.state.map.width,y:(e.clientY-r.top)/r.height*this.state.map.height});});
@@ -123,11 +128,11 @@ export class Battlefield {
     this.overview=false;
     const w=this.app.screen.width,h=this.app.screen.height;
     const center=this.world.toLocal({x:w/2,y:h/2});
-    this.zoom=Math.max(.22,Math.min(1.8,z));this.fit();this.focus({x:center.x/W-.5,y:center.y/H-.5});
+    this.zoom=crispZoom(Math.max(.22,Math.min(1.8,z)),this.app.renderer.resolution,Math.sign(z-this.zoom));this.fit();this.focus({x:center.x/W-.5,y:center.y/H-.5});
   }
   zoomBy(d:number){this.setZoom(this.zoom+d);}
-  reset(){if(!this.state)return;this.overview=true;this.zoom=Math.min((this.app.screen.width-40)/(this.state.map.width*W),(this.app.screen.height-70)/(this.state.map.height*H));this.pan={x:0,y:0};this.fit();}
-  focusUnit(at:Coord){this.overview=false;this.zoom=Math.max(this.zoom,this.app.screen.width<500?.85:1);this.focus(at);}
+  reset(){if(!this.state)return;this.overview=true;this.zoom=crispZoom(Math.min((this.app.screen.width-40)/(this.state.map.width*W),(this.app.screen.height-70)/(this.state.map.height*H)),this.app.renderer.resolution,-1);this.pan={x:0,y:0};this.fit();}
+  focusUnit(at:Coord){this.overview=false;this.zoom=Math.max(this.zoom,crispZoom(this.app.screen.width<500?.85:1,this.app.renderer.resolution));this.focus(at);}
   focus(at:Coord){
     if(!this.state)return;
     this.pan={x:(this.state.map.width*W/2-(at.x+.5)*W)*this.zoom,y:(this.state.map.height*H/2-(at.y+.5)*H)*this.zoom};this.fit();
@@ -139,7 +144,11 @@ export class Battlefield {
     const left=(w-m.width*W*scale)/2,top=(h-m.height*H*scale)/2;
     const x=m.width*W*scale>w?Math.max(w-m.width*W*scale-24,Math.min(24,left+this.pan.x)):left;
     const y=m.height*H*scale>h?Math.max(h-m.height*H*scale-24,Math.min(24,top+this.pan.y)):top;
-    this.world.position.set(x,y);this.pan={x:x-left,y:y-top};this.drawMinimap();
+    // Whole device pixels keep ground dots the same size across the screen.
+    const r=this.app.renderer.resolution,px=Math.round(x*r)/r,py=Math.round(y*r)/r;
+    this.world.position.set(px,py);this.pan={x:px-left,y:py-top};
+    const ground=this.terrainTextures[0];if(ground)ground.source.scaleMode=groundScaleMode(scale,r);
+    this.drawMinimap();
   }
   private drawMinimap(){
     if(!this.minimap||!this.state)return;const c=this.minimap,g=c.getContext('2d')!,m=this.state.map,sx=c.width/m.width,sy=c.height/m.height;
@@ -150,8 +159,9 @@ export class Battlefield {
   }
   load(state:BattleState){
     this.animationEpoch++;this.busy=false;this.overview=false;this.state=state;this.previousPositions.clear();this.facing.clear();this.statusSeen.clear();this.actors.clear();clear(this.pieces);clear(this.ground);clear(this.effects);clear(this.rubble);this.cursor.clear();
-    for(const texture of this.terrainTextures)texture.destroy(texture.source.resource instanceof HTMLCanvasElement);this.terrainTextures=[];
-    this.paintTerrain();this.zoom=this.app.screen.width<500?.78:1;this.focus(state.living('player')[0]?.pos??{x:0,y:0});
+    // Only the painted ground owns its canvas; scenery frames share the atlas.
+    this.terrainTextures.forEach((texture,i)=>texture.destroy(i===0));this.terrainTextures=[];
+    this.paintTerrain();this.zoom=crispZoom(this.app.screen.width<500?.78:1,this.app.renderer.resolution);this.focus(state.living('player')[0]?.pos??{x:0,y:0});
   }
   private paintTerrain(){
     const result=terrainLayer(this.state!,this.scenery!);this.ground.addChild(result.layer);this.terrainTextures=[result.texture,...result.frames];
@@ -197,22 +207,23 @@ export class Battlefield {
         let actor=this.actors.get(unit.id);
         if(!actor){
           const piece=new Container(),sprite=new Sprite(this.unitTexture(unit));sprite.anchor.set(.5,.88);sprite.position.set(0,8);
-          const mounted=(unit.id.startsWith('convoy_')||['cavalry','heavyCav','horseArcher','catapult','ram'].includes(unit.unitClass));sprite.width=mounted?90:78;sprite.height=mounted?90:78;if(unit.id.startsWith('convoy_')){sprite.width=76;sprite.height=76;}else if(unit.unitClass==='navy'){sprite.width=sprite.height=104;sprite.anchor.y=NAVAL_WATERLINE+.03;}else if(!structureKind(unit.id))sprite.anchor.y=.945;if(structureKind(unit.id)){const kind=structureKind(unit.id);sprite.width=kind==='tower'?85:kind==='barricade'?58:64;sprite.height=kind==='tower'?118:kind==='barricade'?46:75;}
+          const mounted=(unit.id.startsWith('convoy_')||['cavalry','heavyCav','horseArcher','catapult','ram'].includes(unit.unitClass));sprite.width=mounted?96:84;sprite.height=mounted?96:84;if(unit.id.startsWith('convoy_')){sprite.width=80;sprite.height=80;}else if(unit.unitClass==='navy'){sprite.width=sprite.height=104;sprite.anchor.y=NAVAL_WATERLINE+.03;}else if(!structureKind(unit.id))sprite.anchor.y=.945;if(structureKind(unit.id)){const kind=structureKind(unit.id);sprite.width=kind==='tower'?85:kind==='barricade'?58:64;sprite.height=kind==='tower'?118:kind==='barricade'?46:75;}
           if(unit.unitClass==='navy'&&unit.side==='enemy')sprite.scale.x*=-1;
-          const base=new Graphics();base.ellipse(0,5,17,7).fill({color:0x13211c,alpha:.4});base.ellipse(0,7,16,7).stroke({color:sides[unit.side],width:3});piece.addChild(base,sprite);
+          // Dark-edged side disc under the feet: reads on grass, sand and water alike.
+          const base=new Graphics();base.ellipse(0,6,20,9).fill({color:0x0b1410,alpha:.5});base.ellipse(0,7,17,7).fill({color:sides[unit.side],alpha:.3}).stroke({color:0x0d1411,width:5});base.ellipse(0,7,17,7).stroke({color:sides[unit.side],width:2.5});piece.addChild(base,sprite);
           actor={piece,sprite,unit};this.actors.set(unit.id,actor);this.pieces.addChild(piece);
         }
         const seen=this.statusSeen.get(unit.id),now=new Set(unit.statuses.map(x=>x.kind as string));
         if(seen)for(const kind of now)if(!seen.has(kind)&&reactions[kind])this.emote(unit.pos,reactions[kind]!);
         this.statusSeen.set(unit.id,now);
         actor.unit=unit;actor.piece.position.set((unit.pos.x+.5)*W,(unit.pos.y+.5)*H);actor.piece.zIndex=unit.pos.y;
-        actor.sprite.texture=this.unitTexture(unit,this.facing.get(unit.id)??0);actor.sprite.alpha=unit.hasActed?.65:1;actor.sprite.tint=unit.id==='rescue_target'&&unit.side==='enemy'?0xffe3a0:unit.side==='enemy'?0xffb3a0:unit.side==='allyAi'?0xffdc8e:0xffffff;
+        actor.sprite.texture=this.unitTexture(unit,this.facing.get(unit.id)??0);actor.sprite.alpha=1;actor.sprite.tint=unitTint(unit);
         if(actor.piece.children.length>2)for(const child of actor.piece.removeChildren(2))child.destroy();
         const bar=new Graphics();if(unit.id===selected||unit.id==='rescue_target'||unit.id==='convoy_trial')bar.ellipse(0,7,22,10).stroke({color:0xffe9aa,width:2});
-        bar.rect(-16,13,32,4).fill(0x182720).rect(-16,13,32*Math.max(0,unit.hp/unit.stats.maxHp),4).fill(sides[unit.side]);actor.piece.addChild(bar);
-        if(structureKind(unit.id)){const hp=new Text({text:unit.hp+'/'+unit.stats.maxHp,style:{fontFamily:'Malgun Gothic',fontSize:10,fontWeight:'700',fill:unit.hp<unit.stats.maxHp*.35?0xffa58a:0xfff1cf,stroke:{color:0x16130f,width:3}}});hp.anchor.set(.5,0);hp.y=18;actor.piece.addChild(hp);}
+        const ratio=Math.max(0,unit.hp/unit.stats.maxHp);bar.rect(-18,12,36,7).fill(0x0d1310).rect(-17,13,34,5).fill(0x40312a).rect(-17,13,Math.round(34*ratio),5).fill(ratio<.3?0xf06a4f:sides[unit.side]).rect(-17,13,Math.round(34*ratio),1).fill({color:0xffffff,alpha:.35});actor.piece.addChild(bar);
+        if(structureKind(unit.id)){const hp=new Text({text:unit.hp+'/'+unit.stats.maxHp,style:{fontFamily:'Malgun Gothic',fontSize:10,fontWeight:'700',fill:unit.hp<unit.stats.maxHp*.35?0xffa58a:0xfff1cf,stroke:{color:0x16130f,width:3}}});hp.anchor.set(.5,0);hp.y=20;actor.piece.addChild(hp);}
         else if(unit.id===selected||unit.side==='player'||['rescue_target','convoy_trial'].includes(unit.id)){
-          const name=new Text({text:unitName(unit),style:{fontFamily:'Malgun Gothic',fontSize:11,fill:0xfff4da,dropShadow:{color:0x10251e,blur:2,distance:1}}});name.anchor.set(.5,0);name.y=19;actor.piece.addChild(name);
+          const name=new Text({text:unitName(unit),style:{fontFamily:'Malgun Gothic',fontSize:11,fontWeight:'700',fill:0xfff4da,stroke:{color:0x0d1411,width:3}}});name.anchor.set(.5,0);name.y=20;actor.piece.addChild(name);
         }
       }
       this.pieces.sortableChildren=true;

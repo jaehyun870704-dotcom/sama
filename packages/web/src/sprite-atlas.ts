@@ -59,3 +59,32 @@ export function spriteAtlas(url:string,rows:number,columns=4){
   })());
   return cache.get(key)!;
 }
+
+/** Dark rim around every silhouette so troops read against busy ground. A chamfer
+ * distance keeps the rim round; soft edge pixels are laid over it, not replaced. */
+export function outlineFrames(source:AtlasPixels,radius=4,rgb:[number,number,number]=[24,18,14]):AtlasPixels {
+  const {width,height,data}=source,n=width*height,dist=new Float32Array(n),out=new Uint8ClampedArray(data);
+  for(let i=0;i<n;i++)dist[i]=data[i*4+3]!>=96?0:1e9;
+  const relax=(i:number,j:number,c:number)=>{if(dist[j]!+c<dist[i]!)dist[i]=dist[j]!+c;};
+  for(let y=0;y<height;y++)for(let x=0;x<width;x++){const i=y*width+x;
+    if(x>0)relax(i,i-1,1);if(y>0){relax(i,i-width,1);if(x>0)relax(i,i-width-1,1.4);if(x+1<width)relax(i,i-width+1,1.4);}}
+  for(let y=height-1;y>=0;y--)for(let x=width-1;x>=0;x--){const i=y*width+x;
+    if(x+1<width)relax(i,i+1,1);if(y+1<height){relax(i,i+width,1);if(x+1<width)relax(i,i+width+1,1.4);if(x>0)relax(i,i+width-1,1.4);}}
+  for(let i=0;i<n;i++){
+    const d=dist[i]!;if(d===0||d>radius)continue;
+    const a=data[i*4+3]!/255,rim=Math.min(1,radius+.5-d);
+    for(let k=0;k<3;k++)out[i*4+k]=Math.round(data[i*4+k]!*a+rgb[k]!*(1-a));
+    out[i*4+3]=Math.round(255*Math.max(a,rim));
+  }
+  return {width,height,data:out};
+}
+
+const rims=new WeakMap<HTMLCanvasElement,HTMLCanvasElement>();
+/** Outlined copy of an atlas canvas for the battlefield; story art keeps its plain edges. */
+export function outlinedCanvas(canvas:HTMLCanvasElement,radius=4){
+  const old=rims.get(canvas);if(old)return old;
+  const g=canvas.getContext('2d',{willReadFrequently:true})!,pixels=outlineFrames(g.getImageData(0,0,canvas.width,canvas.height),radius);
+  const out=document.createElement('canvas');out.width=canvas.width;out.height=canvas.height;
+  const o=out.getContext('2d')!,img=o.createImageData(out.width,out.height);img.data.set(pixels.data);o.putImageData(img,0,0);
+  rims.set(canvas,out);return out;
+}
