@@ -325,6 +325,7 @@ export class Battle {
       this.state.phaseIndex = 0;
       this.state.turn++;
       this.tickHazards();
+      this.resolveTelegraphs();
       this.state.updateRegionHolds();
       if (this.state.turn > this.maxTurns) {
         this.state.outcome = "defeat";
@@ -370,6 +371,25 @@ export class Battle {
       s.turns--;
     }
     u.statuses = u.statuses.filter((s) => s.turns > 0);
+  }
+
+  /** M-18: warned blows land at the start of their turn on whoever still stands there. */
+  private resolveTelegraphs(): void {
+    const due = this.state.telegraphs.filter((t) => t.at <= this.state.turn);
+    if (!due.length) return;
+    this.state.telegraphs = this.state.telegraphs.filter((t) => t.at > this.state.turn);
+    for (const t of due) {
+      const hits: Array<{ unit: string; damage: number }> = [];
+      for (const c of t.cells) {
+        const u = this.state.unitAt(c);
+        if (!u?.alive) continue;
+        const damage = Math.min(u.hp - 1, Math.round(u.stats.maxHp * t.ratio / 100));
+        u.hp -= Math.max(0, damage);
+        if (t.effect) this.state.applyStatus(u, { kind: t.effect, turns: 2, magnitude: 1 });
+        hits.push({ unit: u.id, damage: Math.max(0, damage) });
+      }
+      this.state.push({ t: "strike", id: t.id, cells: t.cells, hits });
+    }
   }
 
   private tickHazards(): void {

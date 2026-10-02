@@ -8,7 +8,7 @@ import type { BattleState } from "./state.ts";
 import type { StageEvent, Trigger, Action } from "./stage.ts";
 import { makeUnit } from "./units.ts";
 import { adjacent, sameCoord, key, manhattan, passableFor, isHostile } from "./grid.ts";
-import type { Side, UnitClass } from "./types.ts";
+import type { Coord, Side, UnitClass } from "./types.ts";
 
 export interface EventPhase {
   kind: "battle_start" | "turn_start" | "turn_end" | "after_action";
@@ -290,7 +290,25 @@ export function applyAction(state: BattleState, action: Action): void {
       if (state.activeDialogue) state.push({ t: "dialogue", node: state.activeDialogue });
       break;
 
-    case "telegraph_aoe":
+    case "telegraph_aoe": {
+      // M-18: mark the cells now, strike them later. Targets are marked where they stand
+      // (and the four cells around them) so a unit that moves away escapes.
+      const cells: Coord[] = action.region ? [...state.map.regionCoords(action.region)] : [];
+      for (const id of action.targets ?? []) {
+        const u = state.find(id);
+        if (!u?.alive) continue;
+        for (const d of [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }]) {
+          const c = { x: u.pos.x + d.x, y: u.pos.y + d.y };
+          if (state.map.inBounds(c) && !cells.some((k) => k.x === c.x && k.y === c.y)) cells.push(c);
+        }
+      }
+      if (!cells.length) break;
+      const turns = Math.max(1, action.duration ?? 1);
+      const id = `${action.label ?? "aoe"}@${state.turn}:${cells[0]!.x},${cells[0]!.y}`;
+      state.telegraphs.push({ id, cells, at: state.turn + turns, ratio: action.magnitude ?? 30, ...(action.effect ? { effect: action.effect } : {}), ...(action.label ? { label: action.label } : {}) });
+      state.push({ t: "telegraph", id, cells, turns, ...(action.label ? { label: action.label } : {}) });
+      break;
+    }
     case "start_duel":
       // 연출 계층에서 처리. 코어는 상태만 관리한다.
       break;
