@@ -12,7 +12,7 @@ export function playbackEvents(logs:LogEntry[]):LogEntry[]{
    }
    if(after>=0){delayed.set(after,[...(delayed.get(after)??[]),e]);continue;}
   }
-  if(['move','attack','counter','strategy','guard','retreat'].includes(e.t))out.push(e);
+  if(['move','attack','counter','strategy','guard','retreat','strike'].includes(e.t))out.push(e);
   out.push(...(delayed.get(i)??[]));
  }
  return out;

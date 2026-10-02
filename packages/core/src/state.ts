@@ -20,6 +20,8 @@ export type LogEntry =
   | { t: "guard"; protector: string; protected: string }
   | { t: "spotted"; watcher: string; target: string }
   | { t: "terrain"; region: string; terrain: TerrainKind }
+  | { t: "telegraph"; id: string; cells: Coord[]; turns: number; label?: string }
+  | { t: "strike"; id: string; cells: Coord[]; hits: Array<{ unit: string; damage: number }> }
   | { t: "outcome"; outcome: BattleOutcome };
 
 /** 턴 순서. 우군 AI는 적 페이즈 뒤에 별도로 움직인다. */
@@ -56,6 +58,8 @@ export class BattleState {
 
   /** 이미 발동한 1회성 이벤트 ID */
   firedEvents: Set<string> = new Set();
+  /** M-18 TELEGRAPHED_AOE: warned cells that strike when the turn reaches `at`. */
+  telegraphs: Telegraph[] = [];
   /** 진영별 퇴각 누계 */
   losses: Record<Side, number> = { player: 0, ally: 0, allyAi: 0, enemy: 0 };
   /** 점령 상태: 영역명 → 점령 진영 */
@@ -183,6 +187,7 @@ export class BattleState {
       choices: structuredClone(this.choices),
       activeDialogue: this.activeDialogue,
       regionHolds: [...this.regionHolds.entries()],
+      telegraphs: structuredClone(this.telegraphs),
     };
   }
 
@@ -203,6 +208,7 @@ export class BattleState {
     this.choices = structuredClone(snap.choices);
     this.activeDialogue = snap.activeDialogue;
     this.regionHolds = new Map(snap.regionHolds.map(([k, v]) => [k, { ...v }]));
+    this.telegraphs = structuredClone(snap.telegraphs ?? []);
   }
 
   /**
@@ -251,6 +257,18 @@ export interface BattleSnapshot {
   choices: Array<{ nodeId: string; optionId: string }>;
   activeDialogue: string | null;
   regionHolds: Array<[string, { side: Side; since: number }]>;
+  telegraphs?: Telegraph[];
+}
+
+export interface Telegraph {
+  id: string;
+  cells: Coord[];
+  /** Turn on which the blow lands (at least one turn after the warning). */
+  at: number;
+  /** Damage as a percentage of max HP. Never retreats a unit (HP floor 1), like hazards. */
+  ratio: number;
+  effect?: StatusKind;
+  label?: string;
 }
 
 /** 영역 위 유닛들의 진영 집합에서 점유 진영을 판정한다. */

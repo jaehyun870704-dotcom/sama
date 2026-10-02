@@ -548,3 +548,39 @@ describe("terrain_change", () => {
     expect(state.log.some((e) => e.t === "terrain" && e.region === "span")).toBe(true);
   });
 });
+
+describe("M-18 telegraph_aoe", () => {
+  const setup = () => {
+    const regions = new Map<string, Coord[]>([["strike", [{ x: 2, y: 2 }, { x: 3, y: 2 }]], ["objective", [{ x: 6, y: 6 }]]]);
+    const stage = minimalStage({
+      events: [{ id: "bolt", trigger: { type: "battle_start" }, actions: [{ type: "telegraph_aoe", region: "strike", duration: 1, magnitude: 40, effect: "shock", label: "낙뢰" }] }],
+    });
+    const state = new BattleState(stage, mapWithWalls(8, 8, [], regions), 1);
+    state.add(makeUnit({ id: "stay", side: "player", unitClass: "infantry", level: 20, pos: { x: 2, y: 2 } }));
+    state.add(makeUnit({ id: "dodge", side: "player", unitClass: "infantry", level: 20, pos: { x: 3, y: 2 } }));
+    state.add(sentinel({ x: 7, y: 0 }));
+    const battle = new Battle(state, { seed: 1 });
+    battle.start();
+    return { state, battle };
+  };
+  it("warns first, then strikes only who stayed, without retreating them", () => {
+    const { state, battle } = setup();
+    expect(state.log.some((e) => e.t === "telegraph" && e.cells.length === 2)).toBe(true);
+    const stay = state.get("stay"), dodge = state.get("dodge"), before = stay.hp;
+    expect(battle.execute({ kind: "move", unit: "dodge", to: { x: 3, y: 4 } }).ok).toBe(true);
+    for (let i = 0; i < 4; i++) battle.endPhase();
+    expect(stay.hp).toBe(before - Math.round(stay.stats.maxHp * 0.4));
+    expect(stay.statuses.some((s) => s.kind === "shock")).toBe(true);
+    expect(dodge.hp).toBe(dodge.stats.maxHp);
+    expect(state.telegraphs).toHaveLength(0);
+    const strike = state.log.find((e) => e.t === "strike");
+    expect(strike && strike.t === "strike" && strike.hits.map((h) => h.unit)).toEqual(["stay"]);
+  });
+  it("never retreats a unit", () => {
+    const { state, battle } = setup();
+    state.get("stay").hp = 3;
+    for (let i = 0; i < 4; i++) battle.endPhase();
+    expect(state.get("stay").hp).toBe(1);
+    expect(state.get("stay").alive).toBe(true);
+  });
+});

@@ -105,6 +105,8 @@ export interface Action {
   toClass?: UnitClass;
   /** apply_effect에서 최대 HP 비율만큼 즉시 피해를 준다 (M-03 오답 페널티) */
   hpRatioDamage?: number;
+  /** telegraph_aoe: shown name of the coming blow (e.g. "낙뢰"). */
+  label?: string;
 }
 
 export interface UnitSpawnSpec {

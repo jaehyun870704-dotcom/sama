@@ -33,6 +33,8 @@ export class Battlefield {
   cursor=new Graphics();
   effects=new Container();
   rubble=new Container();
+  /** M-18 warnings: red cells with the turns left until the blow lands. */
+  warnings=new Container();
   private state:BattleState|undefined;
   private selected='';
   private mode='move';
@@ -81,7 +83,7 @@ export class Battlefield {
     this.minimap.addEventListener('pointerdown',e=>{e.stopPropagation();if(!this.state)return;const r=this.minimap!.getBoundingClientRect();this.focus({x:(e.clientX-r.left)/r.width*this.state.map.width,y:(e.clientY-r.top)/r.height*this.state.map.height});});
     this.app.canvas.setAttribute('aria-label','정방 격자 전술 지도. 방향키로 칸 이동, Enter로 선택. 마우스 휠로 확대, 드래그로 이동.');
     this.app.canvas.tabIndex=0;
-    this.app.stage.addChild(this.world);this.world.addChild(this.ground,this.rubble,this.ranges,this.pieces,this.cursor,this.effects);
+    this.app.stage.addChild(this.world);this.world.addChild(this.ground,this.rubble,this.ranges,this.warnings,this.pieces,this.cursor,this.effects);
     const canvas=this.app.canvas;
     // Touch: one finger drags, two fingers pinch-zoom around their midpoint, and a
     // long press shows the tile under the finger the way hovering does with a mouse.
@@ -206,6 +208,14 @@ export class Battlefield {
   }
   render(state:BattleState,selected:string,mode:string,showThreat:boolean,scouted=false){
     this.state=state;this.selected=selected;this.mode=mode;this.ranges.clear();
+    clear(this.warnings);
+    for(const t of state.telegraphs??[]){
+      const left=Math.max(1,t.at-state.turn),g=new Graphics();
+      for(const c of t.cells){const p=iso(c);diamond(g,p.x,p.y,0xd83a2a,left<=1?.38:.22).stroke({color:0xffb08a,width:2,alpha:.9});}
+      this.warnings.addChild(g);
+      const head=t.cells[0]!,p=iso(head),tag=new Text({text:`${t.label??'경고'} · ${left}턴`,style:{fontFamily:'Malgun Gothic',fontSize:12,fontWeight:'700',fill:0xffe0c8,stroke:{color:0x3a0c08,width:4}}});
+      tag.anchor.set(.5,1);tag.position.set(p.x,p.y-H*.35);this.warnings.addChild(tag);
+    }
     const u=state.find(selected);
     for(const goal of state.victory){
       if(!goal.target?.startsWith('trial_'))continue;
@@ -309,6 +319,16 @@ export class Battlefield {
       const actor=this.actors.get(e.unit);if(!actor)return;this.onSound({kind:'move',unitClass:actor.unit.unitClass,pan:this.panOf(e.from)});const from=iso(e.from),to=iso(e.to);this.focusUnit(e.to);const facing=troopFacing(to.x-from.x,to.y-from.y);if(troopArt[actor.unit.unitClass]){this.facing.set(e.unit,facing.pose);actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*facing.flip;}else if(!structureKind(actor.unit.id)&&to.x!==from.x)actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*(to.x<from.x?-1:1);
       await this.tween(420,epoch,p=>{actor.piece.position.set(from.x+(to.x-from.x)*p,from.y+(to.y-from.y)*p);actor.sprite.y=8-Math.abs(Math.sin(p*Math.PI*4))*3;actor.sprite.rotation=Math.sin(p*Math.PI*4)*.025;if(troopArt[actor.unit.unitClass])actor.sprite.texture=this.unitTexture(actor.unit,troopWalkPose(facing.pose,p));else if(actor.unit.id.startsWith('convoy_'))actor.sprite.texture=this.unitTexture(actor.unit,1+Math.floor(p*6)%2);else if(actor.unit.unitClass==='navy'){actor.sprite.texture=this.unitTexture(actor.unit,1+Math.floor(p*6)%2);actor.sprite.y=8-Math.sin(p*Math.PI*3)*2;}});
       if(epoch===this.animationEpoch){actor.sprite.y=8;actor.sprite.rotation=0;actor.sprite.texture=this.unitTexture(actor.unit,this.facing.get(e.unit)??0);}return;
+    }
+    if(e.t==='strike'){
+      // The warned blow lands: flash every marked cell, then damage numbers on whoever stayed.
+      const mid=e.cells[Math.floor(e.cells.length/2)]!;this.focusUnit(mid);
+      this.onSound({kind:'strike',pan:this.panOf(mid)});
+      const flash=new Graphics();for(const c of e.cells){const p=iso(c);diamond(flash,p.x,p.y,0xfff1c8,.85);}this.effects.addChild(flash);
+      void this.shake(6,380,epoch);for(const c of e.cells)this.debris(c,4);
+      await this.tween(380,epoch,p=>{flash.alpha=1-p;});flash.destroy();
+      for(const h of e.hits){const u=this.state?.find(h.unit);if(u&&h.damage>0)this.burst(u.pos,'−'+h.damage,0xffc8a0);}
+      return;
     }
     if(e.t!=='attack'&&e.t!=='counter'&&e.t!=='strategy')return;
     const caster=e.t==='strategy'?e.caster:e.attacker,actor=this.actors.get(caster);if(!actor)return;

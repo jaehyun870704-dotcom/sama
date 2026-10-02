@@ -9,6 +9,7 @@ import tongguanStage from '../../data/stages/S1-06.json';
 import tongguanMap from '../../data/maps/tongguan-pass.json';
 import retreatStage from '../../data/stages/S1-05.json';
 import retreatMap from '../../data/maps/yangtze-retreat.json';
+import {stageRules} from './stage-rules.ts';
 import {campaignStage,addFortifications,addSiegeCompany,structureKind,encircled} from './campaign-rules.ts';
 import {applyTreasure,equippedItems,treasureInfo,type Deployment,OFFICERS,treasures} from './progression.ts';
 import { assemble, Battle, CONTROLLABLE, isHostile, key, manhattan } from '../../core/src/index.ts';
@@ -106,6 +107,9 @@ export class Session {
     const battle=new Battle(state,{seed:this.seed,strategies:new Map((this.revision===4?(this.deployment?.growth?allStrategies:learnedStrategies):strategies).map(s=>[s.id,this.revision===4?s:this.deployment?{...s,mpCost:s.id==='fire'?6:9}:s])),undoDepth:0,maxTurns:60});
     if((this.deployment?.mission?.version??1)>=3)state.survivalClocks.set('trial_defense',1);
     battle.start();
+    const rules=stageRules[entry.stage.id];
+    for(const p of rules?.protect??[]){const u=state.find(p.unit);if(!u)continue;u.stats.maxHp=p.hp;u.hp=p.hp;u.range=[0,0];u.canUseItems=false;if(p.movement)u.stats.movement=p.movement;}
+    for(const t of rules?.tough??[]){const u=state.find(t.unit);if(!u)continue;u.stats.maxHp=Math.round(u.stats.maxHp*t.hpScale);u.hp=u.stats.maxHp;if(t.defense)u.stats.defense+=t.defense;}
     if((this.deployment?.mission?.version??1)>=3){
       for(const id of ['convoy_trial','rescue_target']){const u=state.find(id);if(u){u.stats.maxHp=100+u.level*4;u.hp=u.stats.maxHp;u.stats.movement=3;u.range=[0,0];}}
       for(const u of state.living('enemy'))if(u.goalRegion==='trial_defense')u.stats.movement=3;
@@ -160,7 +164,7 @@ export class Session {
     if(result.ok){this.checkpoints.push(this.journal.length);this.journal.push(structuredClone(cmd));}
     return result;
   }
-  private resetScenario(){this.fortified.clear();this.breached.clear();this.activeDuel=null;this.lastDuel=null;this.challenged.clear();this.funds=3000;this.bribes=0;this.medicine=2;this.scouted=false;this.failure='';this.phaseCheckpoint=null;this.phase=this.chapter===10?`설득 · 장소 · 신뢰 ${this.trustLimit}/${this.trustLimit}`:this.chapter===8&&this.state.scenarioPhase==='부교 재건'?'부교 재건 0/2 · 강변을 지키세요':this.chapter===9&&this.state.scenarioPhase==='조운 봉쇄'?`조운 봉쇄 ${encircled(this.state,'zhao_yun')}/4 · 사방을 막으세요`:this.state.scenarioPhase|| (this.chapter===2?'창고 확보':this.chapter===0?'잠입':this.chapter===3?'탈출로 선택':this.chapter===5?'수송로 선택':this.chapter===6?'호위 병력 배치':'외곽 돌파');}
+  private resetScenario(){this.fortified.clear();this.breached.clear();this.activeDuel=null;this.lastDuel=null;this.challenged.clear();this.funds=3000;this.bribes=0;this.medicine=2;this.scouted=false;this.failure='';this.phaseCheckpoint=null;const startRules=stageRules[this.state.stage.id];this.phase=startRules?.phase?.({state:this.state,difficulty:this.difficulty,journalLength:0})??(this.state.scenarioPhase||'');if(startRules)return;this.phase=this.chapter===10?`설득 · 장소 · 신뢰 ${this.trustLimit}/${this.trustLimit}`:this.chapter===8&&this.state.scenarioPhase==='부교 재건'?'부교 재건 0/2 · 강변을 지키세요':this.chapter===9&&this.state.scenarioPhase==='조운 봉쇄'?`조운 봉쇄 ${encircled(this.state,'zhao_yun')}/4 · 사방을 막으세요`:this.state.scenarioPhase|| (this.chapter===2?'창고 확보':this.chapter===0?'잠입':this.chapter===3?'탈출로 선택':this.chapter===5?'수송로 선택':this.chapter===6?'호위 병력 배치':'외곽 돌파');}
   get pressure(){return this.state.turn-1+(this.state.choices.some(c=>c.nodeId==='bluff_warning'&&c.optionId==='commit')?2:0);}
   /** S1-11: the court's trust. Every wrong argument costs one; at zero the embassy fails. */
   get trustLimit(){return this.difficulty==='extreme'?2:3;}
@@ -253,7 +257,11 @@ export class Session {
     if(this.revision===4)applyOfficerFeatures(s.living(),this.deployment?.growth);
     // Breach rally belongs to the revision-4 siege rules (ram company, engineers).
     if(this.revision===4)for(const gate of s.units.values())if(structureKind(gate.id)==='gate'&&!gate.alive&&!this.breached.has(gate.id)){this.breached.add(gate.id);breachRally(s,gate);}
-    if(this.chapter===10){
+    const rules=stageRules[s.stage.id],view={state:s,difficulty:this.difficulty,journalLength:this.journal.length};
+    if(rules){
+      this.phase=rules.phase?.(view)??s.scenarioPhase??this.phase;
+      if(s.outcome==='defeat'&&!this.failure)this.failure=rules.failure?.(view)??'';
+    }else if(this.chapter===10){
       const who:Record<string,string>={zhang_zhao:'장소',lu_meng:'여몽',zhuge_jin:'제갈근',sun_quan:'손권',accord:'맹약'};
       this.phase=`설득 · ${who[s.activeDialogue??'']??'맹약'} · 신뢰 ${this.trust}/${this.trustLimit}`;
       if(s.outcome==='ongoing'&&this.trust<=0){this.failure='손권 조정의 신뢰를 잃었습니다. 사신단이 쫓겨났습니다.';s.activeDialogue=null;s.outcome='defeat';s.push({t:'outcome',outcome:'defeat'});}
@@ -310,13 +318,14 @@ export class Session {
   }
   get seals(){
     if(this.state.outcome!=='victory')return [];
+    const rules=stageRules[this.state.stage.id],custom=rules?.seals?.({state:this.state,difficulty:this.difficulty,journalLength:this.journal.length});if(custom)return custom;
     if(this.chapter===10){const finalTries=this.state.choices.filter(c=>c.nodeId==='sun_quan').length;return [1,...(this.wrongAnswers===0?[2]:[]),...(finalTries===1?[3]:[])];}
     if(this.chapter===9)return [1,...(this.state.firedEvents.has('flood/lock')?[2]:[]),...(this.state.turn<=(this.difficulty==='extreme'?12:14)?[3]:[])];
     if(this.chapter===5)return [1,...(['convoy_a','convoy_b'].every(id=>this.state.find(id)?.alive)?[2]:[]),...(this.state.turn<=(this.difficulty==='extreme'?9:10)?[3]:[])];
     if(this.chapter===0)return [1,...(this.bribes===0&&!this.state.choices.some(c=>c.nodeId==='bribe')?[2]:[]),...(['sima_yi','sima_lang'].every(id=>{const u=this.state.get(id);return u.alive&&u.hp>=u.stats.maxHp*.5;})?[3]:[])];
     return awardedSeals(this.state,this.difficulty);
   }
-  get sealNames(){return this.chapter===10?['맹약 성사','실언 없는 설득','손권을 단번에']:this.chapter===9?['조조 탈출','조운 봉쇄','신속한 철수']:this.chapter===8?['야곡 출구 도착','손실 최소화','신속한 철수']:this.chapter===7?['전초 수비망 격파','전 부대 생환','신속한 진격']:this.chapter===6?['관문 돌파','호위 부대 보존','신속한 제압']:this.chapter===5?['수송대 탈출','수송대 두 부대 생존','신속한 철수']:this.chapter===4?['흉몽 돌파','사마의 생존','빠른 각성']:this.chapter===0?['탈출 성공','무발각 잠입','형제 체력 50%']:this.chapter===2?['가문 수호','민중·부대 전원 생존','신속한 방어']:this.chapter===3?['산길 탈출','형제 생존','추격 따돌리기']:['성채 점령','신속한 결단','병력 보존'];}
+  get sealNames(){const named=stageRules[this.state.stage.id]?.sealNames;if(named)return named;return this.chapter===10?['맹약 성사','실언 없는 설득','손권을 단번에']:this.chapter===9?['조조 탈출','조운 봉쇄','신속한 철수']:this.chapter===8?['야곡 출구 도착','손실 최소화','신속한 철수']:this.chapter===7?['전초 수비망 격파','전 부대 생환','신속한 진격']:this.chapter===6?['관문 돌파','호위 부대 보존','신속한 제압']:this.chapter===5?['수송대 탈출','수송대 두 부대 생존','신속한 철수']:this.chapter===4?['흉몽 돌파','사마의 생존','빠른 각성']:this.chapter===0?['탈출 성공','무발각 잠입','형제 체력 50%']:this.chapter===2?['가문 수호','민중·부대 전원 생존','신속한 방어']:this.chapter===3?['산길 탈출','형제 생존','추격 따돌리기']:['성채 점령','신속한 결단','병력 보존'];}
   restorePhase(){if(this.phaseCheckpoint===null)return false;this.journal=this.journal.slice(0,this.phaseCheckpoint);this.checkpoints=this.checkpoints.filter(n=>n<this.journal.length);this.replay();return true;}
   tick(){
     if(this.state.outcome!=='ongoing' || this.state.activeDialogue || this.activeDuel) return false;

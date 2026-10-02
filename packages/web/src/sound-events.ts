@@ -2,7 +2,7 @@ import {allStrategies} from './officers.ts';
 
 /** Battle events the soundtrack reacts to. Pure mapping so it can be tested. */
 export interface SoundEvent {
-  kind:'select'|'move'|'attack-start'|'impact'|'strategy-start'|'strategy'|'repair'|'retreat'|'breach'|'turn'|'battle-start'|'victory'|'defeat'|'ui'|'ui-open'|'page'|'duel';
+  kind:'select'|'strike'|'move'|'attack-start'|'impact'|'strategy-start'|'strategy'|'repair'|'retreat'|'breach'|'turn'|'battle-start'|'victory'|'defeat'|'ui'|'ui-open'|'page'|'duel';
   unitClass?:string|undefined;
   target?:{id:string;unitClass:string}|undefined;
   strategy?:string|undefined;
@@ -75,6 +75,7 @@ export function soundsFor(e:SoundEvent,r:()=>number=Math.random):SoundShot[]{
     case 'strategy-start':shots.push({name:'cast',gain:.7});if(chance(r,.4))shots.push({name:'shout',gain:.4,rate:1.1,delay:.05});break;
     case 'strategy':{const name=strategySound(e.strategy);shots.push({name,wet:.3,duck:['fire','thunder','water','earth','boulder-hit'].includes(name)});break;}
     case 'repair':shots.push({name:'repair'});break;
+    case 'strike':shots.push({name:'thunder',duck:true,priority:2},{name:'boulder-hit',gain:.6,delay:.08});break;
     case 'retreat':
       if(e.structure){shots.push({name:'crumble',duck:true,priority:2});break;}
       if(c==='ram'||c==='catapult'){shots.push({name:'crumble',gain:.6,rate:1.3},{name:'wheels',gain:.4});break;}
