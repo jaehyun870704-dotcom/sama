@@ -5,7 +5,7 @@ import {freshCampaign,deployment} from '../src/progression.ts';
 const create=()=>new Session(8,'normal',215,'survival',4,deployment(freshCampaign(),true));
 function nextPlayerTurn(s:Session){s.act({kind:'endPhase'});for(let i=0;i<300&&s.state.currentSide!=='player'&&s.state.outcome==='ongoing';i++){if(s.state.currentSide==='ally')s.act({kind:'endPhase'});else s.tick();}}
 describe('한중 공방전 上 · 쳇바퀴',()=>{
- it('is the ninth battle of the upper arc',()=>{expect(chapters[8]!.stage.id).toBe('S1-09');expect(campaignOrder.at(-1)).toBe(8);});
+ it('is the ninth battle of the upper arc',()=>{expect(chapters[8]!.stage.id).toBe('S1-09');expect(campaignOrder.indexOf(8)).toBe(campaignOrder.indexOf(1)+1);});
  it('keeps the far bank out of reach until the bank is held for two turns',()=>{
   const s=create(),span={x:12,y:7};
   expect(s.state.map.tileAt(span).terrain).toBe('water');expect(s.phase).toContain('부교 재건 0/2');
@@ -16,4 +16,23 @@ describe('한중 공방전 上 · 쳇바퀴',()=>{
   expect(s.phase).toContain('조조 호위');
  });
  it('gives Cao Cao a sturdy, unarmed escort profile',()=>{const c=create().state.get('cao_cao');expect(c.hp).toBe(160);expect(c.range).toEqual([0,0]);expect(c.side).toBe('allyAi');});
+});
+import {encircled} from '../src/campaign-rules.ts';
+describe('한중 공방전 下 · 범람',()=>{
+ const flood=()=>new Session(9,'normal',215,'survival',4,deployment(freshCampaign(),true));
+ it('counts the shut sides around Zhao Yun and locks him when all four are closed',()=>{
+  const s=flood(),zy=s.state.get('zhao_yun');zy.pos={x:16,y:7};
+  expect(encircled(s.state,'zhao_yun')).toBe(0);expect(s.phase).toContain('조운 봉쇄 0/4');
+  const ids=[...s.state.living('player'),...s.state.living('ally')].map(u=>u.id).slice(0,4),around=[{x:15,y:7},{x:17,y:7},{x:16,y:6},{x:16,y:8}];
+  ids.forEach((id,i)=>{s.state.get(id).pos=around[i]!;});
+  expect(encircled(s.state,'zhao_yun')).toBe(4);
+  expect(s.act({kind:'wait',unit:ids[0]!}).ok).toBe(true);
+  expect(s.state.firedEvents.has('flood/lock')).toBe(true);
+  expect(zy.statuses.some(x=>x.kind==='immobile')).toBe(true);expect(s.phase).toContain('조조 탈출');
+ });
+ it('floods the low fields into fords as the turns pass',()=>{
+  const s=flood(),cell=s.state.map.regionCoords('flood_1')[0]!;
+  for(let t=0;t<3&&s.state.outcome==='ongoing';t++)nextPlayerTurn(s);
+  expect(s.state.map.tileAt(cell).terrain).toBe('ford');
+ });
 });

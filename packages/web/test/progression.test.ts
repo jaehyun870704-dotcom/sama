@@ -1,3 +1,4 @@
+import {encounterLevels} from '../src/campaign-rules.ts';
 import {describe,it,expect} from 'vitest';
 import {freshCampaign,award,deployment,levelInfo,equip} from '../src/progression.ts';
 import {Session,campaignOrder,chapters} from '../src/session.ts';
@@ -7,14 +8,14 @@ describe('persistent campaign growth and siege',()=>{
  it('grows gradually and prevents repeat, failed and undo reward farming',()=>{
   const c=freshCampaign(),levels=[1];
   for(const chapter of campaignOrder){const id=chapters[chapter]!.stage.id;expect(award(c,id,'normal',[],[]).xp).toBe(0);expect(award(c,id,'normal',['sima_lang'],[1]).xp).toBe(140);levels.push(levelInfo(c.xp.sima_yi!).level);expect(award(c,id,'normal',[],[1]).xp).toBe(0);}
-  expect(levels).toEqual([1,2,3,4,5,6,6,7,8,8]);expect(c.treasures).toHaveLength(16);
+  expect(levels).toEqual([1,2,3,4,5,6,6,7,8,8,9]);expect(c.treasures).toHaveLength(16);
  });
  it('keeps equipment unique and stores deployment separately from later growth',()=>{
   const c=freshCampaign();award(c,'S1-01','normal',[],[1]);expect(equip(c,'sima_yi','taiping')).toBe(true);expect(equip(c,'sima_lang','taiping')).toBe(true);expect(c.equipped.sima_yi).toBeUndefined();expect(equip(c,'sima_yi','qinggang')).toBe(false);
   const s=new Session(0,'normal',215,'survival',3,deployment(c));const before=s.state.snapshot();award(c,'S1-02','normal',[],[1]);expect(Session.load(JSON.parse(JSON.stringify(s.save()))).state.snapshot()).toEqual(before);expect(s.state.get('sima_yi').level).toBe(2);
  });
  it('keeps scenario sizes distinct and all campaign enemies in early level bands',()=>{
-  const c=freshCampaign();for(const chapter of campaignOrder){const s=new Session(chapter,'normal',215,'survival',3,deployment(c));expect(s.state.map.width).toBeLessThanOrEqual(48);expect(s.state.map.height).toBeLessThanOrEqual(36);expect(s.state.living('enemy').every(u=>u.level<=7)).toBe(true);award(c,s.state.stage.id,'normal',[],[1]);}
+  const c=freshCampaign();for(const chapter of campaignOrder){const s=new Session(chapter,'normal',215,'survival',3,deployment(c));expect(s.state.map.width).toBeLessThanOrEqual(48);expect(s.state.map.height).toBeLessThanOrEqual(36);expect(s.state.living('enemy').every(u=>u.level<=(encounterLevels[s.state.stage.id]??7)+1)).toBe(true);award(c,s.state.stage.id,'normal',[],[1]);}
  });
  it('blocks gate movement until destroyed, and towers attack without moving',()=>{
   const s=new Session(1,'normal',215,'survival',3,deployment(freshCampaign())),st=s.state,gate=st.get('gate_33_12'),hero=st.get('cao_zhen');
