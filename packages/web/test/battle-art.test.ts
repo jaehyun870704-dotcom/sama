@@ -55,3 +55,14 @@ describe('dot clarity',()=>{
   expect(done>>16).toBeLessThan(0xb0);expect(unitTint({id:'p',side:'player',hasActed:false})).toBe(0xffffff);
  });
 });
+import {coachStep} from '../src/tutorial.ts';
+describe('first battle coach',()=>{
+ it('walks through select, move, act and end turn',()=>{
+  const u=(id:string,hasMoved=false,hasActed=false)=>({id,hasMoved,hasActed});
+  expect(coachStep(1,true,[u('a'),u('b')],'a')).toContain('①');
+  expect(coachStep(1,true,[u('a',true),u('b')],'a')).toContain('②');
+  expect(coachStep(1,true,[u('a',true,true),u('b')],'b')).toContain('③');
+  expect(coachStep(1,true,[u('a',true,true),u('b',false,true)],'b')).toContain('④');
+  expect(coachStep(2,true,[u('a')],'a')).toBeUndefined();expect(coachStep(1,false,[u('a')],'a')).toBeUndefined();
+ });
+});

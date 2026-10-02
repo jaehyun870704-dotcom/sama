@@ -11,7 +11,7 @@
 
 ## 보물
 
-- 프로젝트: packages/web/public/treasures-v1.png
+- 프로젝트: packages/web/public/treasures-v2.png (v1은 쓰지 않아 2026-10-03 삭제)
 - 생성 원본: C:/Users/kjh87/.codex/generated_images/01a0c0de-c146-7673-93e7-f0ebde08c580/exec-dbbea5a8-a808-456a-b2ff-51f38b574d60.png
 - 제작 지시 요약: 어두운 배경의 4×4 삼국지 장비 아이콘, 금속·비단·옥 질감, 텍스트 없는 동일 셀 크기.
 - 행 순서: 백은갑/의천검/둔갑천서/태평청령서, 칠성보도/적로 장구/맹덕신서/청강검, 청룡언월도/장팔사모/방천화극/활, 적토마 장구/백우선/옥새/철갑.
