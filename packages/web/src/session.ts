@@ -27,6 +27,8 @@ import bridgeStage from '../../data/stages/S1-09.json';
 import bridgeMap from '../../data/maps/hanzhong-hanshui-bridge.json';
 import floodStage from '../../data/stages/S1-10.json';
 import floodMap from '../../data/maps/hanzhong-hanshui-flood.json';
+import courtStage from '../../data/stages/S1-11.json';
+import courtMap from '../../data/maps/jianye-court.json';
 import legacyFortMap from './legacy/hanzhong-map-v2.json';
 import legacyFortStage from './legacy/hanzhong-stage-v2.json';
 import { makeUnit, awardedSeals } from '../../core/src/index.ts';
@@ -42,9 +44,10 @@ export const chapters = [
   {stage:approachStage as StageDef,map:approachMap as MapFile,year:'건안 이십년 · 215년',label:'산길 돌파와 병종 연계',quote:'공을 앞세우기 전에, 함께 돌아올 길부터 열겠습니다.'},
   {stage:bridgeStage as StageDef,map:bridgeMap as MapFile,year:'건안 이십사년 · 219년',label:'부교 재건과 호위',quote:'물러날 길을 놓는 것도, 싸움의 절반이다.'},
   {stage:floodStage as StageDef,map:floodMap as MapFile,year:'건안 이십사년 · 219년',label:'봉쇄와 탈출',quote:'막을 수 없는 창이라면, 움직일 수 없게 하라.'},
+  {stage:courtStage as StageDef,map:courtMap as MapFile,year:'건안 이십사년 · 219년',label:'논거와 설득',quote:'칼 한 자루보다, 맞는 말 한마디가 강을 건넌다.'},
 ];
 // Stable indices preserve the existing v2 command saves.
-export const campaignOrder=[2,0,3,4,5,6,7,1,8,9];
+export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10];
 export type Preparation='survival'|'strategy'|'command';
 export const strategies: StrategyDef[] = [
   {id:'windDragon',name:'풍룡',element:'wind',shape:'spread',range:4,radius:1,mpCost:18,power:130,targetSides:['enemy']},
@@ -157,8 +160,12 @@ export class Session {
     if(result.ok){this.checkpoints.push(this.journal.length);this.journal.push(structuredClone(cmd));}
     return result;
   }
-  private resetScenario(){this.fortified.clear();this.breached.clear();this.activeDuel=null;this.lastDuel=null;this.challenged.clear();this.funds=3000;this.bribes=0;this.medicine=2;this.scouted=false;this.failure='';this.phaseCheckpoint=null;this.phase=this.chapter===8&&this.state.scenarioPhase==='부교 재건'?'부교 재건 0/2 · 강변을 지키세요':this.chapter===9&&this.state.scenarioPhase==='조운 봉쇄'?`조운 봉쇄 ${encircled(this.state,'zhao_yun')}/4 · 사방을 막으세요`:this.state.scenarioPhase|| (this.chapter===2?'창고 확보':this.chapter===0?'잠입':this.chapter===3?'탈출로 선택':this.chapter===5?'수송로 선택':this.chapter===6?'호위 병력 배치':'외곽 돌파');}
+  private resetScenario(){this.fortified.clear();this.breached.clear();this.activeDuel=null;this.lastDuel=null;this.challenged.clear();this.funds=3000;this.bribes=0;this.medicine=2;this.scouted=false;this.failure='';this.phaseCheckpoint=null;this.phase=this.chapter===10?`설득 · 장소 · 신뢰 ${this.trustLimit}/${this.trustLimit}`:this.chapter===8&&this.state.scenarioPhase==='부교 재건'?'부교 재건 0/2 · 강변을 지키세요':this.chapter===9&&this.state.scenarioPhase==='조운 봉쇄'?`조운 봉쇄 ${encircled(this.state,'zhao_yun')}/4 · 사방을 막으세요`:this.state.scenarioPhase|| (this.chapter===2?'창고 확보':this.chapter===0?'잠입':this.chapter===3?'탈출로 선택':this.chapter===5?'수송로 선택':this.chapter===6?'호위 병력 배치':'외곽 돌파');}
   get pressure(){return this.state.turn-1+(this.state.choices.some(c=>c.nodeId==='bluff_warning'&&c.optionId==='commit')?2:0);}
+  /** S1-11: the court's trust. Every wrong argument costs one; at zero the embassy fails. */
+  get trustLimit(){return this.difficulty==='extreme'?2:3;}
+  get wrongAnswers(){return this.state.choices.filter(c=>this.battle.dialogue.has(c.nodeId)&&this.battle.dialogue.node(c.nodeId).options.find(o=>o.id===c.optionId)?.correct===false).length;}
+  get trust(){return Math.max(0,this.trustLimit-this.wrongAnswers);}
   get pressureLimit(){return this.difficulty==='extreme'?9:12;}
   private execute(cmd:Command){
     const s=this.state;
@@ -246,7 +253,11 @@ export class Session {
     if(this.revision===4)applyOfficerFeatures(s.living(),this.deployment?.growth);
     // Breach rally belongs to the revision-4 siege rules (ram company, engineers).
     if(this.revision===4)for(const gate of s.units.values())if(structureKind(gate.id)==='gate'&&!gate.alive&&!this.breached.has(gate.id)){this.breached.add(gate.id);breachRally(s,gate);}
-    if(this.chapter===9&&s.scenarioPhase==='조운 봉쇄'){
+    if(this.chapter===10){
+      const who:Record<string,string>={zhang_zhao:'장소',lu_meng:'여몽',zhuge_jin:'제갈근',sun_quan:'손권',accord:'맹약'};
+      this.phase=`설득 · ${who[s.activeDialogue??'']??'맹약'} · 신뢰 ${this.trust}/${this.trustLimit}`;
+      if(s.outcome==='ongoing'&&this.trust<=0){this.failure='손권 조정의 신뢰를 잃었습니다. 사신단이 쫓겨났습니다.';s.activeDialogue=null;s.outcome='defeat';s.push({t:'outcome',outcome:'defeat'});}
+    }else if(this.chapter===9&&s.scenarioPhase==='조운 봉쇄'){
       this.phase=`조운 봉쇄 ${encircled(s,'zhao_yun')}/4 · 사방을 막으세요`;
       if(s.outcome==='defeat'&&!s.find('cao_cao')?.alive)this.failure='조조가 퇴각했습니다.';
     }else if(this.chapter===8&&s.scenarioPhase==='부교 재건'){
@@ -299,12 +310,13 @@ export class Session {
   }
   get seals(){
     if(this.state.outcome!=='victory')return [];
+    if(this.chapter===10){const finalTries=this.state.choices.filter(c=>c.nodeId==='sun_quan').length;return [1,...(this.wrongAnswers===0?[2]:[]),...(finalTries===1?[3]:[])];}
     if(this.chapter===9)return [1,...(this.state.firedEvents.has('flood/lock')?[2]:[]),...(this.state.turn<=(this.difficulty==='extreme'?12:14)?[3]:[])];
     if(this.chapter===5)return [1,...(['convoy_a','convoy_b'].every(id=>this.state.find(id)?.alive)?[2]:[]),...(this.state.turn<=(this.difficulty==='extreme'?9:10)?[3]:[])];
     if(this.chapter===0)return [1,...(this.bribes===0&&!this.state.choices.some(c=>c.nodeId==='bribe')?[2]:[]),...(['sima_yi','sima_lang'].every(id=>{const u=this.state.get(id);return u.alive&&u.hp>=u.stats.maxHp*.5;})?[3]:[])];
     return awardedSeals(this.state,this.difficulty);
   }
-  get sealNames(){return this.chapter===9?['조조 탈출','조운 봉쇄','신속한 철수']:this.chapter===8?['야곡 출구 도착','손실 최소화','신속한 철수']:this.chapter===7?['전초 수비망 격파','전 부대 생환','신속한 진격']:this.chapter===6?['관문 돌파','호위 부대 보존','신속한 제압']:this.chapter===5?['수송대 탈출','수송대 두 부대 생존','신속한 철수']:this.chapter===4?['흉몽 돌파','사마의 생존','빠른 각성']:this.chapter===0?['탈출 성공','무발각 잠입','형제 체력 50%']:this.chapter===2?['가문 수호','민중·부대 전원 생존','신속한 방어']:this.chapter===3?['산길 탈출','형제 생존','추격 따돌리기']:['성채 점령','신속한 결단','병력 보존'];}
+  get sealNames(){return this.chapter===10?['맹약 성사','실언 없는 설득','손권을 단번에']:this.chapter===9?['조조 탈출','조운 봉쇄','신속한 철수']:this.chapter===8?['야곡 출구 도착','손실 최소화','신속한 철수']:this.chapter===7?['전초 수비망 격파','전 부대 생환','신속한 진격']:this.chapter===6?['관문 돌파','호위 부대 보존','신속한 제압']:this.chapter===5?['수송대 탈출','수송대 두 부대 생존','신속한 철수']:this.chapter===4?['흉몽 돌파','사마의 생존','빠른 각성']:this.chapter===0?['탈출 성공','무발각 잠입','형제 체력 50%']:this.chapter===2?['가문 수호','민중·부대 전원 생존','신속한 방어']:this.chapter===3?['산길 탈출','형제 생존','추격 따돌리기']:['성채 점령','신속한 결단','병력 보존'];}
   restorePhase(){if(this.phaseCheckpoint===null)return false;this.journal=this.journal.slice(0,this.phaseCheckpoint);this.checkpoints=this.checkpoints.filter(n=>n<this.journal.length);this.replay();return true;}
   tick(){
     if(this.state.outcome!=='ongoing' || this.state.activeDialogue || this.activeDuel) return false;

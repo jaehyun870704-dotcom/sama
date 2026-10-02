@@ -36,3 +36,20 @@ describe('한중 공방전 下 · 범람',()=>{
   expect(s.state.map.tileAt(cell).terrain).toBe('ford');
  });
 });
+describe('동오 설득전 · 혀에 걸린 사활',()=>{
+ const court=(d:'normal'|'extreme'='normal')=>new Session(10,d,215,'survival',4,deployment(freshCampaign(),true));
+ const answer=(s:Session,id:string)=>s.act({kind:'choose',nodeId:s.state.activeDialogue!,optionId:id});
+ it('opens with Zhang Zhao and wins with four right arguments and the pledge',()=>{
+  const s=court();expect(s.state.activeDialogue).toBe('zhang_zhao');expect(s.phase).toContain('신뢰 3/3');
+  for(const id of ['present','cede','loan','pledge','seal'])expect(answer(s,id).ok).toBe(true);
+  expect(s.state.outcome).toBe('victory');expect(s.seals).toEqual([1,2,3]);
+ });
+ it('re-asks after a wrong argument and fails when trust runs out',()=>{
+  const s=court('extreme');answer(s,'arrogant');expect(s.state.activeDialogue).toBe('zhang_zhao');expect(s.trust).toBe(1);
+  answer(s,'threat');expect(s.state.outcome).toBe('defeat');expect(s.failure).toContain('신뢰');
+ });
+ it('keeps one wrong answer from the no-mistake seal but still clears',()=>{
+  const s=court();for(const id of ['present','han','cede','loan','pledge','seal'])answer(s,id);
+  expect(s.state.outcome).toBe('victory');expect(s.seals).toEqual([1,3]);
+ });
+});
