@@ -42,7 +42,13 @@ export function decide(state: BattleState, unit: Unit): Command[] {
 
   // 목표 지점 위에 서 있다면 목표 달성이 최우선이다.
   const objective = objectiveRegion(state, unit);
-  if (objective && onRegion(state, unit, objective.region)) {
+  if (objective && !objective.claims && onRegion(state, unit, objective.region)) {
+    // 점령해도 조건을 채우지 못하는 편입 아군은 점령 칸을 비켜 본대가 들어설 자리를 연다.
+    const exit = decodeAll(reach).filter((c) => !onRegion(state, { ...unit, pos: c }, objective.region))
+      .sort((a, b) => manhattan(a, unit.pos) - manhattan(b, unit.pos) || a.y - b.y || a.x - b.x)[0];
+    if (exit) return [{ kind: "move", unit: unit.id, to: exit }, { kind: "wait", unit: unit.id }];
+  }
+  if (objective && objective.claims && onRegion(state, unit, objective.region)) {
     // reach 목표는 서 있는 것만으로 충족된다 — 점령 명령을 낼 대상이 아니다.
     return objective.kind === "capture"
       ? [{ kind: "capture", unit: unit.id, region: objective.region }]
@@ -135,6 +141,9 @@ function isNonCombatant(unit: Unit): boolean {
 interface Objective {
   region: string;
   kind: "capture" | "reach";
+  /** 이 유닛의 점령이 조건을 충족시키는가. 편입 아군은 플레이어 점령 목표를 공유하지만
+   *  스스로 점령해도 조건이 충족되지 않는다. */
+  claims: boolean;
 }
 
 /**
@@ -155,12 +164,12 @@ function objectiveRegion(state: BattleState, unit: Unit): Objective | null {
       const by = cond.by ?? "player";
       // 편입 아군은 플레이어의 목표를 공유한다
       if (by === unit.side || (by === "player" && unit.side === "ally")) {
-        return { region: cond.target, kind: "capture" };
+        return { region: cond.target, kind: "capture", claims: by === unit.side };
       }
     }
 
     if (cond.type === "reach" && cond.unit === unit.id) {
-      return { region: cond.target, kind: "reach" };
+      return { region: cond.target, kind: "reach", claims: true };
     }
   }
   return null;
@@ -179,6 +188,7 @@ function onRegion(state: BattleState, unit: Unit, region: string): boolean {
  */
 function isObjectiveCarrier(state: BattleState, unit: Unit, objective: Objective): boolean {
   if (objective.kind === "reach") return true;
+  if (!objective.claims) return false;
 
   const coords = state.map.regionCoords(objective.region);
   const distanceOf = (u: Unit) =>
@@ -188,7 +198,7 @@ function isObjectiveCarrier(state: BattleState, unit: Unit, objective: Objective
   for (const other of state.living()) {
     if (other.id === unit.id) continue;
     const theirs = objectiveRegion(state, other);
-    if (theirs?.region !== objective.region || theirs.kind !== "capture") continue;
+    if (theirs?.region !== objective.region || theirs.kind !== "capture" || !theirs.claims) continue;
     const d = distanceOf(other);
     if (d < mine || (d === mine && other.id < unit.id)) return false;
   }

@@ -9,7 +9,7 @@ import {campMarkup} from './camp.ts';
 import {officerFeatures,talentTree,strategyHint,martialPower} from './officers.ts';
 import {actionNames,duelActionNames,duelLine,type DuelAction} from './duel.ts';
 import {spriteAtlas} from './sprite-atlas.ts';
-import {encounterLevels,structureKind} from './campaign-rules.ts';
+import {encounterLevels,structureKind,structureFrame} from './campaign-rules.ts';
 import {readCampaign,writeCampaign,deployment,levelInfo,award,equip,equipSlot,treasureInfo,type GearSlot,treasures,OFFICERS} from './progression.ts';
 import {storyBeats,storyLocations,storyBackdrop,acts,stories} from './story.ts';
 import './style.css';
@@ -17,8 +17,9 @@ import catalogue from './campaign.json';
 import { Session, chapters, campaignOrder, type Preparation } from './session.ts';
 import { Battlefield, classNames, terrainNames, unitName } from './battlefield.ts';
 import { Soundscape } from './audio.ts';
+import {placeFor} from './music.ts';
 import { CONTROLLABLE, ignoresRough, awardedSeals, estimatePhysical, estimateStrategy, manhattan } from '../../core/src/index.ts';
-import type { Command, Coord, LogEntry, Unit } from '../../core/src/index.ts';
+import type { Command, Coord, LogEntry, TerrainKind, Unit } from '../../core/src/index.ts';
 
 const $=<T extends HTMLElement=HTMLElement>(selector:string)=>document.querySelector<T>(selector)!;
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -146,7 +147,8 @@ function activate(){
   hasStarted=true;menuOpen=false;resultShown=false;duelPresented=false;mode='move';
   selected=session.state.living(session.state.currentSide).find(u=>!u.hasActed)?.id??'sima_yi';
   lastLog=session.state.log.length;field.load(session.state);const u=session.state.find(selected);if(u)field.focusUnit(u.pos);
-  sound.scene='battle';sound.combat=session.chapter!==0;void sound.start().then(updateSound);
+  const m=session.state.map,terrain:TerrainKind[]=[];for(let y=0;y<m.height;y++)for(let x=0;x<m.width;x++)terrain.push(m.tileAt({x,y}).terrain);
+  sound.scene='battle';sound.place=placeFor(session.state.stage.id,terrain);sound.focus=undefined;sound.combat=session.chapter!==0;void sound.start().then(updateSound);
   $<HTMLDialogElement>('#modal').close();render();pump();
 }
 function persist(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(session.save()));saveAvailable=true;$('#save-status').textContent='✓ 자동 저장됨';}catch{$('#save-status').textContent='저장 공간 사용 불가';}}
@@ -154,19 +156,20 @@ function describe(e:LogEntry){const name=(id:string)=>session.state.find(id)?.na
   case 'turnStart':return `${e.turn}턴 · ${sideNames[e.side]}의 차례입니다.`;
   case 'move':return `${name(e.unit)} 이동 · ${terrainNames[session.state.map.tileAt(e.to).terrain]}`;
   case 'attack':case 'counter':return `${name(e.attacker)}${e.t==='counter'?' 반격':' 공격'} → ${name(e.defender)} · ${e.hit?e.damage+' 피해':'회피'}`;
-  case 'strategy':return `${name(e.caster)} · ${e.strategy==='heal'?'치유':session.state.strategies.get(e.strategy)?.name??e.strategy} · ${Math.abs(e.damage.reduce((a,b)=>a+b,0))}${e.damage.some(d=>d<0)?' 회복':e.damage.every(d=>d===0)?' 지원':' 피해'}`;
-  case 'retreat':return `${name(e.unit)} 퇴각`;
+  case 'strategy':return `${name(e.caster)} · ${e.strategy==='heal'?'치유':e.strategy==='repair'?'수리':session.state.strategies.get(e.strategy)?.name??e.strategy} · ${Math.abs(e.damage.reduce((a,b)=>a+b,0))}${e.damage.some(d=>d<0)?' 회복':e.damage.every(d=>d===0)?' 지원':' 피해'}`;
+  case 'retreat':return structureKind(e.unit)==='gate'?`${name(e.unit)} 파괴 · 성문 돌파! 주변 아군 사기 상승`:`${name(e.unit)} ${structureKind(e.unit)?'파괴':'퇴각'}`;
+  case 'spawn':return e.units.some(id=>structureKind(id)==='barricade')?'공병이 방책을 세웠습니다.':'';
   case 'outcome':return e.outcome==='victory'?'작전 성공.':'작전 실패.';
   case 'choice':return '선택에 따라 전장의 흐름이 바뀝니다.';
   default:return '';
 }}
-function consumeLog(){const logs=session.state.log.slice(lastLog);lastLog=session.state.log.length;field.play(logs);for(const e of logs){const line=describe(e);if(line)$('#latest-log').textContent=line;if(e.t==='turnStart'){const banner=$('#phase-banner');banner.textContent=`${sideNames[e.side]}의 차례`;banner.classList.add('show');setTimeout(()=>banner.classList.remove('show'),1300);sound.sfx('turn');}}}
+function consumeLog(){const logs=session.state.log.slice(lastLog);lastLog=session.state.log.length;field.play(logs);for(const e of logs){const line=describe(e);if(line)$('#latest-log').textContent=line;if(e.t==='turnStart'){const banner=$('#phase-banner');banner.textContent=`${sideNames[e.side]}의 차례`;banner.classList.add('show');setTimeout(()=>banner.classList.remove('show'),1300);sound.sfx('turn');if(e.side!=='player')sound.focus=undefined;}}}
 function portraitFor(u:Unit,reaction=false):string{
   const art=troopArt[u.unitClass];if(art)return `<span class="battle-model" role="img" aria-label="${unitName(u)}" style="background-image:var(--${art.sheet}${reaction?'-reaction':''}-atlas);background-size:400% ${art.rows*100}%;background-position:${reaction?33.333333:0}% ${art.row/(art.rows-1)*100}%"></span>`;
   const role=troopRoles[u.unitClass];if(role)return `<span class="troop-portrait" style="filter:sepia(.18)">${portraitFor({...u,unitClass:visualClass(u.unitClass)})}<b style="color:#${role.tint.toString(16)}">${role.name}</b></span>`;
   if(u.unitClass==='ram')return '<span class="battle-model" role="img" aria-label="충차" style="background-image:var(--ram-atlas);background-size:200% 200%;background-position:0 0"></span>';
   if(u.id.startsWith('convoy_'))return `<span class="battle-model" role="img" aria-label="수송대" style="background-image:url(/convoys-v1.png);background-size:400% 200%;background-position:0 ${u.id==='convoy_b'?100:0}%"></span>`;
-  const structure=structureKind(u.id);if(structure)return `<span class="battle-model" role="img" aria-label="${unitName(u)}" style="background-image:url(/scenery-v3.png);background-size:400% 200%;background-position:${structure==='gate'?66.666:100}% 0"></span>`;
+  const structure=structureKind(u.id);if(structure){const f=structureFrame(structure);return `<span class="battle-model" role="img" aria-label="${unitName(u)}" style="background-image:url(/scenery-v3.png);background-size:400% 200%;background-position:${f%4/3*100}% ${Math.floor(f/4)*100}%"></span>`;}
   const extra=['crossbow','heavyCav','engineer','fengshui'].indexOf(u.unitClass),row=extra>=0?extra:['strategist','civilian'].includes(u.unitClass)?4:u.unitClass==='spearman'?1:u.unitClass==='archer'?2:u.unitClass==='cavalry'?3:u.unitClass==='catapult'?5:0;
   return `<span class="battle-model" role="img" aria-label="${unitName(u)}" style="background-image:var(--${extra>=0?'extra':'base'}-atlas);background-size:400% ${extra>=0?400:600}%;background-position:0 ${row/(extra>=0?3:5)*100}%"></span>`;
 }
@@ -197,15 +200,16 @@ function renderUnit(u:Unit|undefined){
   $('#unit-detail').innerHTML=`<div class="portrait"><div>${portraitFor(u)}</div><span class="portrait-tag">${sideNames[u.side]}</span><div class="portrait-title"><h2>${unitName(u)}</h2><span>${classNames[u.unitClass]}</span></div></div><p class="troop-tactic-card">${troopAdvice[u.unitClass]}<br><small>일반 공격 사거리 ${u.range[0]}~${u.range[1]}</small></p><div class="unit-meta"><span>${classNames[u.unitClass]}</span><b>Lv.${u.level}</b></div>${[['hp','체력',u.hp,u.stats.maxHp],['mp','책략',u.mp,u.stats.maxMp]].map(([kind,name,value,max])=>`<div class="stat-bar ${kind}"><div><span>${name}</span><b>${value}<small> / ${max}</small></b></div><i><i style="width:${Number(value)/Math.max(1,Number(max))*100}%"></i></i></div>`).join('')}<div class="stats">${[['무력',martialPower(u)],['공격',u.stats.attack],['방어',u.stats.defense],['지력',u.stats.intellect],['이동',u.stats.movement]].map(([k,v])=>`<div><small>${k}</small><b>${v}</b></div>`).join('')}</div>${feature?session.deployment?.growth&&['sima_yi','sima_lang','sima_fang','cao_zhen'].includes(u.id)?talents.map(t=>`<p class="feature-card ${t.ready?'':'locked'}"><b>${t.ready?'◆':'◇'} ${t.name}</b><br>${t.ready?t.description:t.requirement}</p>`).join(''):`<p class="feature-card"><b>${feature.name}</b><br>${feature.description}</p>`:''}${u.statuses.length?`<p>${u.statuses.map(x=>({confusion:'혼란',burn:'화상',seal:'봉인',immobile:'속박'}[x.kind as string]??x.kind)+' '+x.turns+'턴').join(' · ')}</p>`:''}`;
   const buttons=[{id:'move',name:'이동',icon:'➶',meta:'1',disabled:u.hasMoved},{id:'attack',name:'공격',icon:'⚔',meta:'2',disabled:u.unitClass==='civilian'},...u.strategies.map(id=>({id,name:s.strategies.get(id)!.name,icon:({fire:'火',windDragon:'風',bind:'縛',confuse:'惑',flood:'水',thunder:'雷',inferno:'焰'} as Record<string,string>)[id]??'策',meta:s.strategies.get(id)!.mpCost+' MP',disabled:u.mp<s.strategies.get(id)!.mpCost||s.hasStatus(u,'seal')})),{id:'wait',name:'대기',icon:'◷',meta:'W',disabled:false}];
   if(session.deployment&&u.unitClass==='fengshui')buttons.push({id:'heal',name:'치유',icon:'癒',meta:'8 MP',disabled:u.mp<8||s.hasStatus(u,'seal')});
+  if(u.unitClass==='engineer')buttons.push({id:'repair',name:'수리',icon:'工',meta:'인접',disabled:false},{id:'fortify',name:'방책',icon:'柵',meta:session.barricadesLeft(u.id)+'회',disabled:session.barricadesLeft(u.id)<=0});
   if(session.revision===4&&!['civilian','ram','catapult'].includes(u.unitClass)&&!structureKind(u.id))buttons.push({id:'duel',name:'일기토',icon:'鬪',meta:'5합',disabled:false},{id:'debate',name:'설전',icon:'論',meta:'5합',disabled:false});
   buttons.push({id:'scout',name:'살피기',icon:'眼',meta:'행동',disabled:session.scouted},{id:'medicine',name:'구급약',icon:'藥',meta:String(session.medicine),disabled:!u.canUseItems||u.unitClass==='civilian'||!session.medicine||u.hp===u.stats.maxHp});
   const region=[...s.map.regions].find(([name,coords])=>s.victory.some(v=>v.type==='capture'&&v.target===name)&&coords.some(c=>c.x===u.pos.x&&c.y===u.pos.y));
   if(region&&u.side==='player')buttons.push({id:'capture',name:'거점 확보',icon:'⚑',meta:'',disabled:session.chapter===6&&!!s.find('ma_chao')?.alive});
   $('#commands').innerHTML=buttons.map(b=>`<button title="${strategyHint(b.id)}" data-command="${b.id}" class="${mode===b.id?'active':''}" ${!can||b.disabled||field.busy?'disabled':''}><span>${b.icon}</span>${b.name}<small>${b.meta}</small></button>`).join('');
   document.querySelectorAll<HTMLButtonElement>('[data-command]').forEach(b=>b.onclick=()=>{const id=b.dataset.command!;if(id==='wait')act({kind:'wait',unit:u.id});else if(id==='capture'&&region)act({kind:'capture',unit:u.id,region:region[0]});else if(['scout','medicine'].includes(id)){if(id==='scout')threat=true;act({kind:'item',unit:u.id,item:id});}else{mode=id;render();}});
-  $('#command-hint').textContent=!can?'해당 부대의 차례에 조작할 수 있습니다.':mode==='move'?'푸른 칸을 선택해 이동하세요.':mode==='heal'?'3칸 이내 부상당한 아군을 선택하세요.':s.strategies.get(mode)?.targetSides.includes('player')?'사거리 안의 아군을 선택해 지원하세요.':mode==='duel'?'인접한 적을 선택하세요. 무력으로 5합을 겨룹니다.':mode==='debate'?'3칸 이내 적을 선택하세요. 지력으로 5합을 겨룹니다.':'사거리 안의 적을 선택하세요.';
+  $('#command-hint').textContent=!can?'해당 부대의 차례에 조작할 수 있습니다.':mode==='move'?'푸른 칸을 선택해 이동하세요.':mode==='heal'?'3칸 이내 부상당한 아군을 선택하세요.':mode==='repair'?'인접한 아군 충차·포차·방책·성문을 선택해 수리하세요.':mode==='fortify'?'인접한 빈 칸을 선택해 방책을 세우세요.':s.strategies.get(mode)?.targetSides.includes('player')?'사거리 안의 아군을 선택해 지원하세요.':mode==='duel'?'인접한 적을 선택하세요. 무력으로 5합을 겨룹니다.':mode==='debate'?'3칸 이내 적을 선택하세요. 지력으로 5합을 겨룹니다.':'사거리 안의 적을 선택하세요.';
 }
-function select(id:string){selected=id;const u=session.state.find(id);if(u)field.focusUnit(u.pos);mode=u?.hasMoved?'attack':'move';sound.sfx('select');render();}
+function select(id:string){selected=id;const u=session.state.find(id);if(u)field.focusUnit(u.pos);mode=u?.hasMoved?'attack':'move';sound.select(u?.unitClass);render();}
 function act(command:Command){
   if(field.busy){toast('동작이 끝나면 명령할 수 있습니다.');return;}
   if(menuOpen||$<HTMLDialogElement>('#modal').open&&command.kind!=='choose'&&!(command.kind==='item'&&command.item.startsWith('duel-round:')))return;
@@ -243,11 +247,13 @@ function checkModal(){
   }
   if(s.activeDialogue){const node=session.battle.dialogue.node(s.activeDialogue);modal(`<div class="dialogue"><div class="eyebrow">전장의 갈림길</div>${dialogueCaption(node.speaker?s.find(node.speaker)?.name??node.speaker:'해설',node.text)}${session.chapter===0?`<p>지참금 ${session.funds}전 · 남문 통행료 1,000전 확보</p>`:''}<div class="dialogue-options">${node.options.map((o,i)=>`<button data-choice="${o.id}"><span>0${i+1}</span>${esc(o.text)}</button>`).join('')}</div><button id="dialogue-undo">직전 선택 무르기</button></div>`,false);$('#dialogue-undo').onclick=undo;document.querySelectorAll<HTMLButtonElement>('[data-choice]').forEach(b=>b.onclick=()=>{$<HTMLDialogElement>('#modal').close();act({kind:'choose',nodeId:node.id,optionId:b.dataset.choice!});});}
 }
-field.onCue=kind=>sound.sfx(kind);field.onAnimationEnd=()=>{render();pump();};
+field.onCue=(kind,actor,target)=>sound.cue(kind,actor?.unitClass,target);field.onAnimationEnd=()=>{render();pump();};
 field.onCell=at=>{
   if(field.busy||menuOpen)return;const s=session.state,u=s.find(selected),target=s.unitAt(at);
   if(u?.alive&&u.side===s.currentSide&&CONTROLLABLE.has(u.side)&&!u.hasActed){
     if(mode==='heal'&&target){act({kind:'item',unit:u.id,item:'heal',target:target.id});return;}
+    if(mode==='repair'&&target&&target.side!=='enemy'){act({kind:'item',unit:u.id,item:'repair',target:target.id});return;}
+    if(mode==='fortify'&&!target){act({kind:'item',unit:u.id,item:'fortify',target:at.x+','+at.y});return;}
     if(target?.side==='enemy'&&(mode==='duel'||mode==='debate')){act({kind:'item',unit:u.id,item:mode,target:target.id});return;}
     if(target?.side==='enemy'&&mode==='attack'){act({kind:'attack',unit:u.id,target:target.id});return;}
     if(s.strategies.has(mode)){act({kind:'strategy',unit:u.id,strategy:mode,at});return;}

@@ -2,7 +2,7 @@ import type {StageDef,MapFile,BattleState} from '../../core/src/index.ts';
 export type TrialObjective='annihilate'|'capture'|'escort'|'rescue'|'defend';
 export interface TrialGoal {kind:TrialObjective;name:string;targetName?:string;turns?:number}
 export const trialGoals:Record<string,TrialGoal>={
- T01:{kind:'annihilate',name:'기초 섬멸'},T02:{kind:'rescue',name:'보급대 구출',targetName:'고립된 보급병'},T03:{kind:'defend',name:'본영 방어',turns:5},T04:{kind:'escort',name:'교량 수송',targetName:'교량 수송대'},T05:{kind:'capture',name:'진형 돌파'},T06:{kind:'defend',name:'파상 공세 방어',turns:7},
+ T01:{kind:'annihilate',name:'기초 섬멸'},T02:{kind:'rescue',name:'보급대 구출',targetName:'고립된 보급병'},T03:{kind:'defend',name:'본영 방어',turns:5},T04:{kind:'escort',name:'교량 수송',targetName:'교량 수송대'},T05:{kind:'capture',name:'진형 돌파'},T06:{kind:'defend',name:'파상 공세 방어',turns:7},T07:{kind:'annihilate',name:'수채 소탕'},
  Q01:{kind:'escort',name:'무구 수레 호위',targetName:'무구 수레'},Q02:{kind:'capture',name:'군수고 점령'},Q03:{kind:'rescue',name:'장인 구출',targetName:'붙잡힌 장인'},Q04:{kind:'capture',name:'사격 진지 확보'},Q05:{kind:'defend',name:'병서 보관소 방어',turns:6},Q06:{kind:'rescue',name:'군마 회수',targetName:'군마 관리인'},Q07:{kind:'annihilate',name:'부대 연계 시험'},Q08:{kind:'escort',name:'상인 호위',targetName:'피난 상인'},Q09:{kind:'rescue',name:'의원 구출',targetName:'억류된 의원'},Q10:{kind:'capture',name:'팔진 중심 점령'},Q11:{kind:'defend',name:'기록 보관소 방어',turns:7}
 };
 export function trialGoalText(id:string){const g=trialGoals[id];if(!g)return '적 전멸';switch(g.kind){

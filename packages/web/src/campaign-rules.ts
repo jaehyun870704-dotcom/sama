@@ -18,7 +18,9 @@ export function campaignStage(source:StageDef):StageDef{
   }
   return s;
 }
-export function structureKind(id:string){return /^gate_\d+_\d+$/.test(id)?'gate':/^tower_\d+_\d+$/.test(id)?'tower':undefined;}
+export function structureKind(id:string){return /^gate_\d+_\d+$/.test(id)?'gate':/^tower_\d+_\d+$/.test(id)?'tower':/^barricade_\d+_\d+$/.test(id)?'barricade':undefined;}
+/** Frame in the 4×2 scenery sheet: gate, watchtower, and the wall segment reused as a barricade. */
+export function structureFrame(kind:'gate'|'tower'|'barricade'){return kind==='gate'?2:kind==='tower'?3:7;}
 export function addFortifications(state:BattleState){
   if(!['S1-08','S1-06'].includes(state.stage.id))return;
   const level=(state.stage.id==='S1-06'?6:5)+(state.difficulty==='extreme'?2:0);
