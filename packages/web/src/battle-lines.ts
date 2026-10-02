@@ -39,6 +39,13 @@ export const battleLines:Record<string,BattleLine[]>={
     {id:'reinforce',when:{turn:6},speaker:'사마의',text:'북문으로 증원이 옵니다. 다리를 막고 성채로 곧장 가십시오.'},
     {id:'chief-down',when:{retreat:'zhang_lu'},speaker:'사마의',text:'수비대장이 물러났다. 지금이다, 성채로!'},
   ],
+  'S2-01':[
+    {id:'open-1',when:{turn:1},speaker:'조진',text:'성채 한가운데를 내주면 끝이다. 문 네 개를 나눠 지키게.'},
+    {id:'open-2',when:{turn:1},speaker:'사마의',text:'무당에게는 책략을 쓰지 마십시오. 그 힘이 그대로 돌아옵니다. 궁병과 창병이 맡을 상대입니다.'},
+    {id:'shaman',when:{turn:2},speaker:'반란군 무당',text:'하늘의 벌이 너희 술수를 너희에게 돌려주리라!'},
+    {id:'wave',when:{turn:4},speaker:'조진',text:'동쪽에서 두 무리가 더 온다! 동문을 비우지 마라.'},
+    {id:'shaman-down',when:{retreat:'rebel_shaman'},speaker:'사마의',text:'무당이 쓰러졌다. 이제 책략을 마음껏 쓰셔도 됩니다.'},
+  ],
   'S1-10':[
     {id:'open-1',when:{turn:1},speaker:'사마의',text:'조운의 앞·뒤·좌·우를 모두 막아야 합니다. 강물과 바위도 벽이 됩니다.'},
     {id:'open-2',when:{turn:1},speaker:'조운',text:'상산의 조자룡이 여기 있다! 조조의 목을 내놓아라!'},

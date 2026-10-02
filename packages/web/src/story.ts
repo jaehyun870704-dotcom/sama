@@ -23,6 +23,7 @@ export const storyLocations:Record<string,Array<{art:number;name:string;companio
   'S1-05':[{art:16,name:'장강 · 수송대 집결지',companion:'조진'},{art:7,name:'장강 · 퇴각로 정찰',companion:'조진'},{art:15,name:'장강 · 교량 앞',companion:'조진'}],
   'S1-06':[{art:8,name:'동관 · 관문 앞',companion:'조진'},{art:16,name:'동관 · 승상 군영 후방',companion:'조진'},{art:14,name:'동관 · 출진 군의',companion:'허저'}],
   'S1-08':[{art:14,name:'한중 · 본대 군막',companion:'조진'},{art:17,name:'한중 · 성채 정찰',companion:'조진'},{art:4,name:'한중 · 교량 접근로',companion:'조진'}],
+  'S2-01':[{art:14,name:'낙양 · 새 왕조의 조회',companion:'조진'},{art:8,name:'무위 · 성채 망루',companion:'조진'},{art:16,name:'무위 · 성채 마당',companion:'조진'}],
   'S1-11':[{art:14,name:'장안 · 위왕의 군의',companion:'조진'},{art:7,name:'장강 · 건업으로 가는 배',companion:'조진'},{art:5,name:'건업 · 궁정 앞 계단',companion:'조진'}],
   'S1-10':[{art:16,name:'한수 · 무너진 진영',companion:'조진'},{art:7,name:'한수 · 불어나는 강가',companion:'조진'},{art:4,name:'한수 · 북쪽 고갯길',companion:'조진'}],
   'S1-09':[{art:14,name:'한중 · 철수 군의',companion:'조진'},{art:15,name:'한수 · 불탄 부교터',companion:'조진'},{art:7,name:'한수 · 강변 정찰',companion:'조진'}],
@@ -66,6 +67,11 @@ export const storyBeats:Record<string,StoryBeat[]>={
     {speaker:'사마의',line:'수레를 버리면 오늘은 빨라도 내일 싸울 수 없습니다. 전방에 길을 열고 후방에 방패를 남기십시오.',pose:'speak',actor:4},
     {speaker:'조진',line:'교량을 돌파할지 남쪽으로 돌아갈지 정해라. 나는 수송대가 마지막 고개를 넘을 때까지 지키겠다.',pose:'resolve',actor:3},
   ],
+  'S2-01':[
+    {speaker:'조진',line:'선왕께서 돌아가시고 새 황제께서 즉위하셨네. 그 틈을 노려 양주의 호족들이 들고일어났어.',pose:'enter',actor:3},
+    {speaker:'사마의',line:'반란군에 주술을 쓰는 무당이 있다 합니다. 책략을 맞으면 그 힘을 되돌려 보낸다더군요. 그자는 창과 화살로 상대해야 합니다.',pose:'speak',actor:4},
+    {speaker:'조진',line:'성채만 지키면 반란은 오래가지 못하네. 북쪽과 동쪽, 두 갈래를 나눠 막지.',pose:'resolve',actor:3},
+  ],
   'S1-11':[
     {speaker:'조진',line:'우금의 칠군이 번성에서 물에 잠겼다. 조정에서는 도읍을 옮기자는 말까지 나온다네.',pose:'enter',actor:3},
     {speaker:'사마의',line:'옮길 필요 없습니다. 관우가 뜻을 이루는 것을 손권이 바랄 리 없습니다. 강동을 움직여 관우의 등을 치게 하면 번성의 포위는 절로 풀립니다.',pose:'speak',actor:4},
@@ -105,6 +111,7 @@ export const stories=[
   ['쳇바퀴','219년, 한중의 주인은 유비가 되었다. 정군산에서 하후연이 쓰러지고, 조조는 계륵이라는 한마디를 남긴 채 철군을 명한다. 한수의 부교는 불탔다. 강변을 지키며 다리를 다시 놓고, 물러나는 주군을 야곡 출구까지 모셔야 한다.'],
   ['범람','한수 진영의 밤, 백마의 장수가 진영을 가른다. 조운의 창은 막을 수 없고, 쏟아지는 비에 강물은 둑을 넘는다. 들판이 물에 잠기기 전에 그의 사방을 막고, 조조를 북쪽 고개로 모셔야 한다.'],
   ['혀에 걸린 사활','관우가 번성을 물에 잠기게 했다. 조정은 흔들리고, 사마의는 건업의 손권 조정에 사신으로 든다. 적벽을 기억하는 장소, 형주를 노리는 여몽, 유비와의 신의를 따지는 제갈근, 그리고 모욕을 삼킨 손권. 칼 대신 말로 강을 건너야 한다.'],
+  ['되돌아오는 화살','220년, 조조가 죽고 조비가 한의 제위를 넘겨받았다. 새 왕조가 서던 해, 양주의 호족들이 무위에서 들고일어난다. 반란군 속에는 책략의 힘을 되돌리는 무당이 섞여 있다. 강하게 치는 것만이 답이 아니다.'],
 ];
 
 /** After a main-battle victory: where the story picks up, and what changed. */
@@ -130,6 +137,9 @@ export const storyAftermath:Record<string,{art:number;name:string;beats:Array<{s
   'S1-07':{art:17,name:'양평관 · 무너진 전초',beats:[
     {speaker:'조진',line:'양평관 수비망이 무너졌다. 장로도 오래 버티지 못하겠군.'},
     {speaker:'사마의',line:'조비 공자께 드릴 것은 공이 아니라, 살아 돌아온 병사들의 수입니다.'}]},
+  'S2-01':{art:8,name:'무위 · 진압 뒤의 성벽',beats:[
+    {speaker:'조진',line:'양주가 잠잠해졌군. 자네 덕에 무당의 술수에 휘말리지 않았어.'},
+    {speaker:'사마의',line:'폐하께서 동쪽 강동을 치려 하신다는 말이 들립니다. 이번에는 물 위의 싸움이 될 겁니다.'}]},
   'S1-11':{art:7,name:'장강 · 흰 옷을 입은 배들',beats:[
     {speaker:'조진',line:'손권이 움직였다! 여몽이 상인으로 꾸민 배로 강을 거슬러 오른다는군.'},
     {speaker:'사마의',line:'관우는 앞의 번성만 보고 뒤의 강릉을 보지 못할 겁니다. 이제 상편이 끝났습니다. 다음은… 조씨의 천하가 바뀌는 때입니다.'}]},

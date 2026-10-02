@@ -2,7 +2,7 @@ import {makeUnit,isHostile} from '../../core/src/index.ts';
 import type {BattleState,StageDef} from '../../core/src/index.ts';
 
 // Fixed encounter bands: enemies never level up in response to equipment or replay.
-export const encounterLevels:Record<string,number>={'S1-01':1,'S1-02':2,'S1-03':3,'S1-04':4,'S1-05':5,'S1-06':6,'S1-07':6,'S1-08':7,'S1-09':7,'S1-10':8,'S1-11':9};
+export const encounterLevels:Record<string,number>={'S1-01':1,'S1-02':2,'S1-03':3,'S1-04':4,'S1-05':5,'S1-06':6,'S1-07':6,'S1-08':7,'S1-09':7,'S1-10':8,'S1-11':9,'S2-01':8};
 export function campaignStage(source:StageDef):StageDef{
   const s=structuredClone(source),base=encounterLevels[s.id]??1,old=s.difficulty.normal.recommendedLevel;
   const adjust=(n:number|undefined)=>Math.max(1,base+Math.max(-1,Math.min(1,(n??old)-old)));
@@ -42,7 +42,8 @@ export function addFortifications(state:BattleState){
 export function addSiegeCompany(state:BattleState){
   if(state.stage.id==='S1-04')return;
   const cells=[];for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++)cells.push({x,y});
-  if(!cells.some(p=>state.map.tileAt(p).terrain==='wall'))return;
+  // Only castles with a gate to breach: a defended citadel (no gate) needs no rams.
+  if(!cells.some(p=>state.map.tileAt(p).terrain==='wall')||!cells.some(p=>state.map.tileAt(p).terrain==='gate'))return;
   const hero=state.get('sima_yi');
   const free=cells.filter(p=>!state.unitAt(p)&&['plain','road','fort'].includes(state.map.tileAt(p).terrain)).sort((a,b)=>(Math.abs(a.x-hero.pos.x)+Math.abs(a.y-hero.pos.y))-(Math.abs(b.x-hero.pos.x)+Math.abs(b.y-hero.pos.y)));
   if(!free[0])throw new Error('충차 배치 공간이 없습니다.');

@@ -13,10 +13,19 @@ export interface StageRules {
   phase?:(v:StageView)=>string|undefined;
   /** Seal slots earned on victory; undefined falls back to the stage's seal expressions. */
   seals?:(v:StageView)=>number[]|undefined;
+  /** Map labels drawn over regions (first cell of each region). */
+  labels?:Array<{region:string;text:string}>;
   /** Reason shown on defeat. */
   failure?:(v:StageView)=>string|undefined;
 }
-export const stageRules:Record<string,StageRules>={};
+export const stageRules:Record<string,StageRules>={
+  'S2-01':{
+    sealNames:['반란 진압','수비대 전원 생환','신속한 진압'],
+    labels:[{region:'citadel',text:'무위 성채'}],
+    tough:[{unit:'citadel_warden',hpScale:1.8,defense:4}],
+    failure:({state})=>state.captured.get('citadel')==='enemy'?'반란군이 무위 성채를 점령했습니다.':undefined,
+  },
+};
 
 export function protectedFailure(s:BattleState,ids:string[]){
   const fallen=ids.map(id=>s.find(id)).find(u=>u&&!u.alive);

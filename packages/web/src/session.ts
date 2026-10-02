@@ -30,6 +30,8 @@ import floodStage from '../../data/stages/S1-10.json';
 import floodMap from '../../data/maps/hanzhong-hanshui-flood.json';
 import courtStage from '../../data/stages/S1-11.json';
 import courtMap from '../../data/maps/jianye-court.json';
+import wuweiStage from '../../data/stages/S2-01.json';
+import wuweiMap from '../../data/maps/wuwei-citadel.json';
 import legacyFortMap from './legacy/hanzhong-map-v2.json';
 import legacyFortStage from './legacy/hanzhong-stage-v2.json';
 import { makeUnit, awardedSeals } from '../../core/src/index.ts';
@@ -46,9 +48,10 @@ export const chapters = [
   {stage:bridgeStage as StageDef,map:bridgeMap as MapFile,year:'건안 이십사년 · 219년',label:'부교 재건과 호위',quote:'물러날 길을 놓는 것도, 싸움의 절반이다.'},
   {stage:floodStage as StageDef,map:floodMap as MapFile,year:'건안 이십사년 · 219년',label:'봉쇄와 탈출',quote:'막을 수 없는 창이라면, 움직일 수 없게 하라.'},
   {stage:courtStage as StageDef,map:courtMap as MapFile,year:'건안 이십사년 · 219년',label:'논거와 설득',quote:'칼 한 자루보다, 맞는 말 한마디가 강을 건넌다.'},
+  {stage:wuweiStage as StageDef,map:wuweiMap as MapFile,year:'황초 원년 · 220년',label:'성채 사수와 반사 책략',quote:'세게 친다고 이기는 것이 아니다. 무엇이 되돌아오는지 먼저 보라.'},
 ];
 // Stable indices preserve the existing v2 command saves.
-export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10];
+export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11];
 export type Preparation='survival'|'strategy'|'command';
 export const strategies: StrategyDef[] = [
   {id:'windDragon',name:'풍룡',element:'wind',shape:'spread',range:4,radius:1,mpCost:18,power:130,targetSides:['enemy']},
