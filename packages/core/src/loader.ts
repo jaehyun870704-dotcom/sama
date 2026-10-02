@@ -58,9 +58,7 @@ export function assemble(opts: AssembleOptions): BattleState {
   }
 
   // 2. 편입 아군 — 조작 가능, 도구 불가, 아군 손실 카운트 포함 (PRD §3.3)
-  // Granted troops follow half of the extreme shift: they keep pace with stronger foes
-  // without cancelling the difficulty on stages that hand the player a large escort.
-  const levelShift = Math.floor(state.enemyLevelShift / 2);
+  const levelShift = state.enemyLevelShift;
   const grantedCounts = new Map<string, number>();
   for (const g of stage.deployment.grantedUnits ?? []) {
     for (let i = 0; i < g.count; i++) {
