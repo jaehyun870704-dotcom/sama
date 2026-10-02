@@ -35,7 +35,7 @@ export class Soundscape {
   musicVolume=.38;
   effectsVolume=.65;
   combat=false;
-  scene:'camp'|'battle'|'crisis'|'result'|'dream'='camp';
+  scene:'title'|'camp'|'battle'|'boss'|'crisis'|'result'|'dream'='title';
   place:Place='camp';
   focus:Family|undefined;
   async start(){
@@ -170,9 +170,9 @@ export class Soundscape {
   private schedule(){
     if(!this.ctx||this.ctx.state!=='running')return;
     if(this.next<this.ctx.currentTime)this.next=this.ctx.currentTime+.05;
-    const placed=this.scene==='camp'||this.scene==='dream'?(this.scene==='dream'?'court':'camp'):this.place;
-    const theme=placeThemes[placed],fighting=this.combat&&(this.scene==='battle'||this.scene==='crisis');
-    const step=this.scene==='crisis'?theme.tempo*.8:this.scene==='result'?theme.tempo*1.35:this.scene==='dream'?theme.tempo*1.2:theme.tempo;
+    const placed=this.scene==='title'?'title':this.scene==='camp'||this.scene==='dream'?(this.scene==='dream'?'court':'camp'):this.place;
+    const theme=placeThemes[placed],boss=this.scene==='boss',fighting=this.combat&&(this.scene==='battle'||this.scene==='crisis'||boss);
+    const step=boss?theme.tempo*.85:this.scene==='crisis'?theme.tempo*.8:this.scene==='result'?theme.tempo*1.35:this.scene==='dream'?theme.tempo*1.2:theme.tempo;
     while(this.next<this.ctx.currentTime+.3){
       const t=this.next,b=this.beat,bar=b%16,phrase=theme.phrase,shift=this.scene==='crisis'?-1:0;
       const midi=degree(theme,phrase[b%phrase.length]!+shift)-(this.scene==='dream'?12:0);
@@ -184,7 +184,11 @@ export class Soundscape {
       if(this.scene==='crisis'&&b%2===0){this.hit('taiko-small',t,.12);if(bar===0)this.hit('gong',t,.08,1.15);}
       if(this.scene==='dream'&&bar%8===0){this.flute(midiToHz(midi+12),t,step*4,.03);this.bell(midiToHz(midi+13),t+step*2,.025);}
       if(this.scene==='camp'&&bar===0)this.flute(midiToHz(theme.root+12),t,step*6,.035);
-      if(this.focus&&(this.scene==='battle'||this.scene==='crisis'))this.motif(this.focus,theme.root,bar,t,step);
+      // Boss: heavy drums on the beat, a gong and a low horn call each phrase.
+      if(boss){if(b%2===0)this.hit('taiko',t,bar%8===0?.16:.09,bar%4===0?.9:1.05);if(bar===0){this.hit('gong',t,.09,.9);this.voice('horn',midiToHz(theme.root-12),t,step*6,.06);}if(bar===8)this.voice('horn',midiToHz(theme.root-5),t,step*4,.05);}
+      // Title: slow gong and a high zheng answer over the drone.
+      if(this.scene==='title'&&bar===0){this.hit('gong',t,.06,1);this.zheng(degree(theme,phrase[(b+5)%phrase.length]!+5),t+step*2,.035,this.music,step*4);}
+      if(this.focus&&(this.scene==='battle'||this.scene==='crisis'||boss))this.motif(this.focus,theme.root,bar,t,step);
       this.beat++;this.next+=step;
     }
   }

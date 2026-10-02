@@ -4,7 +4,7 @@ import {troopRoles} from './troops.ts';
 
 /** Score data for the procedural soundtrack. Everything here is pure so the
  * choice of place theme and class motif can be tested without Web Audio. */
-export type Place='camp'|'estate'|'city'|'mountain'|'river'|'naval'|'forest'|'fortress'|'court'|'field';
+export type Place='title'|'camp'|'estate'|'city'|'mountain'|'river'|'naval'|'forest'|'fortress'|'court'|'field';
 export type Lead='zheng'|'flute'|'erhu'|'pipa'|'horn'|'bell';
 export type Pulse='none'|'march'|'war'|'oars'|'temple'|'patter';
 export interface PlaceTheme {name:string;root:number;mode:number[];tempo:number;lead:Lead;counter:Lead;pulse:Pulse;pad:'drone'|'water'|'wind'|'gong';phrase:number[]}
@@ -12,6 +12,7 @@ export interface PlaceTheme {name:string;root:number;mode:number[];tempo:number;
 // Pentatonic modes (semitones from root): gong, shang, jue, zhi, yu.
 const GONG=[0,2,4,7,9],SHANG=[0,2,5,7,10],JUE=[0,3,5,8,10],ZHI=[0,2,5,7,9],YU=[0,3,5,7,10];
 export const placeThemes:Record<Place,PlaceTheme>={
+  title:   {name:'연의 서곡',root:57,mode:YU,tempo:.72,lead:'zheng',counter:'erhu',pulse:'none',pad:'gong',phrase:[0,2,3,4,3,2,0,-1,-2,0,2,4,5,4,3,2]},
   camp:    {name:'군영의 밤',root:62,mode:GONG,tempo:.56,lead:'zheng',counter:'flute',pulse:'none',pad:'drone',phrase:[0,2,4,3,2,1,0,-1,0,2,3,5,4,2,1,0]},
   estate:  {name:'온현 장원',root:67,mode:GONG,tempo:.5,lead:'zheng',counter:'flute',pulse:'patter',pad:'wind',phrase:[0,1,2,4,2,1,0,1,2,3,2,0,-1,0,1,0]},
   city:    {name:'낙양 성시',root:57,mode:YU,tempo:.36,lead:'pipa',counter:'bell',pulse:'march',pad:'drone',phrase:[0,2,3,4,3,2,0,2,4,5,4,3,2,1,0,-1]},
@@ -64,3 +65,10 @@ export const familyMotifs:Record<Family,{name:string;lead:Lead;notes:number[];rh
 export function midiToHz(m:number){return 440*2**((m-69)/12);}
 /** Map a scale degree (may be negative or above five) to a MIDI note. */
 export function degree(theme:PlaceTheme,step:number){const n=theme.mode.length,oct=Math.floor(step/n),i=((step%n)+n)%n;return theme.root+oct*12+theme.mode[i]!;}
+
+/** Named enemy commanders whose approach turns the battle music toward a duel. */
+export const BOSSES=new Set(['ma_chao','lu_bu','xu_chu','yang_ang','zhang_lu','chen_gong','zhou_yu']);
+export function bossNear(units:{id:string;side:string;alive:boolean;pos:{x:number;y:number}}[],range=5){
+  const players=units.filter(u=>u.alive&&u.side==='player');
+  return units.some(b=>b.alive&&b.side==='enemy'&&BOSSES.has(b.id)&&players.some(p=>Math.abs(p.pos.x-b.pos.x)+Math.abs(p.pos.y-b.pos.y)<=range));
+}

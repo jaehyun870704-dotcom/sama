@@ -69,3 +69,14 @@ describe('mp3 lead-in trim',()=>{
   const loud=new Float32Array(100).fill(.4);expect(leadIn(loud,rate)).toBe(0);
  });
 });
+import {bossNear,placeThemes} from '../src/music.ts';
+describe('menu and boss music',()=>{
+ it('has a title theme and switches to boss music when a named commander is close',()=>{
+  expect(placeThemes.title.name).toBe('연의 서곡');
+  const u=(id:string,side:string,x:number,alive=true)=>({id,side,alive,pos:{x,y:0}});
+  expect(bossNear([u('sima_yi','player',0),u('ma_chao','enemy',4)])).toBe(true);
+  expect(bossNear([u('sima_yi','player',0),u('ma_chao','enemy',9)])).toBe(false);
+  expect(bossNear([u('sima_yi','player',0),u('raider','enemy',1)])).toBe(false);
+  expect(bossNear([u('sima_yi','player',0),u('lu_bu','enemy',1,false)])).toBe(false);
+ });
+});
