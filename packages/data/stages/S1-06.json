@@ -259,8 +259,8 @@
           "units": [
             {
               "id": "rear_raider",
-              "name": "후방 복병",
-              "template": "cavalry",
+              "name": "서량 궁기병",
+              "template": "horseArcher",
               "level": 5,
               "count": 2,
               "region": "rear_ambush",

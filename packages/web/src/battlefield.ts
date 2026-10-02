@@ -232,7 +232,8 @@ export class Battlefield {
         if(!actor){
           const piece=new Container(),sprite=new Sprite(this.unitTexture(unit));sprite.anchor.set(.5,.88);sprite.position.set(0,8);
           const mounted=(unit.id.startsWith('convoy_')||['cavalry','heavyCav','horseArcher','catapult','ram'].includes(unit.unitClass));sprite.width=mounted?96:84;sprite.height=mounted?96:84;if(unit.id.startsWith('convoy_')){sprite.width=80;sprite.height=80;}else if(unit.unitClass==='navy'){sprite.width=sprite.height=104;sprite.anchor.y=NAVAL_WATERLINE+.03;}else if(!structureKind(unit.id))sprite.anchor.y=.945;if(structureKind(unit.id)){const kind=structureKind(unit.id);sprite.width=kind==='tower'?85:kind==='barricade'?58:64;sprite.height=kind==='tower'?118:kind==='barricade'?46:75;}
-          if(unit.unitClass==='navy'&&unit.side==='enemy')sprite.scale.x*=-1;
+          // Troops first face the bulk of the opposing army; afterwards they turn as they move and strike.
+          if(!structureKind(unit.id)){const foes=state.living().filter(o=>(o.side==='enemy')!==(unit.side==='enemy')&&!structureKind(o.id));const cx=foes.reduce((a,o)=>a+o.pos.x,0)/Math.max(1,foes.length);if(foes.length&&cx<unit.pos.x)sprite.scale.x*=-1;}
           // Dark-edged side disc under the feet: reads on grass, sand and water alike.
           const base=new Graphics();base.ellipse(0,6,20,9).fill({color:0x0b1410,alpha:.5});base.ellipse(0,7,17,7).fill({color:sides[unit.side],alpha:.3}).stroke({color:0x0d1411,width:5});base.ellipse(0,7,17,7).stroke({color:sides[unit.side],width:2.5});piece.addChild(base,sprite);
           actor={piece,sprite,unit};this.actors.set(unit.id,actor);this.pieces.addChild(piece);
@@ -300,7 +301,7 @@ export class Battlefield {
       if(epoch===this.animationEpoch){protector.sprite.texture=this.unitTexture(protector.unit,facing);protector.sprite.scale.x=scale;}return;
     }
     if(e.t==='move'){
-      const actor=this.actors.get(e.unit);if(!actor)return;this.onSound({kind:'move',unitClass:actor.unit.unitClass,pan:this.panOf(e.from)});const from=iso(e.from),to=iso(e.to);this.focusUnit(e.to);const facing=troopFacing(to.x-from.x,to.y-from.y);if(troopArt[actor.unit.unitClass]){this.facing.set(e.unit,facing.pose);actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*facing.flip;}else if(actor.unit.unitClass==='navy'&&to.x!==from.x)actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*(to.x<from.x?-1:1);
+      const actor=this.actors.get(e.unit);if(!actor)return;this.onSound({kind:'move',unitClass:actor.unit.unitClass,pan:this.panOf(e.from)});const from=iso(e.from),to=iso(e.to);this.focusUnit(e.to);const facing=troopFacing(to.x-from.x,to.y-from.y);if(troopArt[actor.unit.unitClass]){this.facing.set(e.unit,facing.pose);actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*facing.flip;}else if(!structureKind(actor.unit.id)&&to.x!==from.x)actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*(to.x<from.x?-1:1);
       await this.tween(420,epoch,p=>{actor.piece.position.set(from.x+(to.x-from.x)*p,from.y+(to.y-from.y)*p);actor.sprite.y=8-Math.abs(Math.sin(p*Math.PI*4))*3;actor.sprite.rotation=Math.sin(p*Math.PI*4)*.025;if(troopArt[actor.unit.unitClass])actor.sprite.texture=this.unitTexture(actor.unit,troopWalkPose(facing.pose,p));else if(actor.unit.id.startsWith('convoy_'))actor.sprite.texture=this.unitTexture(actor.unit,1+Math.floor(p*6)%2);else if(actor.unit.unitClass==='navy'){actor.sprite.texture=this.unitTexture(actor.unit,1+Math.floor(p*6)%2);actor.sprite.y=8-Math.sin(p*Math.PI*3)*2;}});
       if(epoch===this.animationEpoch){actor.sprite.y=8;actor.sprite.rotation=0;actor.sprite.texture=this.unitTexture(actor.unit,this.facing.get(e.unit)??0);}return;
     }
@@ -309,7 +310,7 @@ export class Battlefield {
     const targetId=e.t==='strategy'?e.targets[0]:e.defender,target=this.state?.find(targetId??'');if(!target)return;
     const from=iso(actor.unit.pos),to=iso(target.pos),dx=to.x-from.x,dy=to.y-from.y,len=Math.max(1,Math.hypot(dx,dy));
     this.focusUnit({x:(actor.unit.pos.x+target.pos.x)/2,y:(actor.unit.pos.y+target.pos.y)/2});
-    if(troopArt[actor.unit.unitClass]){this.facing.set(actor.unit.id,0);actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*(dx<0?-1:1);}else if(actor.unit.unitClass==='navy'&&dx!==0)actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*(dx<0?-1:1);
+    if(troopArt[actor.unit.unitClass]){this.facing.set(actor.unit.id,0);actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*(dx<0?-1:1);}else if(!structureKind(actor.unit.id)&&dx!==0)actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*(dx<0?-1:1);
     const ranged=e.t==='strategy'||['archer','crossbow','catapult','horseArcher'].includes(actor.unit.unitClass)||(actor.unit.unitClass==='navy'&&manhattan(actor.unit.pos,target.pos)>1),fx=new Graphics();this.effects.addChild(fx);
     const reactions_=(e.t==='strategy'?e.targets:[e.defender]).map((id,i)=>{
       const victim=this.actors.get(id),damage=e.t==='strategy'?(e.damage[i]??0):e.damage;
