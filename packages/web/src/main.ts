@@ -20,7 +20,7 @@ import catalogue from './campaign.json';
 import { Session, chapters, campaignOrder, type Preparation } from './session.ts';
 import { Battlefield, classNames, terrainNames, unitName } from './battlefield.ts';
 import { Soundscape } from './audio.ts';
-import {placeFor} from './music.ts';
+import {placeFor,bossNear} from './music.ts';
 import { CONTROLLABLE, ignoresRough, awardedSeals, estimatePhysical, estimateStrategy, previewAttack, manhattan } from '../../core/src/index.ts';
 import type { Command, Coord, LogEntry, TerrainKind, Unit } from '../../core/src/index.ts';
 
@@ -78,7 +78,7 @@ function storyScene(chapter:number,beat=0,fromArt?:number){
 }
 let menuArc=1;
 function showMenu(){
-  menuOpen=true;clearTimeout(aiTimer);sound.scene='camp';sound.combat=false;
+  menuOpen=true;clearTimeout(aiTimer);sound.scene='title';sound.combat=false;
   const p=progress(),names=['살아남는 자','맞서는 자','거머쥐는 자'];
   modal(`<div class="campaign"><div class="campaign-art"><img src="/sima-portrait-v2.png" alt="부채를 든 사마의 창작 초상"><div class="art-caption">司 馬 懿 <span>인내 끝에, 천하를 읽다</span></div></div><div class="campaign-copy"><div class="eyebrow">三國志 · TACTICAL CHRONICLE</div><p class="chapter-pretitle">한 사람의 생애, 서른두 번의 선택</p><h2>사마의전</h2><p class="tagline">칼을 거두고, 때를 기다린다.</p><p class="growth-summary">${growthText()} · 보물 ${campaign.treasures.length}/${treasures.length}</p><div class="arc-tabs" role="tablist" aria-label="연의 편 선택">${['상편','중편','하편'].map((n,i)=>`<button role="tab" aria-selected="${menuArc===i+1}" data-arc="${i+1}">${n}<small>${[11,14,7][i]} 전장</small></button>`).join('')}</div><div class="section-label">${names[menuArc-1]} <span>${menuArc===1?`대표 전장 ${chapters.length}개 플레이 가능`:'제작 예정'}</span></div><div class="campaign-path">${catalogue.filter(c=>c.id.startsWith(`S${menuArc}-`)).map(c=>{
     const i=chapters.findIndex(x=>x.stage.id===c.id),ready=i>=0,open=ready&&unlocked(i),won=ready&&cleared(i);
@@ -211,7 +211,7 @@ function render(){
   $<HTMLButtonElement>('#end-phase').disabled=!CONTROLLABLE.has(s.currentSide)||s.outcome!=='ongoing'||field.busy||!!session.activeDuel;
   $<HTMLButtonElement>('#undo').disabled=!session.checkpoints.length||field.busy;
   $('#tactical-tip').textContent=session.revision===4&&session.chapter===4?'여포는 물리 공격이 강합니다. 무력보다 지력 차이를 활용해 설전 승리와 혼란을 노리세요. 각 대결이 끝나면 체력·MP가 회복됩니다.':session.revision===4?'일기토는 인접한 적, 설전은 3칸 이내 적을 선택합니다. 충차는 성문·감시탑에 피해 3배. 풍수사는 MP 8로 3칸 이내 아군을 치유합니다.':'목표와 승리 조건을 확인하세요. 본대 다음 편입 아군을 직접 지휘합니다.';
-  sound.scene=s.outcome!=='ongoing'?'result':session.chapter===4?'dream':s.living('player').some(u=>u.hp<u.stats.maxHp*.35)?'crisis':'battle';
+  sound.scene=s.outcome!=='ongoing'?'result':session.chapter===4?'dream':s.living('player').some(u=>u.hp<u.stats.maxHp*.35)?'crisis':bossNear(s.living())?'boss':'battle';
   renderCoach();
   consumeLog();field.render(s,selected,mode,threat,session.scouted);checkModal();
 }
