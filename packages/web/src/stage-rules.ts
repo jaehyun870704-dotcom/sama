@@ -19,6 +19,7 @@ export interface StageRules {
   failure?:(v:StageView)=>string|undefined;
 }
 export const stageRules:Record<string,StageRules>={
+  'S2-02':{sealNames:['황제 철수','함대 보존','신속한 철수'],protect:[{unit:'cao_pi',hp:150,movement:3}],labels:[{region:'exit',text:'북서쪽 출구'}],failure:({state})=>state.find('cao_pi')?.alive===false?'조비가 퇴각했습니다.':undefined},
   'S2-01':{
     sealNames:['반란 진압','수비대 전원 생환','신속한 진압'],
     labels:[{region:'citadel',text:'무위 성채'}],
