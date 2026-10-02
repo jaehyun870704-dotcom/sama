@@ -2,6 +2,7 @@ import {playbackEvents} from './battle-playback.ts';
 import {troopFacing,troopWalkPose,troopReaction,troopReactionPose,retreatMotion} from './troop-motion.ts';
 import {troopRoles,visualClass,troopArt,troopSheets,basicReactionArt} from './troops.ts';
 import {spriteAtlas} from './sprite-atlas.ts';
+import {cryFor,reactions,isCrisis,type Emote} from './emotes.ts';
 import {navalAtlas,navalCrewRow,NAVAL_WATERLINE} from './naval-art.ts';
 import {structureKind,structureFrame} from './campaign-rules.ts';
 import { Application, Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
@@ -46,6 +47,7 @@ export class Battlefield {
   private actors=new Map<string,{piece:Container,sprite:Sprite,unit:Unit}>();
   private minimap:HTMLCanvasElement|undefined;
   private animationEpoch=0;
+  private statusSeen=new Map<string,Set<string>>();
   busy=false;
   playbackRate=1;
   onCue:(kind:'move'|'attack'|'magic'|'breach'|'repair',actor?:Unit,target?:Unit)=>void=()=>{};
@@ -144,7 +146,7 @@ export class Battlefield {
     g.strokeStyle='#fff1c0';g.lineWidth=1.5;g.strokeRect(-this.world.x/this.zoom/W*sx,-this.world.y/this.zoom/H*sy,this.app.screen.width/this.zoom/W*sx,this.app.screen.height/this.zoom/H*sy);
   }
   load(state:BattleState){
-    this.animationEpoch++;this.busy=false;this.overview=false;this.state=state;this.previousPositions.clear();this.facing.clear();this.actors.clear();clear(this.pieces);clear(this.ground);clear(this.effects);clear(this.rubble);this.cursor.clear();
+    this.animationEpoch++;this.busy=false;this.overview=false;this.state=state;this.previousPositions.clear();this.facing.clear();this.statusSeen.clear();this.actors.clear();clear(this.pieces);clear(this.ground);clear(this.effects);clear(this.rubble);this.cursor.clear();
     for(const texture of this.terrainTextures)texture.destroy(texture.source.resource instanceof HTMLCanvasElement);this.terrainTextures=[];
     this.paintTerrain();this.zoom=this.app.screen.width<500?.78:1;this.focus(state.living('player')[0]?.pos??{x:0,y:0});
   }
@@ -197,6 +199,9 @@ export class Battlefield {
           const base=new Graphics();base.ellipse(0,5,17,7).fill({color:0x13211c,alpha:.4});base.ellipse(0,7,16,7).stroke({color:sides[unit.side],width:3});piece.addChild(base,sprite);
           actor={piece,sprite,unit};this.actors.set(unit.id,actor);this.pieces.addChild(piece);
         }
+        const seen=this.statusSeen.get(unit.id),now=new Set(unit.statuses.map(x=>x.kind as string));
+        if(seen)for(const kind of now)if(!seen.has(kind)&&reactions[kind])this.emote(unit.pos,reactions[kind]!);
+        this.statusSeen.set(unit.id,now);
         actor.unit=unit;actor.piece.position.set((unit.pos.x+.5)*W,(unit.pos.y+.5)*H);actor.piece.zIndex=unit.pos.y;
         actor.sprite.texture=this.unitTexture(unit,this.facing.get(unit.id)??0);actor.sprite.alpha=unit.hasActed?.65:1;actor.sprite.tint=unit.id==='rescue_target'&&unit.side==='enemy'?0xffe3a0:unit.side==='enemy'?0xffb3a0:unit.side==='allyAi'?0xffdc8e:0xffffff;
         if(actor.piece.children.length>2)for(const child of actor.piece.removeChildren(2))child.destroy();
@@ -243,7 +248,8 @@ export class Battlefield {
       const actor=this.actors.get(e.unit);if(!actor)return;
       const mechanical=!!structureKind(e.unit)||['ram','catapult'].includes(actor.unit.unitClass)||e.unit.startsWith('convoy_');
       this.focusUnit(actor.unit.pos);const kind=structureKind(e.unit);this.burst(actor.unit.pos,kind==='gate'?'성문 돌파!':kind?'파괴':'퇴각',kind==='gate'?0xffd27a:0xd4c2a2);
-      if(kind){this.debris(actor.unit.pos,kind==='gate'?26:16);if(kind==='gate')this.onCue('breach',actor.unit);void this.shake(kind==='gate'?9:5,520,epoch);}
+      if(kind){this.debris(actor.unit.pos,kind==='gate'?26:16);if(kind==='gate'){this.onCue('breach',actor.unit);this.emote(actor.unit.pos,reactions.breach!);}void this.shake(kind==='gate'?9:5,520,epoch);}
+      if(!kind)this.emote(actor.unit.pos,reactions.retreat!);
       if(this.hasReaction(actor.unit))actor.sprite.texture=this.unitTexture(actor.unit,10);
       await this.tween(720,epoch,p=>{const m=retreatMotion(p,mechanical);actor.sprite.rotation=m.rotation;actor.sprite.y=8+m.drop;actor.piece.alpha=m.alpha;});
       if(epoch===this.animationEpoch){actor.piece.destroy({children:true});this.actors.delete(e.unit);this.facing.delete(e.unit);}return;
@@ -266,12 +272,13 @@ export class Battlefield {
     this.focusUnit({x:(actor.unit.pos.x+target.pos.x)/2,y:(actor.unit.pos.y+target.pos.y)/2});
     if(troopArt[actor.unit.unitClass]){this.facing.set(actor.unit.id,0);actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*(dx<0?-1:1);}else if(actor.unit.unitClass==='navy'&&dx!==0)actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*(dx<0?-1:1);
     const ranged=e.t==='strategy'||['archer','crossbow','catapult','horseArcher'].includes(actor.unit.unitClass)||(actor.unit.unitClass==='navy'&&manhattan(actor.unit.pos,target.pos)>1),fx=new Graphics();this.effects.addChild(fx);
-    const reactions=(e.t==='strategy'?e.targets:[e.defender]).map((id,i)=>{
+    const reactions_=(e.t==='strategy'?e.targets:[e.defender]).map((id,i)=>{
       const victim=this.actors.get(id),damage=e.t==='strategy'?(e.damage[i]??0):e.damage;
       const kind=troopReaction(e.t==='strategy'||e.hit,damage,!!victim&&!!this.state?.hasStatus(victim.unit,'guard'));
       return {victim,kind,scale:victim?.sprite.scale.x??1,tint:victim?.sprite.tint??0xffffff,texture:victim?.sprite.texture};
     });
     let hit=false;
+    this.emote(actor.unit.pos,e.t==='counter'?reactions.counter!:cryFor(actor.unit.unitClass,e.t==='strategy',e.t==='strategy'?e.strategy:''));
     await this.tween(e.t==='strategy'?950:760,epoch,p=>{
       const pose=troopArt[actor.unit.unitClass]?(p<.2||p>.9?0:e.t==='strategy'?3:2):(p<.22?1:p<.65?2:p<.92?3:0);actor.sprite.texture=this.unitTexture(actor.unit,pose);
       const lunge=ranged?0:Math.sin(Math.min(1,p/.65)*Math.PI)*19;actor.sprite.x=dx/len*lunge;actor.sprite.y=8+dy/len*lunge;
@@ -282,16 +289,16 @@ export class Battlefield {
         else fx.moveTo(x-dx/len*16,y-dy/len*16-20).lineTo(x,y-20).stroke({color:0xffedba,width:2});
       }
       if(e.t==='strategy'&&(e.strategy==='heal'||e.damage.some(d=>d<0))&&p>=.6&&p<.88){fx.circle(to.x,to.y-15,18+(p-.6)*50).stroke({color:0xb1f1bd,width:3,alpha:1-(p-.6)/.28});}
-      if(reactions.some(r=>r.kind!=='none')&&p>=.6&&p<.88){const q=(p-.6)/.28;fx.moveTo(to.x-20+q*35,to.y-36).lineTo(to.x+15,to.y-5).stroke({color:e.t==='strategy'?0xb0f0dc:0xffe3a0,width:4*(1-q),alpha:1-q});}
-      for(const r of reactions){const v=r.victim;if(!v||r.kind==='none')continue;
+      if(reactions_.some(r=>r.kind!=='none')&&p>=.6&&p<.88){const q=(p-.6)/.28;fx.moveTo(to.x-20+q*35,to.y-36).lineTo(to.x+15,to.y-5).stroke({color:e.t==='strategy'?0xb0f0dc:0xffe3a0,width:4*(1-q),alpha:1-q});}
+      for(const r of reactions_){const v=r.victim;if(!v||r.kind==='none')continue;
         if(p>=.6&&p<.94){const q=(p-.6)/.34;if(this.hasReaction(v.unit)){v.sprite.texture=this.unitTexture(v.unit,troopReactionPose(r.kind,q));v.sprite.scale.x=Math.abs(r.scale)*(actor.unit.pos.x<v.unit.pos.x?-1:1);}v.sprite.x=r.kind==='hurt'?Math.sin(q*Math.PI*3)*5:0;v.sprite.tint=r.kind==='hurt'?0xffd5b3:r.tint;}
         else if(p>=.94){v.sprite.x=0;v.sprite.scale.x=r.scale;v.sprite.tint=r.tint;if(r.texture)v.sprite.texture=r.texture;}
       }
-      if(p>=.6&&!hit){hit=true;this.onCue(e.t==='strategy'?(e.strategy==='repair'?'repair':'magic'):'attack',actor.unit,target);if(e.t!=='strategy'&&e.hit&&(structureKind(target.id)||['ram','catapult'].includes(actor.unit.unitClass))){this.debris(target.pos,actor.unit.unitClass==='ram'?18:10);if(actor.unit.unitClass==='ram'||actor.unit.unitClass==='catapult')void this.shake(actor.unit.unitClass==='ram'?7:4,300,epoch);}if(e.t==='strategy')e.targets.forEach((id,i)=>{const u=this.state?.find(id);if(u)this.burst(u.pos,(e.strategy==='heal'||e.damage.some(d=>d<0))?'+'+Math.abs(e.damage[i]??0):String(e.damage[i]??0),e.strategy==='fire'?0xffb071:0xb9efe4);});else this.burst(target.pos,e.hit?'−'+e.damage:'회피',0xffd0ab);}
+      if(p>=.6&&!hit){hit=true;if(e.t==='attack'&&e.critical&&e.hit)this.emote(target.pos,reactions.critical!,-26);if((e.t==='attack'||e.t==='counter')&&!e.hit)this.emote(target.pos,reactions.evade!);for(const r of reactions_)if(r.victim){if(r.kind==='guard')this.emote(r.victim.unit.pos,reactions.guard!);else{const dmg=e.t==='strategy'?(e.damage[e.targets.indexOf(r.victim.unit.id)]??0):e.damage;if(isCrisis(r.victim.unit.hp,r.victim.unit.stats.maxHp,dmg))this.emote(r.victim.unit.pos,reactions.crisis!,-24);}}this.onCue(e.t==='strategy'?(e.strategy==='repair'?'repair':'magic'):'attack',actor.unit,target);if(e.t!=='strategy'&&e.hit&&(structureKind(target.id)||['ram','catapult'].includes(actor.unit.unitClass))){this.debris(target.pos,actor.unit.unitClass==='ram'?18:10);if(actor.unit.unitClass==='ram'||actor.unit.unitClass==='catapult')void this.shake(actor.unit.unitClass==='ram'?7:4,300,epoch);}if(e.t==='strategy')e.targets.forEach((id,i)=>{const u=this.state?.find(id);if(u)this.burst(u.pos,(e.strategy==='heal'||e.damage.some(d=>d<0))?'+'+Math.abs(e.damage[i]??0):String(e.damage[i]??0),e.strategy==='fire'?0xffb071:0xb9efe4);});else this.burst(target.pos,e.hit?'−'+e.damage:'회피',0xffd0ab);}
     });
     if(epoch!==this.animationEpoch)return;
     fx.destroy();actor.sprite.x=0;actor.sprite.y=8;actor.sprite.texture=this.unitTexture(actor.unit);
-    for(const r of reactions){if(r.victim){r.victim.sprite.x=0;r.victim.sprite.scale.x=r.scale;r.victim.sprite.tint=r.tint;if(r.texture)r.victim.sprite.texture=r.texture;}}
+    for(const r of reactions_){if(r.victim){r.victim.sprite.x=0;r.victim.sprite.scale.x=r.scale;r.victim.sprite.tint=r.tint;if(r.texture)r.victim.sprite.texture=r.texture;}}
   }
   /** Broken timber and stones stay where a gate, tower or barricade fell. */
   private drawRubble(u:Unit){
@@ -316,6 +323,25 @@ export class Battlefield {
       if(t>=1){this.app.ticker.remove(tick);g.destroy();}};this.app.ticker.add(tick);
   }
   private shake(power:number,ms:number,epoch:number){return this.tween(ms,epoch,p=>{const k=(1-p)*power;this.world.pivot.set(Math.sin(p*60)*k,Math.cos(p*47)*k*.6);if(p>=1)this.world.pivot.set(0,0);});}
+  /** Pop a speech balloon (or a jagged burst for charges and criticals) above a unit. */
+  emote(at:Coord,e:Emote,lift=0){
+    const p=iso(at),item=new Container(),g=new Graphics();item.position.set(p.x+14,p.y-70+lift);item.zIndex=999;
+    const glyph=new Text({text:e.glyph,style:{fontFamily:'"Noto Serif KR","Malgun Gothic",serif',fontSize:e.glyph.length>1&&!/[^!?.…]/.test(e.glyph)?17:19,fontWeight:'900',fill:e.shape==='burst'?0xfff6e0:e.color}});glyph.anchor.set(.5);
+    const label=new Text({text:e.label,style:{fontFamily:'Malgun Gothic',fontSize:11,fontWeight:'700',fill:0xfff3d6,stroke:{color:0x1b1712,width:3}}});label.anchor.set(0,.5);label.position.set(17,1);
+    if(e.shape==='burst'){
+      const pts:number[]=[];for(let i=0;i<20;i++){const r=i%2?11:18,a=i/20*Math.PI*2-Math.PI/2;pts.push(Math.cos(a)*r,Math.sin(a)*r);}
+      g.poly(pts).fill(e.color).stroke({color:0x2a1a12,width:2});g.poly(pts.map(v=>v*.62)).fill({color:0xffffff,alpha:.18});
+    }else{
+      g.roundRect(-15,-14,30,26,9).fill(0xfffaf0).stroke({color:0x2a2620,width:2});g.poly([-4,11,4,11,-7,20]).fill(0xfffaf0);g.moveTo(-4,12).lineTo(-7,20).lineTo(4,12).stroke({color:0x2a2620,width:2});
+      g.roundRect(-11,-10,22,4,2).fill({color:e.color,alpha:.18});
+    }
+    item.addChild(g,glyph,label);this.effects.addChild(item);
+    if(this.reduced){setTimeout(()=>item.destroy({children:true}),900);return;}
+    const born=performance.now();item.scale.set(.2);
+    const tick=()=>{if(item.destroyed){this.app.ticker.remove(tick);return;}const t=(performance.now()-born)/1300;
+      item.scale.set(t<.12?.2+t/.12*1:t<.2?1.2-(t-.12)/.08*.2:1);item.y=p.y-70+lift-Math.max(0,t-.55)*30;item.alpha=t<.7?1:1-(t-.7)/.3;
+      if(t>=1){this.app.ticker.remove(tick);item.destroy({children:true});}};this.app.ticker.add(tick);
+  }
   burst(at:Coord,text:string,color=0xf2c885){
     const p=iso(at),item=new Container(),g=new Graphics();item.position.set(p.x,p.y-20);g.circle(0,0,16).stroke({color,width:2,alpha:.7});
     const label=new Text({text,style:{fontFamily:'Malgun Gothic',fontSize:22,fontWeight:'700',fill:color,dropShadow:{color:0x15221c,blur:3,distance:2}}});label.anchor.set(.5);label.y=-20;item.addChild(g,label);this.effects.addChild(item);
