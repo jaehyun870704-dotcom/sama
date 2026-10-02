@@ -122,3 +122,8 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
 .treasure-unique{border:1px solid #a08a50;padding:12px;background:#14281dcc;line-height:1.7}.treasure-unique b{color:#f0d294}
 
 .treasure-grid{grid-auto-rows:max-content;align-content:start}.treasure-icon{flex-shrink:0}
+
+/* First-battle coach bubble */
+.coach{position:absolute;left:16px;top:64px;z-index:5;max-width:min(360px,calc(100% - 32px));display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:#14201ef2;border:1px solid #d8be86;box-shadow:0 4px 16px #0008;color:#f1e6c8;font-size:13px;line-height:1.6}.coach p{margin:0;flex:1}.coach button{min-height:32px;padding:0 10px;font-size:12px;background:transparent;color:#d8be86;border:1px solid #d8be8666}
+.coach[hidden]{display:none}
+@media(max-width:580px){.coach{top:132px;font-size:12px}}

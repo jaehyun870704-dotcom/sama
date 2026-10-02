@@ -46,17 +46,35 @@ export function isolateFrames(source:AtlasPixels,rows:number,columns=4):AtlasPix
 }
 
 const cache=new Map<string,Promise<HTMLCanvasElement>>();
+function toCanvas(p:AtlasPixels){
+  const canvas=document.createElement('canvas');canvas.width=p.width;canvas.height=p.height;
+  const g=canvas.getContext('2d',{willReadFrequently:true})!,img=g.createImageData(p.width,p.height);img.data.set(p.data);g.putImageData(img,0,0);return canvas;
+}
+/** Small worker pool: every sheet is cut in parallel, away from the main thread. */
+type Job={url:string;rows:number;columns:number;resolve:(c:HTMLCanvasElement)=>void;reject:(e:unknown)=>void};
+const queue:Job[]=[],idle:Worker[]=[],pending=new Map<number,Job>();let workers=0,jobs=0;
+const poolSize=()=>Math.max(1,Math.min(4,(navigator.hardwareConcurrency||2)-1));
+function dispatch(){
+  while(queue.length){
+    let w=idle.pop();
+    if(!w){if(workers>=poolSize())return;workers++;w=new Worker(new URL('./atlas-worker.ts',import.meta.url),{type:'module'});
+      const worker=w;worker.onmessage=(e:MessageEvent<{id:number;width:number;height:number;plain:ArrayBuffer;rim:ArrayBuffer;error?:string}>)=>{
+        const d=e.data,job=pending.get(d.id);pending.delete(d.id);idle.push(worker);
+        if(job){if(d.error)job.reject(new Error(d.error));else{const plain=toCanvas({width:d.width,height:d.height,data:new Uint8ClampedArray(d.plain)});rims.set(plain,toCanvas({width:d.width,height:d.height,data:new Uint8ClampedArray(d.rim)}));job.resolve(plain);}}
+        dispatch();};}
+    const job=queue.shift()!,id=++jobs;pending.set(id,job);w.postMessage({id,url:new URL(job.url,location.href).href,rows:job.rows,columns:job.columns});
+  }
+}
+async function onMainThread(url:string,rows:number,columns:number){
+  const img=new Image();img.src=url;await img.decode();
+  const canvas=document.createElement('canvas');canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
+  const context=canvas.getContext('2d',{willReadFrequently:true})!;context.drawImage(img,0,0);
+  return toCanvas(isolateFrames(context.getImageData(0,0,canvas.width,canvas.height),rows,columns));
+}
 export function spriteAtlas(url:string,rows:number,columns=4){
   const key=url+':'+rows+':'+columns;
-  if(!cache.has(key))cache.set(key,(async()=>{
-    const img=new Image();img.src=url;await img.decode();
-    const canvas=document.createElement('canvas');canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
-    const context=canvas.getContext('2d',{willReadFrequently:true})!;context.drawImage(img,0,0);
-    const pixels=isolateFrames(context.getImageData(0,0,canvas.width,canvas.height),rows,columns);
-    canvas.width=pixels.width;canvas.height=pixels.height;
-    const output=context.createImageData(pixels.width,pixels.height);output.data.set(pixels.data);context.putImageData(output,0,0);
-    return canvas;
-  })());
+  if(!cache.has(key))cache.set(key,typeof Worker==='undefined'||typeof OffscreenCanvas==='undefined'?onMainThread(url,rows,columns):
+    new Promise<HTMLCanvasElement>((resolve,reject)=>{queue.push({url,rows,columns,resolve,reject});dispatch();}).catch(()=>onMainThread(url,rows,columns)));
   return cache.get(key)!;
 }
 

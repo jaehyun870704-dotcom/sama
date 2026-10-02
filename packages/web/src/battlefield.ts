@@ -72,13 +72,10 @@ export class Battlefield {
     // Painted art is far larger than its cell on screen: mipmapped smooth reduction keeps
     // every stroke instead of dropping random pixels, and the dark rim keeps the dot look.
     const smooth=(canvas:HTMLCanvasElement,rim=true)=>new Texture({source:new CanvasSource({resource:rim?outlinedCanvas(canvas):canvas,autoGenerateMipmaps:true,scaleMode:'linear'})});
-    await Promise.all(troopSheets.map(async sheet=>{this.troopTextures.set(sheet.id,smooth(await spriteAtlas(sheet.url,sheet.rows)));}));
-    this.ram=smooth(await spriteAtlas('/ram-v1.png',2,2));
-    this.naval=smooth(await navalAtlas());
-    this.convoys=smooth(await imageCanvas('/convoys-v1.png'));
-    this.extra=smooth(await spriteAtlas('/units-extra-v1.png',4));
-    this.atlas=smooth(await spriteAtlas('/units-v3.png',6));
-    this.scenery=smooth(await imageCanvas('/scenery-v3.png'),false);
+    // Every sheet is requested at once so the worker pool cuts them in parallel.
+    const [troops,ram,naval,convoys,extra,atlas,scenery]=await Promise.all([Promise.all(troopSheets.map(sheet=>spriteAtlas(sheet.url,sheet.rows))),spriteAtlas('/ram-v1.png',2,2),navalAtlas(),imageCanvas('/convoys-v1.png'),spriteAtlas('/units-extra-v1.png',4),spriteAtlas('/units-v3.png',6),imageCanvas('/scenery-v3.png')]);
+    troopSheets.forEach((sheet,i)=>this.troopTextures.set(sheet.id,smooth(troops[i]!)));
+    this.ram=smooth(ram);this.naval=smooth(naval);this.convoys=smooth(convoys);this.extra=smooth(extra);this.atlas=smooth(atlas);this.scenery=smooth(scenery,false);
     privateHost.appendChild(this.app.canvas);
     this.minimap=document.createElement('canvas');this.minimap.className='tactical-minimap';this.minimap.width=192;this.minimap.height=144;this.minimap.setAttribute('aria-label','전체 전황 지도. 클릭하면 해당 위치로 이동합니다.');privateHost.appendChild(this.minimap);
     this.minimap.addEventListener('pointerdown',e=>{e.stopPropagation();if(!this.state)return;const r=this.minimap!.getBoundingClientRect();this.focus({x:(e.clientX-r.left)/r.width*this.state.map.width,y:(e.clientY-r.top)/r.height*this.state.map.height});});
