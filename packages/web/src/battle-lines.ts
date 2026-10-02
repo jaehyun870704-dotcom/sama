@@ -15,6 +15,14 @@ export type LineWhen=
 export interface BattleLine {id:string;when:LineWhen;speaker:string;text:string}
 
 export const battleLines:Record<string,BattleLine[]>={
+  'S2-03':[
+    {id:'open-1',when:{turn:1},speaker:'조진',text:'고수를 먼저 꺾는다! 의원은 다친 자를 고치고, 궁병은 결사대를 끊어라.'},
+    {id:'open-2',when:{turn:1},speaker:'고수',text:'위의 황제가 여기 있다! 수레 덮개라도 베어 와라!'},
+    {id:'snipe',when:{turn:2},speaker:'조진',text:'강노가 폐하를 노린다! 붉은 칸에서 모두 비켜라!'},
+    {id:'ice',when:{turn:3},speaker:'조진',text:'얼음 위로 남쪽 결사대가 건너온다! 강가를 비우지 마라.'},
+    {id:'gao-down',when:{retreat:'gao_shou'},speaker:'조진',text:'고수가 물러났다! 폐하, 북쪽 길로 오르십시오!'},
+    {id:'sun-shao',when:{turn:5},speaker:'손소',text:'얼음 위라도 강노는 빗나가지 않는다. 다시 쏴라!'},
+  ],
   'S2-02':[
     {id:'open-1',when:{turn:1},speaker:'사마의',text:'붉게 표시된 칸에 번개가 떨어집니다. 다음 턴 전에 비우십시오.'},
     {id:'open-2',when:{turn:1},speaker:'조진',text:'폐하는 북서쪽 출구로! 함선은 강 위에서 적선을 막아라.'},

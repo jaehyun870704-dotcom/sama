@@ -22,3 +22,9 @@ describe('중편 · 동구 전투',()=>{
   const s=open('S2-02');expect(s.state.telegraphs).toHaveLength(1);expect(s.state.telegraphs[0]!.at).toBe(2);expect(s.state.telegraphs[0]!.label).toBe('낙뢰');
  });
 });
+describe('중편 · 광릉 전투',()=>{
+ it('fields Cao Zhen without Sima Yi and requires Gao Shou before the escape',()=>{
+  const s=open('S2-03');expect(s.state.find('sima_yi')).toBeUndefined();expect(s.state.get('cao_zhen').side).toBe('player');
+  expect(s.state.victory.map(v=>v.type)).toEqual(['retreat','reach']);expect(s.state.get('cao_pi').range).toEqual([0,0]);
+ });
+});
