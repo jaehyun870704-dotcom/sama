@@ -1,21 +1,22 @@
+import {treasurePowers,treasurePowerText} from '../../core/src/treasure-traits.ts';
 import {extraTreasures} from './treasure-catalogue.ts';
-import type {Difficulty,Unit} from '../../core/src/index.ts';
+import type {Difficulty,Unit,UnitClass} from '../../core/src/index.ts';
 
 export const OFFICERS=['sima_yi','sima_lang','sima_fang','cao_zhen'] as const;
 export interface Campaign {version:1; xp:Record<string,number>; rewards:string[]; treasures:string[]; equipped:Record<string,string>;loadouts?:Record<string,Partial<Record<GearSlot,string>>>;completedRuns?:string[];trainingWins?:number;quests?:string[]}
 export interface Growth {storyWins:number;trainingWins:number;questWins:number}
-export interface Deployment {levels:Record<string,number>;equipped:Record<string,string>;loadouts?:Record<string,Partial<Record<GearSlot,string>>>;growth?:Growth;mission?:{id:string;runId:string}}
+export interface Deployment {treasureRules?:1;levels:Record<string,number>;equipped:Record<string,string>;loadouts?:Record<string,Partial<Record<GearSlot,string>>>;growth?:Growth;mission?:{id:string;runId:string;version?:2|3;balance?:1;supportClasses?:UnitClass[]}}
 export type GearSlot="weapon"|"armor"|"accessory";
 export interface Treasure {id:string;name:string;stage:string;glyph:string;effect:string;description:string;bonus:Partial<Unit['stats']>;slot?:GearSlot;grade?:number;icon?:number;quest?:string}
 export const treasures:Treasure[]=[
   {id:'silverarmor',name:'백은갑',stage:'S1-07',glyph:'甲',effect:'방어 +4 · 최대 체력 +8',description:'연의 속 장수들의 갑주 묘사에서 착안한 창작 보상. 사마의의 실제 소유 이력을 뜻하지 않습니다.',bonus:{defense:4,maxHp:8}},
-  {id:'yitian',name:'의천검',stage:'S1-06',glyph:'劍',effect:'공격 +5 · 최대 체력 +8',description:'연의 속 조조의 명검에서 착안한 모사품. 입수 사건과 능력치는 게임 창작입니다.',bonus:{attack:5,maxHp:8}},
-  {id:'dunjia',name:'둔갑천서',stage:'S1-05',glyph:'遁',effect:'민첩 +4 · 최대 체력 +8',description:'연의의 도술 서책을 모티브로 만든 창작 필사본. 수송대가 지켜 낸 물자로 입수하며 실제 소유 이력을 뜻하지 않습니다.',bonus:{agility:4,maxHp:8}},
-  {id:'taiping',name:'태평청령서',stage:'S1-01',glyph:'書',effect:'최대 체력 +12',description:'연의의 태평청령서를 모티브로 한 잔권. 입수 사건과 효과는 게임 창작입니다.',bonus:{maxHp:12}},
-  {id:'sevenstar',name:'칠성보도',stage:'S1-02',glyph:'刀',effect:'공격 +4',description:'조조의 동탁 암살 일화에서 착안한 모사품. 원본의 소유 이력을 바꾸지 않습니다.',bonus:{attack:4}},
+  {id:'yitian',name:'의천검',stage:'S1-06',glyph:'劍',effect:'공격 +5 · 최대 체력 +8',description:'조조의 위엄을 상징하는 명검. 동관의 위기를 넘긴 공로로 인연을 맺습니다.',bonus:{attack:5,maxHp:8}},
+  {id:'dunjia',name:'둔갑천서',stage:'S1-05',glyph:'遁',effect:'민첩 +4 · 최대 체력 +8',description:'기문과 도술의 이치를 전하는 서책. 장강에서 지켜 낸 수송대의 물자 속에서 발견합니다.',bonus:{agility:4,maxHp:8}},
+  {id:'taiping',name:'태평청령서',stage:'S1-01',glyph:'書',effect:'최대 체력 +12',description:'백성을 구제하는 가르침을 담은 도술서. 사마가를 지킨 이들에게 전해집니다.',bonus:{maxHp:12}},
+  {id:'sevenstar',name:'칠성보도',stage:'S1-02',glyph:'刀',effect:'공격 +4',description:'동탁 암살에 쓰려 했던 일곱 별의 보도. 낙양 탈출의 증표로 얻습니다.',bonus:{attack:4}},
   {id:'dilu',name:'적로',stage:'S1-03',glyph:'馬',effect:'이동 +1',description:'유비와 적로의 탈출 일화에서 착안한 게임 창작 장구입니다.',bonus:{movement:1}},
-  {id:'mengde',name:'맹덕신서',stage:'S1-04',glyph:'策',effect:'최대 MP +10 · 지력 +3',description:'연의 속 조조의 병서를 모티브로 한 필사본. 꿈에서 얻은 깨달음을 보상으로 표현합니다.',bonus:{maxMp:10,intellect:3}},
-  {id:'qinggang',name:'청강검',stage:'S1-08',glyph:'劍',effect:'공격 +7 · 방어 +2',description:'조운이 얻은 청강검의 일화에서 착안한 모사품. 사마의의 실제 소유물이라는 뜻은 아닙니다.',bonus:{attack:7,defense:2}},
+  {id:'mengde',name:'맹덕신서',stage:'S1-04',glyph:'策',effect:'최대 MP +10 · 지력 +3',description:'조조의 병법과 용병술을 담은 병서. 흉몽을 이겨 낸 깨달음으로 그 뜻을 읽습니다.',bonus:{maxMp:10,intellect:3}},
+  {id:'qinggang',name:'청강검',stage:'S1-08',glyph:'劍',effect:'공격 +7 · 방어 +2',description:'갑옷을 가르는 명검. 한중의 성채를 돌파한 보상으로 인연을 맺습니다.',bonus:{attack:7,defense:2}},
 ];
 const extraItems=[
  ['greenDragon','청룡언월도','S1-06','攻','공격 +8',{attack:8},'관우의 청룡언월도'],
@@ -27,11 +28,10 @@ const extraItems=[
  ['seal','전국옥새','S1-07','璽','정신 +5 · 최대 체력 +10',{spirit:5,maxHp:10},'전국옥새를 둘러싼 연의의 다툼'],
  ['ironArmor','철제 갑주','S1-01','甲','방어 +2',{defense:2},'연의의 장수 갑주'],
 ] as const;
-for(const [id,name,stage,glyph,effect,bonus,motif] of extraItems)treasures.push({id,name,stage,glyph,effect,bonus,description:motif+'에서 착안한 재현품. 입수·등급·효과는 게임 창작입니다.'});
-for(const t of treasures){t.name=t.name.replace(/ (모사품|재현품|필사본|잔권|모조품)/g,'').replace('적로','적로').replace('적토마','적토마');t.description=t.name+'에 얽힌 인연을 이어받은 보물. '+t.effect+'.';}
+for(const [id,name,stage,glyph,effect,bonus,motif] of extraItems)treasures.push({id,name,stage,glyph,effect,bonus,description:motif+'에 얽힌 보물. 전장에서 쌓은 공로로 그 인연을 이어받습니다.'});
 treasures.push(...extraTreasures);
 export const gearNames:Record<GearSlot,string>={weapon:'무기',armor:'방어구',accessory:'보조구'};
-export function treasureInfo(id:string){const i=treasures.findIndex(t=>t.id===id),item=treasures[i];const slot:GearSlot=['silverarmor','ironArmor'].includes(id)?'armor':['dunjia','taiping','dilu','mengde','redHare','fan','seal'].includes(id)?'accessory':'weapon';const grade=['ironArmor','taiping'].includes(id)?1:['sevenstar','bow','dilu'].includes(id)?2:['yitian','qinggang','greenDragon','halberd','seal','redHare'].includes(id)?4:3;return {slot:item?.slot??slot,grade:item?.grade??grade,rarity:['일반','희귀','영웅','전설'][(item?.grade??grade)-1]!,icon:item?.icon??Math.max(0,i)};}
+export function treasureInfo(id:string){const i=treasures.findIndex(t=>t.id===id),item=treasures[i];const slot:GearSlot=['silverarmor','ironArmor'].includes(id)?'armor':['dunjia','taiping','dilu','mengde','redHare','fan','seal'].includes(id)?'accessory':'weapon';const grade=['ironArmor','taiping'].includes(id)?1:['sevenstar','bow','dilu'].includes(id)?2:['yitian','qinggang','greenDragon','halberd','seal','redHare'].includes(id)?4:3;return {slot:item?.slot??slot,grade:item?.grade??grade,rarity:['일반','희귀','영웅','전설'][(item?.grade??grade)-1]!,icon:Math.max(0,treasurePowers.findIndex(t=>t.id===id))};}
 export function equippedItems(c:Pick<Campaign,'equipped'|'loadouts'>,id:string){return c.loadouts?.[id]?Object.values(c.loadouts[id]!):c.equipped[id]?[c.equipped[id]!]:[];}
 export function equipSlot(c:Campaign,officer:string,slot:GearSlot,id:string){
  if(!OFFICERS.includes(officer as typeof OFFICERS[number])||!Object.hasOwn(gearNames,slot))return false;
@@ -46,7 +46,7 @@ export function levelInfo(total:number){
   while(level<40&&remaining>=100+(level-1)*20){remaining-=100+(level-1)*20;level++;}
   return {level,xp:remaining,next:level===40?0:100+(level-1)*20};
 }
-export function deployment(c:Campaign,modern=false):Deployment{return {...(modern?{growth:{storyWins:new Set(c.rewards.filter(r=>r.endsWith(':normal')).map(r=>r.split(':')[0])).size,trainingWins:c.trainingWins??0,questWins:c.quests?.length??0}}:{}),levels:Object.fromEntries(OFFICERS.map(id=>[id,levelInfo(c.xp[id]??0).level])),equipped:{...c.equipped},...(c.loadouts?{loadouts:structuredClone(c.loadouts)}:{})};}
+export function deployment(c:Campaign,modern=false):Deployment{return {...(modern?{treasureRules:1 as const,growth:{storyWins:new Set(c.rewards.filter(r=>r.endsWith(':normal')).map(r=>r.split(':')[0])).size,trainingWins:c.trainingWins??0,questWins:c.quests?.length??0}}:{}),levels:Object.fromEntries(OFFICERS.map(id=>[id,levelInfo(c.xp[id]??0).level])),equipped:{...c.equipped},...(c.loadouts?{loadouts:structuredClone(c.loadouts)}:{})};}
 export function award(c:Campaign,stage:string,difficulty:Difficulty,participants:string[],seals:number[]){
   const id=stage+':'+difficulty;if(c.rewards.includes(id)||!seals.includes(1))return {xp:0,treasure:null as Treasure|null,levels:[] as string[]};
   const amount=difficulty==='normal'?140:70,levels:string[]=[];c.rewards.push(id);
@@ -62,9 +62,10 @@ export function equip(c:Campaign,officer:string,id:string){
   for(const [other,item] of Object.entries(c.equipped))if(item===id)delete c.equipped[other];
   c.equipped[officer]=id;return true;
 }
-export function applyTreasure(unit:Unit,id:string|undefined){
+export function applyTreasure(unit:Unit,id:string|undefined,uniqueEffects=true){
   const item=treasures.find(t=>t.id===id);if(!item)return;
   for(const [stat,value] of Object.entries(item.bonus))unit.stats[stat as keyof Unit['stats']]+=value;
+  if(uniqueEffects&&treasurePowers.some(t=>t.id===id)&&!unit.traits.includes("treasure:"+id))unit.traits.push("treasure:"+id);
   unit.hp=unit.stats.maxHp;unit.mp=unit.stats.maxMp;
 }
 export function readCampaign():Campaign{
@@ -81,3 +82,5 @@ export function readCampaign():Campaign{
   }catch{return freshCampaign();}
 }
 export function writeCampaign(c:Campaign){localStorage.setItem('sama-campaign-v1',JSON.stringify(c));}
+
+export {treasurePowerText};

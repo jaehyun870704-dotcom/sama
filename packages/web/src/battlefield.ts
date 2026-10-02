@@ -1,3 +1,6 @@
+import {playbackEvents} from './battle-playback.ts';
+import {troopFacing,troopWalkPose,troopReaction,troopReactionPose,retreatMotion} from './troop-motion.ts';
+import {troopRoles,visualClass,troopArt,troopSheets,basicReactionArt} from './troops.ts';
 import {spriteAtlas} from './sprite-atlas.ts';
 import {structureKind} from './campaign-rules.ts';
 import { Application, Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
@@ -10,7 +13,7 @@ const W=48,H=48;
 const colors:Record<TerrainKind,number>={plain:0x6b7560,road:0xada084,forest:0x435f50,mountain:0x69736d,hill:0x83846a,water:0x3d6770,rapids:0x3d6770,bridge:0x98846a,fort:0xab9e7b,gate:0x8b8a77,wall:0x777f74};
 const sides={player:0x68c9bf,ally:0x86b7d9,allyAi:0xd3b06b,enemy:0xe78b79};
 export const terrainNames:Record<TerrainKind,string>={plain:'평지',road:'길',forest:'숲',mountain:'산지',hill:'구릉',water:'수상',rapids:'완류',bridge:'다리',fort:'성채',gate:'성문',wall:'성벽'};
-export const classNames:Record<string,string>={infantry:'보병',spearman:'창병',cavalry:'경기병',heavyCav:'중기병',archer:'궁병',crossbow:'노병',strategist:'책사',fengshui:'풍수사',ram:'충차',catapult:'포차',engineer:'공병',navy:'수군',civilian:'민중'};
+export const classNames:Record<string,string>={infantry:'보병',spearman:'창병',cavalry:'경기병',heavyCav:'중기병',archer:'궁병',crossbow:'노병',strategist:'책사',fengshui:'풍수사',ram:'충차',catapult:'포차',engineer:'공병',navy:'수군',civilian:'민중',...Object.fromEntries(Object.entries(troopRoles).map(([k,v])=>[k,v.name]))};
 export function unitName(u:Unit){return classNames[u.name]??u.name;}
 function iso(c:Coord){return {x:c.x*W+W/2,y:c.y*H+H/2};}
 function diamond(g:Graphics,x:number,y:number,color:number,alpha=1){return g.rect(x-W/2,y-H/2,W,H).fill({color,alpha});}
@@ -31,6 +34,8 @@ export class Battlefield {
   private textures=new Map<string,Texture>();
   private atlas:Texture|undefined;
   private extra:Texture|undefined;
+  private facing=new Map<string,number>();
+  private troopTextures=new Map<string,Texture>();
   private ram:Texture|undefined;
   private convoys:Texture|undefined;
   private scenery:Texture|undefined;
@@ -54,6 +59,7 @@ export class Battlefield {
   onHover:(c:Coord|undefined)=>void=()=>{};
   async init(privateHost:HTMLElement){
     await this.app.init({resizeTo:privateHost,backgroundAlpha:0,antialias:false,resolution:Math.min(devicePixelRatio,2),autoDensity:true,preference:'webgl'});
+    await Promise.all(troopSheets.map(async sheet=>{const texture=Texture.from(await spriteAtlas(sheet.url,sheet.rows));texture.source.scaleMode='nearest';this.troopTextures.set(sheet.id,texture);}));
     this.ram=Texture.from(await spriteAtlas('/ram-v1.png',2,2));this.ram.source.scaleMode='nearest';
     this.convoys=await Assets.load<Texture>('/convoys-v1.png');this.convoys.source.scaleMode='nearest';
     this.extra=Texture.from(await spriteAtlas('/units-extra-v1.png',4));this.extra.source.scaleMode='nearest';
@@ -132,7 +138,7 @@ export class Battlefield {
     g.strokeStyle='#fff1c0';g.lineWidth=1.5;g.strokeRect(-this.world.x/this.zoom/W*sx,-this.world.y/this.zoom/H*sy,this.app.screen.width/this.zoom/W*sx,this.app.screen.height/this.zoom/H*sy);
   }
   load(state:BattleState){
-    this.animationEpoch++;this.busy=false;this.overview=false;this.state=state;this.previousPositions.clear();this.actors.clear();clear(this.pieces);clear(this.ground);clear(this.effects);this.cursor.clear();
+    this.animationEpoch++;this.busy=false;this.overview=false;this.state=state;this.previousPositions.clear();this.facing.clear();this.actors.clear();clear(this.pieces);clear(this.ground);clear(this.effects);this.cursor.clear();
     for(const texture of this.terrainTextures)texture.destroy(texture.source.resource instanceof HTMLCanvasElement);this.terrainTextures=[];
     this.paintTerrain();this.zoom=this.app.screen.width<500?.78:1;this.focus(state.living('player')[0]?.pos??{x:0,y:0});
   }
@@ -140,10 +146,21 @@ export class Battlefield {
     const result=terrainLayer(this.state!,this.scenery!);this.ground.addChild(result.layer);this.terrainTextures=[result.texture,...result.frames];
     const m=this.state!.map;const labels=this.state!.stage.id==='S1-07'?[{at:m.regions.get('enemy_camp')?.[0],text:'전초 수비 진지'},{at:m.regions.get('forest_route')?.[0],text:'보병 숲길'},{at:m.regions.get('main_route')?.[0],text:'기병 큰길'}]:this.state!.stage.id==='S1-05'?[{at:m.regions.get('escort_goal')?.[0],text:'동쪽 교량 출구'},{at:m.regions.get('south_exit')?.[0],text:'남쪽 강변 출구'}]:this.state!.stage.id==='S1-03'?[{at:m.regions.get('east_pass')?.[0],text:'동쪽 고개'},{at:m.regions.get('ravine_exit')?.[0],text:'남쪽 계곡'}]:[{at:m.regions.get('objective')?.[0],text:this.state!.stage.id==='S1-06'?'관문 돌파 구역':this.state!.stage.id==='S1-04'?'황제에게 접근':this.state!.stage.id==='S1-02'?'南門':this.state!.stage.id==='S1-01'?'창고':'중앙 성채'}];
     for(const {at,text} of labels)if(at){const label=new Text({text,style:{fontFamily:'Malgun Gothic',fontSize:14,fontWeight:'700',fill:0xffe4a3,dropShadow:{color:0x14201b,blur:2,distance:1}}});label.anchor.set(.5,1);label.position.set((at.x+.5)*W,at.y*H-6);this.ground.addChild(label);}
+    for(const goal of this.state!.victory){
+      if(!goal.target?.startsWith('trial_'))continue;
+      const at=m.regionCoords(goal.target)[0];if(!at)continue;
+      const text=goal.target==='trial_defense'?'방어 거점':goal.target==='trial_safe'?'구출 안전지대':goal.type==='capture'?'점령 거점':'호위 출구';
+      const label=new Text({text,style:{fontFamily:'Malgun Gothic',fontSize:14,fontWeight:'700',fill:0xffe4a3,stroke:{color:0x14201b,width:4}}});label.anchor.set(.5,1);label.position.set((at.x+.5)*W,at.y*H-6);this.ground.addChild(label);
+    }
   }
   render(state:BattleState,selected:string,mode:string,showThreat:boolean,scouted=false){
     this.state=state;this.selected=selected;this.mode=mode;this.ranges.clear();
     const u=state.find(selected);
+    for(const goal of state.victory){
+      if(!goal.target?.startsWith('trial_'))continue;
+      const color=goal.target==='trial_defense'?0xff9874:0xffdf84;
+      for(const at of state.map.regionCoords(goal.target)){const p=iso(at);diamond(this.ranges,p.x,p.y,color,.35).stroke({color,width:3});}
+    }
     if(state.stage.id==='S1-03'&&!state.activeDialogue){const target=state.victory.find(c=>c.type==='reach')?.target;if(target)for(const at of state.map.regionCoords(target)){const p=iso(at);diamond(this.ranges,p.x,p.y,0xffdf84,.3).stroke({color:0xffe3a0,width:3});}}
     if(scouted)for(const enemy of state.living('enemy')){
       const route=enemy.patrolRoute??[];
@@ -168,16 +185,16 @@ export class Battlefield {
         let actor=this.actors.get(unit.id);
         if(!actor){
           const piece=new Container(),sprite=new Sprite(this.unitTexture(unit));sprite.anchor.set(.5,.88);sprite.position.set(0,8);
-          const mounted=(unit.id.startsWith('convoy_')||['cavalry','heavyCav','catapult','ram'].includes(unit.unitClass));sprite.width=mounted?90:78;sprite.height=mounted?90:78;if(unit.id.startsWith('convoy_')){sprite.width=76;sprite.height=76;}else if(!structureKind(unit.id))sprite.anchor.y=.945;if(structureKind(unit.id)){sprite.width=structureKind(unit.id)==='tower'?85:64;sprite.height=structureKind(unit.id)==='tower'?118:75;}
+          const mounted=(unit.id.startsWith('convoy_')||['cavalry','heavyCav','horseArcher','catapult','ram'].includes(unit.unitClass));sprite.width=mounted?90:78;sprite.height=mounted?90:78;if(unit.id.startsWith('convoy_')){sprite.width=76;sprite.height=76;}else if(!structureKind(unit.id))sprite.anchor.y=.945;if(structureKind(unit.id)){sprite.width=structureKind(unit.id)==='tower'?85:64;sprite.height=structureKind(unit.id)==='tower'?118:75;}
           const base=new Graphics();base.ellipse(0,5,17,7).fill({color:0x13211c,alpha:.4});base.ellipse(0,7,16,7).stroke({color:sides[unit.side],width:3});piece.addChild(base,sprite);
           actor={piece,sprite,unit};this.actors.set(unit.id,actor);this.pieces.addChild(piece);
         }
         actor.unit=unit;actor.piece.position.set((unit.pos.x+.5)*W,(unit.pos.y+.5)*H);actor.piece.zIndex=unit.pos.y;
-        actor.sprite.texture=this.unitTexture(unit);actor.sprite.alpha=unit.hasActed?.65:1;actor.sprite.tint=unit.side==='enemy'?0xffb3a0:unit.side==='allyAi'?0xffdc8e:0xffffff;
+        actor.sprite.texture=this.unitTexture(unit,this.facing.get(unit.id)??0);actor.sprite.alpha=unit.hasActed?.65:1;actor.sprite.tint=unit.id==='rescue_target'&&unit.side==='enemy'?0xffe3a0:unit.side==='enemy'?0xffb3a0:unit.side==='allyAi'?0xffdc8e:0xffffff;
         if(actor.piece.children.length>2)for(const child of actor.piece.removeChildren(2))child.destroy();
-        const bar=new Graphics();if(unit.id===selected)bar.ellipse(0,7,22,10).stroke({color:0xffe9aa,width:2});
+        const bar=new Graphics();if(unit.id===selected||unit.id==='rescue_target'||unit.id==='convoy_trial')bar.ellipse(0,7,22,10).stroke({color:0xffe9aa,width:2});
         bar.rect(-16,13,32,4).fill(0x182720).rect(-16,13,32*Math.max(0,unit.hp/unit.stats.maxHp),4).fill(sides[unit.side]);actor.piece.addChild(bar);
-        if(unit.id===selected||unit.side==='player'){
+        if(unit.id===selected||unit.side==='player'||['rescue_target','convoy_trial'].includes(unit.id)){
           const name=new Text({text:unitName(unit),style:{fontFamily:'Malgun Gothic',fontSize:11,fill:0xfff4da,dropShadow:{color:0x10251e,blur:2,distance:1}}});name.anchor.set(.5,0);name.y=19;actor.piece.addChild(name);
         }
       }
@@ -185,7 +202,11 @@ export class Battlefield {
     }
     this.drawMinimap();
   }
+  private hasReaction(u:Unit){return !structureKind(u.id)&&!u.id.startsWith('convoy_')&&!!(troopArt[u.unitClass]||basicReactionArt[u.unitClass]);}
   private unitTexture(u:Unit,pose=0){
+    const basic=basicReactionArt[u.unitClass];if(pose>=8&&basic&&!structureKind(u.id)&&!u.id.startsWith('convoy_')){const frame=pose%4,id=basic.sheet+':'+basic.row+':'+frame,old=this.textures.get(id);if(old)return old;const atlas=this.troopTextures.get(basic.sheet)!,w=atlas.width/4,h=atlas.height/basic.rows,t=new Texture({source:atlas.source,frame:new Rectangle(frame*w,basic.row*h,w,h)});this.textures.set(id,t);return t;}
+    const art=troopArt[u.unitClass];if(art){const sheet=art.sheet+(pose>=8?'-reaction':pose>=4?'-walk':''),frame=pose%4;const id=sheet+':'+art.row+':'+frame,old=this.textures.get(id);if(old)return old;const atlas=this.troopTextures.get(sheet)!,w=atlas.width/4,h=atlas.height/art.rows;const texture=new Texture({source:atlas.source,frame:new Rectangle(frame*w,art.row*h,w,h)});this.textures.set(id,texture);return texture;}
+    if(troopRoles[u.unitClass])u={...u,unitClass:visualClass(u.unitClass)};
     if(u.unitClass==='ram'){const id='ram:'+pose,old=this.textures.get(id);if(old)return old;const a=this.ram!,w=a.width/2,h=a.height/2,t=new Texture({source:a.source,frame:new Rectangle(pose%2*w,Math.floor(pose/2)*h,w,h)});this.textures.set(id,t);return t;}
     if(u.id.startsWith('convoy_')){const row=u.id==='convoy_b'?1:0,id='convoy:'+row+':'+pose;const old=this.textures.get(id);if(old)return old;const atlas=this.convoys!,w=atlas.width/4,h=atlas.height/2;const t=new Texture({source:atlas.source,frame:new Rectangle(pose*w,row*h,w,h)});this.textures.set(id,t);return t;}
     const structure=structureKind(u.id),extraRow=['crossbow','heavyCav','engineer','fengshui'].indexOf(u.unitClass);
@@ -198,7 +219,7 @@ export class Battlefield {
   }
   /** Sequential log playback keeps attack, impact and counterattack visibly separate. */
   play(logs:LogEntry[]){
-    const events=logs.filter(e=>['move','attack','counter','strategy'].includes(e.t));if(!events.length)return;
+    const events=playbackEvents(logs);if(!events.length)return;
     const epoch=this.animationEpoch;this.busy=true;
     void (async()=>{try{for(const e of events){if(epoch!==this.animationEpoch)break;await this.animateEvent(e,epoch);}}finally{if(epoch===this.animationEpoch){this.busy=false;this.onAnimationEnd();}}})();
   }
@@ -207,21 +228,41 @@ export class Battlefield {
     return new Promise<void>(resolve=>{const start=performance.now();const tick=()=>{if(epoch!==this.animationEpoch){this.app.ticker.remove(tick);resolve();return;}const p=Math.min(1,(performance.now()-start)/(ms/this.playbackRate));fn(p);if(p===1){this.app.ticker.remove(tick);resolve();}};this.app.ticker.add(tick);});
   }
   private async animateEvent(e:LogEntry,epoch:number){
+    if(e.t==='retreat'){
+      const actor=this.actors.get(e.unit);if(!actor)return;
+      const mechanical=!!structureKind(e.unit)||['ram','catapult'].includes(actor.unit.unitClass)||e.unit.startsWith('convoy_');
+      this.focusUnit(actor.unit.pos);this.burst(actor.unit.pos,structureKind(e.unit)?'파괴':'퇴각',0xd4c2a2);
+      if(this.hasReaction(actor.unit))actor.sprite.texture=this.unitTexture(actor.unit,10);
+      await this.tween(720,epoch,p=>{const m=retreatMotion(p,mechanical);actor.sprite.rotation=m.rotation;actor.sprite.y=8+m.drop;actor.piece.alpha=m.alpha;});
+      if(epoch===this.animationEpoch){actor.piece.destroy({children:true});this.actors.delete(e.unit);this.facing.delete(e.unit);}return;
+    }
+    if(e.t==='guard'){
+      const protector=this.actors.get(e.protector);if(!protector||!this.hasReaction(protector.unit))return;
+      const facing=this.facing.get(e.protector)??0,scale=protector.sprite.scale.x;
+      await this.tween(300,epoch,p=>{protector.sprite.texture=this.unitTexture(protector.unit,troopReactionPose('guard',p));protector.sprite.scale.x=Math.abs(scale);});
+      if(epoch===this.animationEpoch){protector.sprite.texture=this.unitTexture(protector.unit,facing);protector.sprite.scale.x=scale;}return;
+    }
     if(e.t==='move'){
       this.onCue('move');
-      const actor=this.actors.get(e.unit);if(!actor)return;const from=iso(e.from),to=iso(e.to);this.focusUnit(e.to);
-      await this.tween(420,epoch,p=>{actor.piece.position.set(from.x+(to.x-from.x)*p,from.y+(to.y-from.y)*p);actor.sprite.y=8-Math.abs(Math.sin(p*Math.PI*4))*3;actor.sprite.rotation=Math.sin(p*Math.PI*4)*.025;if(actor.unit.id.startsWith('convoy_'))actor.sprite.texture=this.unitTexture(actor.unit,1+Math.floor(p*6)%2);});
-      if(epoch===this.animationEpoch){actor.sprite.y=8;actor.sprite.rotation=0;actor.sprite.texture=this.unitTexture(actor.unit);}return;
+      const actor=this.actors.get(e.unit);if(!actor)return;const from=iso(e.from),to=iso(e.to);this.focusUnit(e.to);const facing=troopFacing(to.x-from.x,to.y-from.y);if(troopArt[actor.unit.unitClass]){this.facing.set(e.unit,facing.pose);actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*facing.flip;}
+      await this.tween(420,epoch,p=>{actor.piece.position.set(from.x+(to.x-from.x)*p,from.y+(to.y-from.y)*p);actor.sprite.y=8-Math.abs(Math.sin(p*Math.PI*4))*3;actor.sprite.rotation=Math.sin(p*Math.PI*4)*.025;if(troopArt[actor.unit.unitClass])actor.sprite.texture=this.unitTexture(actor.unit,troopWalkPose(facing.pose,p));else if(actor.unit.id.startsWith('convoy_'))actor.sprite.texture=this.unitTexture(actor.unit,1+Math.floor(p*6)%2);});
+      if(epoch===this.animationEpoch){actor.sprite.y=8;actor.sprite.rotation=0;actor.sprite.texture=this.unitTexture(actor.unit,this.facing.get(e.unit)??0);}return;
     }
     if(e.t!=='attack'&&e.t!=='counter'&&e.t!=='strategy')return;
     const caster=e.t==='strategy'?e.caster:e.attacker,actor=this.actors.get(caster);if(!actor)return;
     const targetId=e.t==='strategy'?e.targets[0]:e.defender,target=this.state?.find(targetId??'');if(!target)return;
     const from=iso(actor.unit.pos),to=iso(target.pos),dx=to.x-from.x,dy=to.y-from.y,len=Math.max(1,Math.hypot(dx,dy));
     this.focusUnit({x:(actor.unit.pos.x+target.pos.x)/2,y:(actor.unit.pos.y+target.pos.y)/2});
-    const ranged=e.t==='strategy'||['archer','crossbow','catapult'].includes(actor.unit.unitClass),fx=new Graphics();this.effects.addChild(fx);
+    if(troopArt[actor.unit.unitClass]){this.facing.set(actor.unit.id,0);actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*(dx<0?-1:1);}
+    const ranged=e.t==='strategy'||['archer','crossbow','catapult','horseArcher'].includes(actor.unit.unitClass),fx=new Graphics();this.effects.addChild(fx);
+    const reactions=(e.t==='strategy'?e.targets:[e.defender]).map((id,i)=>{
+      const victim=this.actors.get(id),damage=e.t==='strategy'?(e.damage[i]??0):e.damage;
+      const kind=troopReaction(e.t==='strategy'||e.hit,damage,!!victim&&!!this.state?.hasStatus(victim.unit,'guard'));
+      return {victim,kind,scale:victim?.sprite.scale.x??1,tint:victim?.sprite.tint??0xffffff,texture:victim?.sprite.texture};
+    });
     let hit=false;
     await this.tween(e.t==='strategy'?950:760,epoch,p=>{
-      const pose=p<.22?1:p<.65?2:p<.92?3:0;actor.sprite.texture=this.unitTexture(actor.unit,pose);
+      const pose=troopArt[actor.unit.unitClass]?(p<.2||p>.9?0:e.t==='strategy'?3:2):(p<.22?1:p<.65?2:p<.92?3:0);actor.sprite.texture=this.unitTexture(actor.unit,pose);
       const lunge=ranged?0:Math.sin(Math.min(1,p/.65)*Math.PI)*19;actor.sprite.x=dx/len*lunge;actor.sprite.y=8+dy/len*lunge;
       fx.clear();
       if(ranged&&p>.2&&p<.6){const q=(p-.2)/.4,x=from.x+dx*q,y=from.y+dy*q-Math.sin(q*Math.PI)*22;
@@ -230,12 +271,16 @@ export class Battlefield {
         else fx.moveTo(x-dx/len*16,y-dy/len*16-20).lineTo(x,y-20).stroke({color:0xffedba,width:2});
       }
       if(e.t==='strategy'&&(e.strategy==='heal'||e.damage.some(d=>d<0))&&p>=.6&&p<.88){fx.circle(to.x,to.y-15,18+(p-.6)*50).stroke({color:0xb1f1bd,width:3,alpha:1-(p-.6)/.28});}
-      if(!(e.t==='strategy'&&(e.strategy==='heal'||e.damage.some(d=>d<0)))&&p>=.6&&p<.88){const q=(p-.6)/.28;fx.moveTo(to.x-20+q*35,to.y-36).lineTo(to.x+15,to.y-5).stroke({color:e.t==='strategy'?0xb0f0dc:0xffe3a0,width:4*(1-q),alpha:1-q});const victim=this.actors.get(target.id);if(victim){victim.sprite.x=Math.sin(q*Math.PI*3)*5;victim.sprite.tint=0xffd5b3;}}
+      if(reactions.some(r=>r.kind!=='none')&&p>=.6&&p<.88){const q=(p-.6)/.28;fx.moveTo(to.x-20+q*35,to.y-36).lineTo(to.x+15,to.y-5).stroke({color:e.t==='strategy'?0xb0f0dc:0xffe3a0,width:4*(1-q),alpha:1-q});}
+      for(const r of reactions){const v=r.victim;if(!v||r.kind==='none')continue;
+        if(p>=.6&&p<.94){const q=(p-.6)/.34;if(this.hasReaction(v.unit)){v.sprite.texture=this.unitTexture(v.unit,troopReactionPose(r.kind,q));v.sprite.scale.x=Math.abs(r.scale)*(actor.unit.pos.x<v.unit.pos.x?-1:1);}v.sprite.x=r.kind==='hurt'?Math.sin(q*Math.PI*3)*5:0;v.sprite.tint=r.kind==='hurt'?0xffd5b3:r.tint;}
+        else if(p>=.94){v.sprite.x=0;v.sprite.scale.x=r.scale;v.sprite.tint=r.tint;if(r.texture)v.sprite.texture=r.texture;}
+      }
       if(p>=.6&&!hit){hit=true;this.onCue(e.t==='strategy'?'magic':'attack');if(e.t==='strategy')e.targets.forEach((id,i)=>{const u=this.state?.find(id);if(u)this.burst(u.pos,(e.strategy==='heal'||e.damage.some(d=>d<0))?'+'+Math.abs(e.damage[i]??0):String(e.damage[i]??0),e.strategy==='fire'?0xffb071:0xb9efe4);});else this.burst(target.pos,e.hit?'−'+e.damage:'회피',0xffd0ab);}
     });
     if(epoch!==this.animationEpoch)return;
     fx.destroy();actor.sprite.x=0;actor.sprite.y=8;actor.sprite.texture=this.unitTexture(actor.unit);
-    const victim=this.actors.get(target.id);if(victim){victim.sprite.x=0;victim.sprite.tint=target.side==='enemy'?0xffb3a0:0xffffff;}
+    for(const r of reactions){if(r.victim){r.victim.sprite.x=0;r.victim.sprite.scale.x=r.scale;r.victim.sprite.tint=r.tint;if(r.texture)r.victim.sprite.texture=r.texture;}}
   }
   burst(at:Coord,text:string,color=0xf2c885){
     const p=iso(at),item=new Container(),g=new Graphics();item.position.set(p.x,p.y-20);g.circle(0,0,16).stroke({color,width:2,alpha:.7});

@@ -59,7 +59,7 @@ export function decide(state: BattleState, unit: Unit): Command[] {
 
   // 점령·도달이 승패를 가르는 전투에서는 목표가 교전보다 우선한다.
   // 전원이 목표로 달리면 전멸하므로, 목표에 가장 가까운 한 명만 담당시킨다.
-  if (objective && isObjectiveCarrier(state, unit, objective)) {
+  if (objective && isObjectiveCarrier(state, unit, objective) && !state.map.regionCoords(objective.region).every(c=>{const occupant=state.unitAt(c);return occupant&&isHostile(unit.side,occupant.side);})) {
     const goal = goalCoord(state, unit, objective.region);
     const step = goal ? bestStepToward(reach, goal) : null;
     if (step && !sameCoord(step, unit.pos)) {

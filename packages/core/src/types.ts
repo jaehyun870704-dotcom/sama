@@ -36,6 +36,13 @@ export interface Tile {
 // ─────────────────────────────────────────────────────────── 병종
 
 export type UnitClass =
+  | "shaman"
+  | "maiden"
+  | "taoist"
+  | "physician"
+  | "monk"
+  | "horseArcher"
+  | "bandit"
   | "infantry"    // 보병
   | "spearman"    // 창병
   | "cavalry"     // 경기병
@@ -145,6 +152,7 @@ export interface Unit {
   /** 공격 사거리 [최소, 최대] */
   range: readonly [number, number];
   hasMoved: boolean;
+  movedThisTurn?: boolean;
   hasActed: boolean;
   alive: boolean;
   /** 도구 사용 가능 여부. 편입 아군은 false. PRD §3.3 */
