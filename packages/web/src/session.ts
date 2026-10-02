@@ -23,6 +23,8 @@ import flightStage from '../../data/stages/S1-03.json';
 import flightMap from '../../data/maps/luhun-flight.json';
 import dreamStage from '../../data/stages/S1-04.json';
 import dreamMap from '../../data/maps/nightmare-court.json';
+import bridgeStage from '../../data/stages/S1-09.json';
+import bridgeMap from '../../data/maps/hanzhong-hanshui-bridge.json';
 import legacyFortMap from './legacy/hanzhong-map-v2.json';
 import legacyFortStage from './legacy/hanzhong-stage-v2.json';
 import { makeUnit, awardedSeals } from '../../core/src/index.ts';
@@ -36,9 +38,10 @@ export const chapters = [
   {stage:retreatStage as StageDef,map:retreatMap as MapFile,year:'건안 십삼년 · 208년',label:'수송대 호위',quote:'한 번의 승리보다, 다음 싸움에 돌아올 사람이 먼저다.'},
   {stage:tongguanStage as StageDef,map:tongguanMap as MapFile,year:'건안 십육년 · 211년',label:'관문 돌파와 후방 호위',quote:'눈앞의 적만 본다면, 등 뒤의 주군을 잃는다.'},
   {stage:approachStage as StageDef,map:approachMap as MapFile,year:'건안 이십년 · 215년',label:'산길 돌파와 병종 연계',quote:'공을 앞세우기 전에, 함께 돌아올 길부터 열겠습니다.'},
+  {stage:bridgeStage as StageDef,map:bridgeMap as MapFile,year:'건안 이십사년 · 219년',label:'부교 재건과 호위',quote:'물러날 길을 놓는 것도, 싸움의 절반이다.'},
 ];
 // Stable indices preserve the existing v2 command saves.
-export const campaignOrder=[2,0,3,4,5,6,7,1];
+export const campaignOrder=[2,0,3,4,5,6,7,1,8];
 export type Preparation='survival'|'strategy'|'command';
 export const strategies: StrategyDef[] = [
   {id:'windDragon',name:'풍룡',element:'wind',shape:'spread',range:4,radius:1,mpCost:18,power:130,targetSides:['enemy']},
@@ -106,6 +109,8 @@ export class Session {
       for(const enemy of state.living('enemy')){enemy.stats.attack=Math.round(enemy.stats.attack*(practice?.6:.75));this.balancedEnemies.add(enemy.id);}
     }
     if(this.chapter===6){const commander=state.get('cao_cao');commander.stats.maxHp=180;commander.hp=180;commander.stats.movement=0;for(const id of ['ma_chao','pass_bow'])state.get(id).stats.movement=0;}
+    // S1-09: Cao Cao rides with the baggage; he cannot fight and keeps to the road.
+    if(this.chapter===8){const lord=state.get('cao_cao');lord.stats.maxHp=160;lord.hp=160;lord.stats.movement=3;lord.range=[0,0];lord.canUseItems=false;}
     if(this.chapter===5)for(const id of ['convoy_a','convoy_b']){const u=state.get(id);u.stats.movement=3;u.stats.maxHp=110;u.hp=110;u.range=[0,0];u.canUseItems=false;}
     if(this.deployment){
       // Opening raiders are lightly armed; the tutorial teaches rescue, not attrition.
@@ -147,7 +152,7 @@ export class Session {
     if(result.ok){this.checkpoints.push(this.journal.length);this.journal.push(structuredClone(cmd));}
     return result;
   }
-  private resetScenario(){this.fortified.clear();this.breached.clear();this.activeDuel=null;this.lastDuel=null;this.challenged.clear();this.funds=3000;this.bribes=0;this.medicine=2;this.scouted=false;this.failure='';this.phaseCheckpoint=null;this.phase=this.state.scenarioPhase|| (this.chapter===2?'창고 확보':this.chapter===0?'잠입':this.chapter===3?'탈출로 선택':this.chapter===5?'수송로 선택':this.chapter===6?'호위 병력 배치':'외곽 돌파');}
+  private resetScenario(){this.fortified.clear();this.breached.clear();this.activeDuel=null;this.lastDuel=null;this.challenged.clear();this.funds=3000;this.bribes=0;this.medicine=2;this.scouted=false;this.failure='';this.phaseCheckpoint=null;this.phase=this.chapter===8&&this.state.scenarioPhase==='부교 재건'?'부교 재건 0/2 · 강변을 지키세요':this.state.scenarioPhase|| (this.chapter===2?'창고 확보':this.chapter===0?'잠입':this.chapter===3?'탈출로 선택':this.chapter===5?'수송로 선택':this.chapter===6?'호위 병력 배치':'외곽 돌파');}
   get pressure(){return this.state.turn-1+(this.state.choices.some(c=>c.nodeId==='bluff_warning'&&c.optionId==='commit')?2:0);}
   get pressureLimit(){return this.difficulty==='extreme'?9:12;}
   private execute(cmd:Command){
@@ -236,8 +241,12 @@ export class Session {
     if(this.revision===4)applyOfficerFeatures(s.living(),this.deployment?.growth);
     // Breach rally belongs to the revision-4 siege rules (ram company, engineers).
     if(this.revision===4)for(const gate of s.units.values())if(structureKind(gate.id)==='gate'&&!gate.alive&&!this.breached.has(gate.id)){this.breached.add(gate.id);breachRally(s,gate);}
-    if(s.scenarioPhase){
+    if(this.chapter===8&&s.scenarioPhase==='부교 재건'){
+      this.phase=`부교 재건 ${Math.min(2,s.heldTurns('bridge_bank','player'))}/2 · 강변을 지키세요`;
+      if(s.outcome==='defeat'&&!s.find('cao_cao')?.alive)this.failure='조조가 퇴각했습니다.';
+    }else if(s.scenarioPhase){
       this.phase=s.scenarioPhase;
+      if(this.chapter===8&&s.outcome==='defeat'&&!s.find('cao_cao')?.alive)this.failure='조조가 퇴각했습니다.';
     }else if(this.chapter===2){
       const hero=s.get('sima_yi');
       if(s.map.regionCoords('warehouse').some(p=>key(p)===key(hero.pos)))s.captured.set('warehouse','player');
@@ -286,7 +295,7 @@ export class Session {
     if(this.chapter===0)return [1,...(this.bribes===0&&!this.state.choices.some(c=>c.nodeId==='bribe')?[2]:[]),...(['sima_yi','sima_lang'].every(id=>{const u=this.state.get(id);return u.alive&&u.hp>=u.stats.maxHp*.5;})?[3]:[])];
     return awardedSeals(this.state,this.difficulty);
   }
-  get sealNames(){return this.chapter===7?['전초 수비망 격파','전 부대 생환','신속한 진격']:this.chapter===6?['관문 돌파','호위 부대 보존','신속한 제압']:this.chapter===5?['수송대 탈출','수송대 두 부대 생존','신속한 철수']:this.chapter===4?['흉몽 돌파','사마의 생존','빠른 각성']:this.chapter===0?['탈출 성공','무발각 잠입','형제 체력 50%']:this.chapter===2?['가문 수호','민중·부대 전원 생존','신속한 방어']:this.chapter===3?['산길 탈출','형제 생존','추격 따돌리기']:['성채 점령','신속한 결단','병력 보존'];}
+  get sealNames(){return this.chapter===8?['야곡 출구 도착','손실 최소화','신속한 철수']:this.chapter===7?['전초 수비망 격파','전 부대 생환','신속한 진격']:this.chapter===6?['관문 돌파','호위 부대 보존','신속한 제압']:this.chapter===5?['수송대 탈출','수송대 두 부대 생존','신속한 철수']:this.chapter===4?['흉몽 돌파','사마의 생존','빠른 각성']:this.chapter===0?['탈출 성공','무발각 잠입','형제 체력 50%']:this.chapter===2?['가문 수호','민중·부대 전원 생존','신속한 방어']:this.chapter===3?['산길 탈출','형제 생존','추격 따돌리기']:['성채 점령','신속한 결단','병력 보존'];}
   restorePhase(){if(this.phaseCheckpoint===null)return false;this.journal=this.journal.slice(0,this.phaseCheckpoint);this.checkpoints=this.checkpoints.filter(n=>n<this.journal.length);this.replay();return true;}
   tick(){
     if(this.state.outcome!=='ongoing' || this.state.activeDialogue || this.activeDuel) return false;

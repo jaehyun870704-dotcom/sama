@@ -38,6 +38,14 @@ export const battleLines:Record<string,BattleLine[]>={
     {id:'reinforce',when:{turn:6},speaker:'사마의',text:'북문으로 증원이 옵니다. 다리를 막고 성채로 곧장 가십시오.'},
     {id:'chief-down',when:{retreat:'zhang_lu'},speaker:'사마의',text:'수비대장이 물러났다. 지금이다, 성채로!'},
   ],
+  'S1-09':[
+    {id:'open-1',when:{turn:1},speaker:'조진',text:'강변 두 칸을 두 턴 동안 지키면 부교가 선다. 공병을 앞세우게.'},
+    {id:'open-2',when:{turn:1},speaker:'사마의',text:'승상은 다리가 놓일 때까지 강가에서 기다리실 겁니다. 뒤쪽 추격 기병을 먼저 막겠습니다.'},
+    {id:'pursuit',when:{turn:3},speaker:'사마의',text:'남서쪽에서 추격대가 옵니다. 승상의 뒤를 비우지 마십시오.'},
+    {id:'bridge',when:{reach:{unit:'cao_cao',region:'bridge_span'}},speaker:'조진',text:'부교가 섰다! 승상께서 건너신다, 길을 열어라!'},
+    {id:'huang',when:{turn:5},speaker:'황충',text:'늙었다고 얕보지 마라. 이 활은 아직 정군산의 피를 기억한다!'},
+    {id:'huang-down',when:{retreat:'huang_zhong'},speaker:'조진',text:'황충이 물러났다! 야곡 출구가 열렸다.'},
+  ],
 };
 
 function met(state:BattleState,w:LineWhen){

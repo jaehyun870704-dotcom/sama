@@ -23,6 +23,7 @@ export const storyLocations:Record<string,Array<{art:number;name:string;companio
   'S1-05':[{art:16,name:'장강 · 수송대 집결지',companion:'조진'},{art:7,name:'장강 · 퇴각로 정찰',companion:'조진'},{art:15,name:'장강 · 교량 앞',companion:'조진'}],
   'S1-06':[{art:8,name:'동관 · 관문 앞',companion:'조진'},{art:16,name:'동관 · 승상 군영 후방',companion:'조진'},{art:14,name:'동관 · 출진 군의',companion:'허저'}],
   'S1-08':[{art:14,name:'한중 · 본대 군막',companion:'조진'},{art:17,name:'한중 · 성채 정찰',companion:'조진'},{art:4,name:'한중 · 교량 접근로',companion:'조진'}],
+  'S1-09':[{art:14,name:'한중 · 철수 군의',companion:'조진'},{art:15,name:'한수 · 불탄 부교터',companion:'조진'},{art:7,name:'한수 · 강변 정찰',companion:'조진'}],
 };
 export const storyBeats:Record<string,StoryBeat[]>={
   'S1-07':[
@@ -63,6 +64,11 @@ export const storyBeats:Record<string,StoryBeat[]>={
     {speaker:'사마의',line:'수레를 버리면 오늘은 빨라도 내일 싸울 수 없습니다. 전방에 길을 열고 후방에 방패를 남기십시오.',pose:'speak',actor:4},
     {speaker:'조진',line:'교량을 돌파할지 남쪽으로 돌아갈지 정해라. 나는 수송대가 마지막 고개를 넘을 때까지 지키겠다.',pose:'resolve',actor:3},
   ],
+  'S1-09':[
+    {speaker:'조진',line:'승상께서 계륵이라 하셨다더군. 먹자니 살이 없고 버리자니 아깝다… 한중에서 물러난다는 뜻일세.',pose:'enter',actor:3},
+    {speaker:'사마의',line:'조운이 한수의 부교를 불태웠습니다. 강변을 지키며 다리를 다시 놓아야 승상께서 건너실 수 있습니다.',pose:'speak',actor:4},
+    {speaker:'조진',line:'공병을 맡기겠네. 다리가 서기 전까지는 승상 곁을 떠나지 말게. 쳇바퀴처럼 같은 강변을 돌게 되더라도.',pose:'resolve',actor:3},
+  ],
   'S1-08':[
     {speaker:'조진',line:'두 교량 너머가 한중의 성채다. 서쪽 우군도 같은 깃발을 노리고 있다.',pose:'enter',actor:3},
     {speaker:'사마의',line:'성문을 부수기 전 감시탑의 사거리를 살피십시오. 지원대는 통로를 열고, 본대가 성채를 맡겠습니다.',pose:'speak',actor:4},
@@ -83,7 +89,8 @@ export const stories=[
   ['출사 전야','조정의 부름을 앞둔 밤, 낯선 회랑에 눈을 뜬다. 진궁의 물음, 여포의 창, 주유의 불빛. 아직 만나지 않은 얼굴들이 중달의 앞길을 가로막는다.'],
   ['강변의 수레','강물 위에 불빛이 번진다. 군량과 부상병을 실은 두 수송대가 진흙길에 멈췄다. 사마의는 전방을 가리키고, 조진은 후미를 돌아본다. 길을 열어야 한다. 그리고 누군가는 뒤에 남아야 한다.'],
   ['동관의 먼지','성문 위로 적의 깃발이 보인다. 뒤에서는 조조의 군막을 향해 먼지가 일어난다. 허저가 명령을 기다린다. 앞으로 보낼 한 부대와 뒤에 남길 한 부대, 둘 모두 사마의의 책임이다.'],
-  ['진심을 칠하다','조비의 물음에 사마의는 전장의 결과로 답하려 한다. 한중으로 이어지는 큰길은 창병이, 숲길은 사격대가 지킨다. 조진의 기병과 지원 부대를 연계해 전초 수비망을 걷어 내고, 다음 성채 공략의 길을 열어야 한다.']
+  ['진심을 칠하다','조비의 물음에 사마의는 전장의 결과로 답하려 한다. 한중으로 이어지는 큰길은 창병이, 숲길은 사격대가 지킨다. 조진의 기병과 지원 부대를 연계해 전초 수비망을 걷어 내고, 다음 성채 공략의 길을 열어야 한다.'],
+  ['쳇바퀴','219년, 한중의 주인은 유비가 되었다. 정군산에서 하후연이 쓰러지고, 조조는 계륵이라는 한마디를 남긴 채 철군을 명한다. 한수의 부교는 불탔다. 강변을 지키며 다리를 다시 놓고, 물러나는 주군을 야곡 출구까지 모셔야 한다.'],
 ];
 
 /** After a main-battle victory: where the story picks up, and what changed. */
@@ -109,6 +116,9 @@ export const storyAftermath:Record<string,{art:number;name:string;beats:Array<{s
   'S1-07':{art:17,name:'양평관 · 무너진 전초',beats:[
     {speaker:'조진',line:'양평관 수비망이 무너졌다. 장로도 오래 버티지 못하겠군.'},
     {speaker:'사마의',line:'조비 공자께 드릴 것은 공이 아니라, 살아 돌아온 병사들의 수입니다.'}]},
+  'S1-09':{art:7,name:'야곡 · 철수로 입구',beats:[
+    {speaker:'조진',line:'승상께서 강을 건너셨다. 부교 하나가 수만 군의 목숨을 살렸군.'},
+    {speaker:'사마의',line:'하지만 한수는 곧 불어납니다. 다음 강변에서는 물이 길을 막을 겁니다.'}]},
   'S1-08':{art:14,name:'한중 · 본대 군막',beats:[
     {speaker:'조진',line:'성채를 먼저 차지했다. 우군 장수들이 얼굴을 붉히더군.'},
     {speaker:'사마의',line:'지금 촉으로 밀고 들어가야 합니다… 하지만 승상께서는 농을 얻고 촉까지 바랄 수는 없다 하시겠지요.'}]},

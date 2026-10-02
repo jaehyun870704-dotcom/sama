@@ -1,4 +1,4 @@
-import type { Unit, Side, Coord, BattleOutcome, Status, StatusKind, StrategyDef } from "./types.ts";
+import type { Unit, Side, Coord, BattleOutcome, Status, StatusKind, StrategyDef, TerrainKind } from "./types.ts";
 import { BattleMap, key, isHostile } from "./grid.ts";
 import { Rng, type RngSnapshot } from "./rng.ts";
 import type { StageDef, VictoryCondition, Difficulty } from "./stage.ts";
@@ -19,6 +19,7 @@ export type LogEntry =
   | { t: "choice"; node: string; option: string; correct?: boolean }
   | { t: "guard"; protector: string; protected: string }
   | { t: "spotted"; watcher: string; target: string }
+  | { t: "terrain"; region: string; terrain: TerrainKind }
   | { t: "outcome"; outcome: BattleOutcome };
 
 /** 턴 순서. 우군 AI는 적 페이즈 뒤에 별도로 움직인다. */
