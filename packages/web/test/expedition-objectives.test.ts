@@ -4,7 +4,7 @@ import {deployment,freshCampaign} from '../src/progression.ts';
 import {trialGoals} from '../src/expedition-objectives.ts';
 import {expeditions} from '../src/expeditions.ts';
 import {evaluateGroup,decide,runEvents} from '../../core/src/index.ts';
-function trial(id:string,version:2|3=3){const d=deployment(freshCampaign(),true);d.mission={id,runId:'objectives-'+id,version,supportClasses:['infantry','physician']};return new Session(7,'normal',215,'survival',4,d);}
+function trial(id:string,version:2|3|4=4){const d=deployment(freshCampaign(),true);d.mission={id,runId:'objectives-'+id,version,supportClasses:['infantry','physician']};return new Session(7,'normal',215,'survival',4,d);}
 describe('distinct expedition objectives',()=>{
  it.each(expeditions.map(m=>m.id))('%s loads with a versioned objective and replays',id=>{const s=trial(id);expect(s.state.outcome).toBe('ongoing');expect(s.state.scenarioPhase).toBe(trialGoals[id]!.name);expect(Session.load(s.save()).state.snapshot()).toEqual(s.state.snapshot());for(const u of s.state.living().filter(u=>!u.id.startsWith('tower_')&&!u.id.startsWith('gate_')))expect(s.state.map.moveCost(u.unitClass,u.pos)).toBeLessThan(Infinity);});
  it('preserves old annihilation saves',()=>{expect(trial('T02',2).state.victory[0]!.type).toBe('annihilate');expect(trial('T02').state.victory[0]!.type).toBe('reach');});

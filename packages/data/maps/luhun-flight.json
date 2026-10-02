@@ -7,21 +7,22 @@
     "f": "forest",
     "h": "hill",
     "M": "mountain",
-    "G": "gate"
+    "G": "gate",
+    "X": "cliff"
   },
   "rows": [
-    "MMMMMMMMMMMMMMMM",
-    "M...ff.M...ff..M",
-    "M......M.......M",
-    "M.,,,,,,,,,,,..M",
-    "M.,..f.M...,,G.M",
-    "M.,..f.M...,,G.M",
-    "M.,,,,,M,,,,,..M",
-    "M...,,,M,..ff..M",
-    "M.ff,,,,,......M",
-    "M...,,,M,,,,,G.M",
-    "M......M,,,,,G.M",
-    "MMMMMMMMMMMMMMMM"
+    "XXXXXXXXXXXXXXXX",
+    "X...ff.M...ff..X",
+    "X......M.......X",
+    "X.,,,,,,,,,,,..X",
+    "X.,..f.M...,,G.X",
+    "X.,..f.M...,,G.X",
+    "X.,,,,,M,,,,,..X",
+    "X...,,,M,..ff..X",
+    "X.ff,,,,,......X",
+    "X...,,,M,,,,,G.X",
+    "X......M,,,,,G.X",
+    "XXXXXXXXXXXXXXXX"
   ],
   "regions": {
     "player_start": [

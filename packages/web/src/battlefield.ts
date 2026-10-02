@@ -12,9 +12,9 @@ import { key, manhattan, ignoresRough } from '../../core/src/index.ts';
 import type { BattleState, Coord, Unit, TerrainKind } from '../../core/src/index.ts';
 
 const W=48,H=48;
-const colors:Record<TerrainKind,number>={plain:0x6b7560,road:0xada084,forest:0x435f50,mountain:0x69736d,hill:0x83846a,water:0x3d6770,rapids:0x3d6770,bridge:0x98846a,fort:0xab9e7b,gate:0x8b8a77,wall:0x777f74};
+const colors:Record<TerrainKind,number>={plain:0x6b7560,road:0xada084,forest:0x435f50,mountain:0x69736d,hill:0x83846a,water:0x3d6770,rapids:0x3d6770,bridge:0x98846a,fort:0xab9e7b,gate:0x8b8a77,wall:0x777f74,cliff:0x5b554b,marsh:0x6f8a5c,plank:0x8a6a45,ford:0x6f9ea3};
 const sides={player:0x68c9bf,ally:0x86b7d9,allyAi:0xd3b06b,enemy:0xe78b79};
-export const terrainNames:Record<TerrainKind,string>={plain:'평지',road:'길',forest:'숲',mountain:'산지',hill:'구릉',water:'수상',rapids:'완류',bridge:'다리',fort:'성채',gate:'성문',wall:'성벽'};
+export const terrainNames:Record<TerrainKind,string>={plain:'평지',road:'길',forest:'숲',mountain:'산지',hill:'구릉',water:'수상',rapids:'완류',bridge:'다리',fort:'성채',gate:'성문',wall:'성벽',cliff:'절벽(통행 불가)',marsh:'갈대늪',plank:'잔도',ford:'여울'};
 export const classNames:Record<string,string>={infantry:'보병',spearman:'창병',cavalry:'경기병',heavyCav:'중기병',archer:'궁병',crossbow:'노병',strategist:'책사',fengshui:'풍수사',ram:'충차',catapult:'포차',engineer:'공병',navy:'수군',civilian:'민중',...Object.fromEntries(Object.entries(troopRoles).map(([k,v])=>[k,v.name]))};
 export function unitName(u:Unit){return classNames[u.name]??u.name;}
 function iso(c:Coord){return {x:c.x*W+W/2,y:c.y*H+H/2};}
@@ -152,7 +152,7 @@ export class Battlefield {
   }
   private paintTerrain(){
     const result=terrainLayer(this.state!,this.scenery!);this.ground.addChild(result.layer);this.terrainTextures=[result.texture,...result.frames];
-    const m=this.state!.map;const labels=this.state!.stage.id==='S1-07'?[{at:m.regions.get('enemy_camp')?.[0],text:'전초 수비 진지'},{at:m.regions.get('forest_route')?.[0],text:'보병 숲길'},{at:m.regions.get('main_route')?.[0],text:'기병 큰길'}]:this.state!.stage.id==='S1-05'?[{at:m.regions.get('escort_goal')?.[0],text:'동쪽 교량 출구'},{at:m.regions.get('south_exit')?.[0],text:'남쪽 강변 출구'}]:this.state!.stage.id==='S1-03'?[{at:m.regions.get('east_pass')?.[0],text:'동쪽 고개'},{at:m.regions.get('ravine_exit')?.[0],text:'남쪽 계곡'}]:[{at:m.regions.get('objective')?.[0],text:this.state!.stage.id==='S1-06'?'관문 돌파 구역':this.state!.stage.id==='S1-04'?'황제에게 접근':this.state!.stage.id==='S1-02'?'南門':this.state!.stage.id==='S1-01'?'창고':'중앙 성채'}];
+    const m=this.state!.map;const labels=this.state!.stage.id==='S1-07'?[{at:m.regions.get('enemy_camp')?.[0],text:'전초 수비 진지'},{at:m.regions.get('forest_route')?.[0],text:'보병 숲길'},{at:m.regions.get('main_route')?.[0],text:'기병 큰길'}]:this.state!.stage.id==='S1-05'?[{at:m.regions.get('escort_goal')?.[0],text:'동쪽 교량 출구'},{at:m.regions.get('south_exit')?.[0],text:'남쪽 강변 출구'}]:this.state!.stage.id==='S1-03'?[{at:m.regions.get('east_pass')?.[0],text:'동쪽 고개'},{at:m.regions.get('ravine_exit')?.[0],text:'남쪽 계곡'}]:[{at:m.regions.get('objective')?.[0],text:this.state!.stage.id==='S1-06'?'관문 돌파 구역':this.state!.stage.id==='S1-04'?'황제에게 접근':this.state!.stage.id==='S1-02'?'남문':this.state!.stage.id==='S1-01'?'창고':'중앙 성채'}];
     for(const {at,text} of labels)if(at){const label=new Text({text,style:{fontFamily:'Malgun Gothic',fontSize:14,fontWeight:'700',fill:0xffe4a3,dropShadow:{color:0x14201b,blur:2,distance:1}}});label.anchor.set(.5,1);label.position.set((at.x+.5)*W,at.y*H-6);this.ground.addChild(label);}
     for(const goal of this.state!.victory){
       if(!goal.target?.startsWith('trial_'))continue;
@@ -325,17 +325,17 @@ export class Battlefield {
   private shake(power:number,ms:number,epoch:number){return this.tween(ms,epoch,p=>{const k=(1-p)*power;this.world.pivot.set(Math.sin(p*60)*k,Math.cos(p*47)*k*.6);if(p>=1)this.world.pivot.set(0,0);});}
   /** Pop a speech balloon (or a jagged burst for charges and criticals) above a unit. */
   emote(at:Coord,e:Emote,lift=0){
-    const p=iso(at),item=new Container(),g=new Graphics();item.position.set(p.x+14,p.y-70+lift);item.zIndex=999;
-    const glyph=new Text({text:e.glyph,style:{fontFamily:'"Noto Serif KR","Malgun Gothic",serif',fontSize:e.glyph.length>1&&!/[^!?.…]/.test(e.glyph)?17:19,fontWeight:'900',fill:e.shape==='burst'?0xfff6e0:e.color}});glyph.anchor.set(.5);
-    const label=new Text({text:e.label,style:{fontFamily:'Malgun Gothic',fontSize:11,fontWeight:'700',fill:0xfff3d6,stroke:{color:0x1b1712,width:3}}});label.anchor.set(0,.5);label.position.set(17,1);
-    if(e.shape==='burst'){
-      const pts:number[]=[];for(let i=0;i<20;i++){const r=i%2?11:18,a=i/20*Math.PI*2-Math.PI/2;pts.push(Math.cos(a)*r,Math.sin(a)*r);}
-      g.poly(pts).fill(e.color).stroke({color:0x2a1a12,width:2});g.poly(pts.map(v=>v*.62)).fill({color:0xffffff,alpha:.18});
+    const p=iso(at),item=new Container(),g=new Graphics();item.position.set(p.x+10,p.y-70+lift);item.zIndex=999;
+    const burst=e.shape==='burst';
+    const text=new Text({text:e.text,style:{fontFamily:'Malgun Gothic,"Noto Sans KR",sans-serif',fontSize:13,fontWeight:'900',fill:burst?0xfff6e0:e.color,stroke:{color:burst?0x2a1a12:0xfffaf0,width:burst?3:0}}});text.anchor.set(.5);
+    const w=Math.max(30,text.width+16),h=24;
+    if(burst){
+      const pts:number[]=[];for(let i=0;i<24;i++){const a=i/24*Math.PI*2,r=i%2?.78:1;pts.push(Math.cos(a)*(w/2+7)*r,Math.sin(a)*(h/2+7)*r);}
+      g.poly(pts).fill(e.color).stroke({color:0x2a1a12,width:2});
     }else{
-      g.roundRect(-15,-14,30,26,9).fill(0xfffaf0).stroke({color:0x2a2620,width:2});g.poly([-4,11,4,11,-7,20]).fill(0xfffaf0);g.moveTo(-4,12).lineTo(-7,20).lineTo(4,12).stroke({color:0x2a2620,width:2});
-      g.roundRect(-11,-10,22,4,2).fill({color:e.color,alpha:.18});
+      g.roundRect(-w/2,-h/2,w,h,9).fill(0xfffaf0).stroke({color:0x2a2620,width:2});g.poly([-8,h/2-1,0,h/2-1,-11,h/2+8]).fill(0xfffaf0);g.moveTo(-8,h/2).lineTo(-11,h/2+8).lineTo(0,h/2).stroke({color:0x2a2620,width:2});
     }
-    item.addChild(g,glyph,label);this.effects.addChild(item);
+    item.addChild(g,text);this.effects.addChild(item);
     if(this.reduced){setTimeout(()=>item.destroy({children:true}),900);return;}
     const born=performance.now();item.scale.set(.2);
     const tick=()=>{if(item.destroyed){this.app.ticker.remove(tick);return;}const t=(performance.now()-born)/1300;

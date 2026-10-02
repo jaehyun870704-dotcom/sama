@@ -1,27 +1,43 @@
 import type {TerrainKind} from '../../core/src/index.ts';
 
-/** Pure helpers for the painted battlefield: noise, biome palettes and the
- * per-pixel blend between terrain materials. No DOM access here. */
-export type Material='grass'|'forest'|'dirt'|'water'|'rock'|'hill'|'yard';
-export const MATERIALS:Material[]=['grass','forest','dirt','water','rock','hill','yard'];
+/** Pure helpers for the pixel-art battlefield: materials, biome colour ramps,
+ * noise, ordered dithering and the warped per-pixel material blend. */
+export type Material='grass'|'forest'|'dirt'|'water'|'rock'|'hill'|'yard'|'marsh'|'ford'|'cliff';
+export const MATERIALS:Material[]=['grass','forest','dirt','water','rock','hill','yard','marsh','ford','cliff'];
 export function materialOf(t:TerrainKind):Material{
   switch(t){
     case 'plain':return 'grass';case 'forest':return 'forest';case 'road':return 'dirt';
     case 'mountain':return 'rock';case 'hill':return 'hill';
     case 'water':case 'rapids':case 'bridge':return 'water';
+    case 'marsh':return 'marsh';case 'ford':return 'ford';
+    case 'cliff':case 'plank':return 'cliff';
     default:return 'yard';
   }
 }
-type RGB=[number,number,number];
-export interface Biome {name:string;grass:[RGB,RGB];forest:RGB;dirt:[RGB,RGB];shallow:RGB;deep:RGB;sand:RGB;rock:[RGB,RGB];hill:RGB;yard:RGB;canopy:[RGB,RGB,RGB];tint?:[RGB,number]}
+export type RGB=[number,number,number];
+/** Colour ramps run dark → light; the renderer only ever paints ramp colours. */
+export interface Biome {name:string;ramps:Record<Material,RGB[]>;sand:RGB[];canopy:RGB[];tint?:[RGB,number]}
 const hex=(h:string):RGB=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
-const spring:Biome={name:'중원 봄 들판',grass:[hex('#5c7a3d'),hex('#7f9150')],forest:hex('#3c5530'),dirt:[hex('#b99c69'),hex('#9c8155')],shallow:hex('#4f939b'),deep:hex('#2a5f72'),sand:hex('#c9bb8a'),rock:[hex('#9a9282'),hex('#6c675c')],hill:hex('#83954f'),yard:hex('#b9ad92'),canopy:[hex('#8fae5c'),hex('#456d35'),hex('#1d3524')]};
+const ramp=(...c:string[])=>c.map(hex);
+const springRamps:Record<Material,RGB[]>={
+  grass:ramp('#3d5a2b','#4b6c32','#5a7e3a','#6e9145','#86a553'),
+  forest:ramp('#22361f','#2b4426','#35532c','#406232'),
+  dirt:ramp('#6f5838','#8a6f47','#a48656','#b99b67','#cbb07c'),
+  water:ramp('#1c3f52','#22506a','#2b6178','#377487','#4b8b98'),
+  rock:ramp('#3e3b35','#55514a','#6d685d','#878173','#a29c8c'),
+  hill:ramp('#4d6a31','#5e7d3a','#729244','#89a650','#a3ba63'),
+  yard:ramp('#7f7768','#958c7b','#aaa08c','#bdb39d','#cec5af'),
+  marsh:ramp('#34452c','#425636','#526841','#647a4b'),
+  ford:ramp('#3d7684','#4f8b95','#66a2a5','#83b8b3'),
+  cliff:ramp('#2c2a26','#3c3934','#524e46','#6a655a','#857f71'),
+};
+const spring:Biome={name:'중원 봄 들판',ramps:springRamps,sand:ramp('#9d8f63','#b6a677','#cbbd8e'),canopy:ramp('#1e3520','#2e4d29','#406a35','#5a8743','#7aa356')};
 export const biomes:Record<string,Biome>={
   spring,
-  loess:{...spring,name:'동관 황토 고원',grass:[hex('#9b9a5c'),hex('#b5a96a')],forest:hex('#6f7444'),dirt:[hex('#cfb07a'),hex('#b59463')],hill:hex('#b89f68'),rock:[hex('#ad9a7a'),hex('#7d6c55')],canopy:[hex('#a9b467'),hex('#6c7f3e'),hex('#33402a')],shallow:hex('#6f9592'),deep:hex('#4b6e72')},
-  lush:{...spring,name:'한중 산림',grass:[hex('#4c713c'),hex('#6a8a4a')],forest:hex('#2f5130'),canopy:[hex('#86b25c'),hex('#3c6e36'),hex('#1a3523')]},
-  river:{...spring,name:'장강 유역',grass:[hex('#5a7d44'),hex('#7b9555')],shallow:hex('#4a8f9e'),deep:hex('#21576d')},
-  dream:{...spring,name:'흉몽',tint:[hex('#2e2a58'),.38]},
+  loess:{name:'동관 황토 고원',ramps:{...springRamps,grass:ramp('#6c6a3c','#827d48','#998f55','#ada063','#c0b273'),hill:ramp('#7a6640','#937b4c','#ab9159','#c1a667','#d3ba7a'),dirt:ramp('#8a6c41','#a6834f','#bf9a5f','#d1ae70','#e0c186'),rock:ramp('#4b4135','#655848','#7f705b','#998870','#b2a086'),forest:ramp('#3a3e26','#4a4f2e','#5b6036','#6b713e')},sand:ramp('#a89568','#c0ad7d','#d4c393'),canopy:ramp('#2e3820','#43502b','#5a6a35','#738440','#8f9e4e')},
+  lush:{name:'한중 산림',ramps:{...springRamps,grass:ramp('#2f4e27','#3b602d','#477234','#58863d','#6e9b49'),forest:ramp('#18291a','#203520','#284327','#30502c')},sand:spring.sand,canopy:ramp('#142817','#21401f','#2f5a2a','#447436','#5f8f44')},
+  river:{name:'장강 유역',ramps:{...springRamps,water:ramp('#173a4f','#1d4a63','#255a73','#306d82','#438596')},sand:spring.sand,canopy:spring.canopy},
+  dream:{...spring,name:'흉몽',tint:[hex('#2e2a58'),.4]},
 };
 export function biomeFor(stageId:string){
   if(stageId==='S1-06')return biomes.loess!;
@@ -30,6 +46,10 @@ export function biomeFor(stageId:string){
   if(stageId==='S1-04')return biomes.dream!;
   return spring;
 }
+
+/** 4×4 Bayer matrix in [0,1): classic ordered dithering for pixel art. */
+const BAYER=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
+export function bayer(x:number,y:number){return (BAYER[(y&3)*4+(x&3)]!+.5)/16;}
 
 /** Tileable fractal value noise in [0,1], 256×256. */
 export function noiseField(seed:number,cells=8,octaves=4):Float32Array{
@@ -49,9 +69,9 @@ export function noiseField(seed:number,cells=8,octaves=4):Float32Array{
 export function sample(n:Float32Array,x:number,y:number){return n[((Math.floor(y)&255)<<8)|(Math.floor(x)&255)]!;}
 
 /**
- * Material weights at a pixel. Tile centres are blended bilinearly after a
- * noise warp, then sharpened so borders read as organic lines instead of squares.
- * Returns raw (unsharpened) weights too, which drive water depth and elevation.
+ * Material weights at a point in tile space. Tile centres are blended bilinearly,
+ * then sharpened so borders read as organic lines instead of squares. `raw`
+ * keeps the unsharpened weights, which drive water depth and elevation.
  */
 export function blendWeights(mats:Uint8Array,w:number,h:number,tx:number,ty:number,out:Float32Array,raw:Float32Array,sharp=5){
   out.fill(0);raw.fill(0);
@@ -62,5 +82,15 @@ export function blendWeights(mats:Uint8Array,w:number,h:number,tx:number,ty:numb
   }
   let sum=0;for(let m=0;m<raw.length;m++){const v=raw[m]!**sharp;out[m]=v;sum+=v;}
   for(let m=0;m<out.length;m++)out[m]=out[m]!/(sum||1);
+}
+/** Pick one material per pixel: the dither threshold walks the cumulative weights,
+ * so blends become pixel-art checker transitions instead of soft gradients. */
+export function pickMaterial(weights:Float32Array,threshold:number){
+  let acc=0;for(let m=0;m<weights.length;m++){acc+=weights[m]!;if(threshold<acc)return m;}
+  return weights.length-1;
+}
+/** Index into a ramp from a 0..1 shade, dithered. */
+export function rampIndex(shade:number,length:number,threshold:number){
+  return Math.max(0,Math.min(length-1,Math.floor(shade*(length-1)+threshold)));
 }
 export const smooth=(a:number,b:number,x:number)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};

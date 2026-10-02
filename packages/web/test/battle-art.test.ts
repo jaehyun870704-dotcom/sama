@@ -5,8 +5,9 @@ import {supportOptions} from '../src/troops.ts';
 describe('troop emotes',()=>{
  it('gives every playable class its own battle cry',()=>{
   for(const cls of [...supportOptions,'navy','civilian'])expect(classCries[cls],cls).toBeDefined();
-  expect(new Set(Object.values(classCries).map(e=>e.glyph)).size).toBe(Object.keys(classCries).length);
-  expect(cryFor('cavalry').shape).toBe('burst');expect(cryFor('archer').label).toContain('사격');
+  expect(new Set(Object.values(classCries).map(e=>e.text)).size).toBe(Object.keys(classCries).length);
+  for(const e of [...Object.values(classCries),...Object.values(reactions)])expect(e.text,'한자 없이 한글로').not.toMatch(/[\u4e00-\u9fff]/);
+  expect(cryFor('cavalry').shape).toBe('burst');expect(cryFor('archer').text).toContain('사격');
   expect(cryFor('fengshui',true,'heal')).toBe(reactions.heal);expect(cryFor('engineer',true,'repair')).toBe(reactions.repair);
   expect(cryFor('infantry',true,'fire')).toBe(classCries.strategist);expect(cryFor('unknown')).toBe(classCries.infantry);
  });

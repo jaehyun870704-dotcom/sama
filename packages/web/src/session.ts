@@ -95,9 +95,9 @@ export class Session {
     }
     for(const unit of state.living('ally')) if(['strategist','fengshui'].includes(unit.unitClass)) unit.strategies=['windDragon'];
     const battle=new Battle(state,{seed:this.seed,strategies:new Map((this.revision===4?(this.deployment?.growth?allStrategies:learnedStrategies):strategies).map(s=>[s.id,this.revision===4?s:this.deployment?{...s,mpCost:s.id==='fire'?6:9}:s])),undoDepth:0,maxTurns:60});
-    if(this.deployment?.mission?.version===3)state.survivalClocks.set('trial_defense',1);
+    if((this.deployment?.mission?.version??1)>=3)state.survivalClocks.set('trial_defense',1);
     battle.start();
-    if(this.deployment?.mission?.version===3){
+    if((this.deployment?.mission?.version??1)>=3){
       for(const id of ['convoy_trial','rescue_target']){const u=state.find(id);if(u){u.stats.maxHp=100+u.level*4;u.hp=u.stats.maxHp;u.stats.movement=3;u.range=[0,0];}}
       for(const u of state.living('enemy'))if(u.goalRegion==='trial_defense')u.stats.movement=3;
     }
@@ -232,7 +232,7 @@ export class Session {
     if(this.deployment?.mission?.balance===1)for(const enemy of s.living('enemy'))if(!this.balancedEnemies.has(enemy.id)){
       enemy.stats.attack=Math.round(enemy.stats.attack*(this.deployment.mission.id.startsWith('T')?.6:.75));this.balancedEnemies.add(enemy.id);
     }
-    if(this.deployment?.mission?.version===3)for(const u of s.living('enemy'))if(u.goalRegion==='trial_defense')u.stats.movement=3;
+    if((this.deployment?.mission?.version??1)>=3)for(const u of s.living('enemy'))if(u.goalRegion==='trial_defense')u.stats.movement=3;
     if(this.revision===4)applyOfficerFeatures(s.living(),this.deployment?.growth);
     // Breach rally belongs to the revision-4 siege rules (ram company, engineers).
     if(this.revision===4)for(const gate of s.units.values())if(structureKind(gate.id)==='gate'&&!gate.alive&&!this.breached.has(gate.id)){this.breached.add(gate.id);breachRally(s,gate);}
@@ -273,7 +273,7 @@ export class Session {
       if(s.outcome==='defeat'&&!s.living('allyAi').length)this.failure='수송대 두 부대가 모두 소실되었습니다.';
     }else if(!s.find('zhang_lu')?.alive)this.phase='본대로 성채 점령';
     if(old!==this.phase)this.phaseCheckpoint=this.journal.length;
-    if(s.outcome==='defeat'&&this.deployment?.mission?.version===3){
+    if(s.outcome==='defeat'&&(this.deployment?.mission?.version??1)>=3){
       const protectedUnit=s.find('convoy_trial')??s.find('rescue_target');
       if(protectedUnit&&!protectedUnit.alive)this.failure=protectedUnit.name+'의 안전을 지키지 못했습니다.';
       else if(s.victory.some(c=>c.type==='survive_turns')&&s.living('enemy').some(u=>s.map.regionCoords('trial_defense').some(p=>key(p)===key(u.pos))))this.failure='적이 방어 거점에 진입했습니다.';
@@ -315,7 +315,7 @@ export class Session {
     if(data.revision!==undefined&&data.revision!==2&&data.revision!==3&&data.revision!==4)throw new Error('지원하지 않는 전장 버전입니다.');
     if(data.deployment){const d=data.deployment;if(!d.levels||!d.equipped||!OFFICERS.every(id=>Number.isInteger(d.levels[id])&&d.levels[id]!>=1&&d.levels[id]!<=40)||Object.entries(d.equipped).some(([id,item])=>!OFFICERS.includes(id as typeof OFFICERS[number])||!treasures.some(t=>t.id===item)))throw new Error('잘못된 출진 기록입니다.');}
     if(data.deployment?.loadouts){const seen=new Set<string>();for(const [who,gear] of Object.entries(data.deployment.loadouts)){if(!OFFICERS.includes(who as typeof OFFICERS[number])||!gear||typeof gear!=='object')throw new Error('잘못된 장비');for(const [slot,id] of Object.entries(gear)){if(typeof id!=='string'||!treasures.some(t=>t.id===id)||treasureInfo(id).slot!==slot||seen.has(id))throw new Error('잘못된 장비');seen.add(id);}}}
-    if(data.deployment?.mission&&(!expeditions.some(m=>m.id===data.deployment!.mission!.id)||typeof data.deployment.mission.runId!=='string'||data.deployment.mission.runId.length<1||data.chapter!==7||(data.deployment.mission.version!==undefined&&data.deployment.mission.version!==2&&data.deployment.mission.version!==3)))throw new Error('잘못된 외전 기록');
+    if(data.deployment?.mission&&(!expeditions.some(m=>m.id===data.deployment!.mission!.id)||typeof data.deployment.mission.runId!=='string'||data.deployment.mission.runId.length<1||data.chapter!==7||(data.deployment.mission.version!==undefined&&data.deployment.mission.version!==2&&data.deployment.mission.version!==3&&data.deployment.mission.version!==4)))throw new Error('잘못된 외전 기록');
     if(data.deployment?.mission?.balance!==undefined&&data.deployment.mission.balance!==1)throw new Error('지원하지 않는 성장 규칙입니다.');
     if(data.deployment?.mission?.supportClasses&&(!Array.isArray(data.deployment.mission.supportClasses)||data.deployment.mission.supportClasses.length!==2||data.deployment.mission.supportClasses.some(k=>!supportOptions.includes(k))))throw new Error('잘못된 지원 병종');
     if(data.deployment?.growth&&Object.values(data.deployment.growth).some(n=>!Number.isSafeInteger(n)||n<0))throw new Error('잘못된 성장 기록');

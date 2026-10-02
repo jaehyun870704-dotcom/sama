@@ -507,3 +507,23 @@ describe("신규 상태의 무르기 복원", () => {
     expect(state.choices).toHaveLength(0);
   });
 });
+
+describe("지형 기믹", () => {
+  it("절벽은 모두 막고, 산지는 기병을 묶으며, 급류·갈대·잔도·여울은 병종마다 다르다", async () => {
+    const { flatMap } = await import("./fixtures.ts");
+    const at = { x: 1, y: 1 };
+    const cost = (t: Parameters<typeof flatMap>[2], cls: Parameters<ReturnType<typeof flatMap>["moveCost"]>[0]) => flatMap(3, 3, t).moveCost(cls, at);
+    for (const cls of ["infantry", "cavalry", "navy", "monk", "bandit"] as const) expect(cost("cliff", cls)).toBe(Infinity);
+    expect(cost("mountain", "heavyCav")).toBe(Infinity);
+    expect(cost("mountain", "cavalry")).toBe(6);
+    expect(cost("rapids", "navy")).toBe(3);
+    expect(cost("marsh", "heavyCav")).toBe(Infinity);
+    expect(cost("marsh", "navy")).toBe(2);
+    expect(cost("plank", "infantry")).toBe(2);
+    expect(cost("plank", "catapult")).toBe(Infinity);
+    expect(cost("ford", "cavalry")).toBe(2);
+    expect(cost("ford", "ram")).toBe(Infinity);
+    expect(flatMap(3, 3, "marsh").evasionBonus(at)).toBe(15);
+    expect(flatMap(3, 3, "plank").evasionBonus(at)).toBe(-10);
+  });
+});

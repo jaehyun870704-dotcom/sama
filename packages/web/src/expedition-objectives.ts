@@ -14,8 +14,10 @@ export function trialGoalText(id:string){const g=trialGoals[id];if(!g)return '�
 }}
 export function configureTrialGoal(stage:StageDef,map:MapFile,level:number){
  const g=trialGoals[stage.id]!;const w=map.rows[0]!.length;map.regions??={};stage.events??=[];
- map.regions.trial_goal=[{x:w-2,y:4}];map.regions.trial_safe=[{x:1,y:4},{x:1,y:5}];map.regions.trial_defense=[{x:3,y:4},{x:3,y:5}];
- map.regions.trial_reinforcements=[{x:w-2,y:4},{x:w-2,y:5},{x:w-3,y:4},{x:w-3,y:5}];
+ // Hand-drawn maps carry their own goal, safe zone, defence line and entry points.
+ map.regions.trial_goal??=[{x:w-2,y:4}];map.regions.trial_safe??=[{x:1,y:4},{x:1,y:5}];map.regions.trial_defense??=[{x:3,y:4},{x:3,y:5}];
+ map.regions.trial_reinforcements??=[{x:w-2,y:4},{x:w-2,y:5},{x:w-3,y:4},{x:w-3,y:5}];
+ const first=(name:string,fallback:{x:number;y:number})=>{const r=map.regions?.[name];return Array.isArray(r)&&r[0]?r[0]:fallback;};
  stage.synopsis=trialGoalText(stage.id)!;stage.victory=[{type:'annihilate',side:'enemy'}];
  stage.defeat=[{type:'retreat',unit:'sima_yi'},{type:'retreat',unit:'cao_zhen'}];
  stage.seals=[{slot:1,normal:'clear',extreme:'clear'},{slot:2,normal:'no_player_losses',extreme:'no_player_losses'},{slot:3,normal:'turn_limit:20',extreme:'turn_limit:18'}];
@@ -23,7 +25,7 @@ export function configureTrialGoal(stage:StageDef,map:MapFile,level:number){
  if(g.kind==='capture')stage.victory=[{type:'capture',target:'trial_goal',by:'player'}];
  if(g.kind==='escort'||g.kind==='rescue'){
   const rescue=g.kind==='rescue',id=rescue?'rescue_target':'convoy_trial';
-  actions.push({type:'spawn_units',side:rescue?'enemy':'ally',units:[{id,name:g.targetName!,template:'civilian',level,at:rescue?{x:w-4,y:7}:{x:3,y:5},behavior:'passive'}]});
+  actions.push({type:'spawn_units',side:rescue?'enemy':'ally',units:[{id,name:g.targetName!,template:'civilian',level,at:rescue?first('rescue',{x:w-4,y:7}):first('convoy',{x:3,y:5}),behavior:'passive'}]});
   stage.victory=[{type:'reach',unit:id,target:rescue?'trial_safe':'trial_goal'}];stage.defeat.push({type:'retreat',unit:id});
   if(rescue)for(const hero of ['sima_yi','cao_zhen'])stage.events.push({id:stage.id+'/rescue/'+hero,phase:g.name,trigger:{type:'units_adjacent',unitA:hero,unitB:id},actions:[{type:'grant_control',targets:[id]},{type:'recover_units',targets:[id]},{type:'set_phase',phase:g.targetName+' 구출 · 서쪽 안전지대로'}]});
  }
