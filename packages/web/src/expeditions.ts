@@ -1,5 +1,5 @@
 import {configureTrialGoal} from './expedition-objectives.ts';
-import {trialMap} from './expedition-scenes.ts';
+import {trialMap,expeditionLandscape,navalEnemies} from './expedition-scenes.ts';
 import type {MapFile,StageDef,UnitClass} from '../../core/src/index.ts';
 import base from '../../data/stages/S1-07.json';
 import {treasures,levelInfo,OFFICERS,type Campaign} from './progression.ts';
@@ -21,6 +21,7 @@ export const expeditions:Expedition[]=[
  {id:'T01',name:'초진 연무',kind:'training',level:1,requires:0,art:6,lines:['교관: 처음부터 실전에 익숙한 병사는 없다.','사마의: 이동과 협공을 반복하며 부대의 호흡을 맞추겠습니다.','교관: 오늘의 성장을 다음 전장으로 가져가거라. 다시 연습해도 좋다.']},
  {id:'T02',name:'산길 토벌',kind:'training',level:4,requires:2,art:11,lines:['조진: 산길의 잔당이 보급을 괴롭히고 있다.','사마의: 매번 달라지는 적의 배치를 살피며 부대를 단련합시다.','조진: 보급로가 열렸다. 다음 순찰에도 함께하자.']},
  {id:'T03',name:'군사 대련',kind:'training',level:8,requires:5,art:17,lines:['교관: 정예 부대와 실전처럼 겨뤄 보아라.','사마의: 책략과 지원을 함께 써야 오래 버틸 수 있습니다.','교관: 패배를 두려워하지 않는 반복이 장수를 만든다.']},
+ {id:'T07',name:'장강 수군 조련',kind:'training',level:11,requires:6,art:3,lines:['조진: 오의 수군이 강을 오르내리며 보급선을 끊고 있다.','사마의: 배 위에서는 기병도 창병도 같은 물결 위에 섭니다. 수군으로 물길을 막고 육군은 부교로 건너겠습니다.','조진: 북방 병사도 물 위에서 싸울 수 있다는 것을 보였구나.']},
  {id:'T04',name:'교량 확보 연습',kind:'training',level:14,requires:6,art:3,lines:['교관: 강을 건너는 동안 후열이 무너지면 전군이 위험하다.','사마의: 선봉과 회복대를 나누어 교두보를 만들겠습니다.','교관: 좁은 지형에서도 서로를 지키는 법을 배웠구나.']},
  {id:'T05',name:'정예 진형 돌파',kind:'training',level:20,requires:8,art:11,lines:['조진: 정예병이 산길에 방진을 세웠다.','사마의: 광역 책략과 지원을 조합해 틈을 만들겠습니다.','조진: 정예를 상대할 실력이 쌓이고 있다.']},
  {id:'T06',name:'군략의 완성',kind:'training',level:27,requires:8,art:17,lines:['교관: 이제 부대 전체의 움직임으로 답해 보아라.','사마의: 천뢰와 공성계에 이르는 길도 오늘의 연습에서 시작합니다.','교관: 대가에게도 배움은 끝나지 않는다. 다시 겨뤄 보자.']},
@@ -55,8 +56,12 @@ export function expeditionBattle(id:string,seed:number,version=1,supportClasses?
  if(version>=2)map=trialMap(id,m.name);
  const stage=structuredClone(base) as StageDef;stage.id=m.id;stage.subtitle=m.name;stage.title=m.kind==='training'?'반복 수련':'보물 인연';stage.mapId=map.id;stage.dialogues=[];stage.gimmicks=[];
  stage.deployment={forced:['sima_yi','cao_zhen'],slots:2,grantedUnits:[{type:supportClasses?.[0]??'infantry',count:1,level:m.level,countsTowardAllyLoss:true},{type:supportClasses?.[1]??'fengshui',count:1,level:m.level,countsTowardAllyLoss:true}]};
+ const naval=version>=2&&expeditionLandscape(id)==='naval';
+ // Naval trials always add two boats; they are placed on the water cells after the land slots.
+ if(naval)stage.deployment.grantedUnits!.push({type:'navy',count:2,level:m.level,countsTowardAllyLoss:true});
  stage.difficulty={normal:{recommendedLevel:m.level,minEnemyLevel:m.level},extreme:{recommendedLevel:m.level,minEnemyLevel:m.level}};
  stage.events=[{id:m.id+'/start',trigger:{type:'battle_start'},actions:[{type:'spawn_units',side:'enemy',units:([['infantry',8,4],['spearman',9,6],['archer',10,3],['cavalry',10,5]] as const).slice(0,m.kind==='training'&&m.level===1?3:4).map(([template,x,y],i)=>({id:'trial_enemy_'+i,name:['대련 보병','대련 창병','대련 궁병','대련 기병'][i]!,template,at:{x:version>=2?map.rows[0]!.length-12+x:x,y:y+(Math.abs(seed)%2&&i===0?1:0)},level:m.level,behavior:'hold' as const}))},{type:'set_phase',phase:m.kind==='training'?'부대 연계 수련':'보물 인연의 시련'}]}];
+ if(naval)stage.events[0]!.actions[0]!.units=navalEnemies.map((e,i)=>({id:'trial_enemy_'+i,name:e.name,template:e.template,at:{x:e.at.x,y:e.at.y+(Math.abs(seed)%2&&i===0?1:0)},level:m.level,behavior:'hold' as const}));
  if(version>=3)configureTrialGoal(stage,map,m.level);
  return {stage,map};
 }

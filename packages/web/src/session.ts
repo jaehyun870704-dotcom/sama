@@ -1,3 +1,4 @@
+import {repairError,repairAmount,fortifyError,parseCell,buildBarricade,breachRally,BARRICADES_PER_ENGINEER} from './siege.ts';
 import {troopStrategies,supportOptions} from './troops.ts';
 import {expeditionBattle,expeditions} from './expeditions.ts';
 import {newDuel,duelRound,type DuelState,type DuelAction} from './duel.ts';
@@ -8,7 +9,7 @@ import tongguanStage from '../../data/stages/S1-06.json';
 import tongguanMap from '../../data/maps/tongguan-pass.json';
 import retreatStage from '../../data/stages/S1-05.json';
 import retreatMap from '../../data/maps/yangtze-retreat.json';
-import {campaignStage,addFortifications,addSiegeCompany} from './campaign-rules.ts';
+import {campaignStage,addFortifications,addSiegeCompany,structureKind} from './campaign-rules.ts';
 import {applyTreasure,equippedItems,treasureInfo,type Deployment,OFFICERS,treasures} from './progression.ts';
 import { assemble, Battle, CONTROLLABLE, isHostile, key, manhattan } from '../../core/src/index.ts';
 import type { Command, Difficulty, MapFile, StageDef, StrategyDef } from '../../core/src/index.ts';
@@ -52,6 +53,9 @@ export class Session {
   battle: Battle;
   journal: Intent[] = [];
   checkpoints: number[] = [];
+  private fortified=new Map<string,number>();
+  private breached=new Set<string>();
+  barricadesLeft(id:string){return BARRICADES_PER_ENGINEER-(this.fortified.get(id)??0);}
   activeDuel:DuelState|null=null;
   lastDuel:DuelState|null=null;
   private challenged=new Set<string>();
@@ -143,7 +147,7 @@ export class Session {
     if(result.ok){this.checkpoints.push(this.journal.length);this.journal.push(structuredClone(cmd));}
     return result;
   }
-  private resetScenario(){this.activeDuel=null;this.lastDuel=null;this.challenged.clear();this.funds=3000;this.bribes=0;this.medicine=2;this.scouted=false;this.failure='';this.phaseCheckpoint=null;this.phase=this.state.scenarioPhase|| (this.chapter===2?'창고 확보':this.chapter===0?'잠입':this.chapter===3?'탈출로 선택':this.chapter===5?'수송로 선택':this.chapter===6?'호위 병력 배치':'외곽 돌파');}
+  private resetScenario(){this.fortified.clear();this.breached.clear();this.activeDuel=null;this.lastDuel=null;this.challenged.clear();this.funds=3000;this.bribes=0;this.medicine=2;this.scouted=false;this.failure='';this.phaseCheckpoint=null;this.phase=this.state.scenarioPhase|| (this.chapter===2?'창고 확보':this.chapter===0?'잠입':this.chapter===3?'탈출로 선택':this.chapter===5?'수송로 선택':this.chapter===6?'호위 병력 배치':'외곽 돌파');}
   get pressure(){return this.state.turn-1+(this.state.choices.some(c=>c.nodeId==='bluff_warning'&&c.optionId==='commit')?2:0);}
   get pressureLimit(){return this.difficulty==='extreme'?9:12;}
   private execute(cmd:Command){
@@ -187,6 +191,16 @@ export class Session {
         s.push({t:'strategy',caster:u.id,strategy:'heal',targets:[target.id],damage:[-amount]});
         const result=this.battle.execute({kind:'wait',unit:u.id});this.advanceScenario();return result;
       }
+      if(cmd.item==='repair'){
+        const target=s.find(cmd.target??''),error=repairError(s,u,target);if(error)return {ok:false,error};
+        const amount=repairAmount(u,target!);target!.hp+=amount;s.push({t:'strategy',caster:u.id,strategy:'repair',targets:[target!.id],damage:[-amount]});
+        const result=this.battle.execute({kind:'wait',unit:u.id});this.advanceScenario();return result;
+      }
+      if(cmd.item==='fortify'){
+        const at=parseCell(cmd.target),built=this.fortified.get(u.id)??0,error=fortifyError(s,u,at,built);if(error)return {ok:false,error};
+        const work=buildBarricade(s,u,at!);this.fortified.set(u.id,built+1);s.push({t:'spawn',units:[work.id],side:work.side});
+        const result=this.battle.execute({kind:'wait',unit:u.id});this.advanceScenario();return result;
+      }
       if(cmd.item==='scout'&&!this.scouted){
         this.scouted=true;const result=this.battle.execute({kind:'wait',unit:u.id});this.advanceScenario();return result;
       }
@@ -220,6 +234,8 @@ export class Session {
     }
     if(this.deployment?.mission?.version===3)for(const u of s.living('enemy'))if(u.goalRegion==='trial_defense')u.stats.movement=3;
     if(this.revision===4)applyOfficerFeatures(s.living(),this.deployment?.growth);
+    // Breach rally belongs to the revision-4 siege rules (ram company, engineers).
+    if(this.revision===4)for(const gate of s.units.values())if(structureKind(gate.id)==='gate'&&!gate.alive&&!this.breached.has(gate.id)){this.breached.add(gate.id);breachRally(s,gate);}
     if(s.scenarioPhase){
       this.phase=s.scenarioPhase;
     }else if(this.chapter===2){

@@ -20,8 +20,8 @@ export const troopAdvice:Record<UnitClass,string>={
  bandit:'숲 이동 비용 1. 숲·산지에서 접근하고 방어가 약하므로 지원 부대와 함께 움직이세요.',
  ram:'이동 3. 도로로 접근해 성문·감시탑을 공격하세요. 공성 특성은 구조물 피해 3배입니다.',
  catapult:'2~4칸 원거리 사격. 이동이 느리고 인접 공격이 불가능하므로 전열로 보호하세요.',
- engineer:'전투력보다 시나리오에서 맡은 공병 역할을 확인하세요.',
- navy:'물길 전용 부대. 육지·교량에 들어갈 수 없으므로 수상 전장에서 운용하세요.',
+ engineer:'공성 지원 부대. 인접한 충차·포차·방책·성문을 수리하고, 빈 칸에 방책을 세워(전투당 2회) 사격로를 막으세요.',
+ navy:'물길 전용 부대. 배 위에서 1~2칸 공격하며 수상·급류에서 강합니다. 육지·교량에는 들어갈 수 없습니다.',
  civilian:'전투를 피하고 호위하세요. 무장 전환 등 해당 시나리오의 목표를 따르세요.'
 };
 export const recommendedSupport:Record<TrialLandscape,{classes:[UnitClass,UnitClass];reason:string}>={
@@ -30,7 +30,8 @@ export const recommendedSupport:Record<TrialLandscape,{classes:[UnitClass,UnitCl
  river:{classes:['crossbow','maiden'],reason:'노병이 교량 너머를 사격하고 무녀가 전열을 회복합니다.'},
  pass:{classes:['monk','crossbow'],reason:'무도가가 험지를 통과하고 노병이 협로 뒤에서 지원합니다. 회복 MP를 아껴 쓰세요.'},
  court:{classes:['shaman','physician'],reason:'주술사의 화계·성장 책략으로 수비대를 약화하고 의술사로 버팁니다.'},
- fort:{classes:['catapult','physician'],reason:'필수 충차를 포차 사격과 회복으로 보호하며 성문에 접근합니다.'}
+ fort:{classes:['catapult','engineer'],reason:'포차가 감시탑을 사격하고 공병이 충차를 수리하며 방책으로 사격을 막아 성문에 접근합니다.'},
+ naval:{classes:['crossbow','physician'],reason:'수군 두 척이 물길을 막는 동안 노병이 강안에서 적선을 사격하고 의술사가 부교를 건너는 전열을 회복합니다.'}
 };
 export function recommendExpeditionSupport(id:string):{classes:[UnitClass,UnitClass];reason:string}{
  const terrain=expeditionLandscape(id),goal=trialGoals[id]?.kind;
