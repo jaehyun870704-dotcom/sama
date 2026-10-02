@@ -19,7 +19,11 @@ export type TerrainKind =
   | "fort"      // 성채
   | "gate"      // 성문
   | "wall"      // 벽 (통행 불가)
-  | "bridge";   // 다리
+  | "bridge"    // 다리
+  | "cliff"     // 절벽 · 바위 벼랑 (전 병종 통행 불가)
+  | "marsh"     // 갈대늪 (보병 느림, 중장·공성 진입 불가, 은폐 회피 +15)
+  | "plank"     // 잔도 · 벼랑길 나무 길 (보병만 원활, 중장·공성 불가, 노출 회피 −10)
+  | "ford";     // 여울 · 얕은 물 (보병 느림, 기병 도하, 수군 통과, 공성 불가)
 
 /** 타일 위에 얹히는 일시적 위험 지대 (M-19 HAZARD_FIELD). */
 export type HazardKind = "fire" | "trap" | "lightning" | "none";

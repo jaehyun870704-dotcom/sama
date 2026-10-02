@@ -1,10 +1,20 @@
 import type {MapFile} from '../../core/src/index.ts';
+import {trialLayouts,layoutMap,type TrialLayout} from './expedition-maps-data.ts';
 
 export type TrialLandscape='field'|'forest'|'river'|'pass'|'court'|'fort'|'naval';
 const landscapes:Record<string,TrialLandscape>={T01:'field',T02:'forest',T03:'court',T04:'river',T05:'pass',T06:'court',Q01:'river',Q02:'fort',Q03:'pass',Q04:'forest',Q05:'court',Q06:'pass',Q07:'field',Q08:'river',Q09:'forest',Q10:'court',Q11:'pass',T07:'naval'};
 export const landscapeNames:Record<TrialLandscape,string>={field:'연무 들판',forest:'숲속 보급로',river:'강변 교량',pass:'산악 협로',court:'사당 앞뜰',fort:'군수고 성문',naval:'장강 수채'};
 export function expeditionLandscape(id:string){return landscapes[id]??'field';}
-export function trialMap(id:string,name:string):MapFile{
+/** Which hand-drawn map an expedition uses from mission version 4 on. */
+const layoutKeys:Record<string,string>={T01:'field',Q07:'field',T02:'forest',Q04:'forest',Q09:'forest',T04:'river',Q01:'river',Q08:'ford',T05:'pass',Q06:'pass',Q03:'gorge',Q11:'gorge',T03:'court',T06:'court',Q05:'court',Q10:'court',Q02:'fort',T07:'naval'};
+export function trialLayout(id:string):TrialLayout{return trialLayouts[layoutKeys[id]??'field']!;}
+export function layoutName(id:string){return trialLayout(id).name;}
+export function trialMap(id:string,name:string,version=4):MapFile{
+ if(version>=4)return layoutMap(trialLayout(id),id,name).map;
+ return legacyTrialMap(id,name);
+}
+/** Mission versions 2–3 keep their original straight maps so saved battles replay. */
+export function legacyTrialMap(id:string,name:string):MapFile{
  const kind=expeditionLandscape(id);if(kind==='naval')return navalMap(id,name);
  const width=kind==='pass'?18:kind==='field'?12:16,height=kind==='field'?10:12;
  const rows=Array.from({length:height},()=>Array<string>(width).fill('.'));
@@ -19,10 +29,11 @@ export function trialMap(id:string,name:string):MapFile{
  if(kind==='fort')for(let y=0;y<height;y++)rows[y]![width-5]=y===4||y===5?'g':'#';
  return {id:'trial-'+id,name,legend:{'.':'plain',',':'road',f:'forest',h:'hill',F:'fort',w:'water',b:'bridge','#':'wall',g:'gate'},rows:rows.map(r=>r.join('')),regions:{player_start:[{x:1,y:4},{x:1,y:5},{x:2,y:3},{x:2,y:6},{x:1,y:6},{x:1,y:3}],ally_start:[{x:2,y:3},{x:2,y:6},{x:1,y:6},{x:1,y:3}],camp:[{x:width-2,y:5}]}};
 }
-export function trialTactics(id:string){return ({field:'넓은 길에서 보병과 기병을 함께 전진시키십시오.',forest:'숲을 엄폐물로 삼아 궁병의 사격에 접근하십시오.',river:'두 칸의 다리를 확보하고 후열 책사를 보호하십시오.',pass:'중앙 협로에 방패를 세우고 구릉에서 측면을 지원하십시오.',court:'사당 앞뜰의 수비대를 교란하고 회복 책략으로 전열을 유지하십시오.',fort:'충차로 성문과 감시탑을 파괴한 뒤 군수고 수비대를 격퇴하십시오.',naval:'수군 두 척으로 강 위의 적선을 묶고, 육군은 남쪽 부교를 건너 강안 궁병을 치십시오.'} as const)[expeditionLandscape(id)];}
+export function trialTactics(id:string){return trialLayout(id).tactics;}
+export function legacyTrialTactics(id:string){return ({field:'넓은 길에서 보병과 기병을 함께 전진시키십시오.',forest:'숲을 엄폐물로 삼아 궁병의 사격에 접근하십시오.',river:'두 칸의 다리를 확보하고 후열 책사를 보호하십시오.',pass:'중앙 협로에 방패를 세우고 구릉에서 측면을 지원하십시오.',court:'사당 앞뜰의 수비대를 교란하고 회복 책략으로 전열을 유지하십시오.',fort:'충차로 성문과 감시탑을 파괴한 뒤 군수고 수비대를 격퇴하십시오.',naval:'수군 두 척으로 강 위의 적선을 묶고, 육군은 남쪽 부교를 건너 강안 궁병을 치십시오.'} as const)[expeditionLandscape(id)];}
 export function trialStory(id:string,name:string,art:number,lines:string[]){const kind=expeditionLandscape(id);return [
  {place:'군의 · 의뢰를 받다',art,line:lines[0]!},
- {place:landscapeNames[kind]+' · 정찰',art:kind==='river'||kind==='naval'?3:kind==='forest'||kind==='pass'?11:kind==='fort'?2:6,line:'조진: '+trialTactics(id)},
+ {place:layoutName(id)+' · 정찰',art:kind==='river'||kind==='naval'?3:kind==='forest'||kind==='pass'?11:kind==='fort'?2:6,line:'조진: '+trialTactics(id)},
  {place:name+' · 출진의 결의',art:17,line:lines[1]!},
  ];}
 /** River-fortress battle: two water lanes split by islands, a pontoon bridge in the

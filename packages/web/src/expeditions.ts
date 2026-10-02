@@ -1,5 +1,6 @@
 import {configureTrialGoal} from './expedition-objectives.ts';
-import {trialMap,expeditionLandscape,navalEnemies} from './expedition-scenes.ts';
+import {trialMap,expeditionLandscape,navalEnemies,trialLayout} from './expedition-scenes.ts';
+import {layoutMap} from './expedition-maps-data.ts';
 import type {MapFile,StageDef,UnitClass} from '../../core/src/index.ts';
 import base from '../../data/stages/S1-07.json';
 import {treasures,levelInfo,OFFICERS,type Campaign} from './progression.ts';
@@ -53,7 +54,7 @@ export function expeditionReward(c:Campaign,id:string,runId:string,victory:boole
 export function expeditionBattle(id:string,seed:number,version=1,supportClasses?:UnitClass[]){
  const m=expeditions.find(x=>x.id===id);if(!m)throw new Error('알 수 없는 외전');
  let map:MapFile={id:'expedition-field',name:m.name,legend:{'.':'plain',',':'road',f:'forest',h:'hill'},rows:['............','..ff....ff..','..ff....ff..','............',',,,,,,,,,,,,',',,,,,,,,,,,,','............','...hh..ff...','...hh..ff...','............'],regions:{player_start:[{x:1,y:4},{x:1,y:5},{x:2,y:3},{x:2,y:6},{x:1,y:6},{x:1,y:3}],ally_start:[{x:2,y:3},{x:2,y:6},{x:1,y:6},{x:1,y:3}],camp:[{x:10,y:5}]}};
- if(version>=2)map=trialMap(id,m.name);
+ if(version>=2)map=trialMap(id,m.name,version);
  const stage=structuredClone(base) as StageDef;stage.id=m.id;stage.subtitle=m.name;stage.title=m.kind==='training'?'반복 수련':'보물 인연';stage.mapId=map.id;stage.dialogues=[];stage.gimmicks=[];
  stage.deployment={forced:['sima_yi','cao_zhen'],slots:2,grantedUnits:[{type:supportClasses?.[0]??'infantry',count:1,level:m.level,countsTowardAllyLoss:true},{type:supportClasses?.[1]??'fengshui',count:1,level:m.level,countsTowardAllyLoss:true}]};
  const naval=version>=2&&expeditionLandscape(id)==='naval';
@@ -61,7 +62,11 @@ export function expeditionBattle(id:string,seed:number,version=1,supportClasses?
  if(naval)stage.deployment.grantedUnits!.push({type:'navy',count:2,level:m.level,countsTowardAllyLoss:true});
  stage.difficulty={normal:{recommendedLevel:m.level,minEnemyLevel:m.level},extreme:{recommendedLevel:m.level,minEnemyLevel:m.level}};
  stage.events=[{id:m.id+'/start',trigger:{type:'battle_start'},actions:[{type:'spawn_units',side:'enemy',units:([['infantry',8,4],['spearman',9,6],['archer',10,3],['cavalry',10,5]] as const).slice(0,m.kind==='training'&&m.level===1?3:4).map(([template,x,y],i)=>({id:'trial_enemy_'+i,name:['대련 보병','대련 창병','대련 궁병','대련 기병'][i]!,template,at:{x:version>=2?map.rows[0]!.length-12+x:x,y:y+(Math.abs(seed)%2&&i===0?1:0)},level:m.level,behavior:'hold' as const}))},{type:'set_phase',phase:m.kind==='training'?'부대 연계 수련':'보물 인연의 시련'}]}];
- if(naval)stage.events[0]!.actions[0]!.units=navalEnemies.map((e,i)=>({id:'trial_enemy_'+i,name:e.name,template:e.template,at:{x:e.at.x,y:e.at.y+(Math.abs(seed)%2&&i===0?1:0)},level:m.level,behavior:'hold' as const}));
+ if(version>=4){
+  // Enemies hold scattered posts drawn on the map instead of one column.
+  const layout=trialLayout(id),posts=layoutMap(layout,id,m.name).enemies;
+  stage.events[0]!.actions[0]!.units=layout.templates.slice(0,m.kind==='training'&&m.level===1?3:4).map((template,i)=>({id:'trial_enemy_'+i,name:layout.names[i]!,template,at:posts[i]!,level:m.level,behavior:'hold' as const}));
+ }else if(naval)stage.events[0]!.actions[0]!.units=navalEnemies.map((e,i)=>({id:'trial_enemy_'+i,name:e.name,template:e.template,at:{x:e.at.x,y:e.at.y+(Math.abs(seed)%2&&i===0?1:0)},level:m.level,behavior:'hold' as const}));
  if(version>=3)configureTrialGoal(stage,map,m.level);
  return {stage,map};
 }

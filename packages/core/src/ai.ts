@@ -344,7 +344,14 @@ function bestStepToward(
       greedy = c;
     }
   }
-  if (greedy && !sameCoord(greedy, unit.pos)) return greedy;
+  if (greedy && !sameCoord(greedy, unit.pos)) {
+    // 그리디 한 걸음이 실제 경로상으로는 멀어지는 경우(성벽·절벽 너머의 적)만
+    // 지형 거리로 다시 고른다. 그대로 두면 벽 앞에서 매 턴 앞뒤로 흔들린다.
+    const field = state.map.travelField(unit.unitClass, [goal], ignoresRough(unit));
+    const here = field.get(key(unit.pos)) ?? Infinity, there = field.get(key(greedy)) ?? Infinity;
+    if (!(there > here)) return greedy;
+    return nearestBy(reach, (c) => field.get(key(c)) ?? Infinity) ?? greedy;
+  }
 
   // 맨해튼 거리로는 더 가까워질 칸이 없다 — 벽을 돌아가야 하는 지형에서는
   // 우회로의 모든 칸이 "더 멀어" 보이기 때문이다. 이때만 지형을 통과하는

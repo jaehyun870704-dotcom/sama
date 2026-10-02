@@ -82,7 +82,7 @@ describe("맵 로더", () => {
     expect(map.height).toBe(36);
     expect(map.regionCoords("central_fort")).toHaveLength(9);
     expect(map.tileAt({ x: 37, y: 9 }).terrain).toBe("fort");
-    expect(map.tileAt({ x: 0, y: 0 }).terrain).toBe("mountain");
+    expect(map.tileAt({ x: 0, y: 0 }).terrain).toBe("cliff");
   });
 
   it("범례에 없는 문자를 거부한다", () => {

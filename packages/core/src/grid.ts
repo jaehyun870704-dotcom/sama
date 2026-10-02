@@ -15,52 +15,54 @@ const NEIGHBORS: readonly Coord[] = [
 export const adjacent = (c: Coord): Coord[] =>
   NEIGHBORS.map((d) => ({ x: c.x + d.x, y: c.y + d.y }));
 
-/** 병종별 지형 이동 비용. Infinity = 진입 불가. */
+/** 병종별 지형 이동 비용. Infinity = 진입 불가.
+ * 산지: 경기병·궁기병은 6(사실상 한 칸), 중기병·공성은 진입 불가.
+ * 급류: 수군도 3이 들어 물살에 발이 묶인다. 절벽은 모든 병종이 넘지 못한다. */
 const MOVE_COST: Record<UnitClass, Partial<Record<TerrainKind, number>>> = {
-  infantry:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
-  spearman:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
-  cavalry:    { plain: 1, road: 1, forest: 3, hill: 3, mountain: 5, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
-  heavyCav:   { plain: 1, road: 1, forest: 4, hill: 4, mountain: 6, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
-  archer:     { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
-  crossbow:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 4, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
-  strategist: { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
-  fengshui:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
-  ram: {plain:2,road:1,forest:4,hill:4,mountain:Infinity,water:Infinity,rapids:Infinity,bridge:2,fort:1,gate:1},
-  catapult:   { plain: 2, road: 1, forest: 4, hill: 4, mountain: Infinity, water: Infinity, rapids: Infinity, bridge: 2, fort: 1, gate: 1 },
-  engineer:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
-  navy:       { plain: Infinity, road: Infinity, forest: Infinity, hill: Infinity, mountain: Infinity, water: 1, rapids: 2, bridge: Infinity, fort: Infinity, gate: Infinity },
-  civilian:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
-  shaman: { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
-  maiden:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
-  taoist: { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
-  physician:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
-  monk:   { plain: 1, road: 1, forest: 1, hill: 2, mountain: 2, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
-  horseArcher:    { plain: 1, road: 1, forest: 3, hill: 3, mountain: 5, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
-  bandit:   { plain: 1, road: 1, forest: 1, hill: 2, mountain: 2, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1 },
+  infantry:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1, cliff: Infinity, marsh: 3, plank: 2, ford: 3 },
+  spearman:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1, cliff: Infinity, marsh: 3, plank: 2, ford: 3 },
+  cavalry:    { plain: 1, road: 1, forest: 3, hill: 3, mountain: 6, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1, cliff: Infinity, marsh: 4, plank: 3, ford: 2 },
+  heavyCav:   { plain: 1, road: 1, forest: 4, hill: 4, mountain: Infinity, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1, cliff: Infinity, marsh: Infinity, plank: Infinity, ford: 3 },
+  archer:     { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1, cliff: Infinity, marsh: 3, plank: 2, ford: 3 },
+  crossbow:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 4, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1, cliff: Infinity, marsh: 3, plank: 2, ford: 3 },
+  strategist: { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1, cliff: Infinity, marsh: 3, plank: 2, ford: 3 },
+  fengshui:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1, cliff: Infinity, marsh: 3, plank: 2, ford: 3 },
+  ram: {plain:2,road:1,forest:4,hill:4,mountain:Infinity,water:Infinity,rapids:Infinity,bridge:2,fort:1,gate:1, cliff: Infinity, marsh: Infinity, plank: Infinity, ford: Infinity },
+  catapult:   { plain: 2, road: 1, forest: 4, hill: 4, mountain: Infinity, water: Infinity, rapids: Infinity, bridge: 2, fort: 1, gate: 1, cliff: Infinity, marsh: Infinity, plank: Infinity, ford: Infinity },
+  engineer:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1, cliff: Infinity, marsh: 3, plank: 2, ford: 3 },
+  navy:       { plain: Infinity, road: Infinity, forest: Infinity, hill: Infinity, mountain: Infinity, water: 1, rapids: 3, bridge: Infinity, fort: Infinity, gate: Infinity, cliff: Infinity, marsh: 2, plank: Infinity, ford: 2 },
+  civilian:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1, cliff: Infinity, marsh: 3, plank: 2, ford: 3 },
+  shaman: { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1, cliff: Infinity, marsh: 3, plank: 2, ford: 3 },
+  maiden:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1, cliff: Infinity, marsh: 3, plank: 2, ford: 3 },
+  taoist: { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1, cliff: Infinity, marsh: 3, plank: 2, ford: 3 },
+  physician:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1, cliff: Infinity, marsh: 3, plank: 2, ford: 3 },
+  monk:   { plain: 1, road: 1, forest: 1, hill: 2, mountain: 2, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1, cliff: Infinity, marsh: 2, plank: 1, ford: 2 },
+  horseArcher:    { plain: 1, road: 1, forest: 3, hill: 3, mountain: 6, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1, cliff: Infinity, marsh: 4, plank: 3, ford: 2 },
+  bandit:   { plain: 1, road: 1, forest: 1, hill: 2, mountain: 2, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1, cliff: Infinity, marsh: 2, plank: 1, ford: 2 },
 };
 
 /** 병종 × 지형 전투 상성 계수 (공격 위력 배율). */
 const TERRAIN_AFFINITY: Record<UnitClass, Partial<Record<TerrainKind, number>>> = {
   infantry:   { plain: 1.0, forest: 1.1, mountain: 1.0, hill: 1.05, fort: 1.1 },
   spearman:   { plain: 1.0, forest: 1.0, mountain: 1.1, hill: 1.2, fort: 1.1 },
-  cavalry:    { plain: 1.2, road: 1.2, forest: 0.8, mountain: 0.6, hill: 0.8 },
-  heavyCav:   { plain: 1.25, road: 1.2, forest: 0.7, mountain: 0.5, hill: 0.7 },
-  archer:     { plain: 1.0, forest: 1.1, mountain: 1.2, hill: 1.15 },
+  cavalry:    { plain: 1.2, road: 1.2, forest: 0.8, mountain: 0.6, hill: 0.8, marsh: 0.7, ford: 0.9, plank: 0.8 },
+  heavyCav:   { plain: 1.25, road: 1.2, forest: 0.7, mountain: 0.5, hill: 0.7, ford: 0.8 },
+  archer:     { plain: 1.0, forest: 1.1, mountain: 1.2, hill: 1.15, marsh: 1.1 },
   crossbow:   { plain: 1.05, forest: 1.0, mountain: 1.1, hill: 1.1, fort: 1.2 },
   strategist: { plain: 1.0, forest: 1.05, mountain: 1.05, hill: 1.05 },
   fengshui:   { plain: 1.0, forest: 1.05, mountain: 1.05, hill: 1.05 },
   ram: {plain:1,road:1,fort:1},
   catapult:   { plain: 1.1, road: 1.1, hill: 1.15, fort: 1.0 },
   engineer:   { plain: 1.0 },
-  navy:       { water: 1.3, rapids: 1.15 },
+  navy:       { water: 1.3, rapids: 1.0, marsh: 0.9, ford: 0.9 },
   civilian:   { plain: 0.5 },
   shaman: { plain: 1.0, forest: 1.05, mountain: 1.05, hill: 1.05 },
   maiden:   { plain: 1.0, forest: 1.05, mountain: 1.05, hill: 1.05 },
   taoist: { plain: 1.0, forest: 1.05, mountain: 1.05, hill: 1.05 },
   physician:   { plain: 1.0, forest: 1.05, mountain: 1.05, hill: 1.05 },
   monk:   { plain: 1.0, forest: 1.1, mountain: 1.0, hill: 1.05, fort: 1.1 },
-  horseArcher:    { plain: 1.2, road: 1.2, forest: 0.8, mountain: 0.6, hill: 0.8 },
-  bandit:   { plain: 1.0, forest: 1.3, mountain: 1.25, hill: 1.05, fort: 1.1 },
+  horseArcher:    { plain: 1.2, road: 1.2, forest: 0.8, mountain: 0.6, hill: 0.8, marsh: 0.7, ford: 0.9 },
+  bandit:   { plain: 1.0, forest: 1.3, mountain: 1.25, hill: 1.05, fort: 1.1, marsh: 1.2 },
 };
 
 /** 회피 보너스 (백분율 포인트). 방어자가 서 있는 지형. */
@@ -70,6 +72,9 @@ const TERRAIN_EVASION: Partial<Record<TerrainKind, number>> = {
   hill: 10,
   fort: 10,
   rapids: -5,
+  marsh: 15,   // 갈대 속 은폐
+  plank: -10,  // 벼랑길에 노출
+  ford: -10,   // 물살에 발이 묶임
 };
 
 export class BattleMap {
