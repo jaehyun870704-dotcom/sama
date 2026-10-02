@@ -3,18 +3,10 @@ import type {BattleState,StageDef} from '../../core/src/index.ts';
 
 // Fixed encounter bands: enemies never level up in response to equipment or replay.
 export const encounterLevels:Record<string,number>={'S1-01':1,'S1-02':2,'S1-03':3,'S1-04':4,'S1-05':5,'S1-06':6,'S1-07':6,'S1-08':7};
-/** Sima Yi's level after the playable campaign on normal. Extreme is a second run with that
- * army, so its enemies are set against it instead of the first-run band (or early extremes
- * end up easier than their normal versions). */
-export const CAMPAIGN_END_LEVEL=8;
-/** Stages lean on levels unevenly (a sneak or escort cares less than a pitched battle), so the
- * curve is tuned per stage with tools/sim.ts against each stage's extreme target. */
-const extremeTuning:Record<string,number>={'S1-01':4,'S1-04':6,'S1-07':10};
-export const extremeLevel=(base:number,id='')=>extremeTuning[id]??Math.max(base+2,CAMPAIGN_END_LEVEL-1+Math.ceil(base/3));
 export function campaignStage(source:StageDef):StageDef{
   const s=structuredClone(source),base=encounterLevels[s.id]??1,old=s.difficulty.normal.recommendedLevel;
   const adjust=(n:number|undefined)=>Math.max(1,base+Math.max(-1,Math.min(1,(n??old)-old)));
-  for(const tier of ['normal','extreme'] as const)s.difficulty[tier]={...s.difficulty[tier],recommendedLevel:base,minEnemyLevel:tier==='extreme'?extremeLevel(base,s.id):base};
+  for(const tier of ['normal','extreme'] as const)s.difficulty[tier]={...s.difficulty[tier],recommendedLevel:base,minEnemyLevel:base+(tier==='extreme'?2:0)};
   for(const group of [...s.deployment.grantedUnits??[],...s.deployment.allyAi??[]])group.level=adjust(group.level);
   for(const event of s.events??[])for(const action of event.actions)for(const unit of action.units??[])unit.level=adjust(unit.level);
   if(s.id==='S1-08'){
