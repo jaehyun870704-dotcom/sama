@@ -35,10 +35,11 @@ import {outlineFrames} from '../src/sprite-atlas.ts';
 describe('dot clarity',()=>{
  it('snaps zoom so every ground dot covers whole pixels',()=>{
   for(const res of [1,1.5,2,3])for(const z of [.7,.78,.9,1,1.25,1.5,1.8]){
-   const s=crispZoom(z,res),k=s*3*res;expect(k).toBeCloseTo(Math.round(k));expect(groundScaleMode(s,res)).toBe('nearest');expect(s).toBeLessThanOrEqual(1.8);
+   if(z*2*res<2)continue;
+   const s=crispZoom(z,res),k=s*2*res;expect(k).toBeCloseTo(Math.round(k));expect(groundScaleMode(s,res)).toBe('nearest');expect(s).toBeLessThanOrEqual(1.8);
   }
-  expect(crispZoom(1.1,1,1)).toBeCloseTo(4/3);expect(crispZoom(.9,1,-1)).toBeCloseTo(2/3);expect(crispZoom(1,2,1)).toBe(1);
-  expect(crispZoom(.4,1)).toBe(.4);expect(groundScaleMode(.4,1)).toBe('linear');
+  expect(crispZoom(1.1,1,1)).toBeCloseTo(1.5);expect(crispZoom(1.4,1,-1)).toBe(1);expect(crispZoom(1,2,1)).toBe(1);expect(crispZoom(.8,3)).toBeCloseTo(5/6);
+  expect(crispZoom(.7,1)).toBe(.7);expect(groundScaleMode(.7,1)).toBe('linear');
  });
  it('draws a round dark rim around silhouettes without touching the body',()=>{
   const w=21,data=new Uint8ClampedArray(w*w*4);
