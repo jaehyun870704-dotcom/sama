@@ -1,8 +1,8 @@
-import {makeUnit} from '../../core/src/index.ts';
+import {makeUnit,isHostile} from '../../core/src/index.ts';
 import type {BattleState,StageDef} from '../../core/src/index.ts';
 
 // Fixed encounter bands: enemies never level up in response to equipment or replay.
-export const encounterLevels:Record<string,number>={'S1-01':1,'S1-02':2,'S1-03':3,'S1-04':4,'S1-05':5,'S1-06':6,'S1-07':6,'S1-08':7,'S1-09':7};
+export const encounterLevels:Record<string,number>={'S1-01':1,'S1-02':2,'S1-03':3,'S1-04':4,'S1-05':5,'S1-06':6,'S1-07':6,'S1-08':7,'S1-09':7,'S1-10':8};
 export function campaignStage(source:StageDef):StageDef{
   const s=structuredClone(source),base=encounterLevels[s.id]??1,old=s.difficulty.normal.recommendedLevel;
   const adjust=(n:number|undefined)=>Math.max(1,base+Math.max(-1,Math.min(1,(n??old)-old)));
@@ -65,4 +65,13 @@ export function raceGap(state:BattleState){
   const racers=state.living('allyAi').filter(u=>u.behavior==='race');
   const hero=state.find('sima_yi');
   return {ally:racers.length?Math.min(...racers.map(u=>dist(u.pos))):undefined,hero:hero?.alive?dist(hero.pos):undefined};
+}
+
+/** How many of a unit's four sides are shut: by impassable ground, the map edge or a foe. */
+export function encircled(state:BattleState,id:string){
+  const u=state.find(id);if(!u?.alive)return 0;
+  return [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}].filter(d=>{
+    const c={x:u.pos.x+d.x,y:u.pos.y+d.y};if(!state.map.inBounds(c)||!Number.isFinite(state.map.moveCost(u.unitClass,c)))return true;
+    const b=state.unitAt(c);return !!b&&isHostile(u.side,b.side);
+  }).length;
 }

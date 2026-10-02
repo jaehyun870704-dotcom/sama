@@ -10,7 +10,8 @@ export type LineWhen=
   |{firstEnemyDown:true}
   |{enemiesBelow:number}
   |{reach:{unit:string;region:string}}
-  |{allyAhead:true};
+  |{allyAhead:true}
+  |{lockedBy:string};
 export interface BattleLine {id:string;when:LineWhen;speaker:string;text:string}
 
 export const battleLines:Record<string,BattleLine[]>={
@@ -38,6 +39,14 @@ export const battleLines:Record<string,BattleLine[]>={
     {id:'reinforce',when:{turn:6},speaker:'사마의',text:'북문으로 증원이 옵니다. 다리를 막고 성채로 곧장 가십시오.'},
     {id:'chief-down',when:{retreat:'zhang_lu'},speaker:'사마의',text:'수비대장이 물러났다. 지금이다, 성채로!'},
   ],
+  'S1-10':[
+    {id:'open-1',when:{turn:1},speaker:'사마의',text:'조운의 앞·뒤·좌·우를 모두 막아야 합니다. 강물과 바위도 벽이 됩니다.'},
+    {id:'open-2',when:{turn:1},speaker:'조운',text:'상산의 조자룡이 여기 있다! 조조의 목을 내놓아라!'},
+    {id:'rise',when:{turn:3},speaker:'조진',text:'강물이 둑을 넘었다! 남쪽 들판이 여울이 되어 발이 묶인다.'},
+    {id:'rise-2',when:{turn:5},speaker:'사마의',text:'물이 더 차오릅니다. 들판 한가운데로는 가지 마십시오.'},
+    {id:'lock',when:{lockedBy:'flood/lock'},speaker:'조진',text:'조운이 묶였다! 승상, 지금 고개로 오르십시오!'},
+    {id:'exit',when:{reach:{unit:'cao_cao',region:'exit'}},speaker:'사마의',text:'승상께서 고개를 넘으셨다. 물러나라, 강물이 길을 덮는다.'},
+  ],
   'S1-09':[
     {id:'open-1',when:{turn:1},speaker:'조진',text:'강변 두 칸을 두 턴 동안 지키면 부교가 선다. 공병을 앞세우게.'},
     {id:'open-2',when:{turn:1},speaker:'사마의',text:'승상은 다리가 놓일 때까지 강가에서 기다리실 겁니다. 뒤쪽 추격 기병을 먼저 막겠습니다.'},
@@ -54,6 +63,7 @@ function met(state:BattleState,w:LineWhen){
   if('firstEnemyDown' in w)return [...state.units.values()].some(u=>u.side==='enemy'&&!u.alive);
   if('enemiesBelow' in w)return state.living('enemy').length<w.enemiesBelow&&state.turn>1;
   if('reach' in w){const u=state.find(w.reach.unit);return !!u?.alive&&state.map.regionCoords(w.reach.region).some(c=>c.x===u.pos.x&&c.y===u.pos.y);}
+  if('lockedBy' in w)return state.firedEvents.has(w.lockedBy);
   const g=raceGap(state);return !!g&&g.ally!==undefined&&g.hero!==undefined&&g.ally<g.hero;
 }
 /** Lines whose moment has come and that have not been shown yet, in script order. */

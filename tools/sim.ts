@@ -239,6 +239,11 @@ for (const chapter of targets) {
       } else {
         const reason = session.failure || session.state.outcome;
         reasons.set(reason, (reasons.get(reason) ?? 0) + 1);
+        // SIM_DEBUG=1: show how the first lost run ended (who fell, to whom).
+        if (process.env.SIM_DEBUG && reasons.get(reason) === 1) {
+          console.log(`  [${stage.id} ${difficulty} seed ${seed}] ${reason} · ${session.state.turn}턴`);
+          for (const e of session.state.log.slice(-10)) console.log("    " + JSON.stringify(e));
+        }
       }
     }
 

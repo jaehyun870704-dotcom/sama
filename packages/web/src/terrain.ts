@@ -105,6 +105,7 @@ function paintGrass(ctx:CanvasRenderingContext2D,state:BattleState,biome:Biome){
 
 function paintFields(ctx:CanvasRenderingContext2D,state:BattleState){
   for(const p of state.map.regions.get('fields')??[]){
+    if(state.map.tileAt(p).terrain!=='plain')continue; // flooded or built over
     const px=p.x*T,py=p.y*T;ctx.fillStyle='rgb(164,154,88)';ctx.fillRect(px+1,py+1,T-2,T-2);
     for(let j=0;j<Math.floor((T-2)/3);j++){ctx.fillStyle='rgb(108,116,64)';ctx.fillRect(px+1,py+2+j*3,T-2,1);ctx.fillStyle='rgb(211,196,125)';ctx.fillRect(px+2,py+1+j*3,T-4,1);}
   }

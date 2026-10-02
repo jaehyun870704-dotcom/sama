@@ -74,7 +74,7 @@ describe('playable client session',()=>{
     expect(s.state.snapshot()).toEqual(after);expect(s.state.log).toEqual(logs);
   });
   it('rejects incompatible and corrupt saved games',()=>{
-    for(const raw of [null,{}, {version:2}, {...new Session().save(),chapter:9}, {...new Session().save(),checkpoints:[-1]}])expect(()=>Session.load(raw)).toThrow();
+    for(const raw of [null,{}, {version:2}, {...new Session().save(),chapter:99}, {...new Session().save(),checkpoints:[-1]}])expect(()=>Session.load(raw)).toThrow();
   });
   it('finishes the escape stage, awards seals and replays the entire completed battle',()=>{
     const s=new Session(0);
