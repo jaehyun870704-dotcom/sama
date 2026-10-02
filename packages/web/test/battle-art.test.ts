@@ -30,3 +30,27 @@ describe('painted terrain',()=>{
   expect(smooth(0,1,.5)).toBeCloseTo(.5);
  });
 });
+import {crispZoom,groundScaleMode,unitTint} from '../src/pixel-look.ts';
+import {outlineFrames} from '../src/sprite-atlas.ts';
+describe('dot clarity',()=>{
+ it('snaps zoom so every ground dot covers whole pixels',()=>{
+  for(const res of [1,1.5,2,3])for(const z of [.7,.78,.9,1,1.25,1.5,1.8]){
+   const s=crispZoom(z,res),k=s*3*res;expect(k).toBeCloseTo(Math.round(k));expect(groundScaleMode(s,res)).toBe('nearest');expect(s).toBeLessThanOrEqual(1.8);
+  }
+  expect(crispZoom(1.1,1,1)).toBeCloseTo(4/3);expect(crispZoom(.9,1,-1)).toBeCloseTo(2/3);expect(crispZoom(1,2,1)).toBe(1);
+  expect(crispZoom(.4,1)).toBe(.4);expect(groundScaleMode(.4,1)).toBe('linear');
+ });
+ it('draws a round dark rim around silhouettes without touching the body',()=>{
+  const w=21,data=new Uint8ClampedArray(w*w*4);
+  for(let y=8;y<13;y++)for(let x=8;x<13;x++)data.set([250,240,230,255],(y*w+x)*4);
+  const out=outlineFrames({width:w,height:w,data},3).data,at=(x:number,y:number)=>[...out.subarray((y*w+x)*4,(y*w+x)*4+4)];
+  expect(at(10,10)).toEqual([250,240,230,255]);
+  expect(at(7,10)[3]).toBe(255);expect(at(7,10)[0]).toBeLessThan(40);
+  expect(at(6,10)[3]).toBe(255);expect(at(5,10)[3]).toBeGreaterThan(64);expect(at(5,10)[3]).toBeLessThan(255);expect(at(3,10)[3]).toBe(0);expect(at(5,5)[3]).toBe(0);
+ });
+ it('keeps side tints light and greys out units that already acted',()=>{
+  const enemy=unitTint({id:'e',side:'enemy',hasActed:false}),done=unitTint({id:'e',side:'enemy',hasActed:true});
+  expect(enemy>>16).toBe(255);expect(enemy&255).toBeGreaterThan(0xc0);
+  expect(done>>16).toBeLessThan(0xb0);expect(unitTint({id:'p',side:'player',hasActed:false})).toBe(0xffffff);
+ });
+});

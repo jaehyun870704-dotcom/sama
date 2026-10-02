@@ -28,13 +28,14 @@ function paintGround(img:ImageData,state:BattleState,biome:Biome){
     elev[i]=raw[HI]!*.9+raw[R]!*1.3+raw[CL]!*1.8+raw[F]!*.15-raw[WA]!*.3;wet[i]=raw[WA]!+raw[FO]!*.6+raw[MA]!*.2;
   }
   for(let py=0;py<H;py++)for(let px=0;px<W;px++){
-    const i=py*W+px,m=MATERIALS[pick[i]!]!,th=bayer(px,py),c=sample(n.coarse,px*1.2,py*1.2),f=hash(px,py,3)*.6+sample(n.fine,px*.9,py*.9)*.4;
+    const i=py*W+px,m=MATERIALS[pick[i]!]!,th=bayer(px,py),c=sample(n.coarse,px*1.2,py*1.2),f=hash(px,py,3)*.3+sample(n.fine,px*.9,py*.9)*.7;
     const e0=elev[Math.max(0,py-1)*W+Math.max(0,px-1)]!,e1=elev[Math.min(H-1,py+1)*W+Math.min(W-1,px+1)]!,light=(e0-e1)*1.6;
-    let ramp=biome.ramps[m],shade=.45+(c-.5)*.55+(f-.5)*.25+light;
+    // Calm, broad shading: per-dot noise made the ground fizz behind the troops.
+    let ramp=biome.ramps[m],shade=.45+(c-.5)*.5+(f-.5)*.2+light;
     if(m==='water'){
       const depth=smooth(.45,1,wet[i]!);shade=.85-depth*.6+(f-.5)*.12;
       if(wet[i]!<.52){ramp=biome.sand;shade=.25+(c-.5)*.4+(f-.5)*.3;} else if(wet[i]!<.58)shade=0;
-    }else if(m==='dirt'){if(f>.78)shade-=.25;}
+    }else if(m==='dirt'){if(f>.8)shade-=.2;}
     else if(m==='yard'){if(px%8===0||(py+(Math.floor(px/8)%2)*4)%8===0)shade-=.3;}
     else if(m==='marsh'&&f>.72){ramp=biome.ramps.water;shade=.55;}
     else if(m==='ford'){shade=.4+(f-.5)*.5;}
