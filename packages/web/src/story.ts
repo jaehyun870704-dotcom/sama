@@ -8,6 +8,7 @@ export function storyBackdrop(index:number){
 }
 /** Atlas cell + narrative location per beat, independent of saved chapter indexes. */
 export const storyLocations:Record<string,Array<{art:number;name:string;companion:string;actor?:number}>>={
+  'S3-01':[{art:14,name:'낙양 · 출정 전 조정',companion:'사마사'},{art:11,name:'요수 · 서쪽 강변',companion:'사마사'},{art:8,name:'요수 · 무너진 연군 진영',companion:'사마사'}],
   'S2-14':[{art:14,name:'위수 · 별이 떨어진 밤',companion:'곽회'},{art:4,name:'오장원 · 비어 가는 진영',companion:'곽회'},{art:11,name:'오장원 · 동쪽으로 돌아가는 길',companion:'곽회'}],
   'S2-13':[{art:14,name:'위수 · 사마의의 군막',companion:'사마사'},{art:4,name:'호로곡 · 불길 속 골짜기',companion:'사마소'},{art:11,name:'호로곡 · 비 그친 출구',companion:'사마사'}],
   'S2-12':[{art:14,name:'위수 북안 · 군막',companion:'곽회'},{art:11,name:'위수 · 세 여울',companion:'곽회'},{art:4,name:'위수 · 물러선 남안',companion:'곽회'}],
@@ -42,6 +43,11 @@ export const storyLocations:Record<string,Array<{art:number;name:string;companio
   'S1-09':[{art:14,name:'한중 · 철수 군의',companion:'조진'},{art:15,name:'한수 · 불탄 부교터',companion:'조진'},{art:7,name:'한수 · 강변 정찰',companion:'조진'}],
 };
 export const storyBeats:Record<string,StoryBeat[]>={
+  'S3-01':[
+    {speaker:'사마사',line:'아버님, 비연이 요수 동쪽에 수십 리 전열을 쳤습니다. 정면으로 건너면 강 한가운데서 막힙니다.',pose:'enter',actor:3},
+    {speaker:'사마의',line:'제갈량은 우리를 깃발로 움직였다. 이번에는 우리가 저들을 움직인다. 남쪽 여울에 깃발을 세워라.',pose:'speak',actor:4},
+    {speaker:'사마사',line:'저들이 남쪽으로 몰리면, 본대는 북쪽 여울로 건너겠습니다.',pose:'resolve',actor:3},
+  ],
   'S2-14':[
     {speaker:'곽회',line:'도독, 어젯밤 큰 별이 오장원 쪽으로 떨어졌습니다. 촉군 진영이 조용합니다.',pose:'enter',actor:0},
     {speaker:'사마의',line:'제갈량이 죽었소. 촉군이 물러나기 시작할 것이오. 지금 쫓으면 그들의 꼬리를 자를 수 있소.',pose:'speak',actor:4},
@@ -203,10 +209,14 @@ export const stories=[
   ['세 여울','234년, 제갈량이 다섯 번째로 나온다. 이번에는 오장원에 둔전을 일구며 오래 머물 채비를 한다. 사마의는 위수 북안에 선다. 건널 수 있는 여울은 셋. 장합을 잃은 뒤의 첫 싸움이다.'],
   ['하늘이 내린 비','234년, 제갈량은 싸움을 받지 않는 사마의를 끌어내려 호로곡에 미끼를 둔다. 사마의 부자가 골짜기로 들어서자 입구에 불이 붙는다. 갈라진 두 부대가 골짜기 가운데에서 다시 만나야 한다. 그리고 하늘을 기다린다.'],
   ['산 중달이 달아나다','234년 가을, 제갈량이 오장원의 진중에서 숨을 거둔다. 촉군은 소리 없이 물러난다. 사마의는 추격에 나선다. 그러나 촉군의 후미에는 강유가 있고, 강유의 수레에는 아직 제갈량의 깃발이 있다.'],
+  ['깃발은 남쪽에','238년, 일흔을 바라보는 사마의가 요동 정벌에 나선다. 공손연의 장수 비연이 요수 동쪽에 긴 전열을 친다. 사마의는 남쪽에 깃발을 세우고, 북쪽으로 건넌다. 오장원에서 배운 것을 이제 그가 쓴다.'],
 ];
 
 /** After a main-battle victory: where the story picks up, and what changed. */
 export const storyAftermath:Record<string,{art:number;name:string;beats:Array<{speaker:string;line:string}>}>={
+  'S3-01':{art:8,name:'요수 · 무너진 연군 진영',beats:[
+    {speaker:'사마사',line:'연군이 남쪽만 바라보다 무너졌습니다. 양평까지 막을 자가 없습니다.'},
+    {speaker:'사마의',line:'적이 지키는 곳을 치지 않고, 적이 비운 곳으로 간다. 그것뿐이다.'}]},
   'S2-14':{art:11,name:'오장원 · 동쪽으로 돌아가는 길',beats:[
     {speaker:'곽회',line:'촉군이 다 빠져나갔습니다. 그 수레에 있던 것은 나무로 깎은 상이었다고 합니다.'},
     {speaker:'사마의',line:'산 사람의 뜻은 헤아릴 수 있어도, 죽은 사람의 뜻은 헤아릴 수 없었소. 사람들이 웃어도 좋소. 나는 살아서 돌아왔소.'}]},
