@@ -15,6 +15,12 @@ export type LineWhen=
 export interface BattleLine {id:string;when:LineWhen;speaker:string;text:string}
 
 export const battleLines:Record<string,BattleLine[]>={
+  'S3-02':[
+    {id:'open-1',when:{turn:1},speaker:'사마의',text:'포차로 성 안 군량고를 노려라. 군량고가 남아 있는 동안 연군은 기운을 되찾는다.'},
+    {id:'open-2',when:{turn:2},speaker:'공손연',text:'성은 높고 군량은 넉넉하다. 사마의는 늙었다, 오래 버티지 못한다.'},
+    {id:'flight',when:{lockedBy:'xiangping/flight'},speaker:'사마사',text:'공손연의 깃발이 셋입니다! 어느 것이 진짜인지 살펴야 합니다!'},
+    {id:'reveal',when:{lockedBy:'xiangping/revealed'},speaker:'사마의',text:'살펴보니 둘은 깃발만 든 미끼다. 진짜를 쫓아라.'},
+  ],
   'S3-01':[
     {id:'open-1',when:{turn:1},speaker:'사마의',text:'양동 깃발대는 남쪽 여울로. 본대는 깃발이 선 뒤에 북쪽 여울을 건넌다.'},
     {id:'open-2',when:{turn:1},speaker:'비연',text:'사마의가 어디로 오든 이 전열은 뚫리지 않는다.'},

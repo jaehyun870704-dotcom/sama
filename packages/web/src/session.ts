@@ -60,6 +60,8 @@ import wuzhangStage from '../../data/stages/S2-14.json';
 import wuzhangMap from '../../data/maps/wuzhang-plain.json';
 import liaoshuiStage from '../../data/stages/S3-01.json';
 import liaoshuiMap from '../../data/maps/liaoshui-fords.json';
+import xiangpingStage from '../../data/stages/S3-02.json';
+import xiangpingMap from '../../data/maps/xiangping-walls.json';
 import legacyFortMap from './legacy/hanzhong-map-v2.json';
 import legacyFortStage from './legacy/hanzhong-stage-v2.json';
 import { makeUnit, awardedSeals } from '../../core/src/index.ts';
@@ -91,9 +93,10 @@ export const chapters = [
   {stage:huluStage as StageDef,map:huluMap as MapFile,year:'청룡 이년 · 234년',label:'합류와 버티기',quote:'불은 사람이 놓았고, 비는 하늘이 내렸다.'},
   {stage:wuzhangStage as StageDef,map:wuzhangMap as MapFile,year:'청룡 이년 · 234년',label:'추격과 동요',quote:'죽은 제갈이 산 중달을 달아나게 했다.'},
   {stage:liaoshuiStage as StageDef,map:liaoshuiMap as MapFile,year:'경초 이년 · 238년',label:'양동과 진짜 공격',quote:'이번에는 우리가 깃발을 세워 적을 움직인다.'},
+  {stage:xiangpingStage as StageDef,map:xiangpingMap as MapFile,year:'경초 이년 · 238년',label:'보급 차단과 포획',quote:'같은 깃발 셋 가운데 하나만 사람이다.'},
 ];
 // Stable indices preserve the existing v2 command saves.
-export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25];
+export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26];
 export type Preparation='survival'|'strategy'|'command';
 export const strategies: StrategyDef[] = [
   {id:'windDragon',name:'풍룡',element:'wind',shape:'spread',range:4,radius:1,mpCost:18,power:130,targetSides:['enemy']},
@@ -312,7 +315,7 @@ export class Session {
     if(this.revision===4)applyOfficerFeatures(s.living(),this.deployment?.growth);
     // Breach rally belongs to the revision-4 siege rules (ram company, engineers).
     if(this.revision===4)for(const gate of s.units.values())if(structureKind(gate.id)==='gate'&&!gate.alive&&!this.breached.has(gate.id)){this.breached.add(gate.id);breachRally(s,gate);}
-    const rules=stageRules[s.stage.id],view={state:s,difficulty:this.difficulty,journalLength:this.journal.length};
+    const rules=stageRules[s.stage.id],view={state:s,difficulty:this.difficulty,journalLength:this.journal.length,scouted:this.scouted};
     if(rules){
       const lost=s.outcome==='ongoing'?rules.tick?.(view):undefined;if(lost){this.failure=lost;s.outcome='defeat';s.push({t:'outcome',outcome:'defeat'});}
       if(rules.deadline&&s.outcome==='ongoing'&&s.turn>rules.deadline){this.failure=rules.deadlineText??`${rules.deadline}턴 안에 작전을 마치지 못했습니다.`;s.outcome='defeat';s.push({t:'outcome',outcome:'defeat'});}

@@ -8,6 +8,7 @@ export function storyBackdrop(index:number){
 }
 /** Atlas cell + narrative location per beat, independent of saved chapter indexes. */
 export const storyLocations:Record<string,Array<{art:number;name:string;companion:string;actor?:number}>>={
+  'S3-02':[{art:8,name:'양평 · 에워싼 성',companion:'사마사'},{art:14,name:'양평 · 장마 뒤의 진영',companion:'사마사'},{art:8,name:'양평 · 열린 성문',companion:'사마사'}],
   'S3-01':[{art:14,name:'낙양 · 출정 전 조정',companion:'사마사'},{art:11,name:'요수 · 서쪽 강변',companion:'사마사'},{art:8,name:'요수 · 무너진 연군 진영',companion:'사마사'}],
   'S2-14':[{art:14,name:'위수 · 별이 떨어진 밤',companion:'곽회'},{art:4,name:'오장원 · 비어 가는 진영',companion:'곽회'},{art:11,name:'오장원 · 동쪽으로 돌아가는 길',companion:'곽회'}],
   'S2-13':[{art:14,name:'위수 · 사마의의 군막',companion:'사마사'},{art:4,name:'호로곡 · 불길 속 골짜기',companion:'사마소'},{art:11,name:'호로곡 · 비 그친 출구',companion:'사마사'}],
@@ -43,6 +44,11 @@ export const storyLocations:Record<string,Array<{art:number;name:string;companio
   'S1-09':[{art:14,name:'한중 · 철수 군의',companion:'조진'},{art:15,name:'한수 · 불탄 부교터',companion:'조진'},{art:7,name:'한수 · 강변 정찰',companion:'조진'}],
 };
 export const storyBeats:Record<string,StoryBeat[]>={
+  'S3-02':[
+    {speaker:'사마사',line:'장마가 그쳤습니다. 공손연은 양평성에 틀어박혀 군량으로 버틸 생각입니다.',pose:'enter',actor:3},
+    {speaker:'사마의',line:'군량고를 포차로 부숴라. 먹을 것이 떨어지면 그는 성을 버리고 달아난다. 그때가 잡을 때다.',pose:'speak',actor:4},
+    {speaker:'사마사',line:'그가 같은 깃발을 여럿 세워 우리를 속이려 할 수도 있습니다.',pose:'resolve',actor:3},
+  ],
   'S3-01':[
     {speaker:'사마사',line:'아버님, 비연이 요수 동쪽에 수십 리 전열을 쳤습니다. 정면으로 건너면 강 한가운데서 막힙니다.',pose:'enter',actor:3},
     {speaker:'사마의',line:'제갈량은 우리를 깃발로 움직였다. 이번에는 우리가 저들을 움직인다. 남쪽 여울에 깃발을 세워라.',pose:'speak',actor:4},
@@ -210,10 +216,14 @@ export const stories=[
   ['하늘이 내린 비','234년, 제갈량은 싸움을 받지 않는 사마의를 끌어내려 호로곡에 미끼를 둔다. 사마의 부자가 골짜기로 들어서자 입구에 불이 붙는다. 갈라진 두 부대가 골짜기 가운데에서 다시 만나야 한다. 그리고 하늘을 기다린다.'],
   ['산 중달이 달아나다','234년 가을, 제갈량이 오장원의 진중에서 숨을 거둔다. 촉군은 소리 없이 물러난다. 사마의는 추격에 나선다. 그러나 촉군의 후미에는 강유가 있고, 강유의 수레에는 아직 제갈량의 깃발이 있다.'],
   ['깃발은 남쪽에','238년, 일흔을 바라보는 사마의가 요동 정벌에 나선다. 공손연의 장수 비연이 요수 동쪽에 긴 전열을 친다. 사마의는 남쪽에 깃발을 세우고, 북쪽으로 건넌다. 오장원에서 배운 것을 이제 그가 쓴다.'],
+  ['같은 깃발','238년 가을, 장마가 그치자 사마의는 양평성을 에워싼다. 성 안의 군량이 공손연을 버티게 한다. 군량이 끊기면 그는 달아날 것이다. 그리고 그는 자기와 똑같은 깃발을 든 부대를 함께 내보낼 것이다.'],
 ];
 
 /** After a main-battle victory: where the story picks up, and what changed. */
 export const storyAftermath:Record<string,{art:number;name:string;beats:Array<{speaker:string;line:string}>}>={
+  'S3-02':{art:8,name:'양평 · 열린 성문',beats:[
+    {speaker:'사마사',line:'공손연을 잡았습니다. 미끼 깃발은 둘이었습니다.'},
+    {speaker:'사마의',line:'요동은 평정되었다. 돌아가자. 낙양에서 우리를 기다리는 것은 칼보다 무거운 일이다.'}]},
   'S3-01':{art:8,name:'요수 · 무너진 연군 진영',beats:[
     {speaker:'사마사',line:'연군이 남쪽만 바라보다 무너졌습니다. 양평까지 막을 자가 없습니다.'},
     {speaker:'사마의',line:'적이 지키는 곳을 치지 않고, 적이 비운 곳으로 간다. 그것뿐이다.'}]},

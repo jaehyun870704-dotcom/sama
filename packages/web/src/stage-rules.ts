@@ -3,7 +3,7 @@ import {fireScripted} from '../../core/src/index.ts';
 
 /** Per-stage rules that live in the client layer (protected units, phase readouts,
  * custom seals). New stages register here instead of growing Session with branches. */
-export interface StageView {state:BattleState;difficulty:Difficulty;journalLength:number}
+export interface StageView {state:BattleState;difficulty:Difficulty;journalLength:number;scouted?:boolean}
 export interface StageRules {
   sealNames:[string,string,string];
   /** A costly win: the result plays a gong instead of the victory fanfare. */
@@ -42,6 +42,36 @@ export interface StageRules {
 const HILL=['ma_su','hill_spear','hill_bow','hill_foot_a','hill_foot_b','hill_xbow'];
 
 export const stageRules:Record<string,StageRules>={
+  'S3-02':{
+    sealNames:['공손연 포획','신속한 보급 차단','미끼에 속지 않음'],
+    weather:'장마 뒤 · 젖은 성벽',
+    labels:[{region:'keep',text:'공손연 본채'},{region:'north_label',text:'북문 밖 도주로'},{region:'south_label',text:'남문 밖 도주로'}],
+    protect:[{unit:'convoy_depot_a',hp:90},{unit:'convoy_depot_b',hp:90}],
+    anchored:['convoy_depot_a','convoy_depot_b'],
+    tick:({state,scouted})=>{
+      const depots=['convoy_depot_a','convoy_depot_b'].filter(id=>state.find(id)?.alive).length;
+      // Each standing granary feeds the garrison once a turn.
+      if(depots>0&&(state.survivalClocks.get('fed')??0)<state.turn){state.survivalClocks.set('fed',state.turn);
+        for(const u of state.living('enemy'))if(!u.id.startsWith('convoy_depot'))u.hp=Math.min(u.stats.maxHp,u.hp+Math.round(u.stats.maxHp*.05*depots));}
+      if(depots===0&&!state.firedEvents.has('xiangping/flight')){
+        state.survivalClocks.set('cut_turn',state.turn);fireScripted(state,'xiangping/flight');
+      }
+      // He spends a turn gathering his household before he runs: the warning window to close the gates.
+      const runner=state.find('gongsun_yuan'),cut=state.survivalClocks.get('cut_turn');
+      if(runner?.alive&&cut!==undefined&&state.turn>cut&&runner.behavior!=='flee'){runner.behavior='flee';runner.goalRegion='escape';runner.stats.movement=3;}
+      if(scouted&&state.firedEvents.has('xiangping/flight')&&!state.firedEvents.has('xiangping/revealed')){
+        state.firedEvents.add('xiangping/revealed');for(const u of state.living('enemy'))if(u.id.startsWith('decoy'))(u as {name:string}).name='미끼 깃발대';
+      }
+      for(const u of state.living('enemy'))if(u.id.startsWith('decoy')&&state.map.regionCoords('escape').some(c=>c.x===u.pos.x&&c.y===u.pos.y))state.units.delete(u.id);
+      if(state.log.some(e=>e.t==='attack'&&typeof e.defender==='string'&&e.defender.startsWith('decoy')&&!e.attacker.startsWith('decoy')))state.firedEvents.add('xiangping/fooled');
+      const gy=state.find('gongsun_yuan');
+      return gy?.alive&&state.map.regionCoords('escape').some(c=>c.x===gy.pos.x&&c.y===gy.pos.y)?'공손연이 성문 밖으로 빠져나갔습니다.':undefined;
+    },
+    phase:({state})=>{const depots=['convoy_depot_a','convoy_depot_b'].filter(id=>state.find(id)?.alive).length;
+      const cut=state.survivalClocks.get('cut_turn');if(depots===0&&cut!==undefined&&state.turn<=cut)return '보급 끊김 · 공손연이 성을 버릴 채비 — 다음 턴에 북문·남문으로 달아난다';
+      return depots>0?`보급 차단 · 남은 군량고 ${depots}/2 (매 턴 연군 회복)`:state.firedEvents.has('xiangping/revealed')?'공손연 포획 · 미끼 식별됨':'공손연 포획 · 깃발 셋 중 진짜를 찾아라 (살피기)';},
+    seals:({state})=>[1,...((state.survivalClocks.get('cut_turn')??99)<=6?[2]:[]),...(!state.firedEvents.has('xiangping/fooled')?[3]:[])],
+  },
   'S3-01':{
     sealNames:['비연 격퇴','양동으로 진형 붕괴','신속한 도하'],
     weather:'맑음 · 요동의 찬바람',
