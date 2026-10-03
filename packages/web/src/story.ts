@@ -8,6 +8,7 @@ export function storyBackdrop(index:number){
 }
 /** Atlas cell + narrative location per beat, independent of saved chapter indexes. */
 export const storyLocations:Record<string,Array<{art:number;name:string;companion:string;actor?:number}>>={
+  'S3-07':[{art:14,name:'낙양 · 마지막 출정',companion:'사마사'},{art:11,name:'영수 · 남쪽으로 내려가는 배',companion:'사마소'},{art:8,name:'수춘 · 열린 수문',companion:'사마사'}],
   'S3-06':[{art:12,name:'낙양 · 병을 핑계로 누운 집',companion:'사마사'},{art:13,name:'낙양 · 정월의 거리',companion:'사마소'},{art:12,name:'낙양 · 영녕궁 앞',companion:'사마사'}],
   'S3-05':[{art:14,name:'낙양 · 출정하는 대장군',companion:'사마소'},{art:4,name:'낙곡 · 흥세 앞 골짜기',companion:'사마소'},{art:11,name:'낙곡 · 돌아오는 길',companion:'사마소'}],
   'S3-04':[{art:14,name:'낙양 · 늙은 태부의 출정',companion:'사마사'},{art:11,name:'환성 · 남쪽 강변',companion:'사마소'},{art:8,name:'환성 · 비워진 성',companion:'사마사'}],
@@ -48,6 +49,11 @@ export const storyLocations:Record<string,Array<{art:number;name:string;companio
   'S1-09':[{art:14,name:'한중 · 철수 군의',companion:'조진'},{art:15,name:'한수 · 불탄 부교터',companion:'조진'},{art:7,name:'한수 · 강변 정찰',companion:'조진'}],
 };
 export const storyBeats:Record<string,StoryBeat[]>={
+  'S3-07':[
+    {speaker:'사마사',line:'아버님, 왕릉이 수춘에서 초왕을 세우려 했습니다. 아버님께서 직접 가실 필요는 없습니다.',pose:'enter',actor:3},
+    {speaker:'사마의',line:'왕릉은 나와 함께 늙은 사람이다. 그를 꺾는 일은 내가 해야 한다. 배를 내어라. 영수를 따라 내려간다.',pose:'speak',actor:4},
+    {speaker:'사마소',line:'수로 끝의 수문만 열리면 성 안으로 들어갈 수 있습니다. 포격과 하늘을 조심하십시오.',pose:'resolve',actor:2},
+  ],
   'S3-06':[
     {speaker:'사마사',line:'아버님, 조상이 황제를 모시고 고평릉으로 나갔습니다. 성 안에는 그의 금군만 남았습니다.',pose:'enter',actor:3},
     {speaker:'사마의',line:'십 년을 누워 있었다. 오늘 일어난다. 사야, 소야, 너희는 무기고를 쥐어라. 나는 서쪽에서 금군을 붙든다.',pose:'speak',actor:4},
@@ -245,10 +251,16 @@ export const stories=[
   ['하루를 지키는 자','243년, 예순다섯의 사마의가 다시 출정한다. 오의 제갈각이 환성에 군량을 쌓고 북쪽을 엿본다. 강 위에 다리는 없다. 공병이 다리를 놓는 이틀이 이 싸움의 전부다.'],
   ['낙곡의 그림자','244년, 대장군 조상이 촉을 치러 낙곡으로 들어간다. 일흔을 앞둔 사마의는 따라가지 않는다. 사마소가 그 자리를 대신한다. 골짜기는 길고, 조상은 멈출 줄 모른다.'],
   ['쉰 해의 칼','249년 정월, 대장군 조상이 어린 황제를 모시고 성 밖 고평릉으로 나간다. 병들어 누운 줄로만 알았던 일흔한 살의 사마의가 일어난다. 두 아들은 무기고로, 그는 영녕궁으로. 쉰 해를 기다린 칼이 칼집에서 나온다.'],
+  ['마지막 출정','251년, 태위 왕릉이 수춘에서 다른 황제를 세우려 한다. 일흔셋의 사마의가 마지막으로 군을 이끈다. 배가 영수를 따라 내려가고, 수춘의 수문 앞에서 오래된 두 사람이 마주 선다.'],
 ];
 
 /** After a main-battle victory: where the story picks up, and what changed. */
 export const storyAftermath:Record<string,{art:number;name:string;beats:Array<{speaker:string;line:string}>}>={
+  'S3-07':{art:8,name:'수춘 · 열린 수문',beats:[
+    {speaker:'사마사',line:'왕릉이 스스로 목숨을 끊었습니다. 그의 일족도…'},
+    {speaker:'사마의',line:'사야, 소야. 내가 평생 칼을 감추고 기다린 것은 이 집안을 지키기 위해서였다. 이제 그 칼은 너희 손에 있다. 너희가 그것으로 무엇을 지킬지, 나는 보지 못할 것이다.'},
+    {speaker:'사마소',line:'아버님…'},
+    {speaker:'사마의',line:'돌아가자. 낙양의 봄을 한 번 더 보고 싶구나.'}]},
   'S3-06':{art:12,name:'낙양 · 영녕궁 앞',beats:[
     {speaker:'사마사',line:'태후께서 조상의 관직을 거두는 조서를 내리셨습니다.'},
     {speaker:'사마의',line:'조상에게 사람을 보내라. 관직만 내려놓으면 목숨은 보전한다고. …그 약속을 내가 지킬지는, 나도 아직 모르겠구나.'}]},
@@ -343,3 +355,15 @@ export const storyAftermath:Record<string,{art:number;name:string;beats:Array<{s
     {speaker:'조진',line:'성채를 먼저 차지했다. 우군 장수들이 얼굴을 붉히더군.'},
     {speaker:'사마의',line:'지금 촉으로 밀고 들어가야 합니다… 하지만 승상께서는 농을 얻고 촉까지 바랄 수는 없다 하시겠지요.'}]},
 };
+
+/** The closing recap: what the player's seals say about how Sima Yi's long life was lived. */
+export function epilogueLines(p:Record<string,number[]>){
+  const has=(id:string,seal:number)=>[...(p[id+':normal']??[]),...(p[id+':extreme']??[])].includes(seal);
+  return [
+    has('S1-01',2)?'처음 가문을 지키던 밤, 그는 민중과 병사를 한 사람도 잃지 않았다.':'처음 가문을 지키던 밤, 그는 지킬 수 있는 것만 지켰다.',
+    has('S2-05',3)?'신성으로 가는 여드레의 행군은 오래도록 병법의 본보기로 남았다.':'신성의 맹달은 꺾였으나, 그 행군은 오래 기억되지 않았다.',
+    has('S2-11',2)?'장합을 잃은 골짜기에서도 남은 병사들은 모두 돌아왔다.':'목둔의 골짜기에서 그는 장합과 함께 많은 병사를 잃었다.',
+    has('S3-01',2)?'요수에서 그는 제갈량에게 당하던 기만을 처음으로 자기 손으로 썼다.':'요수에서 그는 기만 없이 정면으로 강을 건넜다.',
+    has('S3-06',2)?'고평릉의 날, 두 아들은 모두 살아서 성문을 닫았다.':'고평릉의 날, 칼은 뽑혔지만 그 값은 가볍지 않았다.',
+  ];
+}

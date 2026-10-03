@@ -100,3 +100,22 @@ describe('하편 · 낙양 점령전',()=>{
   const s=open('S3-06');s.state.get('sima_yi').pos={x:11,y:2};s.act({kind:'wait',unit:'sima_yi'});expect(s.state.outcome).toBe('ongoing');
  });
 });
+describe('하편 · 왕릉 진압전',()=>{
+ it('opens the water gate when a warship reaches the canal end, then the courtyard storm begins',()=>{
+  const s=open('S3-07');const ships=s.state.living('ally').filter(u=>u.unitClass==='navy');expect(ships).toHaveLength(2);
+  for(const b of ships)expect(s.state.map.tileAt(b.pos).terrain).toBe('water');
+  expect(s.state.map.tileAt({x:12,y:8}).terrain).toBe('wall');expect(s.somber).toBe(true);
+  ships[0]!.pos={x:11,y:8};s.act({kind:'wait',unit:'sima_yi'});
+  expect(s.state.map.tileAt({x:12,y:8}).terrain).toBe('road');expect(s.state.victory).toEqual([{type:'retreat',unit:'wang_ling'}]);
+  expect(s.phase).toContain('육상 진입');
+ });
+ it('is the last stage of the 32-stage campaign',()=>{expect(chapters).toHaveLength(32);expect(chapters[campaignOrder.at(-1)!]!.stage.id).toBe('S3-07');});
+});
+import {epilogueLines} from '../src/story.ts';
+describe('에필로그',()=>{
+ it('reflects saved lives and the use of deception in the closing recap',()=>{
+  const kind=epilogueLines({'S1-01:normal':[1,2],'S3-01:extreme':[1,2],'S3-06:normal':[1,2]}),hard=epilogueLines({});
+  expect(kind[0]).toContain('한 사람도 잃지 않았다');expect(kind[3]).toContain('기만');expect(kind[4]).toContain('두 아들은 모두 살아서');
+  expect(hard[0]).toContain('지킬 수 있는 것만');expect(hard).toHaveLength(5);
+ });
+});

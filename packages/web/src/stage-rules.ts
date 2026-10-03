@@ -42,6 +42,18 @@ export interface StageRules {
 const HILL=['ma_su','hill_spear','hill_bow','hill_foot_a','hill_foot_b','hill_xbow'];
 
 export const stageRules:Record<string,StageRules>={
+  'S3-07':{
+    sealNames:['왕릉 진압','부대 보존','신속한 진압'],
+    somber:true,
+    weather:'폭우 · 먹구름과 낙뢰',
+    labels:[{region:'canal_label',text:'수로 · 수군만 지남'},{region:'gate_label',text:'수춘성'},{region:'keep',text:'왕릉'}],
+    zones:[{region:'landing',color:0xffd27a}],
+    tick:({state})=>{
+      if(!state.firedEvents.has('shouchun/gate')&&[...state.living('player'),...state.living('ally')].some(u=>u.unitClass==='navy'&&state.map.regionCoords('landing').some(c=>c.x===u.pos.x&&c.y===u.pos.y)))fireScripted(state,'shouchun/gate');
+      return undefined;
+    },
+    phase:({state})=>state.firedEvents.has('shouchun/gate')?'육상 진입 · 왕릉 격퇴 (3턴마다 안마당 낙뢰)':'수상 접근 · 수군을 수로 끝 수문 앞(노란 칸)으로 (짝수 턴 포격)',
+  },
   'S3-06':{
     sealNames:['영녕궁 진입','두 아들 생존','신속한 무기고 장악'],
     weather:'정월 · 맑고 찬 하늘',
