@@ -15,6 +15,13 @@ export type LineWhen=
 export interface BattleLine {id:string;when:LineWhen;speaker:string;text:string}
 
 export const battleLines:Record<string,BattleLine[]>={
+  'S3-07':[
+    {id:'open-1',when:{turn:1},speaker:'사마의',text:'수군은 수로를 따라 수문 앞까지. 육군은 강둑 길에서 기다린다. 포격이 떨어질 물길을 피하라.'},
+    {id:'open-2',when:{turn:2},speaker:'왕릉',text:'중달, 너도 늙었구나. 이 성벽과 하늘이 너를 막을 것이다.'},
+    {id:'gate',when:{lockedBy:'shouchun/gate'},speaker:'사마소',text:'수문이 열렸습니다! 육군, 성 안으로!'},
+    {id:'storm',when:{lockedBy:'shouchun/gate'},speaker:'사마사',text:'성 안마당에 먹구름이 낍니다. 낙뢰가 떨어질 칸을 피하십시오.'},
+    {id:'wang',when:{retreat:'wang_ling'},speaker:'사마의',text:'왕릉… 우리는 같은 시대를 너무 오래 살았다.'},
+  ],
   'S3-06':[
     {id:'open-1',when:{turn:1},speaker:'사마의',text:'무기고가 저들 손에 있는 동안 금군은 견고하고, 증원은 끊이지 않는다. 사야, 소야, 무기고를 먼저 쥐어라.'},
     {id:'open-2',when:{turn:2},speaker:'사마소',text:'형님, 무기고 수비병은 셋입니다. 동쪽 담을 따라 붙겠습니다.'},
