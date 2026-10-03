@@ -15,6 +15,12 @@ export type LineWhen=
 export interface BattleLine {id:string;when:LineWhen;speaker:string;text:string}
 
 export const battleLines:Record<string,BattleLine[]>={
+  'S3-06':[
+    {id:'open-1',when:{turn:1},speaker:'사마의',text:'무기고가 저들 손에 있는 동안 금군은 견고하고, 증원은 끊이지 않는다. 사야, 소야, 무기고를 먼저 쥐어라.'},
+    {id:'open-2',when:{turn:2},speaker:'사마소',text:'형님, 무기고 수비병은 셋입니다. 동쪽 담을 따라 붙겠습니다.'},
+    {id:'armory',when:{lockedBy:'coup/armory'},speaker:'사마사',text:'무기고를 쥐었습니다! 금군의 견고가 풀리고 증원이 멈춥니다. 저희는 성문을 닫으러 갑니다!'},
+    {id:'fire',when:{lockedBy:'coup/armory'},speaker:'사마의',text:'영녕궁 앞길에 불을 지르려 한다. 다음 턴이면 불길이다. 돌아서라도 들어간다.'},
+  ],
   'S3-05':[
     {id:'open-1',when:{turn:1},speaker:'사마소',text:'먼저 흥세 앞 요새를 차지한다. 그 다음은 조상 대장군을 지켜봐야 한다.'},
     {id:'push',when:{lockedBy:'luogu/taken'},speaker:'조상',text:'요새를 얻었다! 더 들어간다, 북서쪽 끝까지 밀어붙여라!'},

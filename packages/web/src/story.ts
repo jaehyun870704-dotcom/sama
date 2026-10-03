@@ -8,6 +8,7 @@ export function storyBackdrop(index:number){
 }
 /** Atlas cell + narrative location per beat, independent of saved chapter indexes. */
 export const storyLocations:Record<string,Array<{art:number;name:string;companion:string;actor?:number}>>={
+  'S3-06':[{art:12,name:'낙양 · 병을 핑계로 누운 집',companion:'사마사'},{art:13,name:'낙양 · 정월의 거리',companion:'사마소'},{art:12,name:'낙양 · 영녕궁 앞',companion:'사마사'}],
   'S3-05':[{art:14,name:'낙양 · 출정하는 대장군',companion:'사마소'},{art:4,name:'낙곡 · 흥세 앞 골짜기',companion:'사마소'},{art:11,name:'낙곡 · 돌아오는 길',companion:'사마소'}],
   'S3-04':[{art:14,name:'낙양 · 늙은 태부의 출정',companion:'사마사'},{art:11,name:'환성 · 남쪽 강변',companion:'사마소'},{art:8,name:'환성 · 비워진 성',companion:'사마사'}],
   'S3-03':[{art:14,name:'낙양 · 출정을 청하는 조정',companion:'사마사'},{art:4,name:'번성 · 남쪽 들판',companion:'사마사'},{art:8,name:'번성 · 열린 포위망',companion:'사마사'}],
@@ -47,6 +48,11 @@ export const storyLocations:Record<string,Array<{art:number;name:string;companio
   'S1-09':[{art:14,name:'한중 · 철수 군의',companion:'조진'},{art:15,name:'한수 · 불탄 부교터',companion:'조진'},{art:7,name:'한수 · 강변 정찰',companion:'조진'}],
 };
 export const storyBeats:Record<string,StoryBeat[]>={
+  'S3-06':[
+    {speaker:'사마사',line:'아버님, 조상이 황제를 모시고 고평릉으로 나갔습니다. 성 안에는 그의 금군만 남았습니다.',pose:'enter',actor:3},
+    {speaker:'사마의',line:'십 년을 누워 있었다. 오늘 일어난다. 사야, 소야, 너희는 무기고를 쥐어라. 나는 서쪽에서 금군을 붙든다.',pose:'speak',actor:4},
+    {speaker:'사마소',line:'무기고를 쥐면 성문으로 가겠습니다. 영녕궁은 아버님이 직접 들어가셔야 합니다.',pose:'resolve',actor:2},
+  ],
   'S3-05':[
     {speaker:'사마소',line:'조상 대장군이 공을 세우겠다며 낙곡으로 들어갑니다. 아버님은 병을 핑계로 따라가지 않으셨습니다.',pose:'enter',actor:2},
     {speaker:'사마소',line:'아버님 말씀이 떠오릅니다. 골짜기에서는 들어가는 길보다 나오는 길을 먼저 보라고.',pose:'speak',actor:2},
@@ -238,10 +244,14 @@ export const stories=[
   ['늙은 장수의 걸음','241년, 오의 주연이 번성을 에워싼다. 예순을 넘긴 사마의가 직접 구원에 나선다. 그는 이제 빨리 걷지 않는다. 다만 한 걸음도 헛되이 쓰지 않는다.'],
   ['하루를 지키는 자','243년, 예순다섯의 사마의가 다시 출정한다. 오의 제갈각이 환성에 군량을 쌓고 북쪽을 엿본다. 강 위에 다리는 없다. 공병이 다리를 놓는 이틀이 이 싸움의 전부다.'],
   ['낙곡의 그림자','244년, 대장군 조상이 촉을 치러 낙곡으로 들어간다. 일흔을 앞둔 사마의는 따라가지 않는다. 사마소가 그 자리를 대신한다. 골짜기는 길고, 조상은 멈출 줄 모른다.'],
+  ['쉰 해의 칼','249년 정월, 대장군 조상이 어린 황제를 모시고 성 밖 고평릉으로 나간다. 병들어 누운 줄로만 알았던 일흔한 살의 사마의가 일어난다. 두 아들은 무기고로, 그는 영녕궁으로. 쉰 해를 기다린 칼이 칼집에서 나온다.'],
 ];
 
 /** After a main-battle victory: where the story picks up, and what changed. */
 export const storyAftermath:Record<string,{art:number;name:string;beats:Array<{speaker:string;line:string}>}>={
+  'S3-06':{art:12,name:'낙양 · 영녕궁 앞',beats:[
+    {speaker:'사마사',line:'태후께서 조상의 관직을 거두는 조서를 내리셨습니다.'},
+    {speaker:'사마의',line:'조상에게 사람을 보내라. 관직만 내려놓으면 목숨은 보전한다고. …그 약속을 내가 지킬지는, 나도 아직 모르겠구나.'}]},
   'S3-05':{art:11,name:'낙곡 · 돌아오는 길',beats:[
     {speaker:'사마소',line:'조상 대장군을 모시고 돌아왔습니다. 군의 절반을 잃었습니다.'},
     {speaker:'사마의',line:'조상은 이번 일로 우리를 더 미워할 것이다. 그리고 더 깔볼 것이다. 둘 다 좋다.'}]},

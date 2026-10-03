@@ -68,6 +68,8 @@ import huanchengStage from '../../data/stages/S3-04.json';
 import huanchengMap from '../../data/maps/huancheng-river.json';
 import luoguStage from '../../data/stages/S3-05.json';
 import luoguMap from '../../data/maps/luogu-valley.json';
+import luoyangcoupStage from '../../data/stages/S3-06.json';
+import luoyangcoupMap from '../../data/maps/luoyang-coup.json';
 import legacyFortMap from './legacy/hanzhong-map-v2.json';
 import legacyFortStage from './legacy/hanzhong-stage-v2.json';
 import { makeUnit, awardedSeals } from '../../core/src/index.ts';
@@ -103,9 +105,10 @@ export const chapters = [
   {stage:fanchengStage as StageDef,map:fanchengMap as MapFile,year:'정시 이년 · 241년',label:'짧은 길과 안전한 길',quote:'늙은 장수는 빨리 걷지 않는다. 다만 헛걸음을 하지 않는다.'},
   {stage:huanchengStage as StageDef,map:huanchengMap as MapFile,year:'정시 사년 · 243년',label:'공병 호위와 가교',quote:'다리는 하루에 놓이지 않는다. 그 하루를 지켜 주는 자가 있어야 한다.'},
   {stage:luoguStage as StageDef,map:luoguMap as MapFile,year:'정시 오년 · 244년',label:'진격과 회수',quote:'어디까지 갈지 아는 것이, 어디로 갈지 아는 것보다 어렵다.'},
+  {stage:luoyangcoupStage as StageDef,map:luoyangcoupMap as MapFile,year:'정시 십년 · 249년',label:'무기고와 영녕궁',quote:'칼을 뽑는 데 쉰 해가 걸렸다.'},
 ];
 // Stable indices preserve the existing v2 command saves.
-export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29];
+export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30];
 export type Preparation='survival'|'strategy'|'command';
 export const strategies: StrategyDef[] = [
   {id:'windDragon',name:'풍룡',element:'wind',shape:'spread',range:4,radius:1,mpCost:18,power:130,targetSides:['enemy']},
