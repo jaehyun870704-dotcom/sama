@@ -355,13 +355,13 @@ export const stageRules:Record<string,StageRules>={
   },
 };
 
-/** 천명의 원정 전장(R-01..R-12): 지역 날씨와 남은 목표만 보여 준다. 스토리 장의 기본값(중앙 성채 등)이 섞이지 않게 한다. */
-const RUN_WEATHER=['하북 평원 · 바람 강함','한중 산악 · 산안개','강동 수향 · 가랑비'];
-for(let f=1;f<=12;f++)stageRules[`R-${String(f).padStart(2,'0')}`]={
+/** 천명의 원정 전장(R-01..R-18): 편별 날씨와 남은 목표만 보여 준다. 스토리 장의 기본값(중앙 성채 등)이 섞이지 않게 한다. */
+const RUN_WEATHER=['상편 · 바람 강함','중편 · 흐림','하편 · 가랑비'];
+for(let f=1;f<=18;f++)stageRules[`R-${String(f).padStart(2,'0')}`]={
   sealNames:['원정 승리','부대 보존','신속한 승리'],
-  weather:RUN_WEATHER[Math.min(2,Math.floor((f-1)/4))]!,
+  weather:RUN_WEATHER[Math.min(2,Math.floor((f-1)/6))]!,
   labels:[],
-  phase:({state})=>{const boss=state.find('boss');return boss?.alive?`우두머리 ${boss.name} 격파`:'적 섬멸';},
+  phase:({state})=>{const boss=state.find('boss'),target=state.find('target');return boss?.alive?`우두머리 ${boss.name} 격파`:target?.alive?`적장 ${target.name} 격파`:'적 섬멸';},
 };
 
 /** 규칙표 항목이 없는 초기 전장의 적 전력 보정(%) — 항목을 새로 만들면 장별 기본 동작이 바뀌므로 따로 둔다. */

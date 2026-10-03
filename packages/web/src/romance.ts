@@ -72,16 +72,23 @@ export const romance:Record<string,RomanceOfficer>={
   bi_yan:o('비연','공손연의 대장',[72,50,70,40,50]),
 };
 
-/** 원정 우두머리처럼 id가 정해지지 않은 장수는 이름으로 찾는다. */
+/** 원정 우두머리·가상 전장의 적장처럼 id가 정해지지 않은 장수는 이름으로 찾는다. */
 const byName:Record<string,RomanceOfficer>={
   ...Object.fromEntries(Object.values(romance).map(r=>[r.name,r])),
   안량:o('안량','원소의 하북 명장 · 백마에서 관우에게 베이다',[93,32,80,22,52],{name:'하북 명장',description:'물리 공격 피해 10% 증가',trait:'physicalPower',param:10}),
+  // 가상 시나리오(운명의 갈림길)에만 나오는 장수
+  조인:o('조인','조조의 종제 · 번성을 끝까지 지킨 장수',[86,58,88,50,72],{name:'철벽 수성',description:'받는 물리 피해 10% 감소',trait:'commandDefense'}),
+  서황:o('서황','주아부의 풍모 · 관우를 물리친 위의 명장',[90,64,84,50,66],{name:'장구한 포위',description:'적 방어 15% 무시',trait:'penetrate',param:15}),
+  우금:o('우금','엄정한 위의 오자양장 · 번성에서 칠군을 잃다',[74,62,82,48,56]),
+  환범:o('환범','지낭 · 조상의 꾀주머니',[30,84,40,80,60]),
+  하안:o('하안','부분 바른 미남 · 조상의 심복',[20,76,30,70,68]),
+  조희:o('조희','조상의 아우 · 중령군',[60,40,55,40,48]),
 };
 /** 가짜(미끼)는 진짜의 이름을 달고 있어도 능력이 없다. */
 const DECOYS=new Set(['decoy']);
 export function romanceOf(u:{id:string;name:string}):RomanceOfficer|undefined{
   if(DECOYS.has(u.id))return undefined;
-  return romance[u.id]??(u.id==='boss'?byName[u.name]:undefined);
+  return romance[u.id]??(u.id==='boss'||u.id==='target'?byName[u.name]:undefined);
 }
 
 const scale=(r:number,span:number)=>1+(r-50)/50*span;
