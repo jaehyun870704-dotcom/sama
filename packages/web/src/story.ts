@@ -8,6 +8,7 @@ export function storyBackdrop(index:number){
 }
 /** Atlas cell + narrative location per beat, independent of saved chapter indexes. */
 export const storyLocations:Record<string,Array<{art:number;name:string;companion:string;actor?:number}>>={
+  'S2-11':[{art:14,name:'기산 · 물러나는 촉군',companion:'장합'},{art:4,name:'목둔 · 골짜기 어귀',companion:'장합'},{art:11,name:'목둔 · 돌아오는 길',companion:'곽회'}],
   'S2-10':[{art:14,name:'상규 · 군막',companion:'곽회'},{art:4,name:'상규 · 익어 가는 보리밭',companion:'곽회'},{art:11,name:'상규 · 타고 남은 밭',companion:'곽회'}],
   'S2-09':[{art:14,name:'장안 · 장합과의 군의',companion:'곽회'},{art:4,name:'성고 · 불어난 강',companion:'곽회'},{art:8,name:'성고 · 되찾은 성채',companion:'곽회'}],
   'S2-08':[{art:14,name:'완성 · 출정 전날',companion:'사마사'},{art:4,name:'석정 · 협석 골짜기 어귀',companion:'사마소'},{art:11,name:'석정 · 조휴의 진영',companion:'사마사'}],
@@ -38,6 +39,11 @@ export const storyLocations:Record<string,Array<{art:number;name:string;companio
   'S1-09':[{art:14,name:'한중 · 철수 군의',companion:'조진'},{art:15,name:'한수 · 불탄 부교터',companion:'조진'},{art:7,name:'한수 · 강변 정찰',companion:'조진'}],
 };
 export const storyBeats:Record<string,StoryBeat[]>={
+  'S2-11':[
+    {speaker:'사마의',line:'제갈량이 군량이 떨어져 물러납니다. 장 장군, 선봉을 맡아 쫓아 주시오.',pose:'speak',actor:4},
+    {speaker:'장합',line:'병법에 물러나는 군은 쫓지 말라 했소. 제갈량은 물러날 때 반드시 덫을 남기는 자요.',pose:'enter',actor:3},
+    {speaker:'사마의',line:'알고 있소. 그래서 본대가 바로 뒤를 따르겠소. 골짜기 어귀에서 반드시 기다려 주시오.',pose:'resolve',actor:4},
+  ],
   'S2-10':[
     {speaker:'곽회',line:'도독, 제갈량의 군이 상규의 보리를 베고 있습니다. 고상이 수레를 몰고 서쪽 골짜기로 나가려 합니다.',pose:'enter',actor:0},
     {speaker:'사마의',line:'보리를 가져가면 저들은 한 달을 더 버틴다. 고상을 놓쳐서는 안 되오. 다만 저들은 밭에 불을 놓을 것이오.',pose:'speak',actor:4},
@@ -175,10 +181,14 @@ export const stories=[
   ['능선과 골짜기','228년, 대사마 조휴가 오의 거짓 항복에 속아 석정으로 깊이 들어간다. 육손이 길을 끊고 협석 골짜기에 목책을 세운다. 사마의는 능선에 자리 잡고, 두 아들이 골짜기를 뚫는다.'],
   ['막힌 강, 열린 길','231년, 제갈량이 다시 기산으로 나온다. 군량은 이엄이 맡았다. 위의 대릉은 불어난 강을 사이에 두고 촉군과 마주 선 채 묶였다. 사마의는 강을 건너지 않는다. 북쪽 산길로 돌아 촉군 보급의 목줄인 성고를 노린다.'],
   ['불타는 보리밭','231년, 군량이 모자란 제갈량은 상규의 보리를 베어 간다. 사마의는 보리를 실은 고상의 수레를 쫓는다. 촉군은 밭에 불을 놓고, 남쪽 골짜기에 함정을 묻고, 길목마다 복병을 둔다.'],
+  ['목문도의 화살','231년, 군량이 떨어진 제갈량이 기산에서 물러난다. 사마의는 장합에게 추격을 명한다. 장합은 물러나는 군을 쫓지 말라 했지만 명을 따른다. 목둔의 골짜기는 좁고, 양쪽 벼랑은 높다.'],
 ];
 
 /** After a main-battle victory: where the story picks up, and what changed. */
 export const storyAftermath:Record<string,{art:number;name:string;beats:Array<{speaker:string;line:string}>}>={
+  'S2-11':{art:11,name:'목둔 · 돌아오는 길',beats:[
+    {speaker:'곽회',line:'장 장군의 시신을 수습했습니다. 무릎에 쇠뇌 화살이 박혀 있었습니다.'},
+    {speaker:'사마의',line:'쫓지 말라 한 그의 말이 옳았소. 나는 그 말을 오래 기억할 것이오.'}]},
   'S2-10':{art:4,name:'상규 · 타고 남은 밭',beats:[
     {speaker:'곽회',line:'고상을 꺾었습니다. 보리 수레는 반도 못 가져갔습니다.'},
     {speaker:'사마의',line:'불길과 함정은 시간을 벌려는 것이었소. 제갈량에게 가장 모자란 것은 군량이 아니라 시간이오.'}]},

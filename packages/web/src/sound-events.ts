@@ -2,7 +2,7 @@ import {allStrategies} from './officers.ts';
 
 /** Battle events the soundtrack reacts to. Pure mapping so it can be tested. */
 export interface SoundEvent {
-  kind:'select'|'strike'|'move'|'attack-start'|'impact'|'strategy-start'|'strategy'|'repair'|'retreat'|'breach'|'turn'|'battle-start'|'victory'|'defeat'|'ui'|'ui-open'|'page'|'duel';
+  kind:'select'|'strike'|'move'|'attack-start'|'impact'|'strategy-start'|'strategy'|'repair'|'retreat'|'breach'|'turn'|'battle-start'|'victory'|'somber'|'defeat'|'ui'|'ui-open'|'page'|'duel';
   unitClass?:string|undefined;
   target?:{id:string;unitClass:string}|undefined;
   strategy?:string|undefined;
@@ -90,6 +90,8 @@ export function soundsFor(e:SoundEvent,r:()=>number=Math.random):SoundShot[]{
       break;
     case 'battle-start':shots.push({name:'horn',priority:2},{name:'war-drum',delay:.6},{name:'battle-cry',delay:1.1,gain:.85,duck:true});break;
     case 'victory':shots.push({name:'fanfare',priority:2,duck:true},{name:'cheer',delay:.6,gain:.7},{name:'gong',delay:.9,gain:.6});break;
+    // A costly win: no fanfare or cheering, only the gong and a low lament.
+    case 'somber':shots.push({name:'gong',priority:2,duck:true,rate:.85},{name:'lament',delay:.8,gain:.45});break;
     case 'defeat':shots.push({name:'lament',priority:2,duck:true},{name:'gong',rate:.75,gain:.6,delay:1.2});break;
     case 'duel':shots.push({name:'clash',priority:2},{name:'shout',gain:.6,delay:.04});if(e.critical)shots.push({name:'cheer',gain:.5,delay:.3});break;
     case 'ui':shots.push({name:'ui-click',gain:.6,priority:2});break;

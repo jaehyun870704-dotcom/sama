@@ -5,6 +5,8 @@ import type {BattleState,Difficulty} from '../../core/src/index.ts';
 export interface StageView {state:BattleState;difficulty:Difficulty;journalLength:number}
 export interface StageRules {
   sealNames:[string,string,string];
+  /** A costly win: the result plays a gong instead of the victory fanfare. */
+  somber?:boolean;
   /** Weather line shown over the map. */
   weather?:string;
   /** Non-combatants under escort: unarmed, sturdier, slower. */
@@ -33,6 +35,19 @@ export interface StageRules {
 const HILL=['ma_su','hill_spear','hill_bow','hill_foot_a','hill_foot_b','hill_xbow'];
 
 export const stageRules:Record<string,StageRules>={
+  'S2-11':{
+    sealNames:['회군 완료','남은 병력 보존','신속한 회군'],
+    somber:true,
+    labels:[{region:'gorge_mouth',text:'골짜기 어귀'},{region:'retreat_exit',text:'동쪽 회군로'},{region:'gorge_label',text:'목문도'}],
+    tough:[{unit:'zhang_he',hpScale:1.5,defense:3}],
+    tick:({state})=>{const zh=state.find('zhang_he');if(zh?.alive&&zh.stats.movement!==3)zh.stats.movement=3;return undefined;},
+    phase:({state})=>{
+      const zh=state.find('zhang_he'),yi=state.find('sima_yi'),p=state.scenarioPhase??'선봉 유지';
+      if(zh?.alive&&yi?.alive&&(p==='선봉 유지'||p==='본대 합류'))return `${p} · 장합과 본대 사이 ${Math.abs(zh.pos.x-yi.pos.x)+Math.abs(zh.pos.y-yi.pos.y)}칸`;
+      return p==='회군'?'회군 · 사마의를 동쪽 회군로로':p;
+    },
+    failure:({state})=>state.find('zhang_he')?.alive===false?'선봉 장합이 고립되어 퇴각했습니다. 본대가 너무 멀리 떨어졌습니다.':undefined,
+  },
   'S2-10':{
     sealNames:['고상 격퇴','부대 보존','신속한 추격'],
     weather:'맑음 · 마른 바람',

@@ -4,7 +4,7 @@ import {soundsFor,type SoundEvent,type SoundShot} from './sound-events.ts';
 import {SAMPLE_GROUPS,SAMPLE_LAYERS,leadIn} from './sound-samples.ts';
 import type {Unit} from '../../core/src/index.ts';
 
-export type Cue='select'|'move'|'attack'|'magic'|'turn'|'victory'|'defeat'|'breach'|'repair';
+export type Cue='select'|'move'|'attack'|'magic'|'turn'|'victory'|'somber'|'defeat'|'breach'|'repair';
 export type {SoundEvent} from './sound-events.ts';
 /** Pre-rendered recipes in rough order of first use, warmed in the background. */
 const WARM=['ui-click','ui-open','page','swing','clash','armor-hit','evade','guard','march','gallop','bow-release','arrow-hit','shout','pain','death','war-drum','enemy-drum','horn','taiko','taiko-small','woodblock','cast','fire','wind','water','thunder','earth','confuse','heal','buff','stab','heavy-hit','neigh','crossbow-release','arrow-volley','robe','oars','wheels','catapult-launch','boulder-hit','ram-hit','repair','crumble','gong','temple-bell','battle-cry','cheer','fanfare','lament'];
@@ -220,7 +220,7 @@ export class Soundscape {
   /** Select a unit: its family takes over the motif layer and answers with a short call. */
   select(cls?:string,pan=0){this.focus=classFamily(cls);this.event({kind:'select',unitClass:cls,pan});}
   cue(kind:Cue,cls?:string,target?:Pick<Unit,'id'|'unitClass'>){
-    const map:Record<Cue,SoundEvent['kind']>={select:'select',move:'move',attack:'impact',magic:'strategy',turn:'turn',victory:'victory',defeat:'defeat',breach:'breach',repair:'repair'};
+    const map:Record<Cue,SoundEvent['kind']>={select:'select',move:'move',attack:'impact',magic:'strategy',turn:'turn',victory:'victory',somber:'somber',defeat:'defeat',breach:'breach',repair:'repair'};
     this.event({kind:map[kind],unitClass:cls,target,hit:true});
   }
   sfx(kind:Cue){this.cue(kind);}
