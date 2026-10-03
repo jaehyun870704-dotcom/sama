@@ -207,7 +207,7 @@ function render(){
   $('.weather').textContent=session.weather;
   const objective=(session.deployment?.mission?.version??1)>=3?trialProgress(s):session.chapter===6?`${session.phase} · 조조 HP ${s.find('cao_cao')?.hp??0}/180 · 3턴 후방 복병`:session.chapter===5?`${session.phase} · 수송대 ${s.living('allyAi').length}/2 생존`:session.chapter===3?`${session.phase} · 추격 압박 ${session.pressure}/${session.pressureLimit}`:session.chapter===0?`${session.phase} · 지참금 ${session.funds}전`:session.chapter===1?`${session.phase} · ${raceLabel(s)}`:`${session.phase} · 남은 적 ${s.living('enemy').length}부대`;
   $('#compact-objective').textContent=objective;
-  $('#objectives').innerHTML=`<p><b>◇</b> ${objective}</p><small>${c.stage.deployment.forced.map(id=>officerNames[id]).join(' · ')} 생존 필수</small><div class="resource-strip">구급약 ${session.medicine} · ${session.scouted?'정찰 완료':'살피기로 경로 확인'}</div>`;
+  $('#objectives').innerHTML=`<p><b>◇</b> ${objective}</p><small>${[...new Set(s.defeat.filter(d=>d.type==='retreat'&&d.unit).map(d=>s.find(d.unit!)?.name??officerNames[d.unit!]??d.unit!))].join(' · ')||c.stage.deployment.forced.map(id=>officerNames[id]).join(' · ')} 생존 필수</small><div class="resource-strip">구급약 ${session.medicine} · ${session.scouted?'정찰 완료':'살피기로 경로 확인'}</div>`;
   $('#turn').textContent=String(s.turn).padStart(2,'0');$('#turn-limit').textContent=`/ ${session.deadline??60}`;$('#phase').textContent=`${sideNames[s.currentSide]}의 차례`;
   document.querySelectorAll('.phase-track i').forEach((el,i)=>el.classList.toggle('active',i===s.phaseIndex));
   const roster=s.living(s.currentSide).sort((a,b)=>Number(a.hasActed)-Number(b.hasActed));$('#unit-count').textContent=`${roster.length}부대`;

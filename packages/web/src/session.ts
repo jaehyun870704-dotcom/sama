@@ -66,6 +66,8 @@ import fanchengStage from '../../data/stages/S3-03.json';
 import fanchengMap from '../../data/maps/fancheng-relief.json';
 import huanchengStage from '../../data/stages/S3-04.json';
 import huanchengMap from '../../data/maps/huancheng-river.json';
+import luoguStage from '../../data/stages/S3-05.json';
+import luoguMap from '../../data/maps/luogu-valley.json';
 import legacyFortMap from './legacy/hanzhong-map-v2.json';
 import legacyFortStage from './legacy/hanzhong-stage-v2.json';
 import { makeUnit, awardedSeals } from '../../core/src/index.ts';
@@ -100,9 +102,10 @@ export const chapters = [
   {stage:xiangpingStage as StageDef,map:xiangpingMap as MapFile,year:'경초 이년 · 238년',label:'보급 차단과 포획',quote:'같은 깃발 셋 가운데 하나만 사람이다.'},
   {stage:fanchengStage as StageDef,map:fanchengMap as MapFile,year:'정시 이년 · 241년',label:'짧은 길과 안전한 길',quote:'늙은 장수는 빨리 걷지 않는다. 다만 헛걸음을 하지 않는다.'},
   {stage:huanchengStage as StageDef,map:huanchengMap as MapFile,year:'정시 사년 · 243년',label:'공병 호위와 가교',quote:'다리는 하루에 놓이지 않는다. 그 하루를 지켜 주는 자가 있어야 한다.'},
+  {stage:luoguStage as StageDef,map:luoguMap as MapFile,year:'정시 오년 · 244년',label:'진격과 회수',quote:'어디까지 갈지 아는 것이, 어디로 갈지 아는 것보다 어렵다.'},
 ];
 // Stable indices preserve the existing v2 command saves.
-export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28];
+export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29];
 export type Preparation='survival'|'strategy'|'command';
 export const strategies: StrategyDef[] = [
   {id:'windDragon',name:'풍룡',element:'wind',shape:'spread',range:4,radius:1,mpCost:18,power:130,targetSides:['enemy']},
