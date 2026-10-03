@@ -27,10 +27,11 @@ describe('시나리오 대본',()=>{
  });
  it('gives every battle chapter on every path a camp to walk and talk in, and keeps required officers few',()=>{
   const seen=new Set<string>();
-  for(const r of allRoutes())for(const step of scenarioPath(walk(r))){if(step.kind==='fate'||step.kind==='ending'||seen.has(step.id)||!/^S\d/.test(step.id))continue;seen.add(step.id);
+  for(const r of allRoutes())for(const step of scenarioPath(walk(r))){if(step.kind==='fate'||step.kind==='ending'||seen.has(step.id))continue;seen.add(step.id);
    const sc=scriptOf(step.id)!;expect(sc.camp,step.id).toBeDefined();expect(sc.camp!.people.length,step.id).toBeGreaterThanOrEqual(2);
    expect(sc.camp!.people.every(p=>p.talk.some(st=>'say' in st)),step.id).toBe(true);
    if(sc.required){expect(sc.required.length,step.id).toBeLessThanOrEqual(3);expect(sc.required,step.id).not.toContain('사마의');}}
+  for(const t of EXTRA_TALES)expect(scriptOf(t.id)!.camp,t.id).toBeDefined();
  });
  it('scripts every path-alternative tale and lets a choice in the route switch to it',()=>{
   for(const t of EXTRA_TALES){expect(scriptOf(t.id),t.id).toBeDefined();expect(routeById(t.route)!.tales.some(x=>x.id===t.replaces)).toBe(true);
