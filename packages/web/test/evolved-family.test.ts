@@ -44,7 +44,7 @@ describe('진화 병종의 계열 기능',()=>{
   expect(new Session(chapter,'normal',215,'strategy',4,low).state.get('sima_yi').unitClass).toBe('strategist');
  });
  it('announces an officer evolution on the result screen',()=>{
-  expect(officerEvolution('sima_yi',7,8)).toEqual({from:'책사',to:'군사'});expect(officerEvolution('sima_yi',8,9)).toBeUndefined();
+  expect(officerEvolution('sima_yi',7,8)).toMatchObject({from:'책사',to:'군사',bloom:{name:'군략'}});expect(officerEvolution('sima_yi',8,9)).toBeUndefined();
   const before=freshCampaign();before.xp.sima_yi=1100;const after=structuredClone(before);
   award(after,'S1-03','normal',['sima_yi'],[1]);
   expect(levelInfo(after.xp.sima_yi!).level).toBeGreaterThanOrEqual(8);

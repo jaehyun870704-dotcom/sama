@@ -1,6 +1,7 @@
 import {repairError,repairAmount,fortifyError,parseCell,buildBarricade,placeBarricade,breachRally,BARRICADES_PER_ENGINEER} from './siege.ts';
 import {troopStrategies,supportOptions} from './troops.ts';
 import {refBattle,prepareRunBattle} from './roguelike.ts';
+import {applyRomance} from './romance.ts';
 import {expeditionBattle,expeditions} from './expeditions.ts';
 import {newDuel,duelRound,type DuelState,type DuelAction} from './duel.ts';
 import {availableStrategies,learnedStrategies,allStrategies,applyOfficerFeatures,martialPower} from './officers.ts';
@@ -14,7 +15,7 @@ import {stageRules} from './stage-rules.ts';
 import {campaignStage,addFortifications,addSiegeCompany,structureKind,encircled,encounterLevels} from './campaign-rules.ts';
 import {applyTreasure,equippedItems,treasureInfo,type Deployment,OFFICERS,treasures} from './progression.ts';
 import { assemble, Battle, CONTROLLABLE, isHostile, key, manhattan, statsFor, familyOf, evolvedClass, evolveUnit } from '../../core/src/index.ts';
-import type { Command, Difficulty, MapFile, StageDef, StrategyDef } from '../../core/src/index.ts';
+import type { BattleState, Command, Difficulty, MapFile, StageDef, StrategyDef } from '../../core/src/index.ts';
 import escapeStage from '../../data/stages/S1-02.json';
 import fortStage from '../../data/stages/S1-08.json';
 import escapeMap from '../../data/maps/luoyang-escape.json';
@@ -134,6 +135,8 @@ export class Session {
   lastDuel:DuelState|null=null;
   private challenged=new Set<string>();
   private balancedEnemies=new Set<string>();
+  /** 연의 능력을 이미 입힌 장수(나중에 등장하는 장수도 한 번씩만) */
+  private romanced=new Set<string>();
   funds=3000;
   bribes=0;
   medicine=2;
@@ -144,7 +147,7 @@ export class Session {
   constructor(public chapter=2, public difficulty:Difficulty='normal', public seed=215, public preparation:Preparation='survival', public revision:2|3|4=3, public deployment?:Deployment) {this.battle=this.create();this.resetScenario();}
   get state(){return this.battle.state;}
   private create(){
-    this.balancedEnemies.clear();
+    this.balancedEnemies.clear();this.romanced.clear();
     let entry=this.chapter===1&&this.revision===2?{stage:legacyFortStage as StageDef,map:legacyFortMap as MapFile}:chapters[this.chapter];
     if(!entry) throw new Error('알 수 없는 전장');
     if(this.deployment?.run)entry={...entry,...refBattle(this.deployment.run)};
@@ -159,7 +162,9 @@ export class Session {
     ]});
     if(this.deployment)for(const u of state.living('player')){const l=this.deployment.levels[u.id];if(l){const adjusted=makeUnit({id:u.id,unitClass:u.unitClass,level:l,side:u.side,pos:u.pos});u.level=l;u.stats=adjusted.stats;u.hp=u.stats.maxHp;u.mp=u.stats.maxMp;
       // 장수도 레벨이 기준에 닿으면 병종이 진화한다(사마의: 책사→군사 Lv8→귀모 Lv16). 원정 부대는 원정 규칙이 따로 정한다.
-      const evolved=this.revision===4&&!this.deployment.run?evolvedClass(u.unitClass,l):u.unitClass;if(evolved!==u.unitClass){evolveUnit(u,evolved);u.hp=u.stats.maxHp;u.mp=u.stats.maxMp;}}if(this.revision===4){for(const item of equippedItems(this.deployment,u.id))applyTreasure(u,item,this.deployment.treasureRules===1);}else applyTreasure(u,this.deployment.equipped[u.id],this.deployment.treasureRules===1);}
+      const evolved=this.revision===4&&!this.deployment.run?evolvedClass(u.unitClass,l):u.unitClass;if(evolved!==u.unitClass){evolveUnit(u,evolved);u.hp=u.stats.maxHp;u.mp=u.stats.maxMp;}}
+      // 연의 능력은 보물보다 먼저 입혀, 보물의 고정 보너스가 배율에 섞이지 않게 한다.
+      if(this.revision===4&&!this.deployment.run&&!this.romanced.has(u.id)){this.romanced.add(u.id);applyRomance(u);}if(this.revision===4){for(const item of equippedItems(this.deployment,u.id))applyTreasure(u,item,this.deployment.treasureRules===1);}else applyTreasure(u,this.deployment.equipped[u.id],this.deployment.treasureRules===1);}
     if(this.deployment?.mission?.balance===1)for(const u of state.living('ally')){
       u.level=Math.min(u.level,(this.deployment.levels.sima_yi??1)+1);
       u.stats=makeUnit({id:u.id,unitClass:u.unitClass,level:u.level,side:u.side,pos:u.pos}).stats;u.hp=u.stats.maxHp;u.mp=u.stats.maxMp;
@@ -209,6 +214,7 @@ export class Session {
     }
     // 원정 부대의 병종·체력·책략·보물은 기본 정비가 끝난 뒤 덮어쓴다.
     if(this.deployment?.run)prepareRunBattle(state,this.deployment.run);
+    this.applyRomanceToNew(state);
     return battle;
   }
   act(cmd:Command){
@@ -251,7 +257,7 @@ export class Session {
         if(!u?.alive||!u.strategies.includes(def.id)||u.mp<def.mpCost||s.hasStatus(u,'seal')||manhattan(u.pos,cmd.at)>def.range)return {ok:false,error:'지원 책략의 습득·MP·사거리를 확인하세요.'};
         const targets=s.living().filter(t=>t.side!=='enemy'&&manhattan(t.pos,cmd.at)<=def.radius);
         if(!targets.length)return {ok:false,error:'지원할 아군을 선택하세요.'};
-        const damage:number[]=[];for(const t of targets){let healed=0;if(def.support==='heal'){healed=Math.min(t.stats.maxHp-t.hp,def.power+Math.floor(u.stats.intellect*.2));t.hp+=healed;}else if(def.support==='cleanse')t.statuses=t.statuses.filter(x=>['guard','haste','rally'].includes(x.kind));else if(['guard','haste','rally'].includes(def.support))s.applyStatus(t,{kind:def.support as 'guard'|'haste'|'rally',turns:3,magnitude:1});damage.push(-healed);}
+        const damage:number[]=[];for(const t of targets){let healed=0;if(def.support==='heal'){healed=Math.min(t.stats.maxHp-t.hp,Math.round((def.power+Math.floor(u.stats.intellect*.2))*(1+(u.traitParams.healPower??0)/100)));t.hp+=healed;}else if(def.support==='cleanse')t.statuses=t.statuses.filter(x=>['guard','haste','rally'].includes(x.kind));else if(['guard','haste','rally'].includes(def.support))s.applyStatus(t,{kind:def.support as 'guard'|'haste'|'rally',turns:3,magnitude:1});damage.push(-healed);}
         u.mp-=def.mpCost;s.push({t:'strategy',caster:u.id,strategy:def.id,targets:targets.map(t=>t.id),damage});const result=this.battle.execute({kind:'wait',unit:u.id});this.advanceScenario();return result;
       }
     }
@@ -279,7 +285,7 @@ export class Session {
       if(cmd.item==='heal'&&this.deployment&&familyOf(u.unitClass)==='fengshui'){
         const target=s.find(cmd.target??'');
         if(s.hasStatus(u,'seal')||!target?.alive||target.side==='enemy'||target.hp>=target.stats.maxHp||manhattan(u.pos,target.pos)>3||u.mp<8)return {ok:false,error:'MP 8과 3칸 이내의 부상당한 아군이 필요합니다.'};
-        const amount=Math.min(35,target.stats.maxHp-target.hp);target.hp+=amount;u.mp-=8;
+        const amount=Math.min(Math.round(35*(1+(u.traitParams.healPower??0)/100)),target.stats.maxHp-target.hp);target.hp+=amount;u.mp-=8;
         s.push({t:'strategy',caster:u.id,strategy:'heal',targets:[target.id],damage:[-amount]});
         const result=this.battle.execute({kind:'wait',unit:u.id});this.advanceScenario();return result;
       }
@@ -327,8 +333,18 @@ export class Session {
     }
     return result;
   }
+  /** 『삼국지연의』 장수록의 능력·고유능력을 처음 보는 장수에게 입힌다(현행 규칙 전투만). */
+  private applyRomanceToNew(state:BattleState){
+    if(this.revision!==4)return;
+    // 꿈속의 환영과 호위 대상(일부러 맞춘 체력·이동)은 연의 능력을 입히지 않는다.
+    const escorts=new Set([...(stageRules[state.stage.id]?.protect??[]).map(p=>p.unit),...(this.chapter===8||this.chapter===9?['cao_cao']:[])]);
+    const edge=stageRules[state.stage.id]?.foeEdge?.[this.difficulty]??0;
+    for(const u of state.living())if(!this.romanced.has(u.id)){this.romanced.add(u.id);if(!u.name.endsWith('환영')&&!escorts.has(u.id))applyRomance(u);
+      if(edge&&u.side==='enemy'&&!/^(gate|tower)_/.test(u.id)){const hp=u.hp/u.stats.maxHp;u.stats.attack=Math.round(u.stats.attack*(1+edge/100));u.stats.maxHp=Math.round(u.stats.maxHp*(1+edge/100));u.hp=Math.max(1,Math.round(u.stats.maxHp*hp));}}
+  }
   private advanceScenario(){
     const s=this.state,old=this.phase;
+    this.applyRomanceToNew(s);
     if(this.deployment?.mission?.balance===1)for(const enemy of s.living('enemy'))if(!this.balancedEnemies.has(enemy.id)){
       enemy.stats.attack=Math.round(enemy.stats.attack*(this.deployment.mission.id.startsWith('T')?.6:.75));this.balancedEnemies.add(enemy.id);
     }

@@ -1,5 +1,6 @@
 import type {Growth} from './progression.ts';
 import type {StrategyDef,Unit} from '../../core/src/index.ts';
+import {romanceWar} from './romance.ts';
 export const officerFeatures:Record<string,{name:string;description:string;trait:string;strength:number}>={
   sima_yi:{name:'은인자중',description:'책략 피해 15% 감소 · 매 턴 MP 3 회복',trait:'simaPatience',strength:30},
   cao_zhen:{name:'선봉 지휘',description:'물리 공격 피해 12% 증가',trait:'caoVanguard',strength:78},
@@ -21,7 +22,8 @@ export function talentTree(id:string,level:number,growth:Growth):Talent[]{const 
  {name:{sima_yi:'심모원려',cao_zhen:'상승장군',sima_lang:'가문의 기둥',sima_fang:'병법의 전수'}[id]??'대가의 경지',description:id==='sima_yi'?'책략 공격 피해 12% 증가':'물리 공격 피해 10% 증가',trait:id==='sima_yi'?'zhouStrategy':'westernValor',level:10,requirement:'둘째 특성 해금 · Lv.10 · 보물 외전 3개 완료',ready:level>=10&&growth.storyWins>=1&&growth.trainingWins>=3&&growth.questWins>=3},
  ];}
 export function applyOfficerFeatures(units:Unit[],growth?:Growth){for(const u of units){const feature=officerFeatures[u.id];if(!feature)continue;const ids=growth&&['sima_yi','cao_zhen','sima_lang','sima_fang'].includes(u.id)?talentTree(u.id,u.level,growth).filter(t=>t.ready).map(t=>t.trait):growth&&u.level<4?[]:[feature.trait];for(const trait of ids)if(!u.traits.includes(trait))u.traits.push(trait);}}
-export function martialPower(u:Unit){return (officerFeatures[u.id]?.strength??Math.min(95,40+u.stats.attack))+u.level;}
+/** 일기토 무력: 연의 장수록의 무력, 없으면 고유 특성의 무력, 그것도 없으면 공격력으로 어림. */
+export function martialPower(u:Unit){return (romanceWar(u)??officerFeatures[u.id]?.strength??Math.min(95,40+u.stats.attack))+u.level;}
 export type SupportEffect='heal'|'cleanse'|'guard'|'haste'|'rally'|'mana';
 export type LearnedStrategy=StrategyDef&{level:number;support?:SupportEffect};
 export const learnedStrategies:LearnedStrategy[]=[

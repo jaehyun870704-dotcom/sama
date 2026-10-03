@@ -417,3 +417,7 @@ defineTrait({id:'westernValor',name:'서량의 맹장',description:'물리 공�
 defineTrait({id:'flyingGeneral',name:'비장의 무위',description:'물리 공격 피해 18% 증가.',hooks:{onAttack(ctx){if(ctx.kind==='physical')ctx.attackMul*=1.18;}}});
 defineTrait({id:'strategicGuard',name:'냉철한 간파',description:'책략 피해 15% 감소.',hooks:{onDefend(ctx){if(ctx.kind==='strategy')ctx.reduction=combine(ctx.reduction,.15);}}});
 defineTrait({id:'zhouStrategy',name:'주랑의 계책',description:'책략 공격 피해 12% 증가.',hooks:{onAttack(ctx){if(ctx.kind==='strategy')ctx.attackMul*=1.12;}}});
+// 진화 개화 스킬용
+defineTrait({id:'strategyPower',name:'책략 위력',description:'책략 공격 피해가 param% 늘어난다.',hooks:{onAttack(ctx,_s,param){if(ctx.kind==='strategy')ctx.attackMul*=1+param/100;}}});
+defineTrait({id:'physicalPower',name:'무위',description:'물리 공격 피해가 param% 늘어난다.',hooks:{onAttack(ctx,_s,param){if(ctx.kind==='physical')ctx.attackMul*=1+param/100;}}});
+defineTrait({id:'healPower',name:'회복 위력',description:'회복 책략·치유의 회복량이 param% 늘어난다.',hooks:{}});

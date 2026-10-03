@@ -1,3 +1,4 @@
+import {romance} from '../src/romance.ts';
 import {describe,it,expect,vi} from 'vitest';
 import {newDuel,duelRound,type DuelAction} from '../src/duel.ts';
 import {Session,chapters} from '../src/session.ts';
@@ -20,7 +21,7 @@ describe('five round duels and debates',()=>{
    }
    expect(started).toBe(true);expect(s.act({kind:'endPhase'}).ok).toBe(false);expect(s.act({kind:'item',unit:'sima_yi',item:'duel-round:rally'}).ok).toBe(true);const loaded=Session.load(s.save());expect(loaded.activeDuel).toEqual(s.activeDuel);expect(loaded.undo()).toBe(true);expect(loaded.activeDuel?.round).toBe(0);
  });
- it.each(['duel','debate'] as const)('resolves %s into battle HP and one action',kind=>{const s=new Session(7,'normal',215,'survival',4),u=s.state.get('sima_yi'),enemy=s.state.living('enemy')[0]!;enemy.pos={x:u.pos.x+1,y:u.pos.y};expect(s.act({kind:'item',unit:u.id,item:kind,target:enemy.id}).ok).toBe(true);expect(s.activeDuel?.player.stat).toBe(kind==='debate'?u.stats.intellect:30+u.level);for(const action of ['rally','special','guard','attack','attack'])expect(s.act({kind:'item',unit:u.id,item:'duel-round:'+action}).ok).toBe(true);expect(s.activeDuel).toBeNull();expect(s.lastDuel?.round).toBe(5);expect(u.hasActed).toBe(true);expect(u.hp).toBeLessThan(u.stats.maxHp);expect(enemy.hp).toBeLessThan(enemy.stats.maxHp);});
+ it.each(['duel','debate'] as const)('resolves %s into battle HP and one action',kind=>{const s=new Session(7,'normal',215,'survival',4),u=s.state.get('sima_yi'),enemy=s.state.living('enemy')[0]!;enemy.pos={x:u.pos.x+1,y:u.pos.y};expect(s.act({kind:'item',unit:u.id,item:kind,target:enemy.id}).ok).toBe(true);expect(s.activeDuel?.player.stat).toBe(kind==='debate'?u.stats.intellect:romance.sima_yi!.war+u.level);for(const action of ['rally','special','guard','attack','attack'])expect(s.act({kind:'item',unit:u.id,item:'duel-round:'+action}).ok).toBe(true);expect(s.activeDuel).toBeNull();expect(s.lastDuel?.round).toBe(5);expect(u.hasActed).toBe(true);expect(u.hp).toBeLessThan(u.stats.maxHp);expect(enemy.hp).toBeLessThan(enemy.stats.maxHp);});
 });
 describe('equipment, traits, spells and castle siege',()=>{
  it('preserves the paid escape beside the new Luoyang gate',()=>{const s=new Session(0,'normal',215,'survival',4),st=s.state;st.get('sima_yi').pos={x:6,y:10};st.get('sima_lang').pos={x:7,y:10};expect(s.act({kind:'wait',unit:'sima_yi'}).ok).toBe(true);if(st.activeDialogue==='bribe')expect(s.act({kind:'choose',nodeId:'bribe',optionId:'pay'}).ok).toBe(true);expect(st.activeDialogue).toBe('gate_payment');expect(s.act({kind:'choose',nodeId:'gate_payment',optionId:'pay_gate'}).ok).toBe(true);expect(st.outcome).toBe('victory');expect(s.funds).toBe(1000);});
