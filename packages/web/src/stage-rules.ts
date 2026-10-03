@@ -286,7 +286,7 @@ export const stageRules:Record<string,StageRules>={
     labels:[{region:'camp',text:'조휴 진영'},{region:'ridge',text:'능선'}],
     anchored:['sima_yi','cao_xiu'],
     barricades:[{x:9,y:6},{x:9,y:7},{x:9,y:8},{x:13,y:6},{x:13,y:8}],
-    tough:[{unit:'cao_xiu',hpScale:1.6,defense:3},{unit:'sima_shi',hpScale:1.4,defense:2},{unit:'sima_zhao',hpScale:1.4,defense:2}],
+    tough:[{unit:'cao_xiu',hpScale:1.6,defense:3},{unit:'sima_shi',hpScale:1.5,defense:3},{unit:'sima_zhao',hpScale:1.5,defense:3}],
     deadline:14,
     deadlineText:'조휴의 진영이 더 버티지 못하고 무너졌습니다.',
     phase:({state})=>{const inCamp=['sima_shi','sima_zhao'].filter(id=>{const u=state.find(id);return !!u?.alive&&state.map.regionCoords('camp').some(c=>c.x===u.pos.x&&c.y===u.pos.y);}).length;
@@ -341,7 +341,7 @@ export const stageRules:Record<string,StageRules>={
     phase:({state,difficulty})=>state.firedEvents.has('jieting/collapse')?`도주 저지 · 빠져나간 적 ${state.survivalClocks.get('escaped')??0}/${difficulty==='extreme'?1:2} · ${Math.max(0,21-state.turn)}턴 남음`:`수원 차단 · 물 잔량 ${Math.max(0,4-(state.survivalClocks.get('water_cut')??0))}/4 · ${Math.max(0,21-state.turn)}턴 남음`,
     seals:({state})=>[1,...((state.survivalClocks.get('escaped')??0)===0?[2]:[]),...((state.survivalClocks.get('collapse_turn')??99)<=7?[3]:[])],
   },
-  'S2-05':{sealNames:['맹달 격퇴','부대 보존','신속한 공성'],deadline:14,labels:[{region:'keep',text:'신성 본채'}],phase:({state})=>state.scenarioPhase?`${state.scenarioPhase} · ${Math.max(0,15-state.turn)}턴 남음`:undefined,tough:[{unit:'sima_shi',hpScale:1.5,defense:3},{unit:'sima_zhao',hpScale:1.5,defense:3}],failure:({state})=>protectedFailure(state,['sima_shi','sima_zhao'])},
+  'S2-05':{sealNames:['맹달 격퇴','부대 보존','신속한 공성'],deadline:14,labels:[{region:'keep',text:'신성 본채'}],phase:({state})=>state.scenarioPhase?`${state.scenarioPhase} · ${Math.max(0,15-state.turn)}턴 남음`:undefined,tough:[{unit:'sima_shi',hpScale:1.25,defense:2},{unit:'sima_zhao',hpScale:1.25,defense:2}],failure:({state})=>protectedFailure(state,['sima_shi','sima_zhao'])},
   'S2-04':{sealNames:['양양 수성','수비대 전원 생환','적 격퇴 수'],tough:[{unit:'gate_captain',hpScale:1.8,defense:4}],labels:[{region:'xiangyang',text:'양양 성문'}],phase:({state})=>`${state.scenarioPhase} · ${Math.max(0,8-(state.turn-(state.survivalClocks.get('xiangyang')??1)))}턴 남음`,failure:({state})=>state.captured.get('xiangyang')==='enemy'?'오군이 양양 성문을 차지했습니다.':undefined},
   'S2-03':{sealNames:['황제 탈출','부대 보존','신속한 탈출'],weather:'혹한 · 강이 얼어붙음',protect:[{unit:'cao_pi',hp:150,movement:3}],tough:[{unit:'gao_shou',hpScale:1.6}],labels:[{region:'exit',text:'북쪽 출구'}],failure:({state})=>state.find('cao_pi')?.alive===false?'조비가 퇴각했습니다.':undefined},
   'S2-02':{sealNames:['황제 철수','함대 보존','신속한 철수'],weather:'폭풍 · 낙뢰',protect:[{unit:'cao_pi',hp:150,movement:3}],labels:[{region:'exit',text:'북서쪽 출구'}],failure:({state})=>state.find('cao_pi')?.alive===false?'조비가 퇴각했습니다.':undefined},

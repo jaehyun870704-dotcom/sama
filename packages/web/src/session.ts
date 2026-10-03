@@ -13,7 +13,7 @@ import retreatMap from '../../data/maps/yangtze-retreat.json';
 import {stageRules} from './stage-rules.ts';
 import {campaignStage,addFortifications,addSiegeCompany,structureKind,encircled,encounterLevels} from './campaign-rules.ts';
 import {applyTreasure,equippedItems,treasureInfo,type Deployment,OFFICERS,treasures} from './progression.ts';
-import { assemble, Battle, CONTROLLABLE, isHostile, key, manhattan, statsFor } from '../../core/src/index.ts';
+import { assemble, Battle, CONTROLLABLE, isHostile, key, manhattan, statsFor, familyOf, evolvedClass, evolveUnit } from '../../core/src/index.ts';
 import type { Command, Difficulty, MapFile, StageDef, StrategyDef } from '../../core/src/index.ts';
 import escapeStage from '../../data/stages/S1-02.json';
 import fortStage from '../../data/stages/S1-08.json';
@@ -157,7 +157,9 @@ export class Session {
       {id:'cao_zhen',name:'조진',unitClass:'heavyCav',level},
       {id:'sima_fang',name:'사마방',unitClass:'spearman',level},
     ]});
-    if(this.deployment)for(const u of state.living('player')){const l=this.deployment.levels[u.id];if(l){const adjusted=makeUnit({id:u.id,unitClass:u.unitClass,level:l,side:u.side,pos:u.pos});u.level=l;u.stats=adjusted.stats;u.hp=u.stats.maxHp;u.mp=u.stats.maxMp;}if(this.revision===4){for(const item of equippedItems(this.deployment,u.id))applyTreasure(u,item,this.deployment.treasureRules===1);}else applyTreasure(u,this.deployment.equipped[u.id],this.deployment.treasureRules===1);}
+    if(this.deployment)for(const u of state.living('player')){const l=this.deployment.levels[u.id];if(l){const adjusted=makeUnit({id:u.id,unitClass:u.unitClass,level:l,side:u.side,pos:u.pos});u.level=l;u.stats=adjusted.stats;u.hp=u.stats.maxHp;u.mp=u.stats.maxMp;
+      // 장수도 레벨이 기준에 닿으면 병종이 진화한다(사마의: 책사→군사 Lv8→귀모 Lv16). 원정 부대는 원정 규칙이 따로 정한다.
+      const evolved=this.revision===4&&!this.deployment.run?evolvedClass(u.unitClass,l):u.unitClass;if(evolved!==u.unitClass){evolveUnit(u,evolved);u.hp=u.stats.maxHp;u.mp=u.stats.maxMp;}}if(this.revision===4){for(const item of equippedItems(this.deployment,u.id))applyTreasure(u,item,this.deployment.treasureRules===1);}else applyTreasure(u,this.deployment.equipped[u.id],this.deployment.treasureRules===1);}
     if(this.deployment?.mission?.balance===1)for(const u of state.living('ally')){
       u.level=Math.min(u.level,(this.deployment.levels.sima_yi??1)+1);
       u.stats=makeUnit({id:u.id,unitClass:u.unitClass,level:u.level,side:u.side,pos:u.pos}).stats;u.hp=u.stats.maxHp;u.mp=u.stats.maxMp;
@@ -201,7 +203,7 @@ export class Session {
       applyOfficerFeatures(state.living(),this.deployment?.growth);
       for(const u of state.living()){
         if(u.unitClass==='ram'){for(const trait of ['siegeRam','noCounterAttack'])if(!u.traits.includes(trait))u.traits.push(trait);}
-        const specialty=troopStrategies(u.unitClass,u.level);if(specialty)u.strategies=specialty;else if(['strategist','fengshui'].includes(u.unitClass))u.strategies=availableStrategies(u.level,!!this.deployment?.growth);
+        const officer=(OFFICERS as readonly string[]).includes(u.id)&&u.side==='player',specialty=officer?undefined:troopStrategies(u.unitClass,u.level);if(specialty)u.strategies=specialty;else if(['strategist','fengshui'].includes(familyOf(u.unitClass)))u.strategies=availableStrategies(u.level,!!this.deployment?.growth);
       }
       addSiegeCompany(state);
     }
@@ -274,7 +276,7 @@ export class Session {
         }
         return {ok:true};
       }
-      if(cmd.item==='heal'&&this.deployment&&u.unitClass==='fengshui'){
+      if(cmd.item==='heal'&&this.deployment&&familyOf(u.unitClass)==='fengshui'){
         const target=s.find(cmd.target??'');
         if(s.hasStatus(u,'seal')||!target?.alive||target.side==='enemy'||target.hp>=target.stats.maxHp||manhattan(u.pos,target.pos)>3||u.mp<8)return {ok:false,error:'MP 8과 3칸 이내의 부상당한 아군이 필요합니다.'};
         const amount=Math.min(35,target.stats.maxHp-target.hp);target.hp+=amount;u.mp-=8;

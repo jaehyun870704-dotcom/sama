@@ -57,8 +57,8 @@ export const VARIANTS: Partial<Record<UnitClass, ClassVariant>> = {
   repeater: { family: "crossbow", tier: 2, profile: p(0.95, 0.5, 1.18, 0.9, 0.8, 0.95, 0.95, 4, [2, 3]) },
   greatBow: { family: "crossbow", tier: 3, profile: p(1.0, 0.5, 1.32, 0.95, 0.8, 1.0, 1.0, 4, [2, 4]), traits: { penetrate: 30 } },
   // 책사 계통 — 지력
-  tactician: { family: "strategist", tier: 2, profile: p(0.85, 1.5, 0.65, 0.75, 1.45, 1.3, 1.05, 5, [1, 1], true) },
-  mastermind: { family: "strategist", tier: 3, profile: p(0.95, 1.75, 0.7, 0.8, 1.62, 1.4, 1.1, 5, [1, 1], true), traits: { strategyEvasion: 15 } },
+  tactician: { family: "strategist", tier: 2, profile: p(0.8, 1.45, 0.65, 0.75, 1.38, 1.3, 1.05, 5, [1, 1], true) },
+  mastermind: { family: "strategist", tier: 3, profile: p(0.85, 1.6, 0.7, 0.8, 1.48, 1.4, 1.1, 5, [1, 1], true), traits: { strategyEvasion: 15 } },
   // 풍수사 계통 — 정신
   sage: { family: "fengshui", tier: 2, profile: p(0.9, 1.6, 0.6, 0.8, 1.3, 1.45, 1.0, 5, [1, 1], true) },
   immortal: { family: "fengshui", tier: 3, profile: p(1.0, 1.85, 0.65, 0.85, 1.4, 1.6, 1.05, 5, [1, 1], true), traits: { strategyDamageReduction: 20 } },

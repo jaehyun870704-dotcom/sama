@@ -1,4 +1,5 @@
 import type {TerrainKind,UnitClass} from '../../core/src/index.ts';
+import {familyOf} from '../../core/src/index.ts';
 import {expeditionLandscape} from './expedition-scenes.ts';
 import {troopRoles} from './troops.ts';
 
@@ -43,6 +44,7 @@ export function placeFor(stageId:string,terrain:TerrainKind[]=[]):Place{
 export type Family='horse'|'foot'|'bow'|'sage'|'siege'|'boat'|'folk';
 export function classFamily(cls:UnitClass|string|undefined):Family|undefined{
   if(!cls)return undefined;
+  cls=familyOf(cls as UnitClass);
   const base=(troopRoles as Record<string,{base:string}>)[cls]?.base??cls;
   if(['cavalry','heavyCav','horseArcher'].includes(cls)||['cavalry','heavyCav'].includes(base))return 'horse';
   if(['archer','crossbow'].includes(cls))return 'bow';

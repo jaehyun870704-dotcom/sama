@@ -40,7 +40,7 @@ export function recommendExpeditionSupport(id:string):{classes:[UnitClass,UnitCl
  return recommendedSupport[terrain];
 }
 export function supportWarnings(units:Unit[]){const warnings:string[]=[];
- if(!units.some(u=>u.strategies.includes('mend')||u.strategies.includes('greatMend')||u.unitClass==='fengshui'))warnings.push('회복 담당이 없습니다. 구급약 소모와 전열 체력에 유의하세요.');
+ if(!units.some(u=>u.strategies.includes('mend')||u.strategies.includes('greatMend')||familyOf(u.unitClass)==='fengshui'))warnings.push('회복 담당이 없습니다. 구급약 소모와 전열 체력에 유의하세요.');
  if(!units.some(u=>u.range[1]>=2))warnings.push('원거리 물리 사격 부대가 없습니다. 적 사격대에 접근할 경로를 확보하세요.');
  return warnings;
 }
