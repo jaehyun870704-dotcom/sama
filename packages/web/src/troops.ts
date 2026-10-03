@@ -1,5 +1,5 @@
 import type {UnitClass} from '../../core/src/index.ts';
-import {VARIANTS,familyOf} from '../../core/src/index.ts';
+import {VARIANTS,EVOLUTION,familyOf} from '../../core/src/index.ts';
 import {allStrategies} from './officers.ts';
 
 export const troopRoles:Partial<Record<UnitClass,{name:string;role:string;base:UnitClass;tint:number;spells:string[]}>>={
@@ -34,6 +34,12 @@ export const troopRoles:Partial<Record<UnitClass,{name:string;role:string;base:U
  phantom:{name:'무영객',role:'자객 2단계 · 그림자 같은 일격',base:'bandit',tint:0x6f6a96,spells:[]},
  rattan:{name:'등갑병',role:'물리 피해 25% 감소 · 화계에 크게 약하다',base:'infantry',tint:0xd8b36a,spells:[]},
  rattanElite:{name:'정예 등갑병',role:'등갑병 2단계 · 물리 피해 35% 감소, 여전히 불에 약하다',base:'infantry',tint:0xe9c56c,spells:[]},
+ warlock:{name:'요술사',role:'주술사 2단계 · 저주가 깊어지고 적의 책략을 흘린다',base:'shaman',tint:0xb98cff,spells:['fire','embers','bind','poison','silence','confuse','feint','demoralize']},
+ priestess:{name:'신녀',role:'무녀 2단계 · 정신이 높고 책략 피해를 덜 받는다',base:'maiden',tint:0xffd6ea,spells:['mend','purify','fortify','inspire','greatMend']},
+ stormSage:{name:'뇌공',role:'도사 2단계 · 바람과 벼락을 더 세게 부린다',base:'taoist',tint:0xd2f4ff,spells:['fire','gust','windDragon','flood','waterSurge','thunder','whirlwind','tempest','thunderbolt']},
+ divineDoctor:{name:'신의',role:'의술사 2단계 · 회복량과 책략 MP가 크게 오른다',base:'physician',tint:0xd8ffe8,spells:['mend','purify','greatMend']},
+ warriorMonk:{name:'무승',role:'무도가 2단계 · 단단한 몸과 회심 일격',base:'monk',tint:0xffe0a8,spells:['mend','march','fortify']},
+ outlaw:{name:'녹림호걸',role:'산적 2단계 · 숲과 산의 우두머리, 회심 일격',base:'bandit',tint:0xe8c49a,spells:[]},
  elephant:{name:'상병',role:'남만의 코끼리 부대 · 체력이 매우 높고 느리다',base:'heavyCav',tint:0xb9b2a4,spells:[]},
  warElephant:{name:'전투상',role:'상병 2단계 · 쇠 갑주를 두른 코끼리',base:'heavyCav',tint:0xd3cbbb,spells:[]},
 };
@@ -52,3 +58,13 @@ export const troopArt:Partial<Record<UnitClass,{sheet:'casters'|'specialists';ro
 export const basicReactionArt:Partial<Record<UnitClass,{sheet:string;row:number;rows:number}>>={
  infantry:{sheet:'base-reaction',row:0,rows:6},spearman:{sheet:'base-reaction',row:1,rows:6},archer:{sheet:'base-reaction',row:2,rows:6},cavalry:{sheet:'base-reaction',row:3,rows:6},strategist:{sheet:'base-reaction',row:4,rows:6},catapult:{sheet:'base-reaction',row:5,rows:6},crossbow:{sheet:'extra-reaction',row:0,rows:4},heavyCav:{sheet:'extra-reaction',row:1,rows:4},engineer:{sheet:'extra-reaction',row:2,rows:4},fengshui:{sheet:'extra-reaction',row:3,rows:4}
 };
+
+/** 진화 계통 줄: [병종, 진화 레벨(첫 병종은 0)] 목록. 도감과 원정 안내가 쓴다. */
+export function evolutionLines():Array<Array<[UnitClass,number]>>{
+  const targets=new Set(Object.values(EVOLUTION).map(e=>e![0]));
+  return (Object.keys(EVOLUTION) as UnitClass[]).filter(c=>!targets.has(c)).map(root=>{
+    const line:Array<[UnitClass,number]>=[[root,0]];let cur=root;
+    for(let next=EVOLUTION[cur];next;next=EVOLUTION[cur]){line.push([next[0],next[1]]);cur=next[0];}
+    return line;
+  });
+}

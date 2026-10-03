@@ -1,7 +1,7 @@
 import {trialGoals,trialGoalText,trialProgress} from './expedition-objectives.ts';
 import {troopAdvice,adviceFor,recommendExpeditionSupport,supportWarnings,physicalMatchup} from './troop-tactics.ts';
 import {officerLooks,officerPortrait,dialogueCaption,splitSpokenLine,storyActorStyle} from './officer-art.ts';
-import {troopRoles,supportOptions,visualClass,troopArt,troopSheets,basicReactionArt} from './troops.ts';
+import {troopRoles,supportOptions,visualClass,troopArt,troopSheets,basicReactionArt,evolutionLines} from './troops.ts';
 import {growthMilestones} from './growth-milestones.ts';
 import {trialStory,trialTactics,layoutName} from './expedition-scenes.ts';
 import {expeditions,expeditionReward,canExpedition,storyWins,trainingXp,growthAdvice} from './expeditions.ts';
@@ -23,7 +23,7 @@ import { Session, chapters, campaignOrder, type Preparation } from './session.ts
 import { Battlefield, classNames, terrainNames, unitName } from './battlefield.ts';
 import { Soundscape } from './audio.ts';
 import {placeFor,bossNear} from './music.ts';
-import { CONTROLLABLE, ignoresRough, awardedSeals, estimatePhysical, estimateStrategy, previewAttack, manhattan } from '../../core/src/index.ts';
+import { CONTROLLABLE, ignoresRough, awardedSeals, estimatePhysical, estimateStrategy, previewAttack, manhattan, tierOf } from '../../core/src/index.ts';
 import type { BattleState, Command, Coord, LogEntry, TerrainKind, Unit } from '../../core/src/index.ts';
 
 const $=<T extends HTMLElement=HTMLElement>(selector:string)=>document.querySelector<T>(selector)!;
@@ -85,7 +85,14 @@ function storyScene(chapter:number,beat=0,fromArt?:number){
   $('#story-skip').onclick=()=>briefing(chapter);$('#story-next').onclick=()=>beat+1<beats.length?storyScene(chapter,beat+1,location.art):briefing(chapter);
 }
 let menuArc=1;
-const runHost:RunHost={modal:(html,closable)=>modal(html,closable),showMenu:()=>showMenu(),toast:t=>toast(t),startBattle:(dep,seed)=>{session=new Session(RUN_CHAPTER,'normal',seed,'survival',4,dep);activate();}};
+const runHost:RunHost={modal:(html,closable)=>modal(html,closable),showMenu:()=>showMenu(),toast:t=>toast(t),startBattle:(dep,seed)=>{session=new Session(RUN_CHAPTER,'normal',seed,'survival',4,dep);activate();persist();},
+  liveRunBattle:()=>{const s=openRunSession();return s?{seed:s.deployment!.run!.seed,floor:s.deployment!.run!.floor,kind:s.deployment!.run!.kind}:undefined;},
+  backToBattle:()=>{const s=openRunSession();if(s&&s!==session){session=s;activate();return;}menuOpen=false;closeModal();}};
+/** 끝나지 않은 원정 전투: 지금 화면의 것, 없으면 자동 저장된 것. */
+function openRunSession(){
+  if(hasStarted&&session.deployment?.run&&session.state.outcome==='ongoing')return session;
+  try{const s=Session.load(JSON.parse(localStorage.getItem(SAVE_KEY)??'null'));return s.deployment?.run&&s.state.outcome==='ongoing'?s:undefined;}catch{return undefined;}
+}
 function showMenu(){
   menuOpen=true;clearTimeout(aiTimer);sound.scene='title';sound.combat=false;
   const p=progress(),names=['살아남는 자','맞서는 자','거머쥐는 자'];
@@ -154,7 +161,7 @@ let duelPresented=false;
 function showOfficerGallery(){menuOpen=true;clearTimeout(aiTimer);modal(`<div class="briefing officer-gallery"><div class="eyebrow">人物 · 장수별 외형</div><h2>난세를 살아가는 얼굴들</h2><p>대화창 왼쪽에 화자의 초상이 표시됩니다. 사마의 가문과 위의 주요 인물 8종은 이야기 장면용 전신 외형도 적용했습니다.</p><div class="officer-look-grid">${officerLooks.map(p=>`<article>${officerPortrait(p.id)}<h3>${p.name}</h3><p>${p.title}</p></article>`).join('')}</div><button id="officer-back">← 연의 지도</button></div>`,false);$('#officer-back').onclick=showMenu;}
 function showTroopGallery(pose=0){
  menuOpen=true;clearTimeout(aiTimer);
- modal(`<div class="briefing troop-gallery" data-preview="${pose}"><div class="eyebrow">兵種 · 전용 그래픽</div><h2>병종과 전투 동작</h2><p>동작을 선택하면 병종별 모션을 반복 재생합니다. 수련·보물 인연의 출진 정비에서 편성할 수 있습니다.</p><div class="troop-poses">${['대기','옆 이동','공격','책략 · 특수','앞 이동','뒤 이동','방어','피격'].map((label,i)=>`<button data-troop-pose="${i}" aria-pressed="${pose===i}">${label}</button>`).join('')}</div><div class="troop-art-grid">${Object.entries(troopArt).map(([id,art])=>`<article><div class="troop-art-model" role="img" aria-label="${classNames[id]} ${['대기','옆 이동','공격','특수','앞 이동','뒤 이동','방어','피격'][pose]}" style="background-image:var(--${art.sheet}${pose>=6?'-reaction':pose>=4?'-walk':''}-atlas);background-size:400% ${art.rows*100}%;background-position:${(pose>=6?(pose===7?2:0):pose>=4?(pose===5?2:0):pose)/3*100}% ${art.row/(art.rows-1)*100}%"></div><h3>${classNames[id]}</h3><p>${troopRoles[id as keyof typeof troopRoles]!.role}</p></article>`).join('')}</div>${pose>=6?'<h3>기본 병종 · '+(pose===6?'방어':'피격')+'</h3><div class="troop-art-grid">'+Object.entries(basicReactionArt).map(([id,art])=>`<article><div class="troop-art-model" role="img" aria-label="${classNames[id]} ${pose===6?'방어':'피격'}" style="background-image:var(--${art.sheet}-atlas);background-size:400% ${art.rows*100}%;background-position:${pose===6?0:66.666667}% ${art.row/(art.rows-1)*100}%"></div><h3>${classNames[id]}</h3></article>`).join('')+'</div>':''}<button id="troop-back">← 연의 지도</button></div>`,false);
+ modal(`<div class="briefing troop-gallery" data-preview="${pose}"><div class="eyebrow">兵種 · 전용 그래픽</div><h2>병종과 전투 동작</h2><p>동작을 선택하면 병종별 모션을 반복 재생합니다. 수련·보물 인연의 출진 정비에서 편성할 수 있습니다.</p><div class="troop-poses">${['대기','옆 이동','공격','책략 · 특수','앞 이동','뒤 이동','방어','피격'].map((label,i)=>`<button data-troop-pose="${i}" aria-pressed="${pose===i}">${label}</button>`).join('')}</div><div class="troop-art-grid">${Object.entries(troopArt).map(([id,art])=>`<article><div class="troop-art-model" role="img" aria-label="${classNames[id]} ${['대기','옆 이동','공격','특수','앞 이동','뒤 이동','방어','피격'][pose]}" style="background-image:var(--${art.sheet}${pose>=6?'-reaction':pose>=4?'-walk':''}-atlas);background-size:400% ${art.rows*100}%;background-position:${(pose>=6?(pose===7?2:0):pose>=4?(pose===5?2:0):pose)/3*100}% ${art.row/(art.rows-1)*100}%"></div><h3>${classNames[id]}</h3><p>${troopRoles[id as keyof typeof troopRoles]!.role}</p></article>`).join('')}</div>${pose>=6?'<h3>기본 병종 · '+(pose===6?'방어':'피격')+'</h3><div class="troop-art-grid">'+Object.entries(basicReactionArt).map(([id,art])=>`<article><div class="troop-art-model" role="img" aria-label="${classNames[id]} ${pose===6?'방어':'피격'}" style="background-image:var(--${art.sheet}-atlas);background-size:400% ${art.rows*100}%;background-position:${pose===6?0:66.666667}% ${art.row/(art.rows-1)*100}%"></div><h3>${classNames[id]}</h3></article>`).join('')+'</div>':''}<h3 class="evo-title">진화 계통 · 레벨이 오르면 다음 단계로</h3><p class="muted">천명의 원정에서는 레벨이 기준에 닿는 순간 병종이 바뀝니다. 체력·책략 비율은 그대로 이어집니다. ◆ 수는 진화 단계입니다.</p><div class="evo-lines">${evolutionLines().map(line=>`<div class="evo-line">${line.map(([c,lv],i)=>`${i?`<span class="evo-arrow">Lv.${lv} →</span>`:''}<span class="evo-node" title="${adviceFor(c).replace(/"/g,'&quot;')}"><b>${'◆'.repeat(tierOf(c))}</b>${classNames[c]}</span>`).join('')}</div>`).join('')}</div><button id="troop-back">← 연의 지도</button></div>`,false);
  document.querySelectorAll<HTMLButtonElement>('[data-troop-pose]').forEach(b=>b.onclick=()=>showTroopGallery(Number(b.dataset.troopPose)));$('#troop-back').onclick=showMenu;
 }
 function showExpeditions(){
