@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {PACKS,EXTRA_TALES,freshScenario,scenarioPath,currentStep,choose,finishStep,fateChoices,scriptOf,scenarioParty,rewardOfficers,routeTales,readScenario,floorFor,type ScenarioState} from '../src/scenario.ts';
+import {PACKS,EXTRA_TALES,freshScenario,scenarioPath,currentStep,choose,finishStep,fateChoices,scriptOf,scenarioParty,rewardOfficers,routeTales,readScenario,floorFor,winOver,type ScenarioState} from '../src/scenario.ts';
 import {modsOf} from '../src/scenario-ui.ts';
 import {checkPack} from '../src/scenario-types.ts';
 import {ROUTES,routeById} from '../src/fate.ts';
@@ -65,6 +65,12 @@ describe('시나리오 진행',()=>{
   choose(s,step,'x',[{kind:'flag',flag:'f1'},{kind:'recruit',name:'견초',unitClass:'cavalry'},{kind:'path',tale:alt.id},{kind:'recruit',name:'채모',unitClass:'navy'}],6);
   expect(s.flags).toContain('f1');expect(s.officers['견초']!.level).toBe(5);expect(s.officers['채모']!.unitClass).toBe('crossbow');
   expect(routeTales(routeById('serve')!,s).map(t=>t.id)).toContain(alt.id);expect(scenarioPath(s).some(x=>x.id===alt.id)).toBe(true);
+ });
+ it('brings a companion back when the what-if road beats him (장합 on the independent road)',()=>{
+  const s=freshScenario();s.route={1:'yuan',2:'independent'};
+  const step=scenarioPath(s).find(x=>x.kind==='tale'&&x.tale?.target.name==='장합');
+  expect(step).toBeDefined();expect(winOver(s,step!,7)).toBe('장합');expect(s.officers['장합']!.level).toBe(7);expect(winOver(s,step!,7)).toBeUndefined();
+  const other=scenarioPath(s).find(x=>x.kind==='tale'&&x.tale?.target.name!=='장합')!;expect(winOver(s,other,7)).toBeUndefined();
  });
  it('keeps a sanitised save',()=>{
   const s=freshScenario();choose(s,scenarioPath(s).at(-1)!,'serve',[],3);finishStep(s,'fate:1');
