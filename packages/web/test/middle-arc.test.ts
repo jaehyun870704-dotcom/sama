@@ -36,6 +36,7 @@ describe('중편 · 양양 전투',()=>{
  });
 });
 import {subject} from '../src/stage-rules.ts';
+import {CONTROLLABLE} from '../../core/src/index.ts';
 describe('중편 · 맹달 차단전',()=>{
  it('trades fatigue against relief armies at the march choice',()=>{
   const forced=open('S2-05');expect(forced.state.activeDialogue).toBe('march');
@@ -51,5 +52,25 @@ describe('중편 · 맹달 차단전',()=>{
  });
  it('fails after the fourteenth turn and names the fallen with the right particle',()=>{
   expect(subject('사마소')).toBe('사마소가');expect(subject('맹달')).toBe('맹달이');
+ });
+});
+const toPlayer=(s:Session)=>{for(let i=0;i<40&&s.state.currentSide!=='player'&&s.state.outcome==='ongoing';i++){if(CONTROLLABLE.has(s.state.currentSide))s.act({kind:'endPhase'});else s.tick();}};
+describe('중편 · 가정 전투',()=>{
+ it('makes the hill camp sturdy until the spring is cut, then breaks it toward the south exit',()=>{
+  const s=open('S2-06'),ma=s.state.get('ma_su'),def=ma.stats.defense,hp=ma.stats.maxHp;
+  expect(s.phase).toContain('물 잔량 4/4');
+  s.state.survivalClocks.set('water_cut',4);s.act({kind:'endPhase'});
+  expect(s.state.firedEvents.has('jieting/collapse')).toBe(true);expect(s.phase).toContain('도주 저지');
+  expect(ma.stats.defense).toBe(def-3);expect(ma.stats.maxHp).toBe(Math.round(hp/1.5));expect(ma.behavior).toBe('escortee');
+ });
+ it('counts the units that slip through the south exit and fails past the limit',()=>{
+  const s=open('S2-06');s.state.survivalClocks.set('water_cut',4);s.act({kind:'endPhase'});
+  toPlayer(s);
+  const runners=['hill_spear','hill_bow','hill_foot_a'].map(id=>s.state.get(id));
+  runners[0]!.pos={x:9,y:15};runners[1]!.pos={x:10,y:15};s.act({kind:'endPhase'});
+  expect(s.state.survivalClocks.get('escaped')).toBe(2);expect(s.seals).not.toContain(2);expect(s.state.outcome).not.toBe('defeat');
+  toPlayer(s);
+  if(s.state.outcome==='ongoing'){runners[2]!.pos={x:9,y:15};s.act({kind:'endPhase'});}
+  expect(s.state.outcome).toBe('defeat');expect(s.failure).toContain('남쪽 출구');
  });
 });

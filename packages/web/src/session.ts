@@ -40,6 +40,8 @@ import xiangyangStage from '../../data/stages/S2-04.json';
 import xiangyangMap from '../../data/maps/xiangyang-walls.json';
 import xinchengStage from '../../data/stages/S2-05.json';
 import xinchengMap from '../../data/maps/xincheng-fort.json';
+import jietingStage from '../../data/stages/S2-06.json';
+import jietingMap from '../../data/maps/jieting-hill.json';
 import legacyFortMap from './legacy/hanzhong-map-v2.json';
 import legacyFortStage from './legacy/hanzhong-stage-v2.json';
 import { makeUnit, awardedSeals } from '../../core/src/index.ts';
@@ -61,9 +63,10 @@ export const chapters = [
   {stage:guanglingStage as StageDef,map:guanglingMap as MapFile,year:'황초 육년 · 225년',label:'야습과 황제 탈출',quote:'곁에 없다 해도, 길러 둔 손발이 대신 싸운다.'},
   {stage:xiangyangStage as StageDef,map:xiangyangMap as MapFile,year:'황초 칠년 · 226년',label:'세 길목 방어',quote:'모든 문을 같은 칼로 지킬 수는 없다.'},
   {stage:xinchengStage as StageDef,map:xinchengMap as MapFile,year:'태화 이년 · 228년',label:'강행군과 공성',quote:'여드레에 천이백 리. 적이 준비를 마치기 전에 성 아래에 선다.'},
+  {stage:jietingStage as StageDef,map:jietingMap as MapFile,year:'태화 이년 · 228년',label:'수원 차단과 도주 저지',quote:'산 위의 진은 물이 없으면 사흘을 못 간다.'},
 ];
 // Stable indices preserve the existing v2 command saves.
-export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15];
+export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15,16];
 export type Preparation='survival'|'strategy'|'command';
 export const strategies: StrategyDef[] = [
   {id:'windDragon',name:'풍룡',element:'wind',shape:'spread',range:4,radius:1,mpCost:18,power:130,targetSides:['enemy']},
@@ -274,6 +277,7 @@ export class Session {
     if(this.revision===4)for(const gate of s.units.values())if(structureKind(gate.id)==='gate'&&!gate.alive&&!this.breached.has(gate.id)){this.breached.add(gate.id);breachRally(s,gate);}
     const rules=stageRules[s.stage.id],view={state:s,difficulty:this.difficulty,journalLength:this.journal.length};
     if(rules){
+      const lost=s.outcome==='ongoing'?rules.tick?.(view):undefined;if(lost){this.failure=lost;s.outcome='defeat';s.push({t:'outcome',outcome:'defeat'});}
       if(rules.deadline&&s.outcome==='ongoing'&&s.turn>rules.deadline){this.failure=`${rules.deadline}턴 안에 작전을 마치지 못했습니다.`;s.outcome='defeat';s.push({t:'outcome',outcome:'defeat'});}
       this.phase=rules.phase?.(view)??s.scenarioPhase??this.phase;
       if(s.outcome==='defeat'&&!this.failure)this.failure=rules.failure?.(view)??'';
@@ -341,6 +345,8 @@ export class Session {
     if(this.chapter===0)return [1,...(this.bribes===0&&!this.state.choices.some(c=>c.nodeId==='bribe')?[2]:[]),...(['sima_yi','sima_lang'].every(id=>{const u=this.state.get(id);return u.alive&&u.hp>=u.stats.maxHp*.5;})?[3]:[])];
     return awardedSeals(this.state,this.difficulty);
   }
+  /** The turn by which the stage must be won, when its rules set one. */
+  get deadline(){return stageRules[this.state.stage.id]?.deadline;}
   get sealNames(){const named=stageRules[this.state.stage.id]?.sealNames;if(named)return named;return this.chapter===10?['맹약 성사','실언 없는 설득','손권을 단번에']:this.chapter===9?['조조 탈출','조운 봉쇄','신속한 철수']:this.chapter===8?['야곡 출구 도착','손실 최소화','신속한 철수']:this.chapter===7?['전초 수비망 격파','전 부대 생환','신속한 진격']:this.chapter===6?['관문 돌파','호위 부대 보존','신속한 제압']:this.chapter===5?['수송대 탈출','수송대 두 부대 생존','신속한 철수']:this.chapter===4?['흉몽 돌파','사마의 생존','빠른 각성']:this.chapter===0?['탈출 성공','무발각 잠입','형제 체력 50%']:this.chapter===2?['가문 수호','민중·부대 전원 생존','신속한 방어']:this.chapter===3?['산길 탈출','형제 생존','추격 따돌리기']:['성채 점령','신속한 결단','병력 보존'];}
   restorePhase(){if(this.phaseCheckpoint===null)return false;this.journal=this.journal.slice(0,this.phaseCheckpoint);this.checkpoints=this.checkpoints.filter(n=>n<this.journal.length);this.replay();return true;}
   tick(){
