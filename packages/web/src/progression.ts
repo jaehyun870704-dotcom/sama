@@ -1,3 +1,4 @@
+import type {RunBattleRef} from './roguelike.ts';
 import {treasurePowers,treasurePowerText} from '../../core/src/treasure-traits.ts';
 import {extraTreasures} from './treasure-catalogue.ts';
 import type {Difficulty,Unit,UnitClass} from '../../core/src/index.ts';
@@ -5,7 +6,7 @@ import type {Difficulty,Unit,UnitClass} from '../../core/src/index.ts';
 export const OFFICERS=['sima_yi','sima_lang','sima_fang','cao_zhen'] as const;
 export interface Campaign {version:1; xp:Record<string,number>; rewards:string[]; treasures:string[]; equipped:Record<string,string>;loadouts?:Record<string,Partial<Record<GearSlot,string>>>;completedRuns?:string[];trainingWins?:number;quests?:string[]}
 export interface Growth {storyWins:number;trainingWins:number;questWins:number}
-export interface Deployment {treasureRules?:1;levels:Record<string,number>;equipped:Record<string,string>;loadouts?:Record<string,Partial<Record<GearSlot,string>>>;growth?:Growth;mission?:{id:string;runId:string;version?:2|3|4;balance?:1;supportClasses?:UnitClass[]}}
+export interface Deployment {treasureRules?:1;/** 천명의 원정 전투 (로그라이크) */run?:RunBattleRef;levels:Record<string,number>;equipped:Record<string,string>;loadouts?:Record<string,Partial<Record<GearSlot,string>>>;growth?:Growth;mission?:{id:string;runId:string;version?:2|3|4;balance?:1;supportClasses?:UnitClass[]}}
 export type GearSlot="weapon"|"armor"|"accessory";
 export interface Treasure {id:string;name:string;stage:string;glyph:string;effect:string;description:string;bonus:Partial<Unit['stats']>;slot?:GearSlot;grade?:number;icon?:number;quest?:string}
 export const treasures:Treasure[]=[

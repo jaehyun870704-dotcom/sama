@@ -40,6 +40,7 @@ export const troopRoles:Partial<Record<UnitClass,{name:string;role:string;base:U
 export const supportOptions:UnitClass[]=['infantry','fengshui','strategist','shaman','maiden','taoist','physician','monk','horseArcher','bandit','spearman','crossbow','archer','cavalry','heavyCav','catapult','ram','engineer'];
 export function troopStrategies(kind:UnitClass,level:number){const role=troopRoles[kind];return role?allStrategies.filter(s=>role.spells.includes(s.id)&&(s.level<=level||s.id==='mend')).map(s=>s.id):undefined;}
 export function visualClass(kind:UnitClass){return troopRoles[kind]?.base??kind;}
+export const classNames:Record<string,string>={infantry:'보병',spearman:'창병',cavalry:'경기병',heavyCav:'중기병',archer:'궁병',crossbow:'노병',strategist:'책사',fengshui:'풍수사',ram:'충차',catapult:'포차',engineer:'공병',navy:'수군',civilian:'민중',...Object.fromEntries(Object.entries(troopRoles).map(([k,v])=>[k,v.name]))};
 /** The class whose sprite a unit is drawn with: extended classes borrow their lineage's art. */
 export function artClass(kind:UnitClass):UnitClass{return VARIANTS[kind]?(troopRoles[kind]?.base??familyOf(kind)):kind;}
 /** Every class a player can field, by tier: for codex and recruiting. */

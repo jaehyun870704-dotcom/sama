@@ -1,5 +1,5 @@
 import {trialGoals,trialGoalText,trialProgress} from './expedition-objectives.ts';
-import {troopAdvice,recommendExpeditionSupport,supportWarnings,physicalMatchup} from './troop-tactics.ts';
+import {troopAdvice,adviceFor,recommendExpeditionSupport,supportWarnings,physicalMatchup} from './troop-tactics.ts';
 import {officerLooks,officerPortrait,dialogueCaption,splitSpokenLine,storyActorStyle} from './officer-art.ts';
 import {troopRoles,supportOptions,visualClass,troopArt,troopSheets,basicReactionArt} from './troops.ts';
 import {growthMilestones} from './growth-milestones.ts';
@@ -16,6 +16,7 @@ import {SLOT_COUNT,slotKey,readSlot,slotLabel} from './save-slots.ts';
 import {encounterLevels,structureKind,structureFrame,raceGap} from './campaign-rules.ts';
 import {readCampaign,writeCampaign,deployment,levelInfo,award,equip,equipSlot,treasureInfo,type GearSlot,treasures,OFFICERS} from './progression.ts';
 import {storyBeats,storyLocations,storyBackdrop,storyAftermath,acts,stories,epilogueLines} from './story.ts';
+import {openRun,finishRunBattle,RUN_CHAPTER,type RunHost} from './run-ui.ts';
 import './style.css';
 import catalogue from './campaign.json';
 import { Session, chapters, campaignOrder, type Preparation } from './session.ts';
@@ -84,6 +85,7 @@ function storyScene(chapter:number,beat=0,fromArt?:number){
   $('#story-skip').onclick=()=>briefing(chapter);$('#story-next').onclick=()=>beat+1<beats.length?storyScene(chapter,beat+1,location.art):briefing(chapter);
 }
 let menuArc=1;
+const runHost:RunHost={modal:(html,closable)=>modal(html,closable),showMenu:()=>showMenu(),toast:t=>toast(t),startBattle:(dep,seed)=>{session=new Session(RUN_CHAPTER,'normal',seed,'survival',4,dep);activate();}};
 function showMenu(){
   menuOpen=true;clearTimeout(aiTimer);sound.scene='title';sound.combat=false;
   const p=progress(),names=['살아남는 자','맞서는 자','거머쥐는 자'];
@@ -91,10 +93,11 @@ function showMenu(){
     const i=chapters.findIndex(x=>x.stage.id===c.id),ready=i>=0,open=ready&&unlocked(i),won=ready&&cleared(i);
     const act=acts.find(a=>a.arc===menuArc&&a.from===Number(c.id.slice(-2)));
     return `${act?'<h3 class="act-title">'+act.title+'</h3>':''}<button class="journey-node ${won?'cleared':''}" data-chapter="${i}" ${open?'':'disabled'}><span class="chapter-no">${c.id.slice(-2)}</span><span><strong>${c.name}</strong><small>${ready?won?'완료 · 일반 / 극한 재도전':open?'출진 가능 · 권장 Lv.'+encounterLevels[c.id]+' · '+chapters[i]!.label:'앞선 대표 전장 완료 후 개방':'제작 예정'}</small></span><b>${won?'◆':open?'→':'·'}</b></button>`;
-  }).join('')}</div><div class="menu-actions">${saveAvailable?'<button id="resume" class="primary">전투 이어하기 →</button>':''}${hasStarted?'<button id="back-battle">현재 전장</button>':''}${devMode?'<button id="art-preview">개발 · 한중 바로 체험</button>':''}<button id="save-slots">저장 칸</button><button id="expeditions">수련 · 보물 인연</button><button id="troop-gallery">병종 도감</button><button id="officer-gallery">장수 외형</button><button id="chronicle">연의 기록</button></div><p class="prototype-note">${['상편 11전장: 하내의 밤부터 동오 설득까지, 살아남는 법을 배운다.','중편 14전장: 무위 반란부터 오장원까지, 제갈량과 맞선다.','하편 7전장: 요동 원정부터 고평릉의 변과 마지막 출정까지, 권력을 거머쥔다.'][menuArc-1]??''}<br>기록은 이 브라우저에 저장됩니다.</p></div></div>`,false);
+  }).join('')}</div><div class="menu-actions"><button id="run-open" class="primary">천명의 원정 · 로그라이크</button>${saveAvailable?'<button id="resume" class="primary">전투 이어하기 →</button>':''}${hasStarted?'<button id="back-battle">현재 전장</button>':''}${devMode?'<button id="art-preview">개발 · 한중 바로 체험</button>':''}<button id="save-slots">저장 칸</button><button id="expeditions">수련 · 보물 인연</button><button id="troop-gallery">병종 도감</button><button id="officer-gallery">장수 외형</button><button id="chronicle">연의 기록</button></div><p class="prototype-note">${['상편 11전장: 하내의 밤부터 동오 설득까지, 살아남는 법을 배운다.','중편 14전장: 무위 반란부터 오장원까지, 제갈량과 맞선다.','하편 7전장: 요동 원정부터 고평릉의 변과 마지막 출정까지, 권력을 거머쥔다.'][menuArc-1]??''}<br>기록은 이 브라우저에 저장됩니다.</p></div></div>`,false);
   document.querySelectorAll<HTMLButtonElement>('[data-chapter]').forEach(b=>b.onclick=()=>storyScene(Number(b.dataset.chapter)));
   document.querySelectorAll<HTMLButtonElement>('[data-arc]').forEach(b=>b.onclick=()=>{menuArc=Number(b.dataset.arc);showMenu();});
   $('#expeditions').onclick=showExpeditions;
+  $('#run-open').onclick=()=>openRun(runHost);
   $('#troop-gallery').onclick=()=>showTroopGallery();$('#officer-gallery').onclick=showOfficerGallery;
   $('#art-preview')?.addEventListener('click',()=>{session=new Session(1,'normal',215,'survival',4,deployment(campaign,true));activate();});
   $('#chronicle').onclick=()=>{modal(`<div class="briefing"><div class="eyebrow">연의 기록</div><h2>지나온 전장</h2>${campaignOrder.map(i=>`<p>${chapters[i]!.stage.subtitle} · ${cleared(i)?'일반 완료':'미완료'} · 인장 ${(p[chapters[i]!.stage.id+':normal']??[]).length}/3</p>`).join('')}<p>동료는 이야기에 따라 합류합니다. 패배해도 다음 출진의 기본 보급은 줄어들지 않습니다.</p><button id="record-back">← 연의 지도</button></div>`,false);$('#record-back').onclick=showMenu;};
@@ -107,7 +110,7 @@ function showSlots(){
   const rows=Array.from({length:SLOT_COUNT},(_,i)=>{const r=readSlot(readStore(slotKey(i+1)));return `<div class="slot-row"><div><strong>${i+1}번 칸</strong><small>${slotLabel(r)}</small></div><div class="slot-actions">${hasStarted&&session.state.outcome==='ongoing'?`<button data-slot-save="${i+1}">현재 전투 저장</button>`:''}${r?`<button data-slot-load="${i+1}">불러오기</button><button data-slot-clear="${i+1}" aria-label="${i+1}번 칸 지우기">지우기</button>`:''}</div></div>`;}).join('');
   modal(`<div class="briefing"><div class="eyebrow">기록</div><h2>저장 칸</h2><p class="muted">자동 저장은 매 행동마다 이어하기 칸에 남습니다. 갈림길 앞에서는 수동 칸에 따로 저장해 두세요. 연의 진행(완료·성장·보물)은 모든 칸이 함께 씁니다.</p>${rows}<button id="slots-back">← 연의 지도</button></div>`,false);
   document.querySelectorAll<HTMLButtonElement>('[data-slot-save]').forEach(b=>b.onclick=()=>{
-    const c=chapters[session.chapter]!,title=session.deployment?.mission?'외전':c.stage.subtitle??c.stage.title;
+    const c=chapters[session.chapter]!,title=session.deployment?.run?`원정 ${session.deployment.run.floor}층`:session.deployment?.mission?'외전':c.stage.subtitle??c.stage.title;
     try{localStorage.setItem(slotKey(Number(b.dataset.slotSave)),JSON.stringify({meta:{title,turn:session.state.turn,difficulty:session.difficulty,at:Date.now()},save:session.save()}));toast(`${b.dataset.slotSave}번 칸에 저장했습니다.`);}catch{toast('이 브라우저에서는 저장할 수 없습니다.');}
     showSlots();});
   document.querySelectorAll<HTMLButtonElement>('[data-slot-load]').forEach(b=>b.onclick=()=>{
@@ -205,9 +208,9 @@ function portraitFor(u:Unit,reaction=false):string{
 function raceLabel(s:BattleState){const g=raceGap(s);if(!g||g.ally===undefined)return '우군 선점 저지';return `경쟁 우군 성채까지 ${g.ally}칸 · 사마의 ${g.hero??'-'}칸${g.hero!==undefined&&g.ally<g.hero?' ⚠ 우군이 앞섬':''}`;}
 const ARCS:Record<string,[string,string,string]>={upper:['Ⅰ','상편','살아남는 자'],middle:['Ⅱ','중편','맞서는 자'],lower:['Ⅲ','하편','거머쥐는 자']};
 function render(){
-  {const [no,arc,name]=ARCS[(session.state.stage as {arc?:string}).arc??'upper']??ARCS.upper!;$('#arc-crumb').innerHTML=`${arc} <span>/</span> ${name}`;$('#arc-eyebrow').innerHTML=`CHAPTER ${no} <span>${arc}</span>`;}
-  const s=session.state,c=session.deployment?.mission?{...chapters[session.chapter]!,stage:s.stage,year:'외전 · 수련과 인연'}:chapters[session.chapter]!;
-  $('#stage-title').textContent=c.stage.title;$('#stage-subtitle').textContent=`제 ${c.stage.order}장 · ${s.difficulty==='normal'?'일반':'극한'}`;
+  {const [no,arc,name]=session.deployment?.run?['∞','원정','천명의 길']:ARCS[(session.state.stage as {arc?:string}).arc??'upper']??ARCS.upper!;$('#arc-crumb').innerHTML=`${arc} <span>/</span> ${name}`;$('#arc-eyebrow').innerHTML=`CHAPTER ${no} <span>${arc}</span>`;}
+  const s=session.state,c=session.deployment?.run?{...chapters[session.chapter]!,stage:s.stage,year:`천명의 원정 · ${session.deployment.run.floor}층`}:session.deployment?.mission?{...chapters[session.chapter]!,stage:s.stage,year:'외전 · 수련과 인연'}:chapters[session.chapter]!;
+  $('#stage-title').textContent=c.stage.title;$('#stage-subtitle').textContent=session.deployment?.run?`천명의 원정 · ${session.deployment.run.floor}/12층`:`제 ${c.stage.order}장 · ${s.difficulty==='normal'?'일반':'극한'}`;
   $('#map-name').textContent=c.stage.subtitle??c.stage.title;$('#year').textContent=`${c.year} · ${s.map.width}×${s.map.height}`;
   document.body.classList.toggle('nightmare',session.chapter===4);
   $('.weather').textContent=session.weather;
@@ -251,7 +254,7 @@ function renderCoach(){
 function renderUnit(u:Unit|undefined){
   if(!u)return;const s=session.state,can=u.alive&&!u.hasActed&&u.side===s.currentSide&&CONTROLLABLE.has(u.side)&&s.outcome==='ongoing';
   const feature=session.revision===4?officerFeatures[u.id]:undefined;const talents=session.deployment?.growth?talentTree(u.id,u.level,session.deployment.growth):[];
-  $('#unit-detail').innerHTML=`<div class="portrait"><div>${portraitFor(u)}</div><span class="portrait-tag">${sideNames[u.side]}</span><div class="portrait-title"><h2>${unitName(u)}</h2><span>${classNames[u.unitClass]}</span></div></div><p class="troop-tactic-card">${troopAdvice[u.unitClass]}<br><small>일반 공격 사거리 ${u.range[0]}~${u.range[1]}</small></p><div class="unit-meta"><span>${classNames[u.unitClass]}</span><b>Lv.${u.level}</b></div>${[['hp','체력',u.hp,u.stats.maxHp],['mp','책략',u.mp,u.stats.maxMp]].map(([kind,name,value,max])=>`<div class="stat-bar ${kind}"><div><span>${name}</span><b>${value}<small> / ${max}</small></b></div><i><i style="width:${Number(value)/Math.max(1,Number(max))*100}%"></i></i></div>`).join('')}<div class="stats">${[['무력',martialPower(u)],['공격',u.stats.attack],['방어',u.stats.defense],['지력',u.stats.intellect],['이동',u.stats.movement]].map(([k,v])=>`<div><small>${k}</small><b>${v}</b></div>`).join('')}</div>${feature?session.deployment?.growth&&['sima_yi','sima_lang','sima_fang','cao_zhen'].includes(u.id)?talents.map(t=>`<p class="feature-card ${t.ready?'':'locked'}"><b>${t.ready?'◆':'◇'} ${t.name}</b><br>${t.ready?t.description:t.requirement}</p>`).join(''):`<p class="feature-card"><b>${feature.name}</b><br>${feature.description}</p>`:''}${u.statuses.length?`<p>${u.statuses.map(x=>({confusion:'혼란',burn:'화상',seal:'봉인',immobile:'속박'}[x.kind as string]??x.kind)+' '+x.turns+'턴').join(' · ')}</p>`:''}`;
+  $('#unit-detail').innerHTML=`<div class="portrait"><div>${portraitFor(u)}</div><span class="portrait-tag">${sideNames[u.side]}</span><div class="portrait-title"><h2>${unitName(u)}</h2><span>${classNames[u.unitClass]}</span></div></div><p class="troop-tactic-card">${adviceFor(u.unitClass)}<br><small>일반 공격 사거리 ${u.range[0]}~${u.range[1]}</small></p><div class="unit-meta"><span>${classNames[u.unitClass]}</span><b>Lv.${u.level}</b></div>${[['hp','체력',u.hp,u.stats.maxHp],['mp','책략',u.mp,u.stats.maxMp]].map(([kind,name,value,max])=>`<div class="stat-bar ${kind}"><div><span>${name}</span><b>${value}<small> / ${max}</small></b></div><i><i style="width:${Number(value)/Math.max(1,Number(max))*100}%"></i></i></div>`).join('')}<div class="stats">${[['무력',martialPower(u)],['공격',u.stats.attack],['방어',u.stats.defense],['지력',u.stats.intellect],['이동',u.stats.movement]].map(([k,v])=>`<div><small>${k}</small><b>${v}</b></div>`).join('')}</div>${feature?session.deployment?.growth&&['sima_yi','sima_lang','sima_fang','cao_zhen'].includes(u.id)?talents.map(t=>`<p class="feature-card ${t.ready?'':'locked'}"><b>${t.ready?'◆':'◇'} ${t.name}</b><br>${t.ready?t.description:t.requirement}</p>`).join(''):`<p class="feature-card"><b>${feature.name}</b><br>${feature.description}</p>`:''}${u.statuses.length?`<p>${u.statuses.map(x=>({confusion:'혼란',burn:'화상',seal:'봉인',immobile:'속박'}[x.kind as string]??x.kind)+' '+x.turns+'턴').join(' · ')}</p>`:''}`;
   const buttons=[{id:'move',name:'이동',icon:'➶',meta:'1',disabled:u.hasMoved},{id:'attack',name:'공격',icon:'⚔',meta:'2',disabled:u.unitClass==='civilian'},...u.strategies.map(id=>({id,name:s.strategies.get(id)!.name,icon:({fire:'화',windDragon:'풍',bind:'속',confuse:'혼',flood:'수',thunder:'뢰',inferno:'염'} as Record<string,string>)[id]??'책',meta:s.strategies.get(id)!.mpCost+' MP',disabled:u.mp<s.strategies.get(id)!.mpCost||s.hasStatus(u,'seal')})),{id:'wait',name:'대기',icon:'◷',meta:'W',disabled:false}];
   if(session.deployment&&u.unitClass==='fengshui')buttons.push({id:'heal',name:'치유',icon:'치',meta:'8 MP',disabled:u.mp<8||s.hasStatus(u,'seal')});
   if(u.unitClass==='engineer')buttons.push({id:'repair',name:'수리',icon:'수',meta:'인접',disabled:false},{id:'fortify',name:'방책',icon:'책',meta:session.barricadesLeft(u.id)+'회',disabled:session.barricadesLeft(u.id)<=0});
@@ -290,6 +293,11 @@ function checkModal(){
   if(menuOpen||field.busy)return;const s=session.state;
   if(session.activeDuel||session.lastDuel&&!duelPresented){showDuel();return;}
   if(s.outcome!=='ongoing'&&session.deployment?.mission){showExpeditionResult();return;}
+  if(s.outcome!=='ongoing'&&session.deployment?.run){
+    // 원정 전투: 연의 보상 대신 원정 기록에 결과를 넘긴다.
+    if(resultShown)return;resultShown=true;sound.sfx(s.outcome==='victory'?'victory':'defeat');
+    const dep=session.deployment;setTimeout(()=>finishRunBattle(runHost,s,dep),900);return;
+  }
   if(s.outcome!=='ongoing'){
     if(resultShown)return;resultShown=true;const win=s.outcome==='victory',seals=session.seals;
     const before=structuredClone(campaign);

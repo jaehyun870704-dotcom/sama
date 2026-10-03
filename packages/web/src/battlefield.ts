@@ -12,7 +12,7 @@ import {stageRules} from './stage-rules.ts';
 import {factionOf} from './officer-art.ts';
 import {crispZoom,groundScaleMode,unitTint} from './pixel-look.ts';
 import type {LogEntry} from '../../core/src/index.ts';
-import { key, manhattan, ignoresRough } from '../../core/src/index.ts';
+import { key, manhattan, ignoresRough, tierOf } from '../../core/src/index.ts';
 import type { BattleState, Coord, Unit, TerrainKind } from '../../core/src/index.ts';
 
 const W=48,H=48;
@@ -20,7 +20,8 @@ async function imageCanvas(url:string){const img=new Image();img.src=url;await i
 const colors:Record<TerrainKind,number>={plain:0x6b7560,road:0xada084,forest:0x435f50,mountain:0x69736d,hill:0x83846a,water:0x3d6770,rapids:0x3d6770,bridge:0x98846a,fort:0xab9e7b,gate:0x8b8a77,wall:0x777f74,cliff:0x5b554b,marsh:0x6f8a5c,plank:0x8a6a45,ford:0x6f9ea3};
 const sides={player:0x68c9bf,ally:0x86b7d9,allyAi:0xd3b06b,enemy:0xe78b79};
 export const terrainNames:Record<TerrainKind,string>={plain:'평지',road:'길',forest:'숲',mountain:'산지',hill:'구릉',water:'수상',rapids:'완류',bridge:'다리',fort:'성채',gate:'성문',wall:'성벽',cliff:'절벽(통행 불가)',marsh:'갈대늪',plank:'잔도',ford:'여울'};
-export const classNames:Record<string,string>={infantry:'보병',spearman:'창병',cavalry:'경기병',heavyCav:'중기병',archer:'궁병',crossbow:'노병',strategist:'책사',fengshui:'풍수사',ram:'충차',catapult:'포차',engineer:'공병',navy:'수군',civilian:'민중',...Object.fromEntries(Object.entries(troopRoles).map(([k,v])=>[k,v.name]))};
+export {classNames} from './troops.ts';
+import {classNames} from './troops.ts';
 export function unitName(u:Unit){return classNames[u.name]??u.name;}
 function iso(c:Coord){return {x:c.x*W+W/2,y:c.y*H+H/2};}
 /** A named officer on the field: a victory/defeat target or someone with a known allegiance. */
@@ -273,7 +274,10 @@ export class Battlefield {
         actor.sprite.texture=this.unitTexture(unit,this.facing.get(unit.id)??0);actor.sprite.alpha=1;actor.sprite.tint=unitTint(unit);
         if(actor.piece.children.length>2)for(const child of actor.piece.removeChildren(2))child.destroy();
         const bar=new Graphics();if(unit.id===selected||unit.id==='rescue_target'||unit.id==='convoy_trial')bar.ellipse(0,7,22,10).stroke({color:0xffe9aa,width:2});
-        const ratio=Math.max(0,unit.hp/unit.stats.maxHp);bar.rect(-18,12,36,7).fill(0x0d1310).rect(-17,13,34,5).fill(0x40312a).rect(-17,13,Math.round(34*ratio),5).fill(ratio<.3?0xf06a4f:sides[unit.side]).rect(-17,13,Math.round(34*ratio),1).fill({color:0xffffff,alpha:.35});actor.piece.addChild(bar);
+        const ratio=Math.max(0,unit.hp/unit.stats.maxHp);bar.rect(-18,12,36,7).fill(0x0d1310).rect(-17,13,34,5).fill(0x40312a).rect(-17,13,Math.round(34*ratio),5).fill(ratio<.3?0xf06a4f:sides[unit.side]).rect(-17,13,Math.round(34*ratio),1).fill({color:0xffffff,alpha:.35});
+        // Evolved troops (tier 2/3) wear gold rank diamonds beside the health bar.
+        for(let t=1;t<tierOf(unit.unitClass);t++){const x=-25,y=15-(t-1)*8;bar.poly([x,y-4,x+3.5,y,x,y+4,x-3.5,y]).fill(0xe8c06a).stroke({color:0x2a1d0b,width:1.2});}
+        actor.piece.addChild(bar);
         if(structureKind(unit.id)){const hp=new Text({text:unit.hp+'/'+unit.stats.maxHp,style:{fontFamily:'Malgun Gothic',fontSize:10,fontWeight:'700',fill:unit.hp<unit.stats.maxHp*.35?0xffa58a:0xfff1cf,stroke:{color:0x16130f,width:3}}});hp.anchor.set(.5,0);hp.y=20;actor.piece.addChild(hp);}
         else if(unit.id===selected||unit.side==='player'||['rescue_target','convoy_trial'].includes(unit.id)||isCommander(state,unit)){
           // Named commanders (targets, protected officers) carry their name so they stand out from the rank and file.
