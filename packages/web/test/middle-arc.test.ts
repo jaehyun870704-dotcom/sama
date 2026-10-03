@@ -180,3 +180,25 @@ describe('중편 · 호로곡 탈출전',()=>{
   s.act({kind:'choose',nodeId:'hulu_rain',optionId:'run'});expect(s.state.victory).toEqual([{type:'reach',unit:'sima_yi',target:'exit'}]);
  });
 });
+describe('중편 · 오장원 추격전',()=>{
+ it('ends the chase the moment the banner turns, panicking all but Sima Yi',()=>{
+  const s=open('S2-14');expect(s.phase).toContain('저지 0/4');expect(s.medicine).toBe(3);
+  for(const id of ['column_0','column_1','column_2','column_3'])s.state.retreat(s.state.get(id));
+  s.act({kind:'endPhase'});
+  expect(s.state.firedEvents.has('wuzhang/banner')).toBe(true);expect(s.state.activeDialogue).toBe('banner');
+  expect(s.state.living('enemy').some(u=>u.behavior==='flee')).toBe(false);expect(s.state.find('jiang_wei')?.alive).toBe(true);
+  expect(s.state.hasStatus(s.state.get('sima_yi'),'confusion')).toBe(false);
+  const others=[...s.state.living('player'),...s.state.living('ally')].filter(u=>u.id!=='sima_yi');expect(others.length).toBeGreaterThan(0);expect(others.every(u=>s.state.hasStatus(u,'confusion'))).toBe(true);
+  s.act({kind:'choose',nodeId:'banner',optionId:'withdraw'});expect(s.state.victory).toEqual([{type:'reach',unit:'sima_yi',target:'east_exit'}]);
+  expect(s.somber).toBe(true);
+ });
+ it('lets first aid calm a confused ally within two tiles',()=>{
+  const s=open('S2-14');for(const u of [...s.state.living('player'),...s.state.living('ally')]){u.stats.maxHp=u.hp=999;u.stats.defense=99;}
+  s.state.turn=6;s.act({kind:'endPhase'});s.act({kind:'choose',nodeId:'banner',optionId:'withdraw'});
+  toPlayer(s);
+  const yi=s.state.get('sima_yi'),near=[...s.state.living('player'),...s.state.living('ally')].find(u=>u.id!=='sima_yi'&&Math.abs(u.pos.x-yi.pos.x)+Math.abs(u.pos.y-yi.pos.y)<=2&&s.state.hasStatus(u,'confusion'));
+  expect(near).toBeDefined();const before=s.medicine;
+  expect(s.act({kind:'item',unit:'sima_yi',item:'calm',target:near!.id}).ok).toBe(true);
+  expect(s.state.hasStatus(near!,'confusion')).toBe(false);expect(s.medicine).toBe(before-1);
+ });
+});

@@ -1,4 +1,5 @@
 import type {BattleState,Difficulty} from '../../core/src/index.ts';
+import {fireScripted} from '../../core/src/index.ts';
 
 /** Per-stage rules that live in the client layer (protected units, phase readouts,
  * custom seals). New stages register here instead of growing Session with branches. */
@@ -7,6 +8,10 @@ export interface StageRules {
   sealNames:[string,string,string];
   /** A costly win: the result plays a gong instead of the victory fanfare. */
   somber?:boolean;
+  /** Starting first-aid stock (default 2). */
+  medicine?:number;
+  /** First aid can also calm a confused ally within two tiles (진정). */
+  calm?:boolean;
   /** Weather line shown over the map. */
   weather?:string;
   /** Non-combatants under escort: unarmed, sturdier, slower. */
@@ -37,6 +42,32 @@ export interface StageRules {
 const HILL=['ma_su','hill_spear','hill_bow','hill_foot_a','hill_foot_b','hill_xbow'];
 
 export const stageRules:Record<string,StageRules>={
+  'S2-14':{
+    sealNames:['무사 철수','추격 저지','병력 보존'],
+    somber:true,
+    calm:true,
+    medicine:3,
+    weather:'가을 하늘 · 큰 별이 떨어진 다음 날',
+    labels:[{region:'west_exit',text:'촉의 퇴로'},{region:'east_exit',text:'동쪽 철수로'},{region:'plateau',text:'오장원'}],
+    tick:({state})=>{
+      if(!state.firedEvents.has('wuzhang/banner')){
+        for(const u of state.living('enemy'))if(u.behavior==='flee'&&state.map.regionCoords('west_exit').some(c=>c.x===u.pos.x&&c.y===u.pos.y)){state.units.delete(u.id);state.survivalClocks.set('escaped',(state.survivalClocks.get('escaped')??0)+1);}
+        if(state.losses.enemy>=4||state.turn>=6){
+          // The chase ends the moment the army wavers: what is still fleeing is simply gone.
+          for(const u of state.living('enemy'))if(u.behavior==='flee'){state.units.delete(u.id);}
+          fireScripted(state,'wuzhang/banner');
+          // Sima Yi alone keeps his head: he is the one who calms the others and leads the withdrawal.
+          const yi=state.find('sima_yi');if(yi)yi.statuses=yi.statuses.filter(x=>x.kind!=='confusion');
+        }
+      }
+      return undefined;
+    },
+    phase:({state})=>{const p=state.scenarioPhase??'추격';
+      if(p==='추격')return `추격 · 저지 ${state.losses.enemy}/4 · 빠져나간 촉군 ${state.survivalClocks.get('escaped')??0}`;
+      return '동요 · 추격을 멈추고 사마의를 동쪽으로';},
+    // 병력 보존: no one lost, and every unit brought back east of the plateau (x ≥ 17), not abandoned in the panic.
+    seals:({state})=>[1,...((state.survivalClocks.get('escaped')??0)<=1?[2]:[]),...(state.losses.player+state.losses.ally===0&&[...state.living('player'),...state.living('ally')].every(u=>u.pos.x>=17)?[3]:[])],
+  },
   'S2-13':{
     sealNames:['호로곡 탈출','부대 보존','신속한 탈출'],
     weather:'마른 하늘 · 골짜기의 불',

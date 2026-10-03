@@ -19,7 +19,7 @@ export interface SoundShot {name:string;delay?:number;gain?:number;rate?:number;
 const HORSE=['cavalry','heavyCav','horseArcher'],BOW=['archer','horseArcher'],SAGE=['strategist','fengshui','shaman','maiden','taoist','physician'];
 /** Recipe for a strategy: element first, then the kind of support. */
 export function strategySound(id=''):string{
-  if(id==='heal')return 'heal';if(id==='repair')return 'repair';
+  if(id==='heal'||id==='calm')return 'heal';if(id==='repair')return 'repair';
   const s=allStrategies.find(x=>x.id===id);
   if(!s)return 'cast';
   if(s.support)return s.support==='heal'||s.support==='cleanse'?'heal':'buff';

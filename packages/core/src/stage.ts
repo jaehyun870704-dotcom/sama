@@ -53,7 +53,9 @@ export interface Trigger {
     | "hp_below"
     | "unit_surrounded"
     | "region_held"
-    | "unit_spotted";
+    | "unit_spotted"
+    /** Never fires on its own: the host fires it by id (fireScripted) when its own rule is met. */
+    | "scripted";
   turn?: number;
   every?: number;
   unit?: string;

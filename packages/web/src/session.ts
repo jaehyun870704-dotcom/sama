@@ -56,6 +56,8 @@ import weishuiStage from '../../data/stages/S2-12.json';
 import weishuiMap from '../../data/maps/weishui-banks.json';
 import huluStage from '../../data/stages/S2-13.json';
 import huluMap from '../../data/maps/hulu-valley.json';
+import wuzhangStage from '../../data/stages/S2-14.json';
+import wuzhangMap from '../../data/maps/wuzhang-plain.json';
 import legacyFortMap from './legacy/hanzhong-map-v2.json';
 import legacyFortStage from './legacy/hanzhong-stage-v2.json';
 import { makeUnit, awardedSeals } from '../../core/src/index.ts';
@@ -85,9 +87,10 @@ export const chapters = [
   {stage:mumenStage as StageDef,map:mumenMap as MapFile,year:'태화 오년 · 231년',label:'선봉과 본대',quote:'쫓으라 한 것도 나였고, 멈추라 하지 못한 것도 나였다.'},
   {stage:weishuiStage as StageDef,map:weishuiMap as MapFile,year:'청룡 이년 · 234년',label:'세 여울의 방어',quote:'적이 어디로 오는지 알면, 예비대는 한 번만 움직이면 된다.'},
   {stage:huluStage as StageDef,map:huluMap as MapFile,year:'청룡 이년 · 234년',label:'합류와 버티기',quote:'불은 사람이 놓았고, 비는 하늘이 내렸다.'},
+  {stage:wuzhangStage as StageDef,map:wuzhangMap as MapFile,year:'청룡 이년 · 234년',label:'추격과 동요',quote:'죽은 제갈이 산 중달을 달아나게 했다.'},
 ];
 // Stable indices preserve the existing v2 command saves.
-export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23];
+export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24];
 export type Preparation='survival'|'strategy'|'command';
 export const strategies: StrategyDef[] = [
   {id:'windDragon',name:'풍룡',element:'wind',shape:'spread',range:4,radius:1,mpCost:18,power:130,targetSides:['enemy']},
@@ -205,7 +208,7 @@ export class Session {
     if(result.ok){this.checkpoints.push(this.journal.length);this.journal.push(structuredClone(cmd));}
     return result;
   }
-  private resetScenario(){this.fortified.clear();this.breached.clear();this.activeDuel=null;this.lastDuel=null;this.challenged.clear();this.funds=3000;this.bribes=0;this.medicine=2;this.scouted=false;this.failure='';this.phaseCheckpoint=null;const startRules=stageRules[this.state.stage.id];this.phase=startRules?.phase?.({state:this.state,difficulty:this.difficulty,journalLength:0})??(this.state.scenarioPhase||'');if(startRules)return;this.phase=this.chapter===10?`설득 · 장소 · 신뢰 ${this.trustLimit}/${this.trustLimit}`:this.chapter===8&&this.state.scenarioPhase==='부교 재건'?'부교 재건 0/2 · 강변을 지키세요':this.chapter===9&&this.state.scenarioPhase==='조운 봉쇄'?`조운 봉쇄 ${encircled(this.state,'zhao_yun')}/4 · 사방을 막으세요`:this.state.scenarioPhase|| (this.chapter===2?'창고 확보':this.chapter===0?'잠입':this.chapter===3?'탈출로 선택':this.chapter===5?'수송로 선택':this.chapter===6?'호위 병력 배치':'외곽 돌파');}
+  private resetScenario(){this.fortified.clear();this.breached.clear();this.activeDuel=null;this.lastDuel=null;this.challenged.clear();this.funds=3000;this.bribes=0;this.medicine=2;this.scouted=false;this.failure='';this.phaseCheckpoint=null;const startRules=stageRules[this.state.stage.id];this.medicine=startRules?.medicine??2;this.phase=startRules?.phase?.({state:this.state,difficulty:this.difficulty,journalLength:0})??(this.state.scenarioPhase||'');if(startRules)return;this.phase=this.chapter===10?`설득 · 장소 · 신뢰 ${this.trustLimit}/${this.trustLimit}`:this.chapter===8&&this.state.scenarioPhase==='부교 재건'?'부교 재건 0/2 · 강변을 지키세요':this.chapter===9&&this.state.scenarioPhase==='조운 봉쇄'?`조운 봉쇄 ${encircled(this.state,'zhao_yun')}/4 · 사방을 막으세요`:this.state.scenarioPhase|| (this.chapter===2?'창고 확보':this.chapter===0?'잠입':this.chapter===3?'탈출로 선택':this.chapter===5?'수송로 선택':this.chapter===6?'호위 병력 배치':'외곽 돌파');}
   get pressure(){return this.state.turn-1+(this.state.choices.some(c=>c.nodeId==='bluff_warning'&&c.optionId==='commit')?2:0);}
   /** S1-11: the court's trust. Every wrong argument costs one; at zero the embassy fails. */
   get trustLimit(){return this.difficulty==='extreme'?2:3;}
@@ -251,6 +254,14 @@ export class Session {
         if(s.hasStatus(u,'seal')||!target?.alive||target.side==='enemy'||target.hp>=target.stats.maxHp||manhattan(u.pos,target.pos)>3||u.mp<8)return {ok:false,error:'MP 8과 3칸 이내의 부상당한 아군이 필요합니다.'};
         const amount=Math.min(35,target.stats.maxHp-target.hp);target.hp+=amount;u.mp-=8;
         s.push({t:'strategy',caster:u.id,strategy:'heal',targets:[target.id],damage:[-amount]});
+        const result=this.battle.execute({kind:'wait',unit:u.id});this.advanceScenario();return result;
+      }
+      // 진정: a first-aid kit spent to bring a confused ally (within two tiles) back to their senses.
+      if(cmd.item==='calm'&&stageRules[s.stage.id]?.calm){
+        const target=s.find(cmd.target??'');
+        if(this.medicine<=0||!target?.alive||(target.side!=='player'&&target.side!=='ally')||!s.hasStatus(target,'confusion')||manhattan(u.pos,target.pos)>2)return {ok:false,error:'2칸 이내에서 혼란에 빠진 아군과 남은 구급약이 필요합니다.'};
+        target.statuses=target.statuses.filter(x=>x.kind!=='confusion');this.medicine--;
+        s.push({t:'strategy',caster:u.id,strategy:'calm',targets:[target.id],damage:[0]});
         const result=this.battle.execute({kind:'wait',unit:u.id});this.advanceScenario();return result;
       }
       if(cmd.item==='repair'){
@@ -371,6 +382,7 @@ export class Session {
   /** The turn by which the stage must be won, when its rules set one. */
   get deadline(){return stageRules[this.state.stage.id]?.deadline;}
   get somber(){return stageRules[this.state.stage.id]?.somber===true;}
+  get canCalm(){return stageRules[this.state.stage.id]?.calm===true;}
   get weather(){return this.chapter===4?'☾ 흉몽 · 짙은 안개':stageRules[this.state.stage.id]?.weather??'☀ 맑음 · 바람 약함';}
   get sealNames(){const named=stageRules[this.state.stage.id]?.sealNames;if(named)return named;return this.chapter===10?['맹약 성사','실언 없는 설득','손권을 단번에']:this.chapter===9?['조조 탈출','조운 봉쇄','신속한 철수']:this.chapter===8?['야곡 출구 도착','손실 최소화','신속한 철수']:this.chapter===7?['전초 수비망 격파','전 부대 생환','신속한 진격']:this.chapter===6?['관문 돌파','호위 부대 보존','신속한 제압']:this.chapter===5?['수송대 탈출','수송대 두 부대 생존','신속한 철수']:this.chapter===4?['흉몽 돌파','사마의 생존','빠른 각성']:this.chapter===0?['탈출 성공','무발각 잠입','형제 체력 50%']:this.chapter===2?['가문 수호','민중·부대 전원 생존','신속한 방어']:this.chapter===3?['산길 탈출','형제 생존','추격 따돌리기']:['성채 점령','신속한 결단','병력 보존'];}
   restorePhase(){if(this.phaseCheckpoint===null)return false;this.journal=this.journal.slice(0,this.phaseCheckpoint);this.checkpoints=this.checkpoints.filter(n=>n<this.journal.length);this.replay();return true;}

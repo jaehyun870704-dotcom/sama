@@ -179,7 +179,7 @@ function describe(e:LogEntry){const name=(id:string)=>session.state.find(id)?.na
   case 'turnStart':return `${e.turn}턴 · ${sideNames[e.side]}의 차례입니다.`;
   case 'move':return `${name(e.unit)} 이동 · ${terrainNames[session.state.map.tileAt(e.to).terrain]}`;
   case 'attack':case 'counter':return `${name(e.attacker)}${e.t==='counter'?' 반격':' 공격'} → ${name(e.defender)} · ${e.hit?e.damage+' 피해':'회피'}`;
-  case 'strategy':return `${name(e.caster)} · ${e.strategy==='heal'?'치유':e.strategy==='repair'?'수리':session.state.strategies.get(e.strategy)?.name??e.strategy} · ${Math.abs(e.damage.reduce((a,b)=>a+b,0))}${e.damage.some(d=>d<0)?' 회복':e.damage.every(d=>d===0)?' 지원':' 피해'}`;
+  case 'strategy':return `${name(e.caster)} · ${e.strategy==='heal'?'치유':e.strategy==='calm'?'진정':e.strategy==='repair'?'수리':session.state.strategies.get(e.strategy)?.name??e.strategy} · ${Math.abs(e.damage.reduce((a,b)=>a+b,0))}${e.damage.some(d=>d<0)?' 회복':e.damage.every(d=>d===0)?' 지원':' 피해'}`;
   case 'retreat':return structureKind(e.unit)==='gate'?`${name(e.unit)} 파괴 · 성문 돌파! 주변 아군 사기 상승`:`${name(e.unit)} ${structureKind(e.unit)?'파괴':'퇴각'}`;
   case 'spawn':return e.units.some(id=>structureKind(id)==='barricade')?'공병이 방책을 세웠습니다.':'';
   case 'outcome':return e.outcome==='victory'?'작전 성공.':'작전 실패.';
@@ -250,12 +250,13 @@ function renderUnit(u:Unit|undefined){
   if(session.deployment&&u.unitClass==='fengshui')buttons.push({id:'heal',name:'치유',icon:'치',meta:'8 MP',disabled:u.mp<8||s.hasStatus(u,'seal')});
   if(u.unitClass==='engineer')buttons.push({id:'repair',name:'수리',icon:'수',meta:'인접',disabled:false},{id:'fortify',name:'방책',icon:'책',meta:session.barricadesLeft(u.id)+'회',disabled:session.barricadesLeft(u.id)<=0});
   if(session.revision===4&&!['civilian','ram','catapult'].includes(u.unitClass)&&!structureKind(u.id))buttons.push({id:'duel',name:'일기토',icon:'겨',meta:'5합',disabled:false},{id:'debate',name:'설전',icon:'논',meta:'5합',disabled:false});
+  if(session.canCalm)buttons.push({id:'calm',name:'진정',icon:'진',meta:String(session.medicine),disabled:!session.medicine});
   buttons.push({id:'scout',name:'살피기',icon:'살',meta:'행동',disabled:session.scouted},{id:'medicine',name:'구급약',icon:'약',meta:String(session.medicine),disabled:!u.canUseItems||u.unitClass==='civilian'||!session.medicine||u.hp===u.stats.maxHp});
   const region=[...s.map.regions].find(([name,coords])=>s.victory.some(v=>v.type==='capture'&&v.target===name)&&coords.some(c=>c.x===u.pos.x&&c.y===u.pos.y));
   if(region&&u.side==='player')buttons.push({id:'capture',name:'거점 확보',icon:'⚑',meta:'',disabled:session.chapter===6&&!!s.find('ma_chao')?.alive});
   $('#commands').innerHTML=buttons.map(b=>`<button title="${strategyHint(b.id)}" data-command="${b.id}" class="${mode===b.id?'active':''}" ${!can||b.disabled||field.busy?'disabled':''}><span>${b.icon}</span>${b.name}<small>${b.meta}</small></button>`).join('');
   document.querySelectorAll<HTMLButtonElement>('[data-command]').forEach(b=>b.onclick=()=>{const id=b.dataset.command!;if(id==='wait')act({kind:'wait',unit:u.id});else if(id==='capture'&&region)act({kind:'capture',unit:u.id,region:region[0]});else if(['scout','medicine'].includes(id)){if(id==='scout')threat=true;act({kind:'item',unit:u.id,item:id});}else{mode=id;render();}});
-  $('#command-hint').textContent=!can?'해당 부대의 차례에 조작할 수 있습니다.':mode==='move'?'푸른 칸을 선택해 이동하세요.':mode==='heal'?'3칸 이내 부상당한 아군을 선택하세요.':mode==='repair'?'인접한 아군 충차·포차·방책·성문을 선택해 수리하세요.':mode==='fortify'?'인접한 빈 칸을 선택해 방책을 세우세요.':s.strategies.get(mode)?.targetSides.includes('player')?'사거리 안의 아군을 선택해 지원하세요.':mode==='duel'?'인접한 적을 선택하세요. 무력으로 5합을 겨룹니다.':mode==='debate'?'3칸 이내 적을 선택하세요. 지력으로 5합을 겨룹니다.':'사거리 안의 적을 선택하세요.';
+  $('#command-hint').textContent=!can?'해당 부대의 차례에 조작할 수 있습니다.':mode==='move'?'푸른 칸을 선택해 이동하세요.':mode==='heal'?'3칸 이내 부상당한 아군을 선택하세요.':mode==='calm'?'2칸 이내에서 혼란에 빠진 아군을 선택하세요. 구급약 1개를 씁니다.':mode==='repair'?'인접한 아군 충차·포차·방책·성문을 선택해 수리하세요.':mode==='fortify'?'인접한 빈 칸을 선택해 방책을 세우세요.':s.strategies.get(mode)?.targetSides.includes('player')?'사거리 안의 아군을 선택해 지원하세요.':mode==='duel'?'인접한 적을 선택하세요. 무력으로 5합을 겨룹니다.':mode==='debate'?'3칸 이내 적을 선택하세요. 지력으로 5합을 겨룹니다.':'사거리 안의 적을 선택하세요.';
 }
 function select(id:string){selected=id;const u=session.state.find(id);if(u)field.focusUnit(u.pos);mode=u?.hasMoved?'attack':'move';sound.select(u?.unitClass);render();}
 function act(command:Command){
@@ -305,6 +306,7 @@ field.onCell=at=>{
   if(field.busy||menuOpen)return;const s=session.state,u=s.find(selected),target=s.unitAt(at);
   if(u?.alive&&u.side===s.currentSide&&CONTROLLABLE.has(u.side)&&!u.hasActed){
     if(mode==='heal'&&target){act({kind:'item',unit:u.id,item:'heal',target:target.id});return;}
+    if(mode==='calm'&&target){act({kind:'item',unit:u.id,item:'calm',target:target.id});return;}
     if(mode==='repair'&&target&&target.side!=='enemy'){act({kind:'item',unit:u.id,item:'repair',target:target.id});return;}
     if(mode==='fortify'&&!target){act({kind:'item',unit:u.id,item:'fortify',target:at.x+','+at.y});return;}
     if(target?.side==='enemy'&&(mode==='duel'||mode==='debate')){act({kind:'item',unit:u.id,item:mode,target:target.id});return;}

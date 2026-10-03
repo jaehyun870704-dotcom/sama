@@ -48,7 +48,7 @@ export const reactions:Record<string,Emote>={
   breach:{text:'성문 돌파!',color:GOLD,shape:'burst'},
 };
 export function cryFor(unitClass:string,isStrategy=false,strategy=''){
-  if(strategy==='heal'||strategy==='mend'||strategy==='greatMend')return reactions.heal!;
+  if(strategy==='heal'||strategy==='calm'||strategy==='mend'||strategy==='greatMend')return reactions.heal!;
   if(strategy==='repair')return reactions.repair!;
   const cry=classCries[unitClass];
   if(isStrategy&&cry&&!['strategist','fengshui','shaman','maiden','taoist','physician','monk'].includes(unitClass))return classCries.strategist!;
