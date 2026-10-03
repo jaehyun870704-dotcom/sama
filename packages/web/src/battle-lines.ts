@@ -15,6 +15,14 @@ export type LineWhen=
 export interface BattleLine {id:string;when:LineWhen;speaker:string;text:string}
 
 export const battleLines:Record<string,BattleLine[]>={
+  'S2-06':[
+    {id:'open-1',when:{turn:1},speaker:'사마의',text:'북쪽 샘 두 칸을 지키면 물이 줄어듭니다. 물이 다 떨어지면 촉군이 무너집니다.'},
+    {id:'open-2',when:{turn:1},speaker:'마속',text:'높은 곳에 진을 치면 내려다보며 깨뜨린다. 병법에 그렇게 쓰여 있다!'},
+    {id:'wang',when:{turn:3},speaker:'왕평',text:'장군, 물이 끊기면 끝입니다! 산을 내려가 길목을 지키십시오!'},
+    {id:'water',when:{turn:4},speaker:'장합',text:'서쪽 길로 급수대가 올라온다! 샘을 내주지 마시오!'},
+    {id:'collapse',when:{lockedBy:'jieting/collapse'},speaker:'장합',text:'남산의 진이 무너진다! 남쪽 출구를 막아라, 한 놈도 놓치지 마라!'},
+    {id:'ma-su',when:{retreat:'ma_su'},speaker:'사마의',text:'마속이 쓰러졌다. 남은 무리를 정리하라.'},
+  ],
   'S2-05':[
     {id:'open-1',when:{turn:1},speaker:'사마의',text:'성문을 부숴야 맹달에게 닿는다. 충차를 앞세우고, 성벽 위 감시탑을 조심하라.'},
     {id:'open-2',when:{turn:2},speaker:'맹달',text:'사마의가 벌써 왔다고? 표가 낙양에 닿기도 전에?'},
