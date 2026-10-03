@@ -1,10 +1,11 @@
 import {repairError,repairAmount,fortifyError,parseCell,buildBarricade,placeBarricade,breachRally,BARRICADES_PER_ENGINEER} from './siege.ts';
 import {troopStrategies,supportOptions} from './troops.ts';
-import {refBattle,prepareRunBattle,applyRelics,taleById,xpFromLog,levelUpInBattle,RUN_FLOORS,PARTY_LIMIT,XP_PER_LEVEL,type XpGain} from './roguelike.ts';
+import {refBattle,prepareRunBattle,applyBattleMods,applyRelics,taleById,xpFromLog,levelUpInBattle,RUN_FLOORS,PARTY_LIMIT,XP_PER_LEVEL,type XpGain} from './roguelike.ts';
 import {validRoute} from './fate.ts';
-import {applyRomance} from './romance.ts';
+import './scenario.ts';
+import {applyRomance,temperOf} from './romance.ts';
 import {expeditionBattle,expeditions} from './expeditions.ts';
-import {newDuel,duelRound,type DuelState,type DuelAction} from './duel.ts';
+import {newDuel,duelRound,duelResponse,type DuelState,type DuelAction} from './duel.ts';
 import {availableStrategies,learnedStrategies,allStrategies,applyOfficerFeatures,martialPower} from './officers.ts';
 import approachStage from '../../data/stages/S1-07.json';
 import approachMap from '../../data/maps/hanzhong-approach.json';
@@ -15,8 +16,8 @@ import retreatMap from '../../data/maps/yangtze-retreat.json';
 import {stageRules,foeEdges} from './stage-rules.ts';
 import {campaignStage,addFortifications,addSiegeCompany,structureKind,encircled,encounterLevels} from './campaign-rules.ts';
 import {applyTreasure,equippedItems,treasureInfo,type Deployment,OFFICERS,treasures} from './progression.ts';
-import { assemble, Battle, CONTROLLABLE, isHostile, key, manhattan, statsFor, familyOf, evolvedClass, evolveUnit } from '../../core/src/index.ts';
-import type { BattleState, Command, Difficulty, MapFile, StageDef, StrategyDef, LogEntry } from '../../core/src/index.ts';
+import { assemble, Battle, CONTROLLABLE, isHostile, key, manhattan, statsFor, familyOf, evolvedClass, evolveUnit, healAmount } from '../../core/src/index.ts';
+import type { BattleState, Command, Difficulty, MapFile, StageDef, StrategyDef, LogEntry, Unit } from '../../core/src/index.ts';
 import escapeStage from '../../data/stages/S1-02.json';
 import fortStage from '../../data/stages/S1-08.json';
 import escapeMap from '../../data/maps/luoyang-escape.json';
@@ -133,6 +134,10 @@ export class Session {
   private breached=new Set<string>();
   barricadesLeft(id:string){return BARRICADES_PER_ENGINEER-(this.fortified.get(id)??0);}
   activeDuel:DuelState|null=null;
+  /** 방금 도전을 거절당했다면 그 사연(화면이 한 번 보여 준다) */
+  lastRefusal:{kind:'duel'|'debate';challenger:string;target:string;line:string;reason:string}|null=null;
+  /** 방금 응한 대결의 첫 대답 */
+  lastAccept:{kind:'duel'|'debate';line:string;historic:boolean}|null=null;
   lastDuel:DuelState|null=null;
   private challenged=new Set<string>();
   private balancedEnemies=new Set<string>();
@@ -220,6 +225,8 @@ export class Session {
     }
     // 원정 부대의 병종·체력·책략·보물은 기본 정비가 끝난 뒤 덮어쓴다.
     if(this.deployment?.run)prepareRunBattle(state,this.deployment.run);
+    // 시나리오 모드의 연의 장: 대사 선택의 효과(사기·방어 태세·책략 MP).
+    if(this.deployment?.scenario?.mods&&!this.deployment.run)applyBattleMods(state,this.deployment.scenario.mods);
     // 원정의 연의 전장: 사마의는 원정에서 남은 체력으로 나서고, 원정 보물이 본대에 실린다.
     if(this.deployment?.runStory){const r=this.deployment.runStory,h=state.find('sima_yi');if(h)h.hp=Math.max(1,Math.round(h.stats.maxHp*r.heroHp));applyRelics(state,r.relics);}
     this.applyRomanceToNew(state);
@@ -249,7 +256,7 @@ export class Session {
     if(result.ok){this.checkpoints.push(this.journal.length);this.journal.push(structuredClone(cmd));}
     return result;
   }
-  private resetScenario(){this.fortified.clear();this.breached.clear();this.activeDuel=null;this.lastDuel=null;this.challenged.clear();this.funds=3000;this.bribes=0;this.medicine=2;this.scouted=false;this.failure='';this.phaseCheckpoint=null;const startRules=stageRules[this.state.stage.id];this.medicine=startRules?.medicine??2;this.phase=startRules?.phase?.({state:this.state,difficulty:this.difficulty,journalLength:0})??(this.state.scenarioPhase||'');if(startRules)return;this.phase=this.chapter===10?`설득 · 장소 · 신뢰 ${this.trustLimit}/${this.trustLimit}`:this.chapter===8&&this.state.scenarioPhase==='부교 재건'?'부교 재건 0/2 · 강변을 지키세요':this.chapter===9&&this.state.scenarioPhase==='조운 봉쇄'?`조운 봉쇄 ${encircled(this.state,'zhao_yun')}/4 · 사방을 막으세요`:this.state.scenarioPhase|| (this.chapter===2?'창고 확보':this.chapter===0?'잠입':this.chapter===3?'탈출로 선택':this.chapter===5?'수송로 선택':this.chapter===6?'호위 병력 배치':'외곽 돌파');}
+  private resetScenario(){this.fortified.clear();this.breached.clear();this.activeDuel=null;this.lastDuel=null;this.lastRefusal=null;this.lastAccept=null;this.challenged.clear();this.funds=3000;this.bribes=0;this.medicine=2;this.scouted=false;this.failure='';this.phaseCheckpoint=null;const startRules=stageRules[this.state.stage.id];this.medicine=startRules?.medicine??2;this.phase=startRules?.phase?.({state:this.state,difficulty:this.difficulty,journalLength:0})??(this.state.scenarioPhase||'');if(startRules)return;this.phase=this.chapter===10?`설득 · 장소 · 신뢰 ${this.trustLimit}/${this.trustLimit}`:this.chapter===8&&this.state.scenarioPhase==='부교 재건'?'부교 재건 0/2 · 강변을 지키세요':this.chapter===9&&this.state.scenarioPhase==='조운 봉쇄'?`조운 봉쇄 ${encircled(this.state,'zhao_yun')}/4 · 사방을 막으세요`:this.state.scenarioPhase|| (this.chapter===2?'창고 확보':this.chapter===0?'잠입':this.chapter===3?'탈출로 선택':this.chapter===5?'수송로 선택':this.chapter===6?'호위 병력 배치':'외곽 돌파');}
   get pressure(){return this.state.turn-1+(this.state.choices.some(c=>c.nodeId==='bluff_warning'&&c.optionId==='commit')?2:0);}
   /** S1-11: the court's trust. Every wrong argument costs one; at zero the embassy fails. */
   get trustLimit(){return this.difficulty==='extreme'?2:3;}
@@ -265,7 +272,7 @@ export class Session {
         if(!u?.alive||!u.strategies.includes(def.id)||u.mp<def.mpCost||s.hasStatus(u,'seal')||manhattan(u.pos,cmd.at)>def.range)return {ok:false,error:'지원 책략의 습득·MP·사거리를 확인하세요.'};
         const targets=s.living().filter(t=>t.side!=='enemy'&&manhattan(t.pos,cmd.at)<=def.radius);
         if(!targets.length)return {ok:false,error:'지원할 아군을 선택하세요.'};
-        const damage:number[]=[];for(const t of targets){let healed=0;if(def.support==='heal'){healed=Math.min(t.stats.maxHp-t.hp,Math.round((def.power+Math.floor(u.stats.intellect*.2))*(1+(u.traitParams.healPower??0)/100)));t.hp+=healed;}else if(def.support==='cleanse')t.statuses=t.statuses.filter(x=>['guard','haste','rally'].includes(x.kind));else if(['guard','haste','rally'].includes(def.support))s.applyStatus(t,{kind:def.support as 'guard'|'haste'|'rally',turns:3,magnitude:1});damage.push(-healed);}
+        const damage:number[]=[];for(const t of targets){let healed=0;if(def.support==='heal'){healed=Math.min(t.stats.maxHp-t.hp,healAmount(def.power,u.stats.intellect,u.traitParams.healPower??0));t.hp+=healed;}else if(def.support==='cleanse')t.statuses=t.statuses.filter(x=>['guard','haste','rally'].includes(x.kind));else if(['guard','haste','rally'].includes(def.support))s.applyStatus(t,{kind:def.support as 'guard'|'haste'|'rally',turns:3,magnitude:1});damage.push(-healed);}
         u.mp-=def.mpCost;s.push({t:'strategy',caster:u.id,strategy:def.id,targets:targets.map(t=>t.id),damage});const result=this.battle.execute({kind:'wait',unit:u.id});this.advanceScenario();return result;
       }
     }
@@ -276,6 +283,16 @@ export class Session {
         const enemy=s.find(cmd.target??''),kind=cmd.item,range=kind==='duel'?1:3;
         if(!enemy?.alive||enemy.side!=='enemy'||/^(gate|tower)_/.test(enemy.id)||['ram','catapult','civilian'].includes(u.unitClass)||['ram','catapult','civilian'].includes(enemy.unitClass)||manhattan(u.pos,enemy.pos)>range||this.challenged.has(kind+':'+u.id+':'+enemy.id))return {ok:false,error:'대결 가능한 사거리 안의 적 장수를 선택하세요. 같은 상대와 같은 대결은 한 번만 가능합니다.'};
         const stat=(x:typeof u)=>kind==='duel'?martialPower(x):x.stats.intellect;
+        const answer=this.challengeAnswer(u,enemy,kind);
+        if(!answer.accept&&answer.reason==='nameless')return {ok:false,error:'이름 없는 병사는 장수의 도전에 응하지 않습니다. 이름 있는 적 장수를 고르세요.'};
+        if(!answer.accept){
+          // 거절: 도전한 쪽은 기세가 오르고(2턴 사기 상승), 피한 쪽은 사기가 꺾인다. 도전도 한 번의 행동이다.
+          this.challenged.add(kind+':'+u.id+':'+enemy.id);this.lastRefusal={kind,challenger:u.id,target:enemy.id,line:answer.line,reason:answer.reason};
+          s.applyStatus(u,{kind:'rally',turns:2,magnitude:1});enemy.stats.morale=Math.max(0,enemy.stats.morale-10);
+          s.push({t:'event',id:`refuse:${kind}:${u.id}:${enemy.id}`});
+          const result=this.battle.execute({kind:'wait',unit:u.id});this.advanceScenario();return result;
+        }
+        this.lastRefusal=null;this.lastAccept={kind,line:answer.line,historic:answer.reason==='historic'};
         this.activeDuel=newDuel(kind,{id:u.id,name:u.name,stat:stat(u)},{id:enemy.id,name:enemy.name,stat:stat(enemy)});this.lastDuel=null;return {ok:true};
       }
       if(this.revision===4&&cmd.item.startsWith('duel-round:')){
@@ -293,7 +310,7 @@ export class Session {
       if(cmd.item==='heal'&&this.deployment&&familyOf(u.unitClass)==='fengshui'){
         const target=s.find(cmd.target??'');
         if(s.hasStatus(u,'seal')||!target?.alive||target.side==='enemy'||target.hp>=target.stats.maxHp||manhattan(u.pos,target.pos)>3||u.mp<8)return {ok:false,error:'MP 8과 3칸 이내의 부상당한 아군이 필요합니다.'};
-        const amount=Math.min(Math.round(35*(1+(u.traitParams.healPower??0)/100)),target.stats.maxHp-target.hp);target.hp+=amount;u.mp-=8;
+        const amount=Math.min(healAmount(30,u.stats.intellect,u.traitParams.healPower??0),target.stats.maxHp-target.hp);target.hp+=amount;u.mp-=8;
         s.push({t:'strategy',caster:u.id,strategy:'heal',targets:[target.id],damage:[-amount]});
         const result=this.battle.execute({kind:'wait',unit:u.id});this.advanceScenario();return result;
       }
@@ -349,6 +366,15 @@ export class Session {
     const edge=(stageRules[state.stage.id]?.foeEdge??foeEdges[state.stage.id])?.[this.difficulty]??0;
     for(const u of state.living())if(!this.romanced.has(u.id)){this.romanced.add(u.id);u.classTactics=true;if(!u.name.endsWith('환영')&&!escorts.has(u.id))applyRomance(u);
       if(edge&&u.side==='enemy'&&!/^(gate|tower)_/.test(u.id)){const hp=u.hp/u.stats.maxHp;u.stats.attack=Math.round(u.stats.attack*(1+edge/100));u.stats.maxHp=Math.round(u.stats.maxHp*(1+edge/100));u.hp=Math.max(1,Math.round(u.stats.maxHp*hp));}}
+  }
+  /**
+   * 일기토·설전 도전에 상대가 응하는가: 연의의 실제 대결은 반드시, 그 밖에는 성격·능력 차·부상에 따라.
+   * 꿈속의 환영은 피하지 않는다(무모처럼 무엇이든 받는다). 화면 안내와 봇도 같은 판단을 쓴다.
+   */
+  challengeAnswer(u:Unit,enemy:Unit,kind:'duel'|'debate'){
+    const stat=(x:Unit)=>kind==='duel'?martialPower(x):x.stats.intellect,plain=(x:Unit)=>x.name.replace(/의?\s*환영$/,'');
+    const temper=/환영$/.test(enemy.name)?'reckless' as const:temperOf(plain(enemy));
+    return duelResponse(kind,{name:plain(u),stat:stat(u)},{name:plain(enemy),stat:stat(enemy),...(temper?{temper}:{}),hp:enemy.hp/Math.max(1,enemy.stats.maxHp)});
   }
   /** 원정 부대의 경험치 시작점: 원정 전투는 부대 전원, 원정 속 연의 전장은 사마의. */
   xpBase():Record<string,{level:number;xp:number}>|undefined{
@@ -487,6 +513,12 @@ export class Session {
         ||r.party.some(u=>typeof u.id!=='string'||!Number.isInteger(u.level)||u.level<1||u.level>60||!(u.hp>0&&u.hp<=1)))throw new Error('잘못된 원정 기록');
       for(const u of r.party)statsFor(u.unitClass,u.level);
     }
+    if(data.deployment?.scenario||data.deployment?.run?.mods){const sc=data.deployment.scenario;
+      for(const m of [sc?.mods??{},data.deployment.run?.mods??{}]){
+        if((m.reinforce!==undefined&&(!Array.isArray(m.reinforce)||m.reinforce.length>4||m.reinforce.some(x=>typeof x?.name!=='string'||!['npc','ally'].includes(x.side))))||Object.entries(m).some(([k,v])=>k!=='reinforce'&&typeof v!=='boolean'))throw new Error('잘못된 시나리오 기록');
+        for(const x of m.reinforce??[])statsFor(x.unitClass,1);}
+      if(sc&&(typeof sc.chapter!=='string'||sc.chapter.length>40))throw new Error('잘못된 시나리오 기록');
+      if(data.deployment.run&&data.deployment.run.enemyBase!==undefined&&(!Number.isInteger(data.deployment.run.enemyBase)||data.deployment.run.enemyBase<1||data.deployment.run.enemyBase>60))throw new Error('잘못된 시나리오 기록');}
     if(data.deployment?.runStory){const r=data.deployment.runStory;
       if(!Number.isInteger(r.floor)||r.floor<1||r.floor>RUN_FLOORS||typeof r.stage!=='string'||!chapters.some(c=>c.stage.id===r.stage)||chapters[data.chapter]?.stage.id!==r.stage||!Number.isSafeInteger(r.seed)
         ||!Number.isInteger(r.heroLevel)||r.heroLevel<1||r.heroLevel>60||(r.heroXp!==undefined&&(!Number.isInteger(r.heroXp)||r.heroXp<0||r.heroXp>=XP_PER_LEVEL))||!(r.heroHp>0&&r.heroHp<=1)||!Array.isArray(r.relics)||r.relics.some(x=>typeof x!=='string'))throw new Error('잘못된 원정 기록');

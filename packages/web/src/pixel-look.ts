@@ -17,6 +17,7 @@ const multiply=(a:number,b:number)=>[16,8,0].reduce((out,s)=>out|(Math.round(((a
 /** Side tint stays light so armour detail survives; units that already acted turn grey
  * like the classic games instead of fading into the ground. */
 export function unitTint(u:{id:string;side:string;hasActed:boolean}){
-  const side=u.id==='rescue_target'&&u.side==='enemy'?0xfff0c8:u.side==='enemy'?0xffd8cc:u.side==='allyAi'?0xffecc2:0xffffff;
+  // 진영 색은 옷을 물들여 나타낸다(dye.ts). 틴트는 행동을 마친 부대를 회색으로만.
+  const side=u.id==='rescue_target'&&u.side==='enemy'?0xfff0c8:0xffffff;
   return u.hasActed?multiply(side,0xa0a0a0):side;
 }

@@ -101,7 +101,10 @@ export function nextTale(run:Run):Tale|undefined{
   const route=routeById(run.route?.[act]);if(!route)return undefined;
   const done=new Set(run.talesDone??[]);return route.tales.find(t=>!done.has(t.id));
 }
-export const taleById=(id:string|undefined)=>ROUTES.flatMap(r=>r.tales).find(t=>t.id===id);
+/** 시나리오 모드가 더하는 다른 가상 전장(대사 선택으로 바뀌는 전장)을 찾는 길. scenario.ts가 등록한다. */
+let extraTale:(id:string)=>Tale|undefined=()=>undefined;
+export function registerTales(find:(id:string)=>Tale|undefined){extraTale=find;}
+export const taleById=(id:string|undefined)=>id===undefined?undefined:ROUTES.flatMap(r=>r.tales).find(t=>t.id===id)??extraTale(id);
 /** 그 길에서 적으로 만나는 장수(우두머리·가상 전장 적장). */
 export function foesOf(routeId:string|undefined){const r=routeById(routeId);return r?[r.region.boss.name,...r.tales.map(t=>t.target.name)]:[];}
 /** 그 길을 고르면 떠나는 장수: 그 길에서 적으로 만나는 사람은 부대에 남지 않는다. */
@@ -124,7 +127,7 @@ export function nextStory(run:Run):string|undefined{
 }
 
 /** 영입 가능한 기본 병종 */
-export const RECRUITS:UnitClass[]=['infantry','spearman','cavalry','archer','crossbow','fengshui','horseArcher','slinger','assassin','rattan','elephant','monk','taoist','physician','bandit','heavyCav'];
+export const RECRUITS:UnitClass[]=['infantry','spearman','cavalry','archer','crossbow','fengshui','horseArcher','slinger','assassin','rattan','elephant','monk','taoist','physician','bandit','heavyCav','javelin'];
 
 /** 이름 있는 장수: 연의 장수록(romance.ts)의 능력을 이름으로 받는다. */
 export interface OfficerSpec {name:string;unitClass:UnitClass}
@@ -333,41 +336,50 @@ export function nextEvolutionText(cls:UnitClass){const n=nextEvolution(cls);retu
 
 // ─────────────────────────────────────────────── 전장 생성
 
-const W=16,H=12;
+/** 원정·가상 전장의 크기(가로×세로 칸). 연의 전장(24×16 이상)과 비슷한 넓이로. */
+export const RUN_MAP_W=24,RUN_MAP_H=16;
+const W=RUN_MAP_W,H=RUN_MAP_H;
 /** 원정 전장: 지역마다 다른 지형, 좌측 출진 칸과 우측 적진. 모든 칸에 보병이 닿도록 보장한다. */
 export function runMap(run:{seed:number;route?:Run['route']},floor:number,kind:NodeKind):MapFile{
   const r=rngFor(run,floor*977+kind.length),region=regionFor(run,floor).terrain;
   const g=Array.from({length:H},()=>Array<string>(W).fill('.'));
   const blob=(ch:string,n:number,size:number,x0=3,x1=W-4)=>{for(let k=0;k<n;k++){const cx=r.int(x0,x1),cy=r.int(1,H-2);for(let i=0;i<size;i++){const x=cx+r.int(-1,1),y=cy+r.int(-1,1);if(x>=2&&x<W-2&&y>=0&&y<H)g[y]![x]=ch;}}};
-  blob('f',region===0?4:3,5);blob('h',region===1?4:2,4);
-  if(region===1)blob('^',3,4,4,W-5);
-  if(region===2){const rx=r.int(6,9);for(let y=0;y<H;y++){g[y]![rx]='~';g[y]![rx+1]='~';}for(const fy of [r.int(1,4),r.int(7,10)]){g[fy]![rx]='_';g[fy]![rx+1]='_';}blob('m',2,3);}
+  blob('f',region===0?7:5,6);blob('h',region===1?7:3,5);
+  if(region===1)blob('^',5,5,4,W-6);
+  if(region===2){const rx=r.int(9,13);for(let y=0;y<H;y++){g[y]![rx]='~';g[y]![rx+1]='~';}for(const fy of [r.int(1,5),r.int(6,9),r.int(11,H-2)]){g[fy]![rx]='_';g[fy]![rx+1]='_';}blob('m',3,4);}
   const road=r.int(3,H-4);for(let x=0;x<W;x++)if(g[road]![x]==='.'||g[road]![x]==='f'||g[road]![x]==='h')g[road]![x]=',';
   // Keep both camps clear.
-  for(let y=0;y<H;y++)for(const x of [0,1,W-2,W-1])if(!'~_'.includes(g[y]![x]!))g[y]![x]=y===road?',':'.';
+  for(let y=0;y<H;y++)for(const x of [0,1,2,W-4,W-3,W-2,W-1])if(!'~_'.includes(g[y]![x]!))g[y]![x]=y===road?',':'.';
   const cells=(xs:number[],ys:number[])=>ys.flatMap(y=>xs.map(x=>({x,y})));
   const mid=Math.floor(H/2);
   return {id:`run-${floor}-${kind}`,name:regionFor(run,floor).name,legend:{'.':'plain',',':'road',f:'forest',h:'hill','^':'mountain','~':'water','_':'ford',m:'marsh'},
-    rows:g.map(row=>row.join('')),regions:{player_start:cells([0,1],[mid-2,mid-1,mid,mid+1]),enemy_camp:cells([W-2,W-1],[1,2,3,4,5,6,7,8,9,10]),objective:cells([W-1],[mid])}};
+    rows:g.map(row=>row.join('')),regions:{player_start:cells([0,1],[mid-2,mid-1,mid,mid+1]),enemy_camp:cells([W-4,W-3,W-2],Array.from({length:H-4},(_,i)=>i+2)),objective:cells([W-1],[mid])}};
 }
 
 /** 원정 전투의 스테이지. 적은 층·지역·종류로 정해지고, 레벨이 높으면 그들도 진화해 있다. */
-export function runStage(run:Run,kind:NodeKind,map:MapFile,taleId?:string):StageDef{
-  const f=run.floor,r=rngFor(run,f*613+kind.length),region=regionFor(run,f),tale=kind==='tale'?taleById(taleId):undefined;
-  const base=2+Math.round(f*1.05)+(f>FLOORS_PER_ACT*2?1:0)+(kind==='battle'||kind==='tale'?0:1);
-  const count=Math.min(8,3+Math.floor(f/4.5)+(kind==='elite'?1:kind==='boss'||kind==='tale'?-1:0));
+/** 원정·가상 전장은 뭍의 싸움이다: 배(수군)는 뭍에서 움직이지 못하니 노병으로 싸운다. */
+export const landClass=(c:UnitClass):UnitClass=>c==='navy'?'crossbow':c;
+/** 시나리오 모드의 대사 선택이 전투에 남기는 것(scenario-types.ts의 ChoiceEffect). */
+export interface BattleMods {reinforce?:Array<{name:string;unitClass:UnitClass;side:'npc'|'ally'}>;scout?:boolean;ambush?:boolean;bold?:boolean;rally?:boolean;guard?:boolean;insight?:boolean}
+export function runStage(run:Run,kind:NodeKind,map:MapFile,taleId?:string,opts:{mods?:BattleMods;enemyBase?:number}={}):StageDef{
+  const f=run.floor,r=rngFor(run,f*613+kind.length),region=regionFor(run,f),tale=kind==='tale'?taleById(taleId):undefined,mods=opts.mods??{};
+  const base=opts.enemyBase??2+Math.round(f*1.05)+(f>FLOORS_PER_ACT*2?1:0)+(kind==='battle'||kind==='tale'?0:1);
+  const count=Math.max(1,Math.min(9,3+Math.floor(f/4.5)+(kind==='elite'?1:kind==='boss'||kind==='tale'?-1:0)+(mods.bold?1:0)-(mods.scout?1:0)));
   const camp=(map.regions!.enemy_camp as Array<{x:number;y:number}>).slice();
   const enemies:UnitSpawnSpec[]=[];
   for(let i=0;i<count&&camp.length;i++){
     const at=camp.splice(r.int(0,camp.length-1),1)[0]!,cls=region.pool[r.int(0,region.pool.length-1)]!,level=base+r.int(-1,1);
-    const elite=kind==='elite'&&i<2;const evolved=evolvedClass(cls,elite?level+8:level);
+    const elite=(kind==='elite'&&i<2)||(!!mods.bold&&i===0);const evolved=evolvedClass(cls,elite?level+8:level);
     enemies.push({id:`foe_${i}`,name:unitName(evolved),template:evolved,level,at,behavior:i%3===2?'hold':'advance'});
   }
-  if(kind==='boss'){const b=region.boss,mid=Math.floor(H/2),bi=camp.reduce((best,c,i)=>Math.abs(c.y-mid)*2+(W-1-c.x)<Math.abs(camp[best]!.y-mid)*2+(W-1-camp[best]!.x)?i:best,0),at=camp.splice(bi,1)[0]??{x:W-1,y:mid};enemies.push({id:'boss',name:b.name,template:evolvedClass(b.unitClass,base+3),level:base-2,at,behavior:'hold'});}
+  if(kind==='boss'){const b=region.boss,mid=Math.floor(H/2),bi=camp.reduce((best,c,i)=>Math.abs(c.y-mid)*2+(W-1-c.x)<Math.abs(camp[best]!.y-mid)*2+(W-1-camp[best]!.x)?i:best,0),at=camp.splice(bi,1)[0]??{x:W-1,y:mid};enemies.push({id:'boss',name:b.name,template:evolvedClass(landClass(b.unitClass),base+3),level:base-2,at,behavior:'hold'});}
   if(tale){const mid=Math.floor(H/2),bi=camp.reduce((best,c,i)=>Math.abs(c.y-mid)*2+(W-1-c.x)<Math.abs(camp[best]!.y-mid)*2+(W-1-camp[best]!.x)?i:best,0),at=camp.splice(bi,1)[0]??{x:W-1,y:mid};// 연의의 맹장은 능력치로 이미 강하다: 무력 75를 넘는 8마다 레벨을 하나 낮춰 균형을 맞춘다.
     const war=romanceOf({id:'target',name:tale.target.name})?.war??70,level=Math.max(1,base-1-Math.max(0,Math.round((war-75)/8)));
-    enemies.push({id:'target',name:tale.target.name,template:evolvedClass(tale.target.unitClass,level),level,at,behavior:'hold'});}
+    enemies.push({id:'target',name:tale.target.name,template:evolvedClass(landClass(tale.target.unitClass),level),level,at,behavior:'hold'});}
   const party:UnitSpawnSpec[]=run.party.filter(u=>!u.hero).map(u=>({id:u.id,name:u.name,template:u.unitClass,level:u.level,region:'party_start',behavior:'advance'}));
+  // 대사 선택으로 합류한 지원군: 'ally'는 직접 지휘하는 편입 아군, 'npc'는 초록 깃발의 자동 우군.
+  const hero=run.party.find(u=>u.hero)?.level??base,helpers=(mods.reinforce??[]).slice(0,4);
+  const help=(side:'npc'|'ally')=>helpers.map((h,i)=>({h,i})).filter(x=>x.h.side===side).map(({h,i})=>({id:`aid_${i}`,name:h.name,template:evolvedClass(landClass(h.unitClass),Math.max(1,hero-1)),level:Math.max(1,hero-1),region:'aid_start',behavior:'advance' as const}));
   return {id:`R-${String(f).padStart(2,'0')}`,arc:'lower',order:100+f,title:tale?`가상 전장 · ${tale.title}`:`${region.name} · ${f}층`,subtitle:kind==='boss'?`우두머리 ${region.boss.name}`:tale?`적장 ${tale.target.name}`:kind==='elite'?'정예 전투':'원정 전투',
     synopsis:kind==='boss'?`${eul(region.boss.name)} 격퇴하면 승리. 쓰러진 부대는 원정에서 사라진다.`:tale?`${eul(tale.target.name)} 물리치면 승리. ${tale.intro}`:'적을 모두 물리치면 승리. 쓰러진 부대는 원정에서 사라진다.',
     mapId:map.id,deployment:{forced:['sima_yi'],slots:0,grantedUnits:[]},
@@ -378,27 +390,33 @@ export function runStage(run:Run,kind:NodeKind,map:MapFile,taleId?:string):Stage
     gimmicks:[],perf:{maxSimultaneousUnits:20,tier:'A'},
     events:[{id:'run/start',trigger:{type:'battle_start'},actions:[
       ...(party.length?[{type:'spawn_units' as const,side:'player' as const,units:party}]:[]),
+      ...(help('ally').length?[{type:'spawn_units' as const,side:'ally' as const,units:help('ally')}]:[]),
+      ...(help('npc').length?[{type:'spawn_units' as const,side:'allyAi' as const,units:help('npc')}]:[]),
       {type:'spawn_units',side:'enemy',units:enemies}]}]} as StageDef;
 }
 
 /** 원정 전투에서 아군 부대가 서는 칸: 사마의 자리를 뺀 출진 칸과 그 옆 열. */
 export function partyStart(map:MapFile){return [...(map.regions!.player_start as Array<{x:number;y:number}>).slice(1),...[0,1,2,3].map(d=>({x:2,y:Math.floor(H/2)-2+d}))];}
 
-export function runBattle(run:Run,kind:NodeKind,taleId?:string){
+export function runBattle(run:Run,kind:NodeKind,taleId?:string,opts:{mods?:BattleMods;enemyBase?:number}={}){
   const map=runMap(run,run.floor,kind);
   (map.regions as Record<string,Array<{x:number;y:number}>>).party_start=partyStart(map);
-  return {map,stage:runStage(run,kind,map,taleId)};
+  // 지원군이 서는 칸: 출진 칸 바로 앞(세 번째·네 번째 열).
+  (map.regions as Record<string,Array<{x:number;y:number}>>).aid_start=[3,4].flatMap(x=>[0,1,2,3].map(d=>({x,y:Math.floor(H/2)-2+d})));
+  return {map,stage:runStage(run,kind,map,taleId,opts)};
 }
 
 /** 병종이 책략을 쓰는지 (원정 부대의 책략 목록을 정할 때). */
 export const casts=(cls:UnitClass)=>profileOf(cls).canUseStrategy;
 
 /** 세션이 저장하는 원정 전투의 원본: 이것만 있으면 같은 전장을 다시 만든다(저장·무르기 재생). */
-export interface RunBattleRef {seed:number;floor:number;kind:NodeKind;party:RunUnit[];relics:string[];route?:Run['route'];tale?:string}
+export interface RunBattleRef {seed:number;floor:number;kind:NodeKind;party:RunUnit[];relics:string[];route?:Run['route'];tale?:string;
+  /** 시나리오 모드: 대사 선택의 효과와 적 레벨 기준(부대 레벨에 맞춘다), 장 id */
+  mods?:BattleMods;enemyBase?:number;scenario?:string}
 export const battleRef=(run:Run,kind:NodeKind,tale?:string):RunBattleRef=>({seed:run.seed,floor:run.floor,kind,party:structuredClone(run.party),relics:[...run.relics],...(run.route?{route:{...run.route}}:{}),...(tale?{tale}:{})});
 export function refBattle(ref:RunBattleRef){
   const run:Run={version:1,seed:ref.seed,floor:ref.floor,party:ref.party,relics:ref.relics,fallen:[],status:'map',nextId:0,news:[],...(ref.route?{route:ref.route}:{})};
-  return runBattle(run,ref.kind,ref.tale);
+  return runBattle(run,ref.kind,ref.tale,{...(ref.mods?{mods:ref.mods}:{}),...(ref.enemyBase!==undefined?{enemyBase:ref.enemyBase}:{})});
 }
 
 /** 전투 시작 직후: 원정 부대의 체력·병종·책략, 보물 효과를 전장에 반영한다. */
@@ -414,6 +432,13 @@ export function prepareRunBattle(state:BattleState,ref:RunBattleRef){
   // 진화 책사·적 술사가 쓰는 책략을 전장 책략표에 올린다.
   for(const u of state.living())for(const id of u.strategies){const d=allStrategies.find(x=>x.id===id);if(d&&!state.strategies.has(id))state.strategies.set(id,d);}
   applyRelics(state,ref.relics);
+  if(ref.mods)applyBattleMods(state,ref.mods);
+}
+/** 대사 선택의 효과: 사기(2턴) · 방어 태세(1턴) · 사마의 책략 MP +15 · 기습(적 체력 80%). 연의 장과 가상 전장 공통. */
+export function applyBattleMods(state:BattleState,m:BattleMods){
+  for(const u of state.living('player')){if(m.rally)state.applyStatus(u,{kind:'rally',turns:2,magnitude:1});if(m.guard)state.applyStatus(u,{kind:'guard',turns:1,magnitude:1});}
+  if(m.insight){const h=state.find('sima_yi');if(h){h.stats.maxMp+=15;h.mp+=15;}}
+  if(m.ambush)for(const e of state.living('enemy'))e.hp=Math.max(1,Math.round(e.stats.maxHp*.8));
 }
 
 /** 보물 효과를 아군 전원에 입힌다(원정 전투·연의 전장 공통). */

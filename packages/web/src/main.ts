@@ -7,7 +7,7 @@ import {trialStory,trialTactics,layoutName} from './expedition-scenes.ts';
 import {expeditions,expeditionReward,canExpedition,storyWins,trainingXp,growthAdvice} from './expeditions.ts';
 import {campMarkup} from './camp.ts';
 import {officerFeatures,talentTree,strategyHint,martialPower} from './officers.ts';
-import {actionNames,duelActionNames,duelLine,type DuelAction} from './duel.ts';
+import {actionNames,duelActionNames,duelLine,temperNames,type DuelAction} from './duel.ts';
 import {spriteAtlas} from './sprite-atlas.ts';
 import {coachStep,COACH_KEY} from './tutorial.ts';
 import {dueLines} from './battle-lines.ts';
@@ -16,10 +16,14 @@ import {SLOT_COUNT,slotKey,readSlot,slotLabel} from './save-slots.ts';
 import {encounterLevels,structureKind,structureFrame,raceGap} from './campaign-rules.ts';
 import {readCampaign,writeCampaign,deployment,levelInfo,award,equip,equipSlot,treasureInfo,type GearSlot,treasures,OFFICERS} from './progression.ts';
 import {storyBeats,storyLocations,storyBackdrop,storyAftermath,acts,stories,epilogueLines} from './story.ts';
-import {showHub,finishRunBattle,finishRunStory,RUN_CHAPTER,type RunHost} from './run-ui.ts';
+import {showHub,showQuests,finishRunBattle,finishRunStory,RUN_CHAPTER,type RunHost} from './run-ui.ts';
+import {showScenario,finishIfBattle,finishStoryBattle,type ScenarioHost} from './scenario-ui.ts';
+import {scriptOf} from './scenario.ts';
+const scenarioYear=(id:string)=>scriptOf(id)?.year??'';
+import type {ScenarioDeployment} from './progression.ts';
 import {loadMeta} from './meta.ts';
 import {RUN_FLOORS,XP_PER_LEVEL} from './roguelike.ts';
-import {romance,romanceOf} from './romance.ts';
+import {romance,romanceOf,temperOf} from './romance.ts';
 import './style.css';
 import catalogue from './campaign.json';
 import { Session, chapters, campaignOrder, type Preparation } from './session.ts';
@@ -41,7 +45,7 @@ try{saveAvailable=!!localStorage.getItem(SAVE_KEY);}catch{/* Private browsing ma
 const sideNames={player:'아군',ally:'편입 아군',enemy:'적군',allyAi:'우군'};
 
 $('#app').innerHTML=`<header class="topbar"><button id="brand" class="brand" aria-label="본영"><span class="seal-logo">司</span><span>사마의전<small>SIMA YI CHRONICLE</small></span></button><div class="chapter-breadcrumb" id="arc-crumb">상편 <span>/</span> 살아남는 자</div><nav><button id="sound-toggle" title="전체 소리 켜기/끄기">♪ <span>소리 켜짐</span></button><button id="help">도움말 <kbd>?</kbd></button><button id="settings" aria-label="설정">⚙</button><button id="menu">본영</button></nav></header>
-<main class="layout"><aside class="left-panel"><div class="eyebrow" id="arc-eyebrow">CHAPTER Ⅰ <span>상편</span></div><h1 id="stage-title"></h1><p id="stage-subtitle" class="muted"></p><div class="rule"></div><section class="mission"><div class="section-label">전투 목표 <span>OBJECTIVES</span></div><div id="objectives"></div></section><section class="turn-card"><div class="turn-number"><span>TURN</span><strong id="turn">01</strong><span id="turn-limit">/ 60</span></div><div id="phase" class="phase"></div><div class="phase-track"><i></i><i></i><i></i><i></i></div></section><section><div class="section-label">현재 차례 부대 <span id="unit-count"></span></div><div id="roster" class="roster"></div></section><p class="roster-note">청록 · 아군 &nbsp; 파랑 · 편입 아군<br>황금 · 자동 우군 &nbsp; 붉은색 · 적군</p><div class="left-bottom"><span class="small-seal">忍</span><p>칼을 거두고,<br>때를 기다린다.</p></div></aside>
+<main class="layout"><aside class="left-panel"><div class="eyebrow" id="arc-eyebrow">CHAPTER Ⅰ <span>상편</span></div><h1 id="stage-title"></h1><p id="stage-subtitle" class="muted"></p><div class="rule"></div><section class="mission"><div class="section-label">전투 목표 <span>OBJECTIVES</span></div><div id="objectives"></div></section><section class="turn-card"><div class="turn-number"><span>TURN</span><strong id="turn">01</strong><span id="turn-limit">/ 60</span></div><div id="phase" class="phase"></div><div class="phase-track"><i></i><i></i><i></i><i></i></div></section><section><div class="section-label">현재 차례 부대 <span id="unit-count"></span></div><div id="roster" class="roster"></div></section><p class="roster-note">파랑 · 아군(편입 아군 포함)<br>초록 · NPC 우군 &nbsp; 빨강 · 적군</p><div class="left-bottom"><span class="small-seal">忍</span><p>칼을 거두고,<br>때를 기다린다.</p></div></aside>
 <section class="battle-panel"><div class="battle-heading"><div><span class="eyebrow" id="year"></span><h2 id="map-name"></h2></div><span class="weather">☀ &nbsp; 맑음 <span>·</span> 바람 약함</span></div><p id="compact-objective"></p><div id="map" class="map"><div class="map-vignette"></div><div class="compass"><span>北</span><b>✧</b></div><div class="map-controls"><button id="zoom-out" aria-label="축소">−</button><button id="zoom-reset" aria-label="지도 전체 보기">⌖</button><button id="zoom-in" aria-label="확대">＋</button></div><div class="map-legend"><i class="dot teal"></i> 이동 가능 <i class="dot red"></i> 적 시야 / 사거리 <i class="dot gold"></i> 목표</div><div id="tile-info">장수를 선택해 첫 수를 두세요.</div><div id="phase-banner" aria-live="polite"></div><div id="battle-line" class="battle-line" aria-live="polite" hidden></div><div id="coach" class="coach" role="status" hidden><p></p><button id="coach-close" aria-label="안내 닫기">닫기</button></div></div><div class="battle-toolbar"><button id="undo">↶ <span>무르기</span> <kbd>Z</kbd></button><button id="threat" aria-pressed="false">◎ <span>위험 범위</span></button><button id="speed">▷ <span>1× 속도</span></button><span id="save-status" role="status">자동 저장 준비</span><button id="end-phase" class="primary">아군 턴 종료 <span>→</span></button></div><div class="dispatch"><span>軍報</span><p id="latest-log" aria-live="polite">전장을 살피고 명령을 내려 주십시오.</p><button id="log-button">전투 기록 ↗</button></div></section>
 <aside class="right-panel"><div class="section-label">장수 정보 <span>OFFICER</span></div><div id="unit-detail"></div><div class="section-label command-label">전술 명령 <span>COMMAND</span></div><div id="commands" class="commands"></div><p id="command-hint" class="command-hint"></p><div class="tactic-note"><span>策</span><div><strong>전장을 읽는 법</strong><p id="tactical-tip"></p></div></div></aside></main><footer><span>삼국지 · 사마의전</span><span>상편·중편·하편 · 플레이 가능 전장 ${chapters.length}개</span><span>선택 → 이동 → 행동 → 턴 종료</span></footer>
 <dialog id="modal"><div id="modal-content"></div></dialog><div id="toast" role="status"></div>`;
@@ -91,11 +95,18 @@ let menuArc=1;
 const resumeSaved=()=>{try{session=Session.load(JSON.parse(localStorage.getItem(SAVE_KEY)??'null'));activate();toast('저장한 전투를 불러왔습니다.');}catch{toast('현재 버전의 저장 기록을 읽지 못했습니다.');}};
 const runHost:RunHost={modal:(html,closable)=>modal(html,closable),showMenu:()=>showMenu(),toast:t=>toast(t),startBattle:(dep,seed)=>{session=new Session(RUN_CHAPTER,'normal',seed,'survival',4,dep);activate();persist();},
   startStory:(chapter,dep,seed)=>{session=new Session(chapter,'normal',seed,'survival',4,dep);activate();persist();},
-  showChronicle:()=>showChronicle(),showTroops:()=>showTroopGallery(),showOfficers:()=>showOfficerGallery(),showSlots:()=>showSlots(),
+  showChronicle:()=>showChronicle(),showScenario:()=>showScenario(scenarioHost),showExpeditions:()=>showExpeditions(),showTroops:()=>showTroopGallery(),showOfficers:()=>showOfficerGallery(),showSlots:()=>showSlots(),
   get resumeSaved(){return saveAvailable&&!openRunSession()?resumeSaved:undefined;},
   liveRunBattle:()=>{const s=openRunSession();if(!s)return undefined;const d=s.deployment!;return d.run?{seed:d.run.seed,floor:d.run.floor,kind:d.run.kind}:{seed:d.runStory!.seed,floor:d.runStory!.floor,kind:'story'};},
   backToBattle:()=>{const s=openRunSession();if(s&&s!==session){session=s;activate();return;}menuOpen=false;closeModal();}};
-/** 끝나지 않은 원정 전투: 지금 화면의 것, 없으면 자동 저장된 것. */
+
+/** 시나리오 모드(본편)가 쓰는 연결: 연의 장의 정비·전투와 가상 전장 출진, 사마의의 성장 기록. */
+const scenarioHost:ScenarioHost={modal:(html,closable)=>{menuOpen=true;clearTimeout(aiTimer);sound.scene='camp';modal(html,closable);},showMenu:()=>showMenu(),toast:t=>toast(t),
+  storyBriefing:(chapter,sc)=>briefing(chapter,undefined,sc),
+  startBattle:(dep,seed)=>{session=new Session(RUN_CHAPTER,'normal',seed,'survival',4,dep);activate();persist();},
+  hero:()=>{const l=levelInfo(campaign.xp.sima_yi??0);return {level:l.level,xp:l.next?Math.min(99,Math.floor(l.xp/l.next*100)):0};},
+  addHeroXp:n=>{const before=levelInfo(campaign.xp.sima_yi??0).level;campaign.xp.sima_yi=(campaign.xp.sima_yi??0)+Math.max(0,n);saveCampaign();const after=levelInfo(campaign.xp.sima_yi).level;return [`사마의 경험치 +${n}`,...(after>before?[`레벨 상승 · 사마의 Lv.${after}`]:[])];},
+  heroLoadout:()=>campaign.loadouts};/** 끝나지 않은 원정 전투: 지금 화면의 것, 없으면 자동 저장된 것. */
 function openRunSession(){
   const inRun=(s:Session)=>!!(s.deployment?.run||s.deployment?.runStory)&&s.state.outcome==='ongoing';
   if(hasStarted&&inRun(session))return session;
@@ -139,13 +150,14 @@ function showSlots(){
   $('#slots-back').onclick=showMenu;
 }
 
-function briefing(chapter:number,expeditionId?:string){
+function briefing(chapter:number,expeditionId?:string,scenario?:ScenarioDeployment){
   const expedition=expeditions.find(m=>m.id===expeditionId);
-  if(expedition?!canExpedition(campaign,expedition.id):!replayable(chapter))return;
+  // 시나리오 모드의 연의 장은 이야기 다음에 반드시 이 정비를 거친다(회상 잠금과 무관).
+  if(!scenario&&(expedition?!canExpedition(campaign,expedition.id):!replayable(chapter)))return;
   const c=expedition?{...chapters[7]!,year:'외전 · 권장 Lv.'+expedition.level,stage:{...chapters[7]!.stage,subtitle:expedition.name}}:chapters[chapter]!,intro=chapter===2,escape=chapter===0;
   let supports=[...supportOptions.slice(0,2)];
   const recommendation=expedition?recommendExpeditionSupport(expedition.id):undefined;
-  const dispatch=(preview=false)=>{const d=deployment(campaign,true);if(expedition)d.mission={id:expedition.id,runId:preview?'preview':crypto.randomUUID(),version:4,balance:1,supportClasses:[...supports]};return d;};
+  const dispatch=(preview=false)=>{const d=deployment(campaign,true);if(scenario&&!preview)d.scenario=structuredClone(scenario);if(expedition)d.mission={id:expedition.id,runId:preview?'preview':crypto.randomUUID(),version:4,balance:1,supportClasses:[...supports]};return d;};
   const mission=chapter===7?'사마의와 조진을 생존시키고 양앙을 포함한 전초 수비대 7부대를 모두 격퇴하십시오. 수비대장만 쓰러뜨려서는 끝나지 않습니다.':chapter===6?'조조를 보호하며 마초를 격퇴한 뒤, 사마의 또는 조진으로 관문 안 금빛 구역을 점령하십시오. 조조·사마의·조진 퇴각 시 패배합니다.':chapter===5?'수송대 두 부대 중 최소 한 부대를 선택한 동쪽 출구로 호위하십시오. 두 수송대가 모두 소실되거나 사마의·조진이 퇴각하면 실패합니다.':chapter===4?'진궁·여포·주유를 차례로 격파한 다음, 전차의 방해를 뚫고 황제 옆 금빛 칸에 도달하십시오.':chapter===3?'길잡이와 대화해 탈출로를 정하고, 추격 압박이 한계에 닿기 전에 형제 모두 선택한 출구에 도착하십시오.':intro?'사마의로 창고에 도달한 뒤 민중에게 인접해 무장시키고 습격대를 격퇴하십시오.':escape?'두 형제 모두 남문에 도착하고 통행료 1,000전을 지불하십시오.':'수비대장을 격퇴한 뒤 본대로 중앙 성채를 점령하십시오. 경쟁 우군 선점 시 패배합니다.';
   const rule=chapter===7?'26×20 산길 전장. 굽은 큰길은 기병이, 숲길은 보병이 접근하기 좋습니다. 본대 2명 뒤 편입 아군 4부대를 직접 지휘합니다. 노병은 2~3칸에서 사격하고 풍수사는 3칸 안의 아군을 치유합니다. 일반 18턴 / 극한 16턴 안에 완료하면 신속 인장을 얻습니다.':chapter===6?'28×20 관문 전장. 허저를 전방 또는 후방에 배치합니다. 3턴 적 차례에 서쪽 복병 2기가 출현합니다. 성문 HP 95, 감시탑 HP 110 / 사거리 1~5. 포차로 문을 열고 풍수사의 치유로 호위 병력을 유지하십시오. 마초 격퇴 시 감시탑이 철수하고 관문 수비대가 2턴 혼란에 빠집니다.':chapter===5?'24×18 강변 전장. 수송대는 우군 차례에 최대 3칸 자동 이동하며 공격하지 않습니다. 교량길은 짧지만 사격대가 지키고, 남쪽 길은 길지만 전방을 우회합니다. 3턴 적 차례에 후방 기병 2부대가 나타납니다. 노병과 방패병으로 길을 열고 후방을 지키십시오.':chapter===4?'대결을 넘길 때 체력·책략·상태이상을 회복하고 시작 지점으로 돌아옵니다. 구급약은 보충되지 않습니다. 마지막 구간은 전멸전이 아닙니다. 무르기와 목표 전환 직전 복원이 가능합니다.':chapter===3?'일반 압박 한계 12, 극한 9. 매 턴 압박이 1씩 오릅니다. 거짓 군령 강행은 압박 +2와 궁병 매복을 부릅니다. 3턴 적 차례에 추격 기병 2부대가 서쪽에서 등장합니다.':intro?'소년 사마의와 민중은 공격할 수 없습니다. 사마의가 창고를 열면 인접한 민중이 보병으로 전환됩니다. 사마방·형제의 생존이 필수이며, 민중 전멸도 패배입니다.':escape?'지참금 3,000전. 첫 매수 1,000전, 이후 1,500전. 살피기는 행동 1회를 소비해 순찰 경로를 공개합니다.':'48×36 전장. 성문 각 칸 HP 95 · 감시탑 HP 110 / 사거리 1~5. 문을 파괴하면 통로가 열립니다. 중앙 석교와 남쪽 목교로 진격하며, 미니맵 클릭으로 먼 지점을 확인합니다. 본대 다음 편입 아군 8기를 직접 지휘합니다. 편입 아군도 손실에 포함됩니다. 경쟁 우군은 지시를 받지 않습니다.';
   let officer=c.stage.deployment.forced[0]!,filter='all',inspect=campaign.treasures[0]??treasures[0]!.id,prep:Preparation='survival',difficulty:'normal'|'extreme'='normal';
@@ -161,7 +173,7 @@ function briefing(chapter:number,expeditionId?:string){
     document.querySelectorAll<HTMLButtonElement>('[data-unequip]').forEach(b=>b.onclick=()=>{if(equipSlot(campaign,officer,b.dataset.unequip as GearSlot,'')){saveCampaign();draw();}});
     document.querySelectorAll<HTMLInputElement>('[name=preparation]').forEach(el=>el.onchange=()=>{prep=el.value as Preparation;draw();});
     document.querySelectorAll<HTMLInputElement>('[name=difficulty]').forEach(el=>el.onchange=()=>{difficulty=el.value as 'normal'|'extreme';draw();});
-    $('#brief-back').onclick=expedition?showExpeditions:showChronicle;
+    $('#brief-back').onclick=scenario?()=>showScenario(scenarioHost,scenario.chapter):expedition?showExpeditions:showChronicle;
     document.querySelectorAll<HTMLSelectElement>('[data-support]').forEach(el=>el.onchange=()=>{const k=supportOptions.find(k=>k===el.value);if(k){supports[Number(el.dataset.support)]=k;draw();}});
     $('#recommend-support')?.addEventListener('click',()=>{if(recommendation){supports=[...recommendation.classes];draw();}});
     $('#deploy').onclick=()=>{session=new Session(chapter,difficulty,expedition?Date.now()%100000:215,prep,4,dispatch());activate();persist();};
@@ -178,8 +190,8 @@ function showTroopGallery(pose=0){
 }
 function showExpeditions(){
  menuOpen=true;clearTimeout(aiTimer);
- modal(`<div class="briefing expedition-hub"><div class="eyebrow">연무장 · 보물 인연</div><h2>다음 승리를 준비하다</h2><p>연의의 보물과 장수 일화를 바탕으로 구성한 게임 창작 외전입니다.</p><p>${growthText()} · 수련 ${campaign.trainingWins??0}승 · 보물 외전 ${campaign.quests?.length??0}/11</p><p>수련은 반복 경험치를 줍니다. 권장 레벨보다 4레벨 이상 높으면 경험치가 단계적으로 감소합니다. 보물 외전의 경험치와 보물은 첫 승리 보상입니다.</p>${['training','quest'].map(kind=>`<h3>${kind==='training'?'반복 수련':'보물 인연 · 첫 승리마다 보물 4종'}</h3><div class="expedition-grid">${expeditions.filter(m=>m.kind===kind).map(m=>`<button data-expedition="${m.id}" ${canExpedition(campaign,m.id)?'':'disabled'}><strong>${m.name} · ${trialGoals[m.id]!.name}</strong><small>권장 Lv.${m.level} · ${kind==='training'?'승리 경험치 +'+trainingXp(campaign,m):(campaign.quests??[]).includes(m.id)?'인연 완료':'보물 4종'} · ${layoutName(m.id)}<br>${canExpedition(campaign,m.id)?'도전 가능':'본편 '+m.requires+'승 필요 ('+storyWins(campaign)+'/'+m.requires+')'}</small></button>`).join('')}</div>`).join('')}<button id="expedition-back">← 연의 회상</button></div>`,false);
- document.querySelectorAll<HTMLButtonElement>('[data-expedition]').forEach(el=>el.onclick=()=>expeditionStory(el.dataset.expedition!));$('#expedition-back').onclick=showChronicle;
+ modal(`<div class="briefing expedition-hub"><div class="eyebrow">연무장 · 보물 인연</div><h2>다음 승리를 준비하다</h2><p>연의의 보물과 장수 일화를 바탕으로 구성한 게임 창작 외전입니다.</p><p>${growthText()} · 수련 ${campaign.trainingWins??0}승 · 보물 외전 ${campaign.quests?.length??0}/11</p><p>수련은 반복 경험치를 줍니다. 권장 레벨보다 4레벨 이상 높으면 경험치가 단계적으로 감소합니다. 보물 외전의 경험치와 보물은 첫 승리 보상입니다.</p>${['training','quest'].map(kind=>`<h3>${kind==='training'?'반복 수련':'보물 인연 · 첫 승리마다 보물 4종'}</h3><div class="expedition-grid">${expeditions.filter(m=>m.kind===kind).map(m=>`<button data-expedition="${m.id}" ${canExpedition(campaign,m.id)?'':'disabled'}><strong>${m.name} · ${trialGoals[m.id]!.name}</strong><small>권장 Lv.${m.level} · ${kind==='training'?'승리 경험치 +'+trainingXp(campaign,m):(campaign.quests??[]).includes(m.id)?'인연 완료':'보물 4종'} · ${layoutName(m.id)}<br>${canExpedition(campaign,m.id)?'도전 가능':'본편 '+m.requires+'승 필요 ('+storyWins(campaign)+'/'+m.requires+')'}</small></button>`).join('')}</div>`).join('')}<button id="expedition-back">← 반복 퀘스트</button></div>`,false);
+ document.querySelectorAll<HTMLButtonElement>('[data-expedition]').forEach(el=>el.onclick=()=>expeditionStory(el.dataset.expedition!));$('#expedition-back').onclick=()=>showQuests(runHost);
 }
 function expeditionStory(id:string,beat=0){const m=expeditions.find(x=>x.id===id);if(!m||!canExpedition(campaign,id))return;const scenes=trialStory(m.id,m.name,m.art,m.lines),scene=scenes[beat]!,spoken=splitSpokenLine(scene.line),heroSpeaking=spoken.speaker==='사마의',other=heroSpeaking?'조진':spoken.speaker;
  modal(`<div class="story-scene"><div class="eyebrow">${m.kind==='training'?'반복 수련':'보물 인연'} · ${beat+1}/${scenes.length} · ${scene.place}</div><h2>${m.name}</h2><p class="trial-objective">${trialGoalText(id)}</p><div class="story-stage"><div class="story-backdrop incoming" style="${storyBackdrop(scene.art)}"></div><div class="story-actor hero ${heroSpeaking?'speaking':''}" style="${storyActorStyle('사마의',4)}"></div><div class="story-actor companion ${!heroSpeaking?'speaking':''}" style="${storyActorStyle(other,0)}"></div></div>${dialogueCaption(spoken.speaker,spoken.line)}<div class="modal-actions"><button id="expedition-cancel">의뢰 목록</button><button id="expedition-next" class="primary">${beat<scenes.length-1?'다음 이야기':'출진 정비'} →</button></div></div>`,false);
@@ -189,7 +201,8 @@ function expeditionStory(id:string,beat=0){const m=expeditions.find(x=>x.id===id
 function romanceCard(u:Unit){
   const r=romanceOf(u);if(!r||u.name.endsWith('환영'))return '';
   const bars=([['무력',r.war],['지력',r.int],['통솔',r.lead],['정치',r.pol],['매력',r.cha]] as const).map(([k,v])=>`<span><small>${k}</small><b>${v}</b><i style="width:${v}%"></i></span>`).join('');
-  return `<div class="romance-card"><div class="romance-epithet">${r.epithet}</div><div class="romance-stats">${bars}</div>${(()=>{const sk=r.skill??officerFeatures[u.id];return sk?`<p><b>${sk.name}</b> ${sk.description}</p>`:'';})()}</div>`;
+  const temper=temperOf(r.name);
+  return `<div class="romance-card"><div class="romance-epithet">${r.epithet}${temper?` <span class="temper-tag" title="일기토·설전에 응하는 방식">성격 · ${temperNames[temper]}</span>`:''}</div><div class="romance-stats">${bars}</div>${(()=>{const sk=r.skill??officerFeatures[u.id];return sk?`<p><b>${sk.name}</b> ${sk.description}</p>`:'';})()}</div>`;
 }
 function milestoneMarkup(items:ReturnType<typeof growthMilestones>){return items.map(x=>`<div class="growth-summary"><b>${officerNames[x.id]}${x.to>x.from?' · Lv.'+x.from+' → '+x.to:''}</b>${x.evolution?`<p class="evo-news">병종 진화: ${x.evolution.from} → <b>${x.evolution.to}</b>${x.evolution.bloom?` · 개화 「${x.evolution.bloom.name}」 ${x.evolution.bloom.description}`:''}</p>`:''}${x.strategies.length?'<p>새 책략: '+x.strategies.join(' · ')+'</p>':''}${x.talents.length?'<p>고유특성 해금: '+x.talents.join(' · ')+'</p>':''}</div>`).join('');}
 function showExpeditionResult(){if(resultShown)return;resultShown=true;const run=session.deployment!.mission!,m=expeditions.find(x=>x.id===run.id)!,win=session.state.outcome==='victory';const before=structuredClone(campaign);
@@ -234,8 +247,8 @@ function raceLabel(s:BattleState){const g=raceGap(s);if(!g||g.ally===undefined)r
 const ARCS:Record<string,[string,string,string]>={upper:['Ⅰ','상편','살아남는 자'],middle:['Ⅱ','중편','맞서는 자'],lower:['Ⅲ','하편','거머쥐는 자']};
 function render(){
   {const [no,arc,name]=session.deployment?.run?['∞','원정','천명의 길']:ARCS[(session.state.stage as {arc?:string}).arc??'upper']??ARCS.upper!;$('#arc-crumb').innerHTML=`${arc} <span>/</span> ${name}`;$('#arc-eyebrow').innerHTML=`CHAPTER ${no} <span>${arc}</span>`;}
-  const s=session.state,c=session.deployment?.run?{...chapters[session.chapter]!,stage:s.stage,year:`천명의 원정 · ${session.deployment.run.floor}층`}:session.deployment?.mission?{...chapters[session.chapter]!,stage:s.stage,year:'외전 · 수련과 인연'}:chapters[session.chapter]!;
-  $('#stage-title').textContent=c.stage.title;$('#stage-subtitle').textContent=session.deployment?.run?`천명의 원정 · ${session.deployment.run.floor}/${RUN_FLOORS}층`:session.deployment?.runStory?`천명의 원정 · ${session.deployment.runStory.floor}/${RUN_FLOORS}층 · 연의 전장`:`제 ${c.stage.order}장 · ${s.difficulty==='normal'?'일반':'극한'}`;
+  const s=session.state,c=session.deployment?.run?{...chapters[session.chapter]!,stage:s.stage,year:session.deployment.scenario?`시나리오 · ${scenarioYear(session.deployment.scenario.chapter)}`:`천명의 원정 · ${session.deployment.run.floor}층`}:session.deployment?.mission?{...chapters[session.chapter]!,stage:s.stage,year:'외전 · 수련과 인연'}:chapters[session.chapter]!;
+  $('#stage-title').textContent=c.stage.title;$('#stage-subtitle').textContent=session.deployment?.scenario?(session.deployment.run?'시나리오 · 가상 전장':`시나리오 · 연의 · ${s.difficulty==='normal'?'일반':'극한'}`):session.deployment?.run?`천명의 원정 · ${session.deployment.run.floor}/${RUN_FLOORS}층`:session.deployment?.runStory?`천명의 원정 · ${session.deployment.runStory.floor}/${RUN_FLOORS}층 · 연의 전장`:`제 ${c.stage.order}장 · ${s.difficulty==='normal'?'일반':'극한'}`;
   $('#map-name').textContent=c.stage.subtitle??c.stage.title;$('#year').textContent=`${c.year} · ${s.map.width}×${s.map.height}`;
   document.body.classList.toggle('nightmare',session.chapter===4);
   $('.weather').textContent=session.weather;
@@ -300,7 +313,7 @@ function act(command:Command){
   if(field.busy){toast('동작이 끝나면 명령할 수 있습니다.');return;}
   if(menuOpen||$<HTMLDialogElement>('#modal').open&&command.kind!=='choose'&&!(command.kind==='item'&&command.item.startsWith('duel-round:')))return;
   const prev=session.state.currentSide,r=session.act(command);if(!r.ok){toast(r.error??'명령 실패');return;}
-  if(command.kind==='item'&&['duel','debate'].includes(command.item))duelPresented=false;
+  if(command.kind==='item'&&['duel','debate'].includes(command.item)){duelPresented=false;if(session.lastRefusal){showRefusal();return;}}
   if(prev!==session.state.currentSide){const next=session.state.living(session.state.currentSide).find(u=>!u.hasActed);if(next){selected=next.id;field.focusUnit(next.pos);mode='move';}}
   if(command.kind==='move')mode=session.state.find(selected)?.strategies[0]??'attack';
   persist();render();pump();
@@ -310,10 +323,19 @@ function act(command:Command){
 let quietTick=false;
 function pump(){clearTimeout(aiTimer);if(menuOpen||field.busy||$<HTMLDialogElement>('#modal').open||session.state.outcome!=='ongoing'||session.activeDuel)return;aiTimer=setTimeout(()=>{const side=session.state.currentSide,logged=session.state.log.length;if(session.tick()){quietTick=session.state.log.length===logged&&side===session.state.currentSide;if(side!==session.state.currentSide){const next=session.state.living(session.state.currentSide).find(u=>!u.hasActed);if(next){selected=next.id;mode='move';field.focusUnit(next.pos);}}persist();render();pump();}},quietTick?30:450/speed);}
 function undo(){if(field.busy)return;if(session.undo()){activate();persist();toast('직전 명령을 되돌렸습니다.');}}
+/** 도전을 거절당했을 때: 상대의 대답과 그 효과. */
+function showRefusal(){
+  const r=session.lastRefusal;if(!r)return;session.lastRefusal=null;clearTimeout(aiTimer);
+  const who=session.state.find(r.target),me=session.state.find(r.challenger);if(!who||!me)return;
+  modal(`<div class="dialogue refusal"><div class="eyebrow">${r.kind==='duel'?'일기토':'설전'} · 도전 거절</div>${dialogueCaption(who.name.replace(/의?\s*환영$/,''),r.line)}
+  <p class="refusal-effect">${unitName(me)}의 기세가 오른다(2턴 사기 상승) · ${unitName(who)}의 사기가 꺾였다(사기 −10).</p>
+  <div class="modal-actions"><button class="primary" id="refusal-ok">전장으로</button></div></div>`,false);
+  $('#refusal-ok').onclick=()=>{$<HTMLDialogElement>('#modal').close();persist();render();pump();};
+}
 function showDuel(){
   const d=session.activeDuel??session.lastDuel;if(!d)return;clearTimeout(aiTimer);const labels=duelActionNames(d.kind),energyName=d.kind==='debate'?'논거':'기합';
   const a=session.state.get(d.player.id),b=session.state.get(d.enemy.id),last=d.history.at(-1);
-  modal(`<div class="duel-screen ${d.kind}"><div class="eyebrow">${d.kind==='duel'?'무력으로 겨루는 일기토':'지력으로 겨루는 설전'}</div><h2>${d.kind==='duel'?'일기토':'설전'} <small>${d.round} / 5합</small></h2><div class="duel-hud">${[d.player,d.enemy].map(u=>`<div><strong>${u.name}</strong><span>${d.kind==='duel'?'무력':'지력'} ${u.stat} · ${energyName} ${u.energy}/3</span><meter min="0" max="${u.maxHp}" value="${u.hp}"></meter><small>${u.hp} / ${u.maxHp}</small></div>`).join('')}</div><div class="duel-arena"><div class="duel-fighter player motion-${last?.action??'idle'}">${portraitFor(a,d.kind==='duel'&&last?.action==='guard')}${last?`<span class="duel-speech">${duelLine(d.kind,last.action)}</span>`:''}${last?`<b class="damage-number">−${last.taken}</b>`:''}</div><span class="duel-versus">${d.kind==='duel'?'대결':'설전'}</span><div class="duel-fighter enemy motion-${last?.enemyAction??'idle'}">${portraitFor(b,d.kind==='duel'&&last?.enemyAction==='guard')}${last?`<span class="duel-speech">${duelLine(d.kind,last.enemyAction)}</span>`:''}${last?`<b class="damage-number">−${last.dealt}</b>`:''}</div></div><p class="duel-report" aria-live="polite">${last?`${last.round}합 · ${labels[last.action]} 대 ${labels[last.enemyAction]} · 준 피해 ${last.dealt} / 받은 피해 ${last.taken}`:(d.kind==='debate'?'논박은 정신력 피해, 반론은 피해 감소와 논거 +1, 숙고는 논거 +2, 논파는 논거 2를 소비합니다.':'공격은 피해, 방어는 피해 감소와 기합 +1, 기합은 +2, 필살기는 기합 2를 소비합니다.')}</p>${d.result?`<h3>${d.result==='win'?'승리':d.result==='lose'?'패배':'무승부'}</h3><p>전투 체력: 승자 15% · 패자 45% · 무승부 양쪽 25% 피해 (최소 1 유지). 패자는 2턴 혼란. 행동 1회 소비.</p><button id="duel-return" class="primary">전장으로 돌아가기</button>`:`<div class="duel-actions">${(Object.keys(labels) as DuelAction[]).map(id=>`<button data-duel-action="${id}" ${id==='special'&&d.player.energy<2?'disabled':''}>${labels[id]}<small>${id==='attack'?'능력치 피해':id==='guard'?'피해 65% 감소':id==='rally'?energyName+' +2':'피해 ×1.8'}</small></button>`).join('')}</div>`}<details><summary>합별 기록</summary>${d.history.map(h=>`<p>${h.round}합 · ${labels[h.action]} / ${labels[h.enemyAction]} · ${h.dealt}:${h.taken}</p>`).join('')}</details></div>`,false);
+  modal(`<div class="duel-screen ${d.kind}"><div class="eyebrow">${d.kind==='duel'?'무력으로 겨루는 일기토':'지력으로 겨루는 설전'}</div><h2>${d.kind==='duel'?'일기토':'설전'} <small>${d.round} / 5합</small></h2>${session.lastAccept&&d.round===0?`<p class="duel-accept">${session.lastAccept.historic?'<b>연의의 대결</b> · ':''}${d.enemy.name}: “${session.lastAccept.line}”</p>`:''}<div class="duel-hud">${[d.player,d.enemy].map(u=>`<div><strong>${u.name}</strong><span>${d.kind==='duel'?'무력':'지력'} ${u.stat} · ${energyName} ${u.energy}/3</span><meter min="0" max="${u.maxHp}" value="${u.hp}"></meter><small>${u.hp} / ${u.maxHp}</small></div>`).join('')}</div><div class="duel-arena"><div class="duel-fighter player motion-${last?.action??'idle'}">${portraitFor(a,d.kind==='duel'&&last?.action==='guard')}${last?`<span class="duel-speech">${duelLine(d.kind,last.action)}</span>`:''}${last?`<b class="damage-number">−${last.taken}</b>`:''}</div><span class="duel-versus">${d.kind==='duel'?'대결':'설전'}</span><div class="duel-fighter enemy motion-${last?.enemyAction??'idle'}">${portraitFor(b,d.kind==='duel'&&last?.enemyAction==='guard')}${last?`<span class="duel-speech">${duelLine(d.kind,last.enemyAction)}</span>`:''}${last?`<b class="damage-number">−${last.dealt}</b>`:''}</div></div><p class="duel-report" aria-live="polite">${last?`${last.round}합 · ${labels[last.action]} 대 ${labels[last.enemyAction]} · 준 피해 ${last.dealt} / 받은 피해 ${last.taken}`:(d.kind==='debate'?'논박은 정신력 피해, 반론은 피해 감소와 논거 +1, 숙고는 논거 +2, 논파는 논거 2를 소비합니다.':'공격은 피해, 방어는 피해 감소와 기합 +1, 기합은 +2, 필살기는 기합 2를 소비합니다.')}</p>${d.result?`<h3>${d.result==='win'?'승리':d.result==='lose'?'패배':'무승부'}</h3><p>전투 체력: 승자 15% · 패자 45% · 무승부 양쪽 25% 피해 (최소 1 유지). 패자는 2턴 혼란. 행동 1회 소비.</p><button id="duel-return" class="primary">전장으로 돌아가기</button>`:`<div class="duel-actions">${(Object.keys(labels) as DuelAction[]).map(id=>`<button data-duel-action="${id}" ${id==='special'&&d.player.energy<2?'disabled':''}>${labels[id]}<small>${id==='attack'?'능력치 피해':id==='guard'?'피해 65% 감소':id==='rally'?energyName+' +2':'피해 ×1.8'}</small></button>`).join('')}</div>`}<details><summary>합별 기록</summary>${d.history.map(h=>`<p>${h.round}합 · ${labels[h.action]} / ${labels[h.enemyAction]} · ${h.dealt}:${h.taken}</p>`).join('')}</details></div>`,false);
   document.querySelectorAll<HTMLButtonElement>('[data-duel-action]').forEach(el=>el.onclick=()=>{sound.event({kind:'duel',critical:el.dataset.duelAction==='special'});act({kind:'item',unit:d.player.id,item:'duel-round:'+el.dataset.duelAction});});
   $('#duel-return')?.addEventListener('click',()=>{duelPresented=true;$<HTMLDialogElement>('#modal').close();render();pump();});
 }
@@ -321,6 +343,11 @@ function checkModal(){
   if(menuOpen||field.busy)return;const s=session.state;
   if(session.activeDuel||session.lastDuel&&!duelPresented){showDuel();return;}
   if(s.outcome!=='ongoing'&&session.deployment?.mission){showExpeditionResult();return;}
+  if(s.outcome!=='ongoing'&&session.deployment?.run&&session.deployment.scenario){
+    // 시나리오 모드의 가상 전장: 장수 성장·다음 장으로.
+    if(resultShown)return;resultShown=true;sound.sfx(s.outcome==='victory'?'victory':'defeat');
+    const dep=session.deployment,xp={...session.xpEarned};setTimeout(()=>{menuOpen=true;void finishIfBattle(scenarioHost,s,dep,xp);},900);return;
+  }
   if(s.outcome!=='ongoing'&&session.deployment?.run){
     // 원정 전투: 연의 보상 대신 원정 기록에 결과를 넘긴다.
     if(resultShown)return;resultShown=true;sound.sfx(s.outcome==='victory'?'victory':'defeat');
@@ -338,6 +365,11 @@ function checkModal(){
     if(reward?.xp)saveCampaign();
     if(win)try{const p=progress(),k=s.stage.id+':'+s.difficulty;p[k]=[...new Set([...(p[k]??[]),...seals])];localStorage.setItem(PROGRESS_KEY,JSON.stringify(p));}catch{/* optional persistence */}
     sound.sfx(win?(session.somber?'somber':'victory'):'defeat');
+    if(session.deployment?.scenario){
+      // 시나리오 모드의 연의 장: 보상은 같고, 전투 뒤 장면과 다음 장은 시나리오 흐름이 맡는다.
+      const news=[...(reward?.xp?[`경험치 +${reward.xp}`]:[]),...(reward?.treasure?[`보물 「${reward.treasure.name}」을 얻었다`]:[]),...growthMilestones(before,campaign).filter(x=>x.to>x.from||x.evolution).map(x=>`${officerNames[x.id]} Lv.${x.from} → ${x.to}${x.evolution?` · 병종 진화 ${x.evolution.from} → ${x.evolution.to}`:''}`)];
+      const chapterId=session.deployment.scenario.chapter;setTimeout(()=>{menuOpen=true;void finishStoryBattle(scenarioHost,chapterId,win,news);},900);return;
+    }
     const after=win?storyAftermath[s.stage.id]:undefined;
     modal(`<div class="result">${after?`<div class="aftermath"><div class="aftermath-stage" style="${storyBackdrop(after.art)}"><span class="story-location">${after.name}</span></div><div id="aftermath-line">${dialogueCaption(after.beats[0]!.speaker,after.beats[0]!.line)}</div>${after.beats.length>1?'<button id="aftermath-next">다음 장면 →</button>':''}</div>`:''}<div class="result-character">${win?'승':'패'}</div><h2>${win?'판을 읽었다.':'아직, 끝이 아니다.'}</h2><p>${s.stage.subtitle} · ${s.turn}턴</p>${reward?.xp?`<p class="growth-summary">경험치 +${reward.xp} · ${growthText()}</p>${treasures.some(t=>t.stage===s.stage.id)?`<p class="treasure-reward">보물: ${treasures.filter(t=>t.stage===s.stage.id).map(t=>t.name).join(' · ')}</p>`:''}`:''}${milestoneMarkup(growthMilestones(before,campaign))}<div class="seals">${session.sealNames.map((name,i)=>`<div class="${seals.includes(i+1)?'earned':''}"><b>◆</b><span>${name}</span></div>`).join('')}</div><p>${win?'전투 기록과 인장이 저장되었습니다.':esc(session.failure)}</p><div class="modal-actions"><button id="result-undo">↶ 마지막 수 무르기</button>${session.phaseCheckpoint!==null?'<button id="phase-restore">목표 전환 직전으로</button>':''}<button id="retry">다시 도전</button><button id="result-menu">연의 회상</button>${win&&session.chapter===campaignOrder.at(-1)?'<button id="epilogue" class="primary">에필로그 →</button>':''}${win&&campaignOrder.indexOf(session.chapter)<campaignOrder.length-1&&replayable(campaignOrder[campaignOrder.indexOf(session.chapter)+1]!)?'<button id="next-chapter" class="primary">다음 전장 →</button>':''}</div></div>`,false);
     if(after){let k=0;$('#aftermath-next')?.addEventListener('click',e=>{k=(k+1)%after.beats.length;const b=after.beats[k]!;$('#aftermath-line').innerHTML=dialogueCaption(b.speaker,b.line);(e.currentTarget as HTMLButtonElement).textContent=k===after.beats.length-1?'↺ 처음 장면':'다음 장면 →';});}
@@ -363,7 +395,7 @@ field.onCell=at=>{
     if(!target&&mode==='move'){act({kind:'move',unit:u.id,to:at});return;}
   }if(target)select(target.id);
 };
-field.onHover=at=>{if(!at){$('#tile-info').textContent='전장 고정 · +/− 버튼으로 확대 · 전체 보기';return;}const s=session.state,u=s.find(selected),target=s.unitAt(at);const hz=s.map.tileAt(at).hazard;let line=`${terrainNames[s.map.tileAt(at).terrain]}${hz==='fire'?' · 불길(화상)':hz==='trap'&&session.scouted?' · 함정(최대 체력 25% 피해)':''} · (${at.x+1}, ${at.y+1}) · 회피 +${s.map.evasionBonus(at)}%`;if(target)line+=` · ${unitName(target)} ${target.hp} HP`;if(u&&target?.side==='enemy'){const d=s.strategies.get(mode);if(d&&manhattan(u.pos,at)<=d.range)line+=` · 예상 피해 ≈${estimateStrategy(u,target,d,s.map)}`;else if(mode==='attack'&&manhattan(u.pos,at)<=u.range[1]&&manhattan(u.pos,at)>=u.range[0]){const v=previewAttack(u,target,s.map,session.battle.wouldCounter(target,u));line+=` · 명중 ${v.hit}% · 피해 ${v.damage}${v.lethal?' (격파)':''}${v.counter?` · 반격 ${v.counter.damage} (명중 ${v.counter.hit}%)`:' · 반격 없음'}`;}}if(u&&mode==='move'){const cost=s.map.moveCost(u.unitClass,at,ignoresRough(u));line+=' · 이동 비용 '+(Number.isFinite(cost)?cost:'진입 불가')+' · 지형 위력 ×'+s.map.terrainAffinity(u.unitClass,at).toFixed(2);}if(u&&target?.side==='enemy'&&mode==='attack'&&!structureKind(target.id))line+=' · '+physicalMatchup(u.unitClass,target.unitClass);$('#tile-info').textContent=line;};
+field.onHover=at=>{if(!at){$('#tile-info').textContent='전장 고정 · +/− 버튼으로 확대 · 전체 보기';return;}const s=session.state,u=s.find(selected),target=s.unitAt(at);const hz=s.map.tileAt(at).hazard;let line=`${terrainNames[s.map.tileAt(at).terrain]}${hz==='fire'?' · 불길(화상)':hz==='trap'&&session.scouted?' · 함정(최대 체력 25% 피해)':''} · (${at.x+1}, ${at.y+1}) · 회피 +${s.map.evasionBonus(at)}%`;if(target)line+=` · ${unitName(target)} ${target.hp} HP`;if(u&&target?.side==='enemy'&&(mode==='duel'||mode==='debate')&&session.revision===4){const a=session.challengeAnswer(u,target,mode);line+=a.reason==='nameless'?' · 이름 없는 병사는 응하지 않는다':a.accept?` · ${a.reason==='historic'?'연의의 대결 — 반드시 응한다':'응할 것 같다'}`:` · 거절할 것 같다(${a.reason==='wounded'?'부상':'성격'})`;}if(u&&target?.side==='enemy'){const d=s.strategies.get(mode);if(d&&manhattan(u.pos,at)<=d.range)line+=` · 예상 피해 ≈${estimateStrategy(u,target,d,s.map)}`;else if(mode==='attack'&&manhattan(u.pos,at)<=u.range[1]&&manhattan(u.pos,at)>=u.range[0]){const v=previewAttack(u,target,s.map,session.battle.wouldCounter(target,u));line+=` · 명중 ${v.hit}% · 피해 ${v.damage}${v.lethal?' (격파)':''}${v.counter?` · 반격 ${v.counter.damage} (명중 ${v.counter.hit}%)`:' · 반격 없음'}`;}}if(u&&mode==='move'){const cost=s.map.moveCost(u.unitClass,at,ignoresRough(u));line+=' · 이동 비용 '+(Number.isFinite(cost)?cost:'진입 불가')+' · 지형 위력 ×'+s.map.terrainAffinity(u.unitClass,at).toFixed(2);}if(u&&target?.side==='enemy'&&mode==='attack'&&!structureKind(target.id))line+=' · '+physicalMatchup(u.unitClass,target.unitClass);$('#tile-info').textContent=line;};
 function updateSound(){$('#sound-toggle').innerHTML=`♪ <span>${sound.enabled?'소리 켜짐':'음소거'}</span>`;}
 $('#sound-toggle').onclick=()=>{sound.enabled=!sound.enabled;storeSettings();void sound.start().then(updateSound);};
 $('#menu').onclick=showMenu;$('#brand').onclick=showMenu;$('#undo').onclick=undo;

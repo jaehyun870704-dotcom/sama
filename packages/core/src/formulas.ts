@@ -170,9 +170,7 @@ export function computeStrategy(
   const hit = ctx.alwaysHit || rng.chance(accuracy(ctx, map));
   if (!hit) return miss(caster, target, false);
 
-  const power = caster.stats.intellect * (strategy.power / 100) * ctx.attackMul;
-  const resist = target.stats.spirit * 0.5;
-  const base = Math.max(MIN_DAMAGE, power - resist);
+  const base = strategyBase(caster, target, strategy, ctx.attackMul);
 
   const elemental = elementalMultiplier(strategy, map, target);
   const variance = 0.95 + rng.next() * 0.1;
@@ -198,6 +196,27 @@ export function computeStrategy(
       reduction: ctx.reduction,
     },
   };
+}
+
+/**
+ * 책략 기본 피해: 지력을 따라 늘고, 상대의 정신이 높을수록 비율로 줄어든다.
+ *   지력 × 위력 × 1.2 × 지력 / (지력 + 정신)
+ * 지력과 정신이 같으면 지력 × 위력 × 0.6. 빼기식과 달리 지력이 낮아도 0으로 꺾이지 않고,
+ * 지력이 오르는 만큼 꾸준히(제곱에 가깝게) 강해진다.
+ */
+export function strategyBase(caster: Unit, target: Unit, strategy: StrategyDef, attackMul = 1): number {
+  // 옛 규칙 전투(저장 재생)는 예전 빼기식 그대로.
+  if (!caster.classTactics) return Math.max(MIN_DAMAGE, caster.stats.intellect * (strategy.power / 100) * attackMul - target.stats.spirit * 0.5);
+  const int = Math.max(1, caster.stats.intellect), spirit = Math.max(1, target.stats.spirit);
+  return Math.max(MIN_DAMAGE, int * (strategy.power / 100) * attackMul * 1.2 * int / (int + spirit));
+}
+
+/**
+ * 회복량: 책략 위력의 절반에 지력의 0.6배를 더하고, 회복 특성(healPower %)을 곱한다.
+ * 지력 40이면 소회복(위력 25) 약 36, 지력 100이면 약 72.
+ */
+export function healAmount(power: number, intellect: number, healPower = 0): number {
+  return Math.max(1, Math.round((power * 0.5 + Math.max(0, intellect) * 0.6) * (1 + healPower / 100)));
 }
 
 /** 계열 × 대상 지형 보정. 화계는 숲에서, 수계는 수상에서 강해진다. */
@@ -281,8 +300,7 @@ export function estimateStrategy(
   applyTraitHooks(ctx);
   if (ctx.immune) return 0;
 
-  const power = caster.stats.intellect * (strategy.power / 100) * ctx.attackMul;
-  const base = Math.max(MIN_DAMAGE, power - target.stats.spirit * 0.5);
+  const base = strategyBase(caster, target, strategy, ctx.attackMul);
   const raw = base * elementalMultiplier(strategy, map, target) * (1 - ctx.reduction);
   const hitRate = ctx.alwaysHit ? 1 : accuracy(ctx, map) / 100;
   return Math.max(0, raw * hitRate);

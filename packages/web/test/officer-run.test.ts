@@ -3,7 +3,7 @@ import {newRun,startingOfficers,battleRef,finishBattle,visitNode,takeReward,choo
 import {Session} from '../src/session.ts';
 import {RUN_CHAPTER} from '../src/run-ui.ts';
 import {romanceOf} from '../src/romance.ts';
-import {computePhysical,tacticMultiplier,classTactics,makeUnit,loadMap,Rng,CONTROLLABLE,decide,key,type LogEntry,type Unit} from '../../core/src/index.ts';
+import {computePhysical,tacticMultiplier,classTactics,makeUnit,loadMap,Rng,strategyBase,healAmount,CONTROLLABLE,decide,key,type LogEntry,type Unit} from '../../core/src/index.ts';
 import type {Deployment} from '../src/progression.ts';
 
 const fresh=(unlocks:string[]=[])=>{const r=newRun(4321,startingOfficers(unlocks),{unlocks});r.route={1:'refuse'};return r;};
@@ -104,3 +104,22 @@ describe('병종 전법',()=>{
   expect(classTactics('lancer').map(t=>t.name)).toEqual(['돌격']);expect(classTactics('strategist')).toEqual([]);
  });
 });
+
+describe('책략·회복은 지력을 따른다',()=>{
+ const fire={id:'fire',name:'화계',element:'fire' as const,shape:'single' as const,range:3,radius:0,mpCost:6,power:100,targetSides:['enemy' as const]};
+ const mk=(int:number,spirit:number,modern=true)=>{const a=makeUnit({id:'a',unitClass:'strategist',level:10,side:'player',pos:{x:0,y:0}}),d=makeUnit({id:'d',unitClass:'infantry',level:10,side:'enemy',pos:{x:1,y:0}});a.stats.intellect=int;d.stats.spirit=spirit;a.classTactics=modern;return {a,d};};
+ it('grows steadily with intellect and never collapses to the minimum against high spirit',()=>{
+  const lo=mk(40,40),mid=mk(70,40),hi=mk(100,40),wall=mk(40,120);
+  expect(strategyBase(mid.a,mid.d,fire)).toBeGreaterThan(strategyBase(lo.a,lo.d,fire));
+  expect(strategyBase(hi.a,hi.d,fire)).toBeGreaterThan(strategyBase(mid.a,mid.d,fire));
+  expect(strategyBase(lo.a,lo.d,fire)).toBeCloseTo(40*.6,5);
+  expect(strategyBase(wall.a,wall.d,fire)).toBeGreaterThan(10);
+  // 옛 규칙 전투는 예전 빼기식 그대로(저장 재생 보존).
+  const old=mk(40,120,false);expect(strategyBase(old.a,old.d,fire)).toBe(1);
+ });
+ it('heals more with more intellect and the heal-power trait',()=>{
+  expect(healAmount(25,40)).toBe(Math.round(12.5+24));expect(healAmount(25,100)).toBeGreaterThan(healAmount(25,40));
+  expect(healAmount(25,60,40)).toBe(Math.round((12.5+36)*1.4));
+ });
+});
+

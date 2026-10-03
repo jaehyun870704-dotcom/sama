@@ -42,6 +42,20 @@ export const troopRoles:Partial<Record<UnitClass,{name:string;role:string;base:U
  outlaw:{name:'녹림호걸',role:'산적 2단계 · 숲과 산의 우두머리, 회심 일격',base:'bandit',tint:0xe8c49a,spells:[]},
  elephant:{name:'상병',role:'남만의 코끼리 부대 · 체력이 매우 높고 느리다',base:'heavyCav',tint:0xb9b2a4,spells:[]},
  warElephant:{name:'전투상',role:'상병 2단계 · 쇠 갑주를 두른 코끼리',base:'heavyCav',tint:0xd3cbbb,spells:[]},
+ ironPagoda:{name:'철부도',role:'중기병 3단계 · 사람과 말 모두 쇠로 감싼 돌파 기병, 방어를 꿰뚫는다',base:'heavyCav',tint:0xa9b4c6,spells:[]},
+ elephantKing:{name:'상왕군',role:'상병 3단계 · 남만 상왕의 코끼리 부대, 때린 적에게 피해를 되돌린다',base:'heavyCav',tint:0xf0e2b8,spells:[]},
+ boulderCorps:{name:'천균대',role:'투석병 3단계 · 사거리 1~3, 천 근 돌로 방어를 깨뜨린다',base:'archer',tint:0xffc66e,spells:[]},
+ wraith:{name:'영귀',role:'자객 3단계 · 보이지 않는 살수, 회심과 흡혈',base:'bandit',tint:0x4e4878,spells:[]},
+ wuguoRattan:{name:'오과 등갑군',role:'등갑병 3단계 · 오과국 정예, 물리 피해 40% 감소 · 불에는 여전히 약하다',base:'infantry',tint:0xf6d27a,spells:[]},
+ greenwoodKing:{name:'녹림대왕',role:'산적 3단계 · 산채의 왕, 궁지에 몰릴수록 사나워진다',base:'bandit',tint:0xf4cf8e,spells:[]},
+ arhat:{name:'나한승',role:'무도가 3단계 · 금강 같은 몸으로 책략에도 버틴다',base:'monk',tint:0xffd27a,spells:['mend','march','fortify']},
+ demonKing:{name:'요왕',role:'주술사 3단계 · 저주를 되돌리는 요술의 왕',base:'shaman',tint:0x9a62ff,spells:['fire','embers','bind','poison','silence','confuse','feint','demoralize']},
+ celestial:{name:'선녀',role:'무녀 3단계 · 하늘의 가호로 부대를 지키는 최고의 지원 병종',base:'maiden',tint:0xffe6f2,spells:['mend','purify','fortify','inspire','greatMend']},
+ thunderGod:{name:'뇌신',role:'도사 3단계 · 벼락을 부리는 원소 책략의 정점',base:'taoist',tint:0xe6f8ff,spells:['fire','gust','windDragon','flood','waterSurge','thunder','whirlwind','tempest','thunderbolt']},
+ medicineSaint:{name:'의선',role:'의술사 3단계 · 회복량 55% 증가, 전장의 명의',base:'physician',tint:0xeafff2,spells:['mend','purify','greatMend']},
+ javelin:{name:'투창병',role:'창병 계열 · 사거리 1~2, 붙은 적과 한 칸 건너 적을 모두 찌른다',base:'spearman',tint:0xc9b98f,spells:[]},
+ eliteJavelin:{name:'정예 투창병',role:'투창병 2단계 · 방어를 꿰뚫는 표창 투척',base:'spearman',tint:0xdcc890,spells:[]},
+ flyingSpear:{name:'비창대',role:'투창병 3단계 · 사거리 1~3, 창비가 쏟아진다',base:'spearman',tint:0xffd98a,spells:[]},
 };
 export const supportOptions:UnitClass[]=['infantry','fengshui','strategist','shaman','maiden','taoist','physician','monk','horseArcher','bandit','spearman','crossbow','archer','cavalry','heavyCav','catapult','ram','engineer'];
 export function troopStrategies(kind:UnitClass,level:number){const role=troopRoles[kind];return role?allStrategies.filter(s=>role.spells.includes(s.id)&&(s.level<=level||s.id==='mend')).map(s=>s.id):undefined;}
@@ -50,7 +64,7 @@ export const classNames:Record<string,string>={infantry:'보병',spearman:'창�
 /** The class whose sprite a unit is drawn with: extended classes borrow their lineage's art. */
 export function artClass(kind:UnitClass):UnitClass{return VARIANTS[kind]?(troopRoles[kind]?.base??familyOf(kind)):kind;}
 /** Every class a player can field, by tier: for codex and recruiting. */
-export const recruitPool:UnitClass[]=['infantry','spearman','cavalry','archer','crossbow','strategist','fengshui','horseArcher','heavyCav','slinger','assassin','rattan','elephant','monk','taoist','physician','bandit'];
+export const recruitPool:UnitClass[]=['infantry','spearman','cavalry','archer','crossbow','strategist','fengshui','horseArcher','heavyCav','slinger','assassin','rattan','elephant','monk','taoist','physician','bandit','javelin'];
 
 export const troopSheets=[{id:'casters',url:'troops-casters-v1.png',rows:3},{id:'specialists',url:'troops-specialists-v1.png',rows:4},{id:'casters-walk',url:'troops-casters-walk-v1.png',rows:3},{id:'specialists-walk',url:'troops-specialists-walk-v1.png',rows:4},{id:'casters-reaction',url:'troops-casters-reaction-v1.png',rows:3},{id:'specialists-reaction',url:'troops-specialists-reaction-v1.png',rows:4},{id:'base-reaction',url:'units-base-reaction-v1.png',rows:6},{id:'extra-reaction',url:'units-extra-reaction-v1.png',rows:4}] as const;
 export const troopArt:Partial<Record<UnitClass,{sheet:'casters'|'specialists';row:number;rows:number}>>={shaman:{sheet:'casters',row:0,rows:3},maiden:{sheet:'casters',row:1,rows:3},taoist:{sheet:'casters',row:2,rows:3},physician:{sheet:'specialists',row:0,rows:4},monk:{sheet:'specialists',row:1,rows:4},horseArcher:{sheet:'specialists',row:2,rows:4},bandit:{sheet:'specialists',row:3,rows:4}};

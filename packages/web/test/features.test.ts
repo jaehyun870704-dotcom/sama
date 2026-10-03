@@ -1,6 +1,6 @@
-import {romance} from '../src/romance.ts';
+import {romance,temperOf} from '../src/romance.ts';
 import {describe,it,expect,vi} from 'vitest';
-import {newDuel,duelRound,type DuelAction} from '../src/duel.ts';
+import {newDuel,duelRound,duelResponse,type DuelAction} from '../src/duel.ts';
 import {Session,chapters} from '../src/session.ts';
 import {freshCampaign,award,equipSlot,equippedItems,deployment,readCampaign,writeCampaign} from '../src/progression.ts';
 import {availableStrategies} from '../src/officers.ts';
@@ -10,7 +10,9 @@ describe('five round duels and debates',()=>{
  it('requires energy, rejects invalid moves, and ends exactly on the fifth choice',()=>{const d=duel();expect(duelRound(d,'special')).toBe(false);expect(d.round).toBe(0);for(const a of ['rally','special','guard','attack','attack'] as DuelAction[])expect(duelRound(d,a)).toBe(true);expect(d.round).toBe(5);expect(d.result).toBeDefined();expect(duelRound(d,'attack')).toBe(false);expect(d.history).toHaveLength(5);});
  it('scales damage with stats and reduces incoming damage through guard',()=>{const weak=duel(30),strong=duel(90),guard=duel(30);duelRound(weak,'attack');duelRound(strong,'attack');duelRound(guard,'guard');expect(strong.history[0]!.dealt).toBeGreaterThan(weak.history[0]!.dealt);expect(guard.history[0]!.taken).toBeLessThan(weak.history[0]!.taken);});
  it('replays and undoes mid-debate without losing choices',()=>{
-   const s=new Session(7,'normal',215,'survival',4);let started=false;
+   // 꿈속의 진궁(자부)은 사마의의 설전을 받는다.
+   const s=new Session(4,'normal',215,'survival',4);let started=false;
+   for(let i=0;i<5&&s.state.activeDialogue;i++){const n=s.battle.dialogue.node(s.state.activeDialogue);s.act({kind:'choose',nodeId:n.id,optionId:n.options[0]!.id});}
    for(let i=0;i<300&&!started&&s.state.outcome==='ongoing';i++){
      const st=s.state,u=st.living(st.currentSide).find(u=>!u.hasActed);
      if(!u||!['player','ally'].includes(st.currentSide)){s.tick();continue;}
@@ -21,7 +23,7 @@ describe('five round duels and debates',()=>{
    }
    expect(started).toBe(true);expect(s.act({kind:'endPhase'}).ok).toBe(false);expect(s.act({kind:'item',unit:'sima_yi',item:'duel-round:rally'}).ok).toBe(true);const loaded=Session.load(s.save());expect(loaded.activeDuel).toEqual(s.activeDuel);expect(loaded.undo()).toBe(true);expect(loaded.activeDuel?.round).toBe(0);
  });
- it.each(['duel','debate'] as const)('resolves %s into battle HP and one action',kind=>{const s=new Session(7,'normal',215,'survival',4),u=s.state.get('sima_yi'),enemy=s.state.living('enemy')[0]!;enemy.pos={x:u.pos.x+1,y:u.pos.y};expect(s.act({kind:'item',unit:u.id,item:kind,target:enemy.id}).ok).toBe(true);expect(s.activeDuel?.player.stat).toBe(kind==='debate'?u.stats.intellect:romance.sima_yi!.war+u.level);for(const action of ['rally','special','guard','attack','attack'])expect(s.act({kind:'item',unit:u.id,item:'duel-round:'+action}).ok).toBe(true);expect(s.activeDuel).toBeNull();expect(s.lastDuel?.round).toBe(5);expect(u.hasActed).toBe(true);expect(u.hp).toBeLessThan(u.stats.maxHp);expect(enemy.hp).toBeLessThan(enemy.stats.maxHp);});
+ it.each(['duel','debate'] as const)('resolves %s into battle HP and one action',kind=>{const s=new Session(7,'normal',215,'survival',4),u=s.state.get('sima_yi'),enemy=s.state.living('enemy')[0]!;enemy.pos={x:u.pos.x+1,y:u.pos.y};(enemy as {name:string}).name='여포';expect(s.act({kind:'item',unit:u.id,item:kind,target:enemy.id}).ok).toBe(true);expect(s.activeDuel?.player.stat).toBe(kind==='debate'?u.stats.intellect:romance.sima_yi!.war+u.level);for(const action of ['rally','special','guard','attack','attack'])expect(s.act({kind:'item',unit:u.id,item:'duel-round:'+action}).ok).toBe(true);expect(s.activeDuel).toBeNull();expect(s.lastDuel?.round).toBe(5);expect(u.hasActed).toBe(true);expect(u.hp).toBeLessThan(u.stats.maxHp);expect(enemy.hp).toBeLessThan(enemy.stats.maxHp);});
 });
 describe('equipment, traits, spells and castle siege',()=>{
  it('preserves the paid escape beside the new Luoyang gate',()=>{const s=new Session(0,'normal',215,'survival',4),st=s.state;st.get('sima_yi').pos={x:6,y:10};st.get('sima_lang').pos={x:7,y:10};expect(s.act({kind:'wait',unit:'sima_yi'}).ok).toBe(true);if(st.activeDialogue==='bribe')expect(s.act({kind:'choose',nodeId:'bribe',optionId:'pay'}).ok).toBe(true);expect(st.activeDialogue).toBe('gate_payment');expect(s.act({kind:'choose',nodeId:'gate_payment',optionId:'pay_gate'}).ok).toBe(true);expect(st.outcome).toBe('victory');expect(s.funds).toBe(1000);});
@@ -31,4 +33,27 @@ describe('equipment, traits, spells and castle siege',()=>{
  it('unlocks the full spell list progressively',()=>{expect(availableStrategies(1)).toEqual(['fire']);expect(availableStrategies(5)).toEqual(['fire','windDragon','bind']);expect(availableStrategies(20)).toHaveLength(7);const d=deployment(freshCampaign());d.levels.sima_yi=10;expect(new Session(7,'normal',215,'survival',4,d).state.get('sima_yi').strategies).toEqual(availableStrategies(10));});
  it.each([0,1,2,6])('forces a controllable ram and HP structures in castle chapter %i',chapter=>{const s=new Session(chapter,'normal',215,'survival',4,deployment(freshCampaign()));expect(s.state.living('ally').some(u=>u.unitClass==='ram')).toBe(true);expect(s.state.living().some(u=>u.id.startsWith('gate_')&&u.hp>0)).toBe(true);expect(s.state.living().some(u=>u.id.startsWith('tower_')&&u.hp>0&&u.range[1]>1)).toBe(true);});
  it('gives rams a real attack bonus against structures, not ordinary soldiers',()=>{const s=new Session(1,'normal',215,'survival',4),u=s.state.get('siege_crew'),gate=s.state.get('gate_33_12');u.pos={x:32,y:12};const enhanced=estimatePhysical(u,gate,s.state.map);u.traits=[];expect(enhanced).toBeGreaterThan(estimatePhysical(u,gate,s.state.map)*2);});
+ it('lets an officer refuse by temper, always answers the historic duels, and ignores nameless soldiers',()=>{
+  expect(duelResponse('duel',{name:'사마의',stat:70},{name:'조상',stat:50,temper:'timid',hp:1}).accept).toBe(false);
+  expect(duelResponse('duel',{name:'허저',stat:99},{name:'마초',stat:99,temper:'brave',hp:.1})).toMatchObject({accept:true,reason:'historic'});
+  expect(duelResponse('debate',{name:'사마의',stat:96},{name:'제갈량',stat:100,temper:'wise',hp:1}).reason).toBe('historic');
+  expect(duelResponse('debate',{name:'사마의',stat:96},{name:'허저',stat:36,temper:'reckless',hp:1}).accept).toBe(true);
+  expect(duelResponse('duel',{name:'관우',stat:97},{name:'조인',stat:86,temper:'cautious',hp:1}).accept).toBe(false);
+  expect(duelResponse('duel',{name:'장료',stat:92},{name:'감녕',stat:94,temper:'brave',hp:.2}).accept).toBe(true);
+  expect(duelResponse('duel',{name:'장비',stat:90},{name:'조운',stat:96,temper:'brave',hp:.2}).reason).toBe('wounded');
+  expect(duelResponse('duel',{name:'사마의',stat:70},{name:'보병',stat:60,hp:1}).reason).toBe('nameless');
+  expect(temperOf('여포')).toBe('reckless');expect(temperOf('사마의')).toBe('wise');expect(temperOf('보병')).toBeUndefined();
+ });
+ it('spends the challenger\'s action on a refusal: the challenger is rallied and the coward loses morale',()=>{
+  const s=new Session(7,'normal',215,'survival',4),u=s.state.get('sima_yi'),enemy=s.state.living('enemy')[0]!;enemy.pos={x:u.pos.x+1,y:u.pos.y};(enemy as {name:string}).name='조상';
+  const morale=enemy.stats.morale;
+  expect(s.act({kind:'item',unit:u.id,item:'duel',target:enemy.id}).ok).toBe(true);
+  expect(s.activeDuel).toBeNull();expect(s.lastRefusal?.target).toBe(enemy.id);expect(u.hasActed).toBe(true);
+  expect(s.state.hasStatus(u,'rally')).toBe(true);expect(enemy.stats.morale).toBe(morale-10);
+
+ });
+ it('refuses to let a general challenge a nameless soldier without spending the turn',()=>{
+  const s=new Session(7,'normal',215,'survival',4),u=s.state.get('sima_yi'),enemy=s.state.living('enemy')[0]!;enemy.pos={x:u.pos.x+1,y:u.pos.y};(enemy as {name:string}).name='보병';
+  const r=s.act({kind:'item',unit:u.id,item:'duel',target:enemy.id});expect(r.ok).toBe(false);expect(r.error).toContain('이름 없는');expect(u.hasActed).toBe(false);
+ });
 });

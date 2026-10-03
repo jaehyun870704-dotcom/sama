@@ -167,7 +167,7 @@ export const stageRules:Record<string,StageRules>={
       return depots>0?`보급 차단 · 남은 군량고 ${depots}/2 (매 턴 연군 회복)`:state.firedEvents.has('xiangping/revealed')?'공손연 포획 · 미끼 식별됨':'공손연 포획 · 깃발 셋 중 진짜를 찾아라 (살피기)';},
     seals:({state})=>[1,...((state.survivalClocks.get('cut_turn')??99)<=6?[2]:[]),...(!state.firedEvents.has('xiangping/fooled')?[3]:[])],
   },
-  'S3-01':{foeEdge:{normal:8,extreme:8},
+  'S3-01':{foeEdge:{normal:-16,extreme:-1},
     sealNames:['비연 격퇴','양동으로 진형 붕괴','신속한 도하'],
     weather:'맑음 · 요동의 찬바람',
     labels:[{region:'feint_label',text:'양동 지점 · 남쪽 여울'},{region:'north_label',text:'진짜 공격 · 북쪽 여울'},{region:'yan_camp',text:'비연 본진'}],
@@ -244,7 +244,7 @@ export const stageRules:Record<string,StageRules>={
     phase:({state})=>`${state.scenarioPhase??'가운데 여울'} · 격퇴 ${state.losses.enemy}/7`,
     failure:({state})=>state.captured.get('north_camp')==='enemy'?'촉군이 북안 진영을 점령했습니다.':undefined,
   },
-  'S2-11':{foeEdge:{normal:4,extreme:0},
+  'S2-11':{foeEdge:{normal:-3,extreme:0},
     sealNames:['회군 완료','남은 병력 보존','신속한 회군'],
     somber:true,
     labels:[{region:'gorge_mouth',text:'골짜기 어귀'},{region:'retreat_exit',text:'동쪽 회군로'},{region:'gorge_label',text:'목문도'}],
@@ -318,7 +318,7 @@ export const stageRules:Record<string,StageRules>={
       return `${state.firedEvents.has('yangping/flee')?'위연 도주 중':(state.scenarioPhase??'길 선택')} · 격퇴 ${down}/7 · ${left}턴 남음`;},
     seals:({state})=>[1,...(state.find('guo_huai')?.alive?[2]:[]),...(state.find('wei_yan')?.alive===false?[3]:[])],
   },
-  'S2-06':{foeEdge:{normal:0,extreme:12},
+  'S2-06':{foeEdge:{normal:-23,extreme:-7},
     sealNames:['남산 공략','도주 최소화','신속한 수원 차단'],
     weather:'☀ 맑음 · 메마른 산',
     labels:[{region:'spring',text:'북쪽 샘'},{region:'south_exit',text:'남쪽 출구'}],
@@ -343,9 +343,9 @@ export const stageRules:Record<string,StageRules>={
     phase:({state,difficulty})=>state.firedEvents.has('jieting/collapse')?`도주 저지 · 빠져나간 적 ${state.survivalClocks.get('escaped')??0}/${difficulty==='extreme'?1:2} · ${Math.max(0,21-state.turn)}턴 남음`:`수원 차단 · 물 잔량 ${Math.max(0,4-(state.survivalClocks.get('water_cut')??0))}/4 · ${Math.max(0,21-state.turn)}턴 남음`,
     seals:({state})=>[1,...((state.survivalClocks.get('escaped')??0)===0?[2]:[]),...((state.survivalClocks.get('collapse_turn')??99)<=7?[3]:[])],
   },
-  'S2-05':{foeEdge:{normal:35,extreme:0},sealNames:['맹달 격퇴','부대 보존','신속한 공성'],deadline:14,labels:[{region:'keep',text:'신성 본채'}],phase:({state})=>state.scenarioPhase?`${state.scenarioPhase} · ${Math.max(0,15-state.turn)}턴 남음`:undefined,tough:[{unit:'meng_da',hpScale:1.5,defense:3},{unit:'sima_shi',hpScale:1.25,defense:2},{unit:'sima_zhao',hpScale:1.25,defense:2}],failure:({state})=>protectedFailure(state,['sima_shi','sima_zhao'])},
+  'S2-05':{foeEdge:{normal:10,extreme:0},sealNames:['맹달 격퇴','부대 보존','신속한 공성'],deadline:14,labels:[{region:'keep',text:'신성 본채'}],phase:({state})=>state.scenarioPhase?`${state.scenarioPhase} · ${Math.max(0,15-state.turn)}턴 남음`:undefined,tough:[{unit:'meng_da',hpScale:1.5,defense:3},{unit:'sima_shi',hpScale:1.25,defense:2},{unit:'sima_zhao',hpScale:1.25,defense:2}],failure:({state})=>protectedFailure(state,['sima_shi','sima_zhao'])},
   'S2-04':{foeEdge:{normal:15,extreme:0},sealNames:['양양 수성','수비대 전원 생환','적 격퇴 수'],tough:[{unit:'gate_captain',hpScale:1.8,defense:4}],labels:[{region:'xiangyang',text:'양양 성문'}],phase:({state})=>`${state.scenarioPhase} · ${Math.max(0,8-(state.turn-(state.survivalClocks.get('xiangyang')??1)))}턴 남음`,failure:({state})=>state.captured.get('xiangyang')==='enemy'?'오군이 양양 성문을 차지했습니다.':undefined},
-  'S2-03':{foeEdge:{normal:5,extreme:2},sealNames:['황제 탈출','부대 보존','신속한 탈출'],weather:'혹한 · 강이 얼어붙음',protect:[{unit:'cao_pi',hp:150,movement:3}],tough:[{unit:'gao_shou',hpScale:1.6}],labels:[{region:'exit',text:'북쪽 출구'}],failure:({state})=>state.find('cao_pi')?.alive===false?'조비가 퇴각했습니다.':undefined},
+  'S2-03':{foeEdge:{normal:-14,extreme:-13},sealNames:['황제 탈출','부대 보존','신속한 탈출'],weather:'혹한 · 강이 얼어붙음',protect:[{unit:'cao_pi',hp:150,movement:3}],tough:[{unit:'gao_shou',hpScale:1.6}],labels:[{region:'exit',text:'북쪽 출구'}],failure:({state})=>state.find('cao_pi')?.alive===false?'조비가 퇴각했습니다.':undefined},
   'S2-02':{sealNames:['황제 철수','함대 보존','신속한 철수'],weather:'폭풍 · 낙뢰',protect:[{unit:'cao_pi',hp:150,movement:3}],labels:[{region:'exit',text:'북서쪽 출구'}],failure:({state})=>state.find('cao_pi')?.alive===false?'조비가 퇴각했습니다.':undefined},
   'S2-01':{
     sealNames:['반란 진압','수비대 전원 생환','신속한 진압'],
@@ -366,7 +366,7 @@ for(let f=1;f<=18;f++)stageRules[`R-${String(f).padStart(2,'0')}`]={
 
 /** 규칙표 항목이 없는 초기 전장의 적 전력 보정(%) — 항목을 새로 만들면 장별 기본 동작이 바뀌므로 따로 둔다. */
 // 병종 전법(돌격·선제 사격 등)이 적에게도 붙으면서 어려워진 전장은 적 공격·체력을 조금 낮춰 예전 승률에 맞춘다.
-export const foeEdges:Record<string,{normal?:number;extreme?:number}>={'S1-01':{extreme:-6},'S1-02':{normal:-16},'S1-04':{normal:-6},'S2-08':{normal:-3}};
+export const foeEdges:Record<string,{normal?:number;extreme?:number}>={'S1-01':{extreme:-6},'S1-02':{normal:-45},'S1-04':{normal:-6},'S2-08':{normal:-3},'S2-12':{normal:-15,extreme:-9},'S1-10':{normal:-6},'S2-01':{normal:-21},'S3-03':{normal:-12,extreme:-12},'S3-05':{extreme:-3},'S3-07':{normal:-3}};
 
 /** Korean subject particle: 이 after a final consonant, 가 otherwise. */
 export function subject(name:string){const c=name.charCodeAt(name.length-1);return name+(c>=0xac00&&c<=0xd7a3&&(c-0xac00)%28!==0?'이':'가');}
