@@ -8,18 +8,19 @@
  * 경험치로 레벨이 오르면 병종이 진화한다(classes.ts의 계통).
  * 화면과 저장은 main.ts가 맡는다. 이 모듈은 상태를 바꾸는 순수 함수만 둔다.
  */
-import {Rng,VARIANTS,evolvedClass,nextEvolution,profileOf,evolveUnit,familyOf,type UnitClass,type StageDef,type MapFile,type UnitSpawnSpec,type BattleState} from '../../core/src/index.ts';
+import {Rng,VARIANTS,evolvedClass,nextEvolution,profileOf,evolveUnit,familyOf,statsFor,type UnitClass,type StageDef,type MapFile,type UnitSpawnSpec,type BattleState,type LogEntry,type Unit} from '../../core/src/index.ts';
 import {classNames,troopStrategies} from './troops.ts';
 import {availableStrategies,allStrategies} from './officers.ts';
 import {ROUTES,routeById,routesFor,fatePoint,type Tale} from './fate.ts';
-import {romanceOf} from './romance.ts';
+import {romanceOf,romanceStats} from './romance.ts';
 
 export const FLOORS_PER_ACT=6;
 export const RUN_FLOORS=18;
-export const PARTY_LIMIT=6;
+/** 사마의를 포함한 원정 부대 상한(출진 칸 7개) */
+export const PARTY_LIMIT=7;
 export const XP_PER_LEVEL=100;
 
-export interface RunUnit {id:string;name:string;unitClass:UnitClass;level:number;xp:number;/** 체력 비율 0~1 */hp:number;hero?:true}
+export interface RunUnit {id:string;name:string;unitClass:UnitClass;level:number;xp:number;/** 체력 비율 0~1 */hp:number;hero?:true;/** 이름 있는 장수(연의 장수록 능력을 받고, 진화해도 이름이 바뀌지 않는다) */officer?:true}
 export type NodeKind='battle'|'elite'|'boss'|'recruit'|'rest'|'treasure'|'training'|'story'|'fate'|'tale';
 export interface RunNode {kind:NodeKind;label:string;detail:string;/** 연의 전장의 스테이지 id */stage?:string;/** 가상 전장 id */tale?:string}
 export interface Relic {id:string;name:string;effect:string}
@@ -53,7 +54,7 @@ export interface Run {
   /** 지금 치르는 가상 전장 */
   activeTale?:string;
 }
-export type RewardOption={kind:'recruit';unitClass:UnitClass;level:number}|{kind:'heal';amount:number}|{kind:'relic';relic:string}|{kind:'xp';amount:number};
+export type RewardOption={kind:'recruit';unitClass:UnitClass;level:number;/** 장수 영입이면 그 이름 */officer?:string}|{kind:'heal';amount:number}|{kind:'relic';relic:string}|{kind:'xp';amount:number};
 
 export const RELICS:Relic[]=[
   {id:'whetstone',name:'숫돌',effect:'모든 부대 공격 +3'},
@@ -101,11 +102,17 @@ export function nextTale(run:Run):Tale|undefined{
   const done=new Set(run.talesDone??[]);return route.tales.find(t=>!done.has(t.id));
 }
 export const taleById=(id:string|undefined)=>ROUTES.flatMap(r=>r.tales).find(t=>t.id===id);
+/** 그 길에서 적으로 만나는 장수(우두머리·가상 전장 적장). */
+export function foesOf(routeId:string|undefined){const r=routeById(routeId);return r?[r.region.boss.name,...r.tales.map(t=>t.target.name)]:[];}
+/** 그 길을 고르면 떠나는 장수: 그 길에서 적으로 만나는 사람은 부대에 남지 않는다. */
+export function departingOfficers(run:Run,routeId:string){const foes=new Set(foesOf(routeId));return run.party.filter(u=>u.officer&&foes.has(u.name));}
 /** 운명의 갈림길에서 길을 고른다. 이미 고른 편이거나 다른 편의 길이면 거절한다. */
 export function chooseFate(run:Run,routeId:string){
   const act=actOf(run.floor) as 1|2|3,route=routeById(routeId);
   if(!route||route.act!==act||run.route?.[act]||!routesFor(act,run.route).includes(route))return false;
+  const leaving=departingOfficers(run,routeId);
   run.route={...run.route,[act]:routeId};run.news=[`운명의 갈림길 — 「${route.choice}」. ${route.history?'역사대로 흘러간다.':'역사가 갈라졌다. 이제부터는 일어나지 않은 이야기다.'}`];
+  if(leaving.length){run.party=run.party.filter(u=>!leaving.includes(u));run.news.push(`${leaving.map(u=>u.name).join('·')}${leaving.length>1?'은':fin(leaving[0]!.name)?'은':'는'} 뜻을 달리해 떠났다. 이 길에서는 적으로 만난다.`);}
   return true;
 }
 
@@ -118,6 +125,27 @@ export function nextStory(run:Run):string|undefined{
 
 /** 영입 가능한 기본 병종 */
 export const RECRUITS:UnitClass[]=['infantry','spearman','cavalry','archer','crossbow','fengshui','horseArcher','slinger','assassin','rattan','elephant','monk','taoist','physician','bandit','heavyCav'];
+
+/** 이름 있는 장수: 연의 장수록(romance.ts)의 능력을 이름으로 받는다. */
+export interface OfficerSpec {name:string;unitClass:UnitClass}
+/** 원정은 언제나 이 장수들과 함께 떠난다(고르지 않는다): 조진의 기병, 장합의 창병, 곽회의 궁병, 사마랑의 의원. */
+export const STARTING_OFFICERS:OfficerSpec[]=[
+  {name:'조진',unitClass:'cavalry'},{name:'장합',unitClass:'spearman'},{name:'곽회',unitClass:'archer'},{name:'사마랑',unitClass:'physician'},
+];
+/** 해금 '넓은 인맥': 사마사가 중기병을 이끌고 처음부터 합류한다. */
+export const NETWORK_OFFICER:OfficerSpec={name:'사마사',unitClass:'heavyCav'};
+/** 원정 중 영입할 수 있는 장수(위의 인재들). 이미 부대에 있거나 쓰러진 장수는 다시 나오지 않는다. */
+export const OFFICER_RECRUITS:OfficerSpec[]=[
+  {name:'사마사',unitClass:'heavyCav'},{name:'사마소',unitClass:'crossbow'},{name:'등애',unitClass:'infantry'},{name:'진태',unitClass:'spearman'},
+  {name:'종회',unitClass:'fengshui'},{name:'손례',unitClass:'cavalry'},{name:'왕기',unitClass:'archer'},{name:'조휴',unitClass:'horseArcher'},
+  {name:'왕릉',unitClass:'infantry'},{name:'문흠',unitClass:'bandit'},{name:'가규',unitClass:'slinger'},{name:'호준',unitClass:'monk'},
+];
+const fallenName=(entry:string)=>entry.split(' Lv.')[0];
+/** 지금 영입할 수 있는 장수: 부대에 없고, 이번 원정에서 쓰러지지 않은 사람. */
+export function availableOfficers(run:Run):OfficerSpec[]{
+  const gone=new Set([...run.party.map(u=>u.name),...run.fallen.map(fallenName),...Object.values(run.route??{}).flatMap(id=>foesOf(id))]);
+  return OFFICER_RECRUITS.filter(o=>!gone.has(o.name));
+}
 
 const rngFor=(run:{seed:number},salt:number)=>new Rng((run.seed*7919+salt*104729)>>>0||1);
 
@@ -135,23 +163,31 @@ function uniqueName(run:Run,cls:UnitClass,self?:RunUnit){
 
 export interface RunOptions {chronicle?:string[];unlocks?:string[];relic?:string}
 export const has=(run:Run,unlock:string)=>!!run.unlocks?.includes(unlock);
-export function newRun(seed:number,start:UnitClass[],opts:RunOptions={}):Run{
+export function newRun(seed:number,start:Array<UnitClass|OfficerSpec>,opts:RunOptions={}):Run{
   const run:Run={version:1,seed,floor:1,party:[],relics:[],fallen:[],status:'map',nextId:1,news:[],chronicle:[...(opts.chronicle??[])],storyDone:[],bosses:0,unlocks:[...(opts.unlocks??[])]};
   const level=has(run,'veteran_start')?6:4;
   run.party.push({id:'sima_yi',name:'사마의',unitClass:evolvedClass('strategist',level),level,xp:0,hp:1,hero:true});
-  for(const cls of start)recruit(run,cls,level);
+  for(const s of start)if(typeof s==='string')recruit(run,s,level);else recruitOfficer(run,s,level);
   if(opts.relic&&RELICS.some(r=>r.id===opts.relic))run.relics.push(opts.relic);
   if(has(run,'second_chance'))run.secondChance=true;
   return run;
 }
 
-/** 출발 부대 후보 세 묶음(병종 3개씩). */
+/** 원정의 출발 장수: 고정 편성(해금 '넓은 인맥'이면 사마사가 더해진다). */
+export function startingOfficers(unlocks:string[]=[]):OfficerSpec[]{return [...STARTING_OFFICERS,...(unlocks.includes('wide_network')?[NETWORK_OFFICER]:[])];}
+
+/** 출발 부대 후보 세 묶음(병종 3개씩). 예전 원정 화면과 시험용. */
 export function startingOffers(seed:number,unlocks:string[]=[]):UnitClass[][]{
   const r=new Rng(seed>>>0||1),pick=()=>RECRUITS[r.int(0,RECRUITS.length-1)]!,wide=unlocks.includes('wide_network');
   const size=wide?4:3,group=()=>Array.from({length:size},pick);
   return [['infantry','archer','cavalry',...(wide?['fengshui' as UnitClass]:[])],group(),group(),...(wide?[group()]:[])];
 }
 
+export function recruitOfficer(run:Run,o:OfficerSpec,level:number){
+  if(run.party.length>=PARTY_LIMIT||run.party.some(u=>u.name===o.name))return false;
+  run.party.push({id:'of'+run.nextId++,name:o.name,unitClass:evolvedClass(o.unitClass,level),level,xp:0,hp:1,officer:true});
+  return true;
+}
 export function recruit(run:Run,cls:UnitClass,level:number){
   if(run.party.length>=PARTY_LIMIT)return false;
   const evolved=evolvedClass(cls,level);
@@ -197,7 +233,10 @@ export function visitNode(run:Run,node:RunNode){
   if(node.kind==='rest'){for(const u of run.party)u.hp=Math.min(1,u.hp+(has(run,'field_medic')?1:.6));run.news.push('의원에서 모든 부대의 체력을 회복했다.');advance(run);return;}
   if(node.kind==='training'){grantXp(run,100);advance(run);return;}
   const r=rngFor(run,run.floor*31+7);
-  if(node.kind==='recruit'){run.offer=pickDistinct(r,RECRUITS,3).map(unitClass=>({kind:'recruit' as const,unitClass,level:recruitLevel(run)}));run.status='reward';return;}
+  if(node.kind==='recruit'){
+    // 모병소는 장수 위주: 영입할 수 있는 장수 둘(남은 만큼)과 병종 부대 하나.
+    const officers=pickDistinct(r,availableOfficers(run),2).map(o=>({kind:'recruit' as const,unitClass:o.unitClass,level:recruitLevel(run),officer:o.name}));
+    run.offer=[...officers,...pickDistinct(r,RECRUITS,3-officers.length).map(unitClass=>({kind:'recruit' as const,unitClass,level:recruitLevel(run)}))];run.status='reward';return;}
   if(node.kind==='treasure'){run.offer=relicOffer(run,r);run.status='reward';}
 }
 
@@ -211,7 +250,7 @@ export function grantXp(run:Run,amount:number,who=run.party){
     u.xp+=amount;let leveled=false;
     while(u.xp>=XP_PER_LEVEL){u.xp-=XP_PER_LEVEL;u.level++;leveled=true;
       const to=evolvedClass(u.unitClass,u.level);
-      if(to!==u.unitClass){const from=u.hero?'사마의':u.name;u.unitClass=to;if(!u.hero)u.name=uniqueName(run,to,u);run.news.push(`진화! ${ga(from)} ${ro(unitName(to))} 거듭났다 (Lv.${u.level})${VARIANTS[to]?.bloom?` · 개화 「${VARIANTS[to]!.bloom!.name}」 ${VARIANTS[to]!.bloom!.description}`:''}`);}
+      if(to!==u.unitClass){const from=u.hero?'사마의':u.name;u.unitClass=to;if(!u.hero&&!u.officer)u.name=uniqueName(run,to,u);run.news.push(`진화! ${ga(from)} ${ro(unitName(to))} 거듭났다 (Lv.${u.level})${VARIANTS[to]?.bloom?` · 개화 「${VARIANTS[to]!.bloom!.name}」 ${VARIANTS[to]!.bloom!.description}`:''}`);}
     }
     if(leveled)ups.push(`${u.hero?'사마의':u.name} ${u.level}`);
   }
@@ -219,7 +258,7 @@ export function grantXp(run:Run,amount:number,who=run.party){
 }
 
 /** 전투 결과를 원정에 반영한다. survivors: 살아남은 부대의 체력 비율. */
-export function finishBattle(run:Run,node:RunNode,victory:boolean,survivors:Record<string,number>){
+export function finishBattle(run:Run,node:RunNode,victory:boolean,survivors:Record<string,number>,earned:Record<string,number>={}){
   run.news=[];delete run.active;delete run.activeTale;
   const lost=run.party.filter(u=>survivors[u.id]===undefined);
   for(const u of lost)run.fallen.push(`${u.hero?'사마의':u.name} Lv.${u.level} · ${run.floor}층`);
@@ -232,12 +271,15 @@ export function finishBattle(run:Run,node:RunNode,victory:boolean,survivors:Reco
   if(lost.length)run.news.push(`잃은 부대: ${lost.map(u=>u.name).join(', ')}`);
   if(run.relics.includes('herbs'))for(const u of run.party)u.hp=Math.min(1,u.hp+.2);
   if(node.kind==='boss'){for(const u of run.party)u.hp=1;run.bosses=(run.bosses??0)+1;}
-  grantXp(run,node.kind==='boss'?200:node.kind==='tale'?160:node.kind==='elite'?180:120);
+  // 전투 중에 싸워서 번 경험치(공격·격파·책략)에 승리 보너스를 더한다.
+  const bonus=completionXp(node.kind);
+  for(const u of [...run.party])grantXp(run,bonus+(earned[u.id]??0),[u]);
   if(node.kind==='tale'&&node.tale)run.talesDone=[...new Set([...(run.talesDone??[]),node.tale])];
   if(node.kind==='boss'&&run.floor>=RUN_FLOORS){run.status='won';return;}
   const r=rngFor(run,run.floor*53+11);
   if(node.kind==='elite'||node.kind==='boss'||node.kind==='tale'){run.offer=relicOffer(run,r);if(!run.offer.length)run.offer=[{kind:'xp',amount:80}];}
-  else run.offer=[{kind:'recruit',unitClass:RECRUITS[r.int(0,RECRUITS.length-1)]!,level:recruitLevel(run)},{kind:'heal',amount:.4},relicOffer(run,r)[0]??{kind:'xp',amount:80}];
+  else{const pool=availableOfficers(run),o=pool.length?pool[r.int(0,pool.length-1)]!:undefined;
+    run.offer=[o?{kind:'recruit',unitClass:o.unitClass,level:recruitLevel(run),officer:o.name}:{kind:'recruit',unitClass:RECRUITS[r.int(0,RECRUITS.length-1)]!,level:recruitLevel(run)},{kind:'heal',amount:.4},relicOffer(run,r)[0]??{kind:'xp',amount:80}];}
   run.status='reward';
 }
 
@@ -250,14 +292,14 @@ function spendSecondChance(run:Run){
 }
 
 /** 연의 전장의 결과. heroHp: 살아남은 사마의의 체력 비율. 본대만 싸우고 부대는 진영을 지킨다. */
-export function finishStory(run:Run,stage:string,victory:boolean,heroHp:number,title=stage){
+export function finishStory(run:Run,stage:string,victory:boolean,heroHp:number,title=stage,heroEarned=0){
   run.news=[];delete run.active;delete run.activeStage;
   if(!victory){if(spendSecondChance(run))return;run.news.push(`연의 전장 「${title}」에서 패했다. 원정은 여기서 끝난다.`);run.status='lost';return;}
   const hero=run.party.find(u=>u.hero);if(hero)hero.hp=Math.max(.05,Math.min(1,heroHp));
   run.chronicle=[...new Set([...(run.chronicle??[]),stage])];run.storyDone=[...new Set([...(run.storyDone??[]),stage])];
   run.news.push(`연의 전장 「${title}」을 이겨 천명 기록에 남겼다.`);
   if(run.relics.includes('herbs'))for(const u of run.party)u.hp=Math.min(1,u.hp+.2);
-  grantXp(run,150);
+  grantXp(run,100);const hero2=run.party.find(u=>u.hero);if(hero2&&heroEarned>0)grantXp(run,heroEarned,[hero2]);
   const r=rngFor(run,run.floor*71+3);run.offer=relicOffer(run,r);if(!run.offer.length)run.offer=[{kind:'xp',amount:100}];
   run.status='reward';
 }
@@ -270,7 +312,7 @@ export function mandateEarned(run:Run){
 
 export function takeReward(run:Run,i:number){
   const o=run.offer?.[i];if(!o)return;run.news=[];
-  if(o.kind==='recruit'){if(!recruit(run,o.unitClass,o.level))grantXp(run,60);else run.news.push(`${ga(run.party.at(-1)!.name)} 부대에 들어왔다.`);}
+  if(o.kind==='recruit'){const ok=o.officer?recruitOfficer(run,{name:o.officer,unitClass:o.unitClass},o.level):recruit(run,o.unitClass,o.level);if(!ok)grantXp(run,60);else run.news.push(`${ga(run.party.at(-1)!.name)} 부대에 들어왔다.`);}
   if(o.kind==='heal')for(const u of run.party)u.hp=Math.min(1,u.hp+o.amount);
   if(o.kind==='relic'){run.relics.push(o.relic);run.news.push(`보물 「${RELICS.find(x=>x.id===o.relic)!.name}」을 얻었다.`);}
   if(o.kind==='xp')grantXp(run,o.amount);
@@ -281,7 +323,7 @@ function advance(run:Run){run.floor++;run.status='map';}
 
 export function describeReward(o:RewardOption){
   switch(o.kind){
-    case 'recruit':{const c=evolvedClass(o.unitClass,o.level);return {title:`영입 · ${unitName(c)}`,detail:`Lv.${o.level} · ${nextEvolutionText(c)}`};}
+    case 'recruit':{const c=evolvedClass(o.unitClass,o.level),r=o.officer?romanceStats(o.officer):'';return {title:o.officer?`장수 영입 · ${o.officer} (${unitName(c)})`:`영입 · ${unitName(c)}`,detail:`Lv.${o.level}${r?` · ${r}`:''} · ${nextEvolutionText(c)}`};}
     case 'heal':return {title:'휴식',detail:`모든 부대 체력 ${Math.round(o.amount*100)}% 회복`};
     case 'relic':{const r=RELICS.find(x=>x.id===o.relic)!;return {title:`보물 · ${r.name}`,detail:r.effect};}
     case 'xp':return {title:'전훈',detail:`모든 부대 경험치 ${o.amount}`};
@@ -390,11 +432,51 @@ export function applyRelics(state:BattleState,relics:string[]){
 }
 
 /** 연의 전장의 원본: 세션이 저장하고 불러올 때 쓴다. */
-export interface RunStoryRef {seed:number;floor:number;stage:string;heroLevel:number;heroHp:number;relics:string[]}
+export interface RunStoryRef {seed:number;floor:number;stage:string;heroLevel:number;heroHp:number;relics:string[];/** 원정에서 쌓인 사마의의 경험치(다음 레벨까지) */heroXp?:number}
 
 /** 전투가 끝난 뒤 원정에 넘길 생존자 체력 비율. */
 export function survivorsOf(state:BattleState,ref:RunBattleRef){
   const out:Record<string,number>={};
   for(const ru of ref.party){const u=state.find(ru.id);if(u?.alive)out[ru.id]=Math.max(.05,u.hp/u.stats.maxHp);}
   return out;
+}
+
+// ─────────────────────────────────────────────── 전투 경험치
+
+/** 이긴 전투의 승리 보너스(살아남은 모든 부대). 나머지는 싸워서 번다(xpFromLog). */
+export function completionXp(kind:NodeKind){return kind==='boss'?90:kind==='elite'?70:kind==='tale'?70:50;}
+export interface XpGain {unit:string;amount:number;kills:number}
+const KILL_XP=20;
+/**
+ * 전투 기록 한 묶음에서 아군 부대가 버는 경험치(조조전처럼 행동마다).
+ * 공격 명중 10(상대가 높은 레벨이면 더, 낮으면 덜, 최소 5) · 빗나감 2 · 반격 명중 6 ·
+ * 책략 명중 대상마다 8(최대 24) · 회복·지원 대상마다 8(최대 16) · 적을 물리치면 하나마다 +20(우두머리·적장 +40).
+ */
+export function xpFromLog(entries:LogEntry[],mine:(id:string)=>boolean,levelOf:(id:string)=>number):Array<{entry:LogEntry;gain:XpGain}>{
+  const out:Array<{entry:LogEntry;gain:XpGain}>=[];
+  const action=(e:LogEntry)=>e.t==='attack'||e.t==='counter'||e.t==='strategy'||e.t==='move'||e.t==='turnStart';
+  const retreated=(i:number,ids:string[],back:boolean)=>{const got=new Set<string>();
+    for(let j=back?i-1:i+1;j>=0&&j<entries.length;j+=back?-1:1){const e=entries[j]!;if(action(e))break;if(e.t==='retreat'&&ids.includes(e.unit))got.add(e.unit);}
+    return [...got];};
+  const killXp=(ids:string[])=>ids.reduce((n,id)=>n+(id==='boss'||id==='target'?KILL_XP*2:KILL_XP),0);
+  const diff=(me:string,them:string)=>levelOf(them)-levelOf(me);
+  entries.forEach((e,i)=>{
+    if(e.t==='attack'&&mine(e.attacker)){const k=e.hit?retreated(i,[e.defender],false):[];
+      out.push({entry:e,gain:{unit:e.attacker,amount:(e.hit?Math.max(5,Math.min(20,10+diff(e.attacker,e.defender)*2)):2)+killXp(k),kills:k.length}});}
+    else if(e.t==='counter'&&mine(e.attacker)&&e.hit){const k=retreated(i,[e.defender],false);
+      out.push({entry:e,gain:{unit:e.attacker,amount:Math.max(3,Math.min(12,6+diff(e.attacker,e.defender)))+killXp(k),kills:k.length}});}
+    else if(e.t==='strategy'&&mine(e.caster)){
+      const foes=e.targets.filter((id,j)=>!mine(id)&&(e.damage[j]??0)>0),help=e.targets.filter(id=>mine(id)||id==='sima_yi');
+      const k=retreated(i,e.targets.filter(id=>!mine(id)),true);
+      const base=foes.length?Math.min(24,foes.reduce((n,id)=>n+Math.max(5,Math.min(14,8+diff(e.caster,id)*2)),0)):help.length?Math.min(16,8*help.length):3;
+      out.push({entry:e,gain:{unit:e.caster,amount:base+killXp(k),kills:k.length}});}
+  });
+  return out;
+}
+/** 전투 중 레벨업: 같은 병종의 성장분만큼 능력치를 올리고, 늘어난 체력·책략만큼 채운다. */
+export function levelUpInBattle(u:Unit,to:number){
+  if(to<=u.level)return;
+  const a=statsFor(u.unitClass,u.level),b=statsFor(u.unitClass,to),s=u.stats;
+  for(const k of ['maxHp','maxMp','attack','defense','intellect','spirit','agility'] as const)s[k]+=b[k]-a[k];
+  u.hp=Math.min(s.maxHp,u.hp+(b.maxHp-a.maxHp));u.mp=Math.min(s.maxMp,u.mp+(b.maxMp-a.maxMp));u.level=to;
 }

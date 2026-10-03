@@ -164,6 +164,10 @@ export interface Unit {
   range: readonly [number, number];
   hasMoved: boolean;
   movedThisTurn?: boolean;
+  /** 이번 차례에 움직인 거리(칸). 기병 돌격 같은 병종 전법이 읽는다. */
+  movedSteps?: number;
+  /** 병종 전법(tactics.ts)을 쓰는 전투인가. 현행 규칙 전투만 켠다(옛 규칙 저장 재생이 달라지지 않게). */
+  classTactics?: boolean;
   hasActed: boolean;
   alive: boolean;
   /** 도구 사용 가능 여부. 편입 아군은 false. PRD §3.3 */
@@ -202,6 +206,8 @@ export interface DamageResult {
   readonly critical: boolean;
   readonly lethal: boolean;
   readonly breakdown: DamageBreakdown;
+  /** 발동한 병종 전법 이름 (tactics.ts) */
+  readonly tactic?: string;
 }
 
 export interface DamageBreakdown {

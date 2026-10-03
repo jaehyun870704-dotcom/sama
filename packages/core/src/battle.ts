@@ -108,6 +108,7 @@ export class Battle {
     u.pos = { ...to };
     u.hasMoved = true;
     u.movedThisTurn = true;
+    u.movedSteps = manhattan(from, to);
     this.state.push({ t: "move", unit: u.id, from, to: u.pos });
     this.applyTileHazard(u);
     return ok;
@@ -128,6 +129,7 @@ export class Battle {
     this.state.push({
       t: "attack", attacker: a.id, defender: d.id,
       damage: res.damage, hit: res.hit, critical: res.critical,
+      ...(res.hit && res.tactic ? { tactic: res.tactic } : {}),
     });
     if (res.hit) this.damage(d, res.damage, a);
 
@@ -140,6 +142,7 @@ export class Battle {
       this.state.push({
         t: "counter", attacker: d.id, defender: a.id,
         damage: counter.damage, hit: counter.hit,
+        ...(counter.hit && counter.tactic ? { tactic: counter.tactic } : {}),
       });
       if (counter.hit) this.damage(a, counter.damage, d);
       this.counters.set(d.id, (this.counters.get(d.id) ?? 0) + 1);
@@ -310,6 +313,7 @@ export class Battle {
     for (const u of this.state.living(side)) {
       u.hasMoved = false;
       u.movedThisTurn = false;
+      u.movedSteps = 0;
       u.hasActed = false;
       this.tickStatuses(u);
       if(u.alive)for(const id of u.traits)getTrait(id).hooks.onTurnStart?.(u,traitParam(u,id));

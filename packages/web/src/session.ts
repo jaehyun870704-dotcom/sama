@@ -1,6 +1,6 @@
 import {repairError,repairAmount,fortifyError,parseCell,buildBarricade,placeBarricade,breachRally,BARRICADES_PER_ENGINEER} from './siege.ts';
 import {troopStrategies,supportOptions} from './troops.ts';
-import {refBattle,prepareRunBattle,applyRelics,taleById,RUN_FLOORS} from './roguelike.ts';
+import {refBattle,prepareRunBattle,applyRelics,taleById,xpFromLog,levelUpInBattle,RUN_FLOORS,PARTY_LIMIT,XP_PER_LEVEL,type XpGain} from './roguelike.ts';
 import {validRoute} from './fate.ts';
 import {applyRomance} from './romance.ts';
 import {expeditionBattle,expeditions} from './expeditions.ts';
@@ -16,7 +16,7 @@ import {stageRules,foeEdges} from './stage-rules.ts';
 import {campaignStage,addFortifications,addSiegeCompany,structureKind,encircled,encounterLevels} from './campaign-rules.ts';
 import {applyTreasure,equippedItems,treasureInfo,type Deployment,OFFICERS,treasures} from './progression.ts';
 import { assemble, Battle, CONTROLLABLE, isHostile, key, manhattan, statsFor, familyOf, evolvedClass, evolveUnit } from '../../core/src/index.ts';
-import type { BattleState, Command, Difficulty, MapFile, StageDef, StrategyDef } from '../../core/src/index.ts';
+import type { BattleState, Command, Difficulty, MapFile, StageDef, StrategyDef, LogEntry } from '../../core/src/index.ts';
 import escapeStage from '../../data/stages/S1-02.json';
 import fortStage from '../../data/stages/S1-08.json';
 import escapeMap from '../../data/maps/luoyang-escape.json';
@@ -138,6 +138,11 @@ export class Session {
   private balancedEnemies=new Set<string>();
   /** 연의 능력을 이미 입힌 장수(나중에 등장하는 장수도 한 번씩만) */
   private romanced=new Set<string>();
+  /** 원정 전투에서 부대마다 이번 전투로 번 경험치(전투가 끝나면 원정에 더한다) */
+  xpEarned:Record<string,number>={};
+  /** 기록 항목 → 그 행동으로 번 경험치(전장 연출이 '경험치 +n'을 띄운다) */
+  xpGains=new WeakMap<LogEntry,XpGain&{level?:number}>();
+  private xpCursor=0;
   funds=3000;
   bribes=0;
   medicine=2;
@@ -148,7 +153,7 @@ export class Session {
   constructor(public chapter=2, public difficulty:Difficulty='normal', public seed=215, public preparation:Preparation='survival', public revision:2|3|4=3, public deployment?:Deployment) {this.battle=this.create();this.resetScenario();}
   get state(){return this.battle.state;}
   private create(){
-    this.balancedEnemies.clear();this.romanced.clear();
+    this.balancedEnemies.clear();this.romanced.clear();this.xpEarned={};this.xpGains=new WeakMap();this.xpCursor=0;
     let entry=this.chapter===1&&this.revision===2?{stage:legacyFortStage as StageDef,map:legacyFortMap as MapFile}:chapters[this.chapter];
     if(!entry) throw new Error('알 수 없는 전장');
     if(this.deployment?.run)entry={...entry,...refBattle(this.deployment.run)};
@@ -342,11 +347,30 @@ export class Session {
     // 꿈속의 환영과 호위 대상(일부러 맞춘 체력·이동)은 연의 능력을 입히지 않는다.
     const escorts=new Set([...(stageRules[state.stage.id]?.protect??[]).map(p=>p.unit),...(this.chapter===8||this.chapter===9?['cao_cao']:[])]);
     const edge=(stageRules[state.stage.id]?.foeEdge??foeEdges[state.stage.id])?.[this.difficulty]??0;
-    for(const u of state.living())if(!this.romanced.has(u.id)){this.romanced.add(u.id);if(!u.name.endsWith('환영')&&!escorts.has(u.id))applyRomance(u);
+    for(const u of state.living())if(!this.romanced.has(u.id)){this.romanced.add(u.id);u.classTactics=true;if(!u.name.endsWith('환영')&&!escorts.has(u.id))applyRomance(u);
       if(edge&&u.side==='enemy'&&!/^(gate|tower)_/.test(u.id)){const hp=u.hp/u.stats.maxHp;u.stats.attack=Math.round(u.stats.attack*(1+edge/100));u.stats.maxHp=Math.round(u.stats.maxHp*(1+edge/100));u.hp=Math.max(1,Math.round(u.stats.maxHp*hp));}}
+  }
+  /** 원정 부대의 경험치 시작점: 원정 전투는 부대 전원, 원정 속 연의 전장은 사마의. */
+  xpBase():Record<string,{level:number;xp:number}>|undefined{
+    const d=this.deployment;if(d?.run)return Object.fromEntries(d.run.party.map(u=>[u.id,{level:u.level,xp:u.xp}]));
+    if(d?.runStory)return {sima_yi:{level:d.runStory.heroLevel,xp:d.runStory.heroXp??0}};
+    return undefined;
+  }
+  /** 새 기록을 읽어 경험치를 쌓고, 원정 레벨이 오르면 전투 중에도 곧바로 레벨업한다. */
+  private applyBattleXp(){
+    const base=this.xpBase(),s=this.state;if(!base){this.xpCursor=s.log.length;return;}
+    const batch=s.log.slice(this.xpCursor);this.xpCursor=s.log.length;
+    for(const {entry,gain} of xpFromLog(batch,id=>id in base,id=>s.find(id)?.level??1)){
+      const b=base[gain.unit]!,before=this.xpEarned[gain.unit]??0,after=before+gain.amount;this.xpEarned[gain.unit]=after;
+      const from=b.level+Math.floor((b.xp+before)/XP_PER_LEVEL),to=b.level+Math.floor((b.xp+after)/XP_PER_LEVEL),u=s.find(gain.unit);
+      // 연의 전장에서 사마의의 전장 레벨이 원정 레벨과 다르면(연의 진행 레벨) 표시만 하고 능력치는 건드리지 않는다.
+      const up=to>from&&!!u?.alive&&u.level===from;if(up)levelUpInBattle(u!,to);
+      this.xpGains.set(entry,{...gain,...(up?{level:to}:{})});
+    }
   }
   private advanceScenario(){
     const s=this.state,old=this.phase;
+    this.applyBattleXp();
     this.applyRomanceToNew(s);
     if(this.deployment?.mission?.balance===1)for(const enemy of s.living('enemy'))if(!this.balancedEnemies.has(enemy.id)){
       enemy.stats.attack=Math.round(enemy.stats.attack*(this.deployment.mission.id.startsWith('T')?.6:.75));this.balancedEnemies.add(enemy.id);
@@ -459,13 +483,13 @@ export class Session {
     if(data.revision!==undefined&&data.revision!==2&&data.revision!==3&&data.revision!==4)throw new Error('지원하지 않는 전장 버전입니다.');
     if(data.deployment){const d=data.deployment;if(!d.levels||!d.equipped||!OFFICERS.every(id=>Number.isInteger(d.levels[id])&&d.levels[id]!>=1&&d.levels[id]!<=40)||Object.entries(d.equipped).some(([id,item])=>!OFFICERS.includes(id as typeof OFFICERS[number])||!treasures.some(t=>t.id===item)))throw new Error('잘못된 출진 기록입니다.');}
     if(data.deployment?.run){const r=data.deployment.run;
-      if(!Number.isInteger(r.floor)||r.floor<1||r.floor>RUN_FLOORS||!['battle','elite','boss','tale'].includes(r.kind)||(r.kind==='tale')!==!!taleById(r.tale)||(r.route!==undefined&&!validRoute(r.route))||!Number.isSafeInteger(r.seed)||!Array.isArray(r.party)||r.party.length<1||r.party.length>6||!r.party.some(u=>u.hero)||!Array.isArray(r.relics)
+      if(!Number.isInteger(r.floor)||r.floor<1||r.floor>RUN_FLOORS||!['battle','elite','boss','tale'].includes(r.kind)||(r.kind==='tale')!==!!taleById(r.tale)||(r.route!==undefined&&!validRoute(r.route))||!Number.isSafeInteger(r.seed)||!Array.isArray(r.party)||r.party.length<1||r.party.length>PARTY_LIMIT||!r.party.some(u=>u.hero)||!Array.isArray(r.relics)
         ||r.party.some(u=>typeof u.id!=='string'||!Number.isInteger(u.level)||u.level<1||u.level>60||!(u.hp>0&&u.hp<=1)))throw new Error('잘못된 원정 기록');
       for(const u of r.party)statsFor(u.unitClass,u.level);
     }
     if(data.deployment?.runStory){const r=data.deployment.runStory;
       if(!Number.isInteger(r.floor)||r.floor<1||r.floor>RUN_FLOORS||typeof r.stage!=='string'||!chapters.some(c=>c.stage.id===r.stage)||chapters[data.chapter]?.stage.id!==r.stage||!Number.isSafeInteger(r.seed)
-        ||!Number.isInteger(r.heroLevel)||r.heroLevel<1||r.heroLevel>60||!(r.heroHp>0&&r.heroHp<=1)||!Array.isArray(r.relics)||r.relics.some(x=>typeof x!=='string'))throw new Error('잘못된 원정 기록');
+        ||!Number.isInteger(r.heroLevel)||r.heroLevel<1||r.heroLevel>60||(r.heroXp!==undefined&&(!Number.isInteger(r.heroXp)||r.heroXp<0||r.heroXp>=XP_PER_LEVEL))||!(r.heroHp>0&&r.heroHp<=1)||!Array.isArray(r.relics)||r.relics.some(x=>typeof x!=='string'))throw new Error('잘못된 원정 기록');
     }
     if(data.deployment?.loadouts){const seen=new Set<string>();for(const [who,gear] of Object.entries(data.deployment.loadouts)){if(!OFFICERS.includes(who as typeof OFFICERS[number])||!gear||typeof gear!=='object')throw new Error('잘못된 장비');for(const [slot,id] of Object.entries(gear)){if(typeof id!=='string'||!treasures.some(t=>t.id===id)||treasureInfo(id).slot!==slot||seen.has(id))throw new Error('잘못된 장비');seen.add(id);}}}
     if(data.deployment?.mission&&(!expeditions.some(m=>m.id===data.deployment!.mission!.id)||typeof data.deployment.mission.runId!=='string'||data.deployment.mission.runId.length<1||data.chapter!==7||(data.deployment.mission.version!==undefined&&data.deployment.mission.version!==2&&data.deployment.mission.version!==3&&data.deployment.mission.version!==4)))throw new Error('잘못된 외전 기록');

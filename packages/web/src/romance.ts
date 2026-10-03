@@ -106,13 +106,27 @@ const byName:Record<string,RomanceOfficer>={
   환범:o('환범','지낭 · 조상의 꾀주머니',[30,84,40,80,60]),
   하안:o('하안','부분 바른 미남 · 조상의 심복',[20,76,30,70,68]),
   조희:o('조희','조상의 아우 · 중령군',[60,40,55,40,48]),
+  // 원정에서 영입하는 위의 인재들
+  등애:o('등애','음평의 기습 · 촉을 멸한 장수',[87,89,90,70,66],{name:'음평 기습',description:'적 방어 15% 무시',trait:'penetrate',param:15}),
+  진태:o('진태','진군의 아들 · 옹주를 지킨 장수',[78,78,84,72,72]),
+  종회:o('종회','촉 정벌의 지휘관 · 야심가',[60,92,80,82,64],{name:'사본론',description:'책략 공격 피해 10% 증가',trait:'strategyPower',param:10}),
+  손례:o('손례','맨손으로 범을 막은 장수',[80,58,78,62,64]),
+  왕기:o('왕기','관구검의 난을 막은 장수',[72,74,80,70,64]),
+  문흠:o('문흠','수춘에서 난을 일으킨 맹장',[84,40,70,30,46],{name:'수춘 돌파',description:'물리 공격 피해 10% 증가',trait:'physicalPower',param:10}),
+  가규:o('가규','예주를 다스린 충신',[64,78,76,84,72]),
+  호준:o('호준','사마의의 오랜 부장',[74,56,76,52,62]),
 };
 /** 가짜(미끼)는 진짜의 이름을 달고 있어도 능력이 없다. */
 const DECOYS=new Set(['decoy']);
 export function romanceOf(u:{id:string;name:string}):RomanceOfficer|undefined{
   if(DECOYS.has(u.id))return undefined;
-  return romance[u.id]??(u.id==='boss'||u.id==='target'?byName[u.name]:undefined);
+  // 우두머리·가상 전장 적장, 원정 부대의 장수(id 'of…')는 이름으로 찾는다.
+  return romance[u.id]??(u.id==='boss'||u.id==='target'||/^of\d+$/.test(u.id)?byName[u.name]:undefined);
 }
+/** 영입 화면에 보이는 한 줄 능력: 무력·지력·통솔. */
+export function romanceStats(name:string){const r=byName[name];return r?`무력 ${r.war} · 지력 ${r.int} · 통솔 ${r.lead}`:'';}
+/** 이름으로 찾는 연의 능력(장수 카드용). */
+export const romanceByName=(name:string)=>byName[name];
 
 const scale=(r:number,span:number)=>1+(r-50)/50*span;
 /**

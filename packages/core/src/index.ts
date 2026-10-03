@@ -18,3 +18,4 @@ export * from "./sim.ts";
 
 export * from "./treasure-traits.ts";
 export * from "./classes.ts";
+export * from "./tactics.ts";

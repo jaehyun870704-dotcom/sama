@@ -167,7 +167,7 @@ export const stageRules:Record<string,StageRules>={
       return depots>0?`보급 차단 · 남은 군량고 ${depots}/2 (매 턴 연군 회복)`:state.firedEvents.has('xiangping/revealed')?'공손연 포획 · 미끼 식별됨':'공손연 포획 · 깃발 셋 중 진짜를 찾아라 (살피기)';},
     seals:({state})=>[1,...((state.survivalClocks.get('cut_turn')??99)<=6?[2]:[]),...(!state.firedEvents.has('xiangping/fooled')?[3]:[])],
   },
-  'S3-01':{foeEdge:{normal:9,extreme:13},
+  'S3-01':{foeEdge:{normal:8,extreme:8},
     sealNames:['비연 격퇴','양동으로 진형 붕괴','신속한 도하'],
     weather:'맑음 · 요동의 찬바람',
     labels:[{region:'feint_label',text:'양동 지점 · 남쪽 여울'},{region:'north_label',text:'진짜 공격 · 북쪽 여울'},{region:'yan_camp',text:'비연 본진'}],
@@ -244,7 +244,7 @@ export const stageRules:Record<string,StageRules>={
     phase:({state})=>`${state.scenarioPhase??'가운데 여울'} · 격퇴 ${state.losses.enemy}/7`,
     failure:({state})=>state.captured.get('north_camp')==='enemy'?'촉군이 북안 진영을 점령했습니다.':undefined,
   },
-  'S2-11':{foeEdge:{normal:18,extreme:0},
+  'S2-11':{foeEdge:{normal:4,extreme:0},
     sealNames:['회군 완료','남은 병력 보존','신속한 회군'],
     somber:true,
     labels:[{region:'gorge_mouth',text:'골짜기 어귀'},{region:'retreat_exit',text:'동쪽 회군로'},{region:'gorge_label',text:'목문도'}],
@@ -365,7 +365,8 @@ for(let f=1;f<=18;f++)stageRules[`R-${String(f).padStart(2,'0')}`]={
 };
 
 /** 규칙표 항목이 없는 초기 전장의 적 전력 보정(%) — 항목을 새로 만들면 장별 기본 동작이 바뀌므로 따로 둔다. */
-export const foeEdges:Record<string,{normal?:number;extreme?:number}>={'S1-02':{normal:-15}};
+// 병종 전법(돌격·선제 사격 등)이 적에게도 붙으면서 어려워진 전장은 적 공격·체력을 조금 낮춰 예전 승률에 맞춘다.
+export const foeEdges:Record<string,{normal?:number;extreme?:number}>={'S1-01':{extreme:-6},'S1-02':{normal:-16},'S1-04':{normal:-6},'S2-08':{normal:-3}};
 
 /** Korean subject particle: 이 after a final consonant, 가 otherwise. */
 export function subject(name:string){const c=name.charCodeAt(name.length-1);return name+(c>=0xac00&&c<=0xd7a3&&(c-0xac00)%28!==0?'이':'가');}
