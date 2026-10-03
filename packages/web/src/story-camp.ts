@@ -30,7 +30,7 @@ export function openCamp(host:HTMLElement,o:CampOptions){
   let busy=false;
   for(const p of people){
     const a=stage.actors.get(p.name)!;a.el.classList.add('clickable');a.el.setAttribute('role','button');a.el.tabIndex=0;a.el.setAttribute('aria-label',`${p.name}에게 말 걸기`);
-    const go=()=>void talk(p);a.el.addEventListener('click',go);a.el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
+    const go=()=>{if(!busy)void talk(p);};a.el.addEventListener('click',go);a.el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
   }
   mark();
   // 사람들은 제자리 근처를 서성인다(말하는 동안에는 멈춘다).
