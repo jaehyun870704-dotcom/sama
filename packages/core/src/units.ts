@@ -4,21 +4,9 @@
  * 적 배치를 수작업 수치로 관리하면 밸런싱이 불가능하다. (PRD R6)
  */
 import type { Unit, UnitClass, UnitStats, Side, AiBehavior, Coord } from "./types.ts";
+import { VARIANTS, type ClassProfile } from "./classes.ts";
 
-interface ClassProfile {
-  hp: number;
-  mp: number;
-  attack: number;
-  defense: number;
-  intellect: number;
-  spirit: number;
-  agility: number;
-  movement: number;
-  range: readonly [number, number];
-  canUseStrategy: boolean;
-}
-
-const PROFILES: Record<UnitClass, ClassProfile> = {
+const PROFILES: Partial<Record<UnitClass, ClassProfile>> = {
   infantry:   { hp: 1.10, mp: 0.4, attack: 1.00, defense: 1.10, intellect: 0.6, spirit: 0.9, agility: 0.9, movement: 5, range: [1, 1], canUseStrategy: false },
   spearman:   { hp: 1.05, mp: 0.4, attack: 1.05, defense: 1.05, intellect: 0.6, spirit: 0.9, agility: 0.9, movement: 5, range: [1, 1], canUseStrategy: false },
   cavalry:    { hp: 1.00, mp: 0.4, attack: 1.15, defense: 0.90, intellect: 0.6, spirit: 0.8, agility: 1.2, movement: 7, range: [1, 1], canUseStrategy: false },
@@ -49,8 +37,15 @@ function curve(level: number, a: number, b: number, c: number): number {
   return Math.floor(a + b * level + c * Math.pow(level, 1.15));
 }
 
+/** 병종 능력치 계수. 확장 병종은 classes.ts의 계수를 쓴다. */
+export function profileOf(unitClass: UnitClass): ClassProfile {
+  const p = PROFILES[unitClass] ?? VARIANTS[unitClass]?.profile;
+  if (!p) throw new Error(`알 수 없는 병종: ${unitClass}`);
+  return p;
+}
+
 export function statsFor(unitClass: UnitClass, level: number): UnitStats {
-  const p = PROFILES[unitClass];
+  const p = profileOf(unitClass);
   return {
     maxHp: Math.round(curve(level, 60, 4.2, 1.6) * p.hp),
     maxMp: Math.round(curve(level, 20, 0.9, 0.3) * p.mp),
@@ -87,7 +82,8 @@ export interface MakeUnitOptions {
 }
 
 export function makeUnit(o: MakeUnitOptions): Unit {
-  const p = PROFILES[o.unitClass];
+  const p = profileOf(o.unitClass);
+  const classTraits = VARIANTS[o.unitClass]?.traits ?? {};
   const stats = { ...statsFor(o.unitClass, o.level), ...o.statOverrides };
   const unit: Unit = {
     id: o.id,
@@ -99,8 +95,8 @@ export function makeUnit(o: MakeUnitOptions): Unit {
     hp: stats.maxHp,
     mp: stats.maxMp,
     stats,
-    traits: [...(o.traits ?? [])],
-    traitParams: { ...(o.traitParams ?? {}) },
+    traits: [...new Set([...(o.traits ?? []), ...Object.keys(classTraits)])],
+    traitParams: { ...classTraits, ...(o.traitParams ?? {}) },
     statuses: [],
     strategies: [...(o.strategies ?? [])],
     range: p.range,
@@ -120,5 +116,28 @@ export function makeUnit(o: MakeUnitOptions): Unit {
 }
 
 export function classCanUseStrategy(unitClass: UnitClass): boolean {
-  return PROFILES[unitClass].canUseStrategy;
+  return profileOf(unitClass).canUseStrategy;
+}
+
+/**
+ * 병종 진화: 레벨이 기준에 닿은 유닛을 다음 단계 병종으로 바꾼다.
+ * 체력·책략 비율과 위치·상태는 그대로, 능력치·사거리·고유 특성은 새 병종의 것으로.
+ * 바뀌었으면 이전 병종을 돌려준다.
+ */
+export function evolveUnit(unit: Unit, to: UnitClass): UnitClass | undefined {
+  if (to === unit.unitClass) return undefined;
+  const from = unit.unitClass;
+  const hpRatio = unit.hp / Math.max(1, unit.stats.maxHp), mpRatio = unit.mp / Math.max(1, unit.stats.maxMp);
+  const old = VARIANTS[from]?.traits ?? {};
+  unit.traits = unit.traits.filter((t) => !(t in old));
+  for (const t of Object.keys(old)) delete unit.traitParams[t];
+  const fresh = VARIANTS[to]?.traits ?? {};
+  unit.traits = [...new Set([...unit.traits, ...Object.keys(fresh)])];
+  Object.assign(unit.traitParams, fresh);
+  unit.unitClass = to;
+  unit.stats = statsFor(to, unit.level);
+  unit.range = profileOf(to).range;
+  unit.hp = Math.max(1, Math.round(unit.stats.maxHp * hpRatio));
+  unit.mp = Math.round(unit.stats.maxMp * mpRatio);
+  return from;
 }

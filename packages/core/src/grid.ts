@@ -1,4 +1,5 @@
 import type { Coord, Tile, TerrainKind, UnitClass, Unit } from "./types.ts";
+import { familyOf } from "./classes.ts";
 
 export const key = (c: Coord): string => `${c.x},${c.y}`;
 export const manhattan = (a: Coord, b: Coord): number =>
@@ -18,7 +19,7 @@ export const adjacent = (c: Coord): Coord[] =>
 /** 병종별 지형 이동 비용. Infinity = 진입 불가.
  * 산지: 경기병·궁기병은 6(사실상 한 칸), 중기병·공성은 진입 불가.
  * 급류: 수군도 3이 들어 물살에 발이 묶인다. 절벽은 모든 병종이 넘지 못한다. */
-const MOVE_COST: Record<UnitClass, Partial<Record<TerrainKind, number>>> = {
+const MOVE_COST: Partial<Record<UnitClass, Partial<Record<TerrainKind, number>>>> = {
   infantry:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1, cliff: Infinity, marsh: 3, plank: 2, ford: 3 },
   spearman:   { plain: 1, road: 1, forest: 2, hill: 2, mountain: 3, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1, cliff: Infinity, marsh: 3, plank: 2, ford: 3 },
   cavalry:    { plain: 1, road: 1, forest: 3, hill: 3, mountain: 6, water: Infinity, rapids: Infinity, bridge: 1, fort: 1, gate: 1, cliff: Infinity, marsh: 4, plank: 3, ford: 2 },
@@ -42,7 +43,7 @@ const MOVE_COST: Record<UnitClass, Partial<Record<TerrainKind, number>>> = {
 };
 
 /** 병종 × 지형 전투 상성 계수 (공격 위력 배율). */
-const TERRAIN_AFFINITY: Record<UnitClass, Partial<Record<TerrainKind, number>>> = {
+const TERRAIN_AFFINITY: Partial<Record<UnitClass, Partial<Record<TerrainKind, number>>>> = {
   infantry:   { plain: 1.0, forest: 1.1, mountain: 1.0, hill: 1.05, fort: 1.1 },
   spearman:   { plain: 1.0, forest: 1.0, mountain: 1.1, hill: 1.2, fort: 1.1 },
   cavalry:    { plain: 1.2, road: 1.2, forest: 0.8, mountain: 0.6, hill: 0.8, marsh: 0.7, ford: 0.9, plank: 0.8 },
@@ -105,14 +106,14 @@ export class BattleMap {
 
   moveCost(unitClass: UnitClass, c: Coord, ignoreRough = false): number {
     const t = this.tileAt(c);
-    const cost = MOVE_COST[unitClass][t.terrain] ?? Infinity;
+    const cost = (MOVE_COST[unitClass] ?? MOVE_COST[familyOf(unitClass)]!)[t.terrain] ?? Infinity;
     // 험로 이동 특성: 유한한 비용은 모두 1로 압축
     if (ignoreRough && Number.isFinite(cost)) return 1;
     return cost;
   }
 
   terrainAffinity(unitClass: UnitClass, c: Coord): number {
-    return TERRAIN_AFFINITY[unitClass][this.tileAt(c).terrain] ?? 1.0;
+    return (TERRAIN_AFFINITY[unitClass] ?? TERRAIN_AFFINITY[familyOf(unitClass)]!)[this.tileAt(c).terrain] ?? 1.0;
   }
 
   evasionBonus(c: Coord): number {

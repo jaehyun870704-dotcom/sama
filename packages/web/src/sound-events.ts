@@ -1,3 +1,4 @@
+import {familyOf,type UnitClass} from '../../core/src/index.ts';
 import {allStrategies} from './officers.ts';
 
 /** Battle events the soundtrack reacts to. Pure mapping so it can be tested. */
@@ -30,7 +31,8 @@ export function strategySound(id=''):string{
 const chance=(r:()=>number,p:number)=>r()<p;
 
 export function soundsFor(e:SoundEvent,r:()=>number=Math.random):SoundShot[]{
-  const c=e.unitClass??'',shots:SoundShot[]=[];
+  // Extended classes sound like their lineage (a 호표기 still gallops).
+  const c=e.unitClass?familyOf(e.unitClass as UnitClass):'',shots:SoundShot[]=[];
   switch(e.kind){
     case 'select':
       shots.push({name:'ui-open',gain:.5});

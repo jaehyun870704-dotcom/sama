@@ -2,7 +2,7 @@ import {matchupMultiplier,type Unit,type UnitClass} from '../../core/src/index.t
 import type {TrialLandscape} from './expedition-scenes.ts';
 import {expeditionLandscape} from './expedition-scenes.ts';
 import {trialGoals} from './expedition-objectives.ts';
-export const troopAdvice:Record<UnitClass,string>={
+export const troopAdvice:Partial<Record<UnitClass,string>>={
  infantry:'창병을 상대하는 전열. 숲과 성채를 활용하고 적 기병과의 정면전을 피하세요.',
  spearman:'기병·중기병을 막는 전열. 구릉에서 싸우고 적 보병은 사격 부대에 맡기세요.',
  cavalry:'평지·도로로 우회해 궁병과 책사를 압박하세요. 산지는 이동 6이 들어 한 칸이 한계이고, 갈대늪에서는 힘을 못 씁니다. 여울은 말로 건널 수 있습니다.',

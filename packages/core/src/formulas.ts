@@ -7,6 +7,8 @@ import type { BattleMap } from "./grid.ts";
 import { manhattan } from "./grid.ts";
 import type { Rng } from "./rng.ts";
 import { applyTraitHooks, combine, type AttackKind, type DamageContext } from "./traits.ts";
+import { familyOf } from "./classes.ts";
+import { hasTrait, traitParam } from "./traits.ts";
 
 /** 최소 보장 피해. 방어력이 아무리 높아도 이만큼은 들어간다. */
 export const MIN_DAMAGE = 1;
@@ -18,7 +20,7 @@ export const BASE_ACCURACY = 90;
  * 조조전 계열의 가위바위보 구조를 따른다:
  *   창병 > 기병 > 궁병/책사 > 보병 > 창병
  */
-const MATCHUP: Record<UnitClass, Partial<Record<UnitClass, number>>> = {
+const MATCHUP: Partial<Record<UnitClass, Partial<Record<UnitClass, number>>>> = {
   infantry:   { spearman: 1.3, catapult: 1.3, engineer: 1.5, cavalry: 0.8, heavyCav: 0.7 },
   spearman:   { cavalry: 1.5, heavyCav: 1.5, infantry: 0.8, archer: 0.9 },
   cavalry:    { archer: 1.4, crossbow: 1.4, strategist: 1.4, fengshui: 1.4, catapult: 1.3, spearman: 0.6 },
@@ -45,7 +47,8 @@ const MATCHUP: Record<UnitClass, Partial<Record<UnitClass, number>>> = {
 for(const row of Object.values(MATCHUP))for(const [kind,base] of Object.entries({shaman:'strategist',maiden:'fengshui',taoist:'strategist',physician:'fengshui',monk:'infantry',horseArcher:'cavalry',bandit:'infantry'}))if(row[base as UnitClass]!==undefined)row[kind as UnitClass]=row[base as UnitClass]!;
 
 export function matchupMultiplier(attacker: UnitClass, defender: UnitClass): number {
-  return MATCHUP[attacker][defender] ?? 1.0;
+  const row = MATCHUP[attacker] ?? MATCHUP[familyOf(attacker)] ?? {};
+  return row[defender] ?? row[familyOf(defender)] ?? 1.0;
 }
 
 /** 사기 보정. 사기 0 → 0.8배, 50 → 1.0배, 100 → 1.2배 */
@@ -198,8 +201,11 @@ export function computeStrategy(
 function elementalMultiplier(strategy: StrategyDef, map: BattleMap, target: Unit): number {
   const terrain = map.tileAt(target.pos).terrain;
   switch (strategy.element) {
-    case "fire":
-      return terrain === "forest" ? 1.4 : terrain === "water" || terrain === "rapids" ? 0.6 : 1.0;
+    case "fire": {
+      // 등갑병: 기름 먹인 등나무 갑옷은 칼은 막아도 불에는 약하다.
+      const burn = hasTrait(target, "fireWeakness") ? 1 + traitParam(target, "fireWeakness") / 100 : 1;
+      return burn * (terrain === "forest" ? 1.4 : terrain === "water" || terrain === "rapids" ? 0.6 : 1.0);
+    }
     case "water":
       return terrain === "water" || terrain === "rapids" ? 1.3 : 1.0;
     case "thunder":
