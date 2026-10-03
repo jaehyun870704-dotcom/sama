@@ -83,6 +83,29 @@ function isRacing(state: any, unit: any): boolean {
   });
 }
 
+/**
+ * 승리 조건이 "특정 적 퇴각"인 장수가 도주 중이고 이번 턴에 칠 수 있으면 먼저 친다.
+ * 사람은 달아나는 목표 장수를 두고 옆의 졸병을 치지 않는다. (S2-10 고상)
+ * 버티는 강적(S1-04 여포)에게 무작정 달려들지는 않는다.
+ */
+function strikeQuarry(session: any, unit: any): boolean {
+  const state = session.state;
+  const quarry = state.victory
+    .filter((c: { type: string; unit?: string }) => c.type === "retreat" && c.unit)
+    .map((c: { unit: string }) => state.find(c.unit))
+    .find((u: any) => u?.alive && u.side === "enemy" && u.behavior === "flee");
+  if (!quarry || unit.range[1] <= 0) return false;
+  const reach = state.map.reachable(unit, state.occupancy());
+  for (const k of reach.keys()) {
+    const [x, y] = k.split(",").map(Number);
+    const d = manhattan({ x, y }, quarry.pos);
+    if (d < unit.range[0] || d > unit.range[1]) continue;
+    if (k !== key(unit.pos) && !session.act({ kind: "move", unit: unit.id, to: { x, y } }).ok) continue;
+    return session.act({ kind: "attack", unit: unit.id, target: quarry.id }).ok || unit.hasActed;
+  }
+  return false;
+}
+
 /** 일기토·설전 5합을 정해진 수순으로 끝낸다. 기합으로 기를 모아 필살기를 낸다. */
 function resolveDuel(session: any) {
   const plan = ["rally", "special", "guard", "attack", "attack"] as const;
@@ -204,6 +227,7 @@ function play(chapter: number, difficulty: Difficulty, seed: number) {
       if (session.act({ kind: "item", unit: unit.id, item: "medicine" }).ok) continue;
     }
     if (!racing && tryDuel(session, unit)) continue;
+    if (!racing && strikeQuarry(session, unit)) continue;
 
     let accepted = false;
     for (const asView of [() => state, () => withoutCaptureGoals(state)]) {

@@ -193,7 +193,8 @@ export class BattleMap {
         const cost = this.moveCost(unit.unitClass, n, ignoreRough);
         if (!Number.isFinite(cost)) continue;
 
-        const nd = d + cost;
+        // M-19: 불길 칸은 지나가는 데 이동력이 2 더 든다 — 지나치기만 해도 공짜가 아니다.
+        const nd = d + cost + (this.tileAt(n).hazard === "fire" ? 2 : 0);
         if (nd > budget) continue;
         if (nd < (dist.get(key(n)) ?? Infinity)) {
           dist.set(key(n), nd);
