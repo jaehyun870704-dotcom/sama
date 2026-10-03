@@ -15,6 +15,13 @@ export type LineWhen=
 export interface BattleLine {id:string;when:LineWhen;speaker:string;text:string}
 
 export const battleLines:Record<string,BattleLine[]>={
+  'S2-08':[
+    {id:'open-1',when:{turn:1},speaker:'사마의',text:'나는 이 능선에서 움직이지 않는다. 목책과 비탈의 궁수는 책략으로 친다.'},
+    {id:'open-2',when:{turn:1},speaker:'사마사',text:'소야, 목책이 열리면 곧장 달린다. 조휴 장군의 진영까지!'},
+    {id:'wave',when:{turn:5},speaker:'조휴',text:'남쪽에서 오군이 또 몰려온다! 서둘러 주시오!'},
+    {id:'raid',when:{turn:5},speaker:'사마소',text:'아버님, 북쪽 능선으로 기병이 올라갑니다!'},
+    {id:'lu',when:{retreat:'lu_xun'},speaker:'사마의',text:'육손이 물러났다. 길이 열렸다.'},
+  ],
   'S2-07':[
     {id:'open-1',when:{turn:1},speaker:'사마의',text:'위연이 관으로 빠지기 전에 잡는다. 곽 장군의 진영도 오래 버티지 못한다.'},
     {id:'open-2',when:{turn:2},speaker:'위연',text:'사마의가 왔다고? 진영은 됐다, 관으로 돌아갈 채비를 해라!'},

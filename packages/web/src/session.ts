@@ -1,4 +1,4 @@
-import {repairError,repairAmount,fortifyError,parseCell,buildBarricade,breachRally,BARRICADES_PER_ENGINEER} from './siege.ts';
+import {repairError,repairAmount,fortifyError,parseCell,buildBarricade,placeBarricade,breachRally,BARRICADES_PER_ENGINEER} from './siege.ts';
 import {troopStrategies,supportOptions} from './troops.ts';
 import {expeditionBattle,expeditions} from './expeditions.ts';
 import {newDuel,duelRound,type DuelState,type DuelAction} from './duel.ts';
@@ -10,7 +10,7 @@ import tongguanMap from '../../data/maps/tongguan-pass.json';
 import retreatStage from '../../data/stages/S1-05.json';
 import retreatMap from '../../data/maps/yangtze-retreat.json';
 import {stageRules} from './stage-rules.ts';
-import {campaignStage,addFortifications,addSiegeCompany,structureKind,encircled} from './campaign-rules.ts';
+import {campaignStage,addFortifications,addSiegeCompany,structureKind,encircled,encounterLevels} from './campaign-rules.ts';
 import {applyTreasure,equippedItems,treasureInfo,type Deployment,OFFICERS,treasures} from './progression.ts';
 import { assemble, Battle, CONTROLLABLE, isHostile, key, manhattan } from '../../core/src/index.ts';
 import type { Command, Difficulty, MapFile, StageDef, StrategyDef } from '../../core/src/index.ts';
@@ -44,6 +44,8 @@ import jietingStage from '../../data/stages/S2-06.json';
 import jietingMap from '../../data/maps/jieting-hill.json';
 import yangpingStage from '../../data/stages/S2-07.json';
 import yangpingMap from '../../data/maps/yangping-pass.json';
+import shitingStage from '../../data/stages/S2-08.json';
+import shitingMap from '../../data/maps/shiting-gorge.json';
 import legacyFortMap from './legacy/hanzhong-map-v2.json';
 import legacyFortStage from './legacy/hanzhong-stage-v2.json';
 import { makeUnit, awardedSeals } from '../../core/src/index.ts';
@@ -67,9 +69,10 @@ export const chapters = [
   {stage:xinchengStage as StageDef,map:xinchengMap as MapFile,year:'태화 이년 · 228년',label:'강행군과 공성',quote:'여드레에 천이백 리. 적이 준비를 마치기 전에 성 아래에 선다.'},
   {stage:jietingStage as StageDef,map:jietingMap as MapFile,year:'태화 이년 · 228년',label:'수원 차단과 도주 저지',quote:'산 위의 진은 물이 없으면 사흘을 못 간다.'},
   {stage:yangpingStage as StageDef,map:yangpingMap as MapFile,year:'태화 사년 · 230년',label:'추격과 구원',quote:'쫓는 자도 길을 고르고, 쫓기는 자도 길을 고른다.'},
+  {stage:shitingStage as StageDef,map:shitingMap as MapFile,year:'태화 이년 · 228년',label:'협석 돌파',quote:'아버지는 능선에 서고, 아들들은 골짜기를 달린다.'},
 ];
 // Stable indices preserve the existing v2 command saves.
-export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15,16,17];
+export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15,16,17,18];
 export type Preparation='survival'|'strategy'|'command';
 export const strategies: StrategyDef[] = [
   {id:'windDragon',name:'풍룡',element:'wind',shape:'spread',range:4,radius:1,mpCost:18,power:130,targetSides:['enemy']},
@@ -131,6 +134,8 @@ export class Session {
     const rules=stageRules[entry.stage.id];
     for(const p of rules?.protect??[]){const u=state.find(p.unit);if(!u)continue;u.stats.maxHp=p.hp;u.hp=p.hp;u.range=[0,0];u.canUseItems=false;if(p.movement)u.stats.movement=p.movement;}
     for(const t of rules?.tough??[]){const u=state.find(t.unit);if(!u)continue;u.stats.maxHp=Math.round(u.stats.maxHp*t.hpScale);u.hp=u.stats.maxHp;if(t.defense)u.stats.defense+=t.defense;}
+    for(const id of rules?.anchored??[]){const u=state.find(id);if(u)u.stats.movement=0;}
+    for(const at of rules?.barricades??[])if(!state.unitAt(at))placeBarricade(state,at,'enemy',(encounterLevels[state.stage.id]??5)+(state.difficulty==='extreme'?2:0));
     if((this.deployment?.mission?.version??1)>=3){
       for(const id of ['convoy_trial','rescue_target']){const u=state.find(id);if(u){u.stats.maxHp=100+u.level*4;u.hp=u.stats.maxHp;u.stats.movement=3;u.range=[0,0];}}
       for(const u of state.living('enemy'))if(u.goalRegion==='trial_defense')u.stats.movement=3;
@@ -281,7 +286,7 @@ export class Session {
     const rules=stageRules[s.stage.id],view={state:s,difficulty:this.difficulty,journalLength:this.journal.length};
     if(rules){
       const lost=s.outcome==='ongoing'?rules.tick?.(view):undefined;if(lost){this.failure=lost;s.outcome='defeat';s.push({t:'outcome',outcome:'defeat'});}
-      if(rules.deadline&&s.outcome==='ongoing'&&s.turn>rules.deadline){this.failure=`${rules.deadline}턴 안에 작전을 마치지 못했습니다.`;s.outcome='defeat';s.push({t:'outcome',outcome:'defeat'});}
+      if(rules.deadline&&s.outcome==='ongoing'&&s.turn>rules.deadline){this.failure=rules.deadlineText??`${rules.deadline}턴 안에 작전을 마치지 못했습니다.`;s.outcome='defeat';s.push({t:'outcome',outcome:'defeat'});}
       this.phase=rules.phase?.(view)??s.scenarioPhase??this.phase;
       if(s.outcome==='defeat'&&!this.failure)this.failure=rules.failure?.(view)??'';
     }else if(this.chapter===10){

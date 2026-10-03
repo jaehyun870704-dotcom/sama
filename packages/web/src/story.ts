@@ -8,6 +8,7 @@ export function storyBackdrop(index:number){
 }
 /** Atlas cell + narrative location per beat, independent of saved chapter indexes. */
 export const storyLocations:Record<string,Array<{art:number;name:string;companion:string;actor?:number}>>={
+  'S2-08':[{art:14,name:'완성 · 출정 전날',companion:'사마사'},{art:4,name:'석정 · 협석 골짜기 어귀',companion:'사마소'},{art:11,name:'석정 · 조휴의 진영',companion:'사마사'}],
   'S2-07':[{art:14,name:'장안 · 조진의 출정',companion:'곽회'},{art:4,name:'자오곡 · 서른 날의 비',companion:'곽회'},{art:11,name:'한중 · 양평관 어귀',companion:'곽회'}],
   'S2-06':[{art:14,name:'장안 · 출격 군의',companion:'장합'},{art:4,name:'가정 · 남산을 바라보는 고개',companion:'장합'},{art:11,name:'가정 · 북쪽 샘',companion:'장합'}],
   'S2-05':[{art:12,name:'완성 · 표문을 쓰는 밤',companion:'사마사'},{art:4,name:'신성 가는 길 · 산길 행군',companion:'사마사'},{art:8,name:'신성 · 성벽 아래',companion:'사마소'}],
@@ -35,6 +36,11 @@ export const storyLocations:Record<string,Array<{art:number;name:string;companio
   'S1-09':[{art:14,name:'한중 · 철수 군의',companion:'조진'},{art:15,name:'한수 · 불탄 부교터',companion:'조진'},{art:7,name:'한수 · 강변 정찰',companion:'조진'}],
 };
 export const storyBeats:Record<string,StoryBeat[]>={
+  'S2-08':[
+    {speaker:'사마사',line:'아버님, 조휴 장군이 육손에게 속아 석정 깊이 들어갔다가 포위되었습니다. 협석 골짜기가 막혔습니다.',pose:'enter',actor:3},
+    {speaker:'사마의',line:'나는 저 능선에 서서 골짜기를 내려다보겠다. 목책은 내가 책략으로 흔들 테니, 너희 둘은 멈추지 말고 달려라.',pose:'speak',actor:4},
+    {speaker:'사마소',line:'형님이 앞을 열면 제가 비탈의 궁수를 떨어뜨리겠습니다. 조휴 장군의 진영이 버틸 때까지.',pose:'resolve',actor:2},
+  ],
   'S2-07':[
     {speaker:'곽회',line:'도독, 비가 그치지 않습니다. 길이 끊기고 군량이 늦어 조 대사마께서 회군을 고민하십니다.',pose:'enter',actor:0},
     {speaker:'사마의',line:'회군은 대사마께서 정하실 일이오. 그보다 위연이 서쪽으로 돌아 곽 장군의 진영을 노린다는 첩보가 있소.',pose:'speak',actor:4},
@@ -154,10 +160,14 @@ export const stories=[
   ['여드레 천이백 리','228년, 신성의 맹달이 촉의 제갈량과 내통한다. 사마의는 조정의 허락을 기다리지 않고 군을 움직인다. 천이백 리를 여드레에. 두 아들 사마사와 사마소가 처음으로 아버지의 곁에서 싸운다.'],
   ['물을 끊다','228년, 제갈량이 기산으로 나오고 천수·남안·안정이 촉에 붙었다. 길목 가정을 맡은 마속은 제갈량의 지시를 어기고 남산 위에 진을 쳤다. 산 위에는 물이 없다. 장합과 사마의는 샘을 끊고, 무너질 촉군의 도주로를 막는다.'],
   ['젖은 잔도','230년, 대사마 조진이 촉 정벌에 나선다. 사마의는 한수를 거슬러 서쪽으로 오르지만 서른 날 이어진 비에 길이 끊긴다. 그 틈에 위연이 곽회의 진영을 치고 양평관으로 돌아가려 한다. 잔도로 질러갈 것인가, 계곡으로 돌 것인가.'],
+  ['능선과 골짜기','228년, 대사마 조휴가 오의 거짓 항복에 속아 석정으로 깊이 들어간다. 육손이 길을 끊고 협석 골짜기에 목책을 세운다. 사마의는 능선에 자리 잡고, 두 아들이 골짜기를 뚫는다.'],
 ];
 
 /** After a main-battle victory: where the story picks up, and what changed. */
 export const storyAftermath:Record<string,{art:number;name:string;beats:Array<{speaker:string;line:string}>}>={
+  'S2-08':{art:11,name:'석정 · 열린 협석 길',beats:[
+    {speaker:'사마사',line:'조휴 장군을 모셔 왔습니다. 진영은 잃었지만 군은 살았습니다.'},
+    {speaker:'사마의',line:'잘했다. 오늘 너희는 내가 없는 곳에서 싸웠다. 그것이 내가 바라던 일이다.'}]},
   'S2-07':{art:11,name:'양평관 · 비 그친 저녁',beats:[
     {speaker:'곽회',line:'진영은 지켰습니다. 그러나 조 대사마께서 회군을 명하셨습니다.'},
     {speaker:'사마의',line:'비가 우리를 막았고, 위연은 길을 알았소. 다음에는 우리가 길을 먼저 알아야 하오.'}]},

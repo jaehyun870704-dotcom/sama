@@ -79,6 +79,19 @@ for (const f of stageFiles) {
     }
   }
 
+  // 전투 시작에 지정 칸으로 생성되는 부대가 출진 칸과 겹치면, 출진한 아군이 먼저
+  // 서 있어 조용히 생성되지 않는다(S2-08 사마사가 사라졌던 문제).
+  if (map?.regions.has("player_start")) {
+    const start = new Set(map.regionCoords("player_start").map((c) => `${c.x},${c.y}`));
+    for (const ev of stage.events ?? []) {
+      if (ev.trigger.type !== "battle_start") continue;
+      for (const a of ev.actions)
+        for (const u of a.units ?? [])
+          if (u.at && start.has(`${u.at.x},${u.at.y}`))
+            errors.push(`[${stage.id}] 전투 시작 생성 위치가 출진 칸과 겹칩니다: ${u.id ?? u.template} (${u.at.x},${u.at.y})`);
+    }
+  }
+
   // 대화 정의가 구조적으로 온전한가 (끊긴 링크 · 빈 선택지)
   let script: DialogueScript | null = null;
   try {
