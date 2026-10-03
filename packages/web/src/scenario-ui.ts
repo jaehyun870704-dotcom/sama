@@ -2,7 +2,7 @@
  * 시나리오 모드 화면: 장 선택 → 이야기 무대(선택) → 출진 전 정비(반드시) → 전투 → 전투 뒤 장면 → 다음 장.
  * 규칙은 scenario.ts, 무대 연출은 story-stage.ts. 연의 장의 정비·전투·보상은 main.ts의 기존 흐름을 쓴다.
  */
-import {loadScenario,saveScenario,freshScenario,scenarioPath,currentStep,scriptOf,choose,finishStep,fateChoices,floorFor,scenarioParty,rewardOfficers,endingNotes,routeTales,COMPANIONS,type ScenarioState,type ScenarioStep} from './scenario.ts';
+import {loadScenario,saveScenario,freshScenario,scenarioPath,winOver,currentStep,scriptOf,choose,finishStep,fateChoices,floorFor,scenarioParty,rewardOfficers,endingNotes,routeTales,COMPANIONS,type ScenarioState,type ScenarioStep} from './scenario.ts';
 import {playScenes,spriteStyle} from './story-stage.ts';
 import {openCamp} from './story-camp.ts';
 import {storyBackdrop} from './story.ts';
@@ -252,6 +252,7 @@ export async function finishIfBattle(host:ScenarioHost,state:BattleState,deploym
   const ref=deployment.run!,mult=(ref.mods?.bold?1.5:1)*(deployment.scenario?.difficulty==='extreme'?1.3:1),bonus=step.kind==='boss'?90:70;
   const news=rewardOfficers(sc,ref.party,earned,bonus,mult);
   news.push(...host.addHeroXp(Math.round((140+(earned.sima_yi??0))*mult)));
+  const back=winOver(sc,step,Math.max(1,(ref.party[0]?.level??2)-1));if(back)news.push(`${back} 귀순 — 다시 사마의의 부대에 합류했다.`);
   finishStep(sc,step.id);saveScenario(sc);
   await afterVictory(host,sc,step,news);
 }

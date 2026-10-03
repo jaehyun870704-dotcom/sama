@@ -144,6 +144,12 @@ export function joinCompanions(state:ScenarioState,route:Route,heroLevel:number)
   for(const c of COMPANIONS){if(foes.has(c.name)||(yuanSide&&c.name==='조진')||state.officers[c.name])continue;state.officers[c.name]={name:c.name,unitClass:c.unitClass,level:Math.max(1,heroLevel-1),xp:0};}
 }
 export function finishStep(state:ScenarioState,id:string){if(!state.done.includes(id))state.done.push(id);}
+/** 가상 전장에서 꺾은 적장이 본래 사마의의 동료(장합 등)라면 귀순해 부대로 돌아온다. 돌아온 이름을 돌려준다. */
+export function winOver(state:ScenarioState,step:ScenarioStep,level:number){
+  const name=step.tale?.target.name,c=COMPANIONS.find(x=>x.name===name);
+  if(step.kind!=='tale'||!c||state.officers[c.name])return undefined;
+  state.officers[c.name]={name:c.name,unitClass:c.unitClass,level:Math.max(1,level),xp:0};return c.name;
+}
 
 /** 장면 진행: 표식에 따라 보일 단계만 고른다. */
 export function visibleSteps(steps:ScriptStep[],flags:readonly string[]){return steps.filter(s=>(!s.when||flags.includes(s.when))&&(!s.unless||!flags.includes(s.unless)));}
