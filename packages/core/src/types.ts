@@ -60,7 +60,12 @@ export type UnitClass =
   | "catapult"    // 포차
   | "engineer"    // 공병
   | "navy"        // 수군
-  | "civilian";   // 민중 (M-01 전환 대상)
+  | "civilian"    // 민중 (M-01 전환 대상)
+  // 확장 병종과 진화 단계 (classes.ts: 계열·능력치·진화 계통)
+  | "shieldGuard" | "royalGuard" | "pikeman" | "halberdier" | "lancer" | "tigerRider" | "ironCav"
+  | "longbow" | "sharpshooter" | "repeater" | "greatBow" | "tactician" | "mastermind" | "sage" | "immortal"
+  | "nomad" | "whiteHorse" | "slinger" | "hurler" | "assassin" | "phantom" | "rattan" | "rattanElite"
+  | "elephant" | "warElephant";
 
 // ─────────────────────────────────────────────────────────── 진영
 

@@ -130,6 +130,13 @@ defineTrait({
 });
 
 defineTrait({
+  id: "fireWeakness",
+  name: "화계 취약",
+  description: "화계 책략 피해가 param% 늘어난다. (등갑병)",
+  hooks: {},
+});
+
+defineTrait({
   id: "strategyDamageReduction",
   name: "책략 피해 감소",
   description: "책략 피해를 param% 감소시킨다.",
