@@ -6,7 +6,7 @@
  * 경험치로 레벨이 오르면 병종이 진화한다(classes.ts의 계통).
  * 화면과 저장은 main.ts가 맡는다. 이 모듈은 상태를 바꾸는 순수 함수만 둔다.
  */
-import {Rng,evolvedClass,nextEvolution,profileOf,evolveUnit,familyOf,type UnitClass,type StageDef,type MapFile,type UnitSpawnSpec,type BattleState} from '../../core/src/index.ts';
+import {Rng,VARIANTS,evolvedClass,nextEvolution,profileOf,evolveUnit,familyOf,type UnitClass,type StageDef,type MapFile,type UnitSpawnSpec,type BattleState} from '../../core/src/index.ts';
 import {classNames,troopStrategies} from './troops.ts';
 import {availableStrategies,allStrategies} from './officers.ts';
 
@@ -129,7 +129,7 @@ export function grantXp(run:Run,amount:number,who=run.party){
     u.xp+=amount;let leveled=false;
     while(u.xp>=XP_PER_LEVEL){u.xp-=XP_PER_LEVEL;u.level++;leveled=true;
       const to=evolvedClass(u.unitClass,u.level);
-      if(to!==u.unitClass){const from=u.hero?'사마의':u.name;u.unitClass=to;if(!u.hero)u.name=uniqueName(run,to,u);run.news.push(`진화! ${ga(from)} ${ro(unitName(to))} 거듭났다 (Lv.${u.level})`);}
+      if(to!==u.unitClass){const from=u.hero?'사마의':u.name;u.unitClass=to;if(!u.hero)u.name=uniqueName(run,to,u);run.news.push(`진화! ${ga(from)} ${ro(unitName(to))} 거듭났다 (Lv.${u.level})${VARIANTS[to]?.bloom?` · 개화 「${VARIANTS[to]!.bloom!.name}」 ${VARIANTS[to]!.bloom!.description}`:''}`);}
     }
     if(leveled)ups.push(`${u.hero?'사마의':u.name} ${u.level}`);
   }
@@ -174,7 +174,7 @@ export function describeReward(o:RewardOption){
     case 'xp':return {title:'전훈',detail:`모든 부대 경험치 ${o.amount}`};
   }
 }
-export function nextEvolutionText(cls:UnitClass){const n=nextEvolution(cls);return n?`Lv.${n.level}에 ${ro(unitName(n.to))} 진화`:'최종 단계';}
+export function nextEvolutionText(cls:UnitClass){const n=nextEvolution(cls);return n?`Lv.${n.level}에 ${ro(unitName(n.to))} 진화${VARIANTS[n.to]?.bloom?` · 「${VARIANTS[n.to]!.bloom!.name}」 개화`:''}`:'최종 단계';}
 
 // ─────────────────────────────────────────────── 전장 생성
 
@@ -208,7 +208,7 @@ export function runStage(run:Run,kind:NodeKind,map:MapFile):StageDef{
     const elite=kind==='elite'&&i<2;const evolved=evolvedClass(cls,elite?level+8:level);
     enemies.push({id:`foe_${i}`,name:unitName(evolved),template:evolved,level,at,behavior:i%3===2?'hold':'advance'});
   }
-  if(kind==='boss'){const b=region.boss,mid=Math.floor(H/2),bi=camp.reduce((best,c,i)=>Math.abs(c.y-mid)*2+(W-1-c.x)<Math.abs(camp[best]!.y-mid)*2+(W-1-camp[best]!.x)?i:best,0),at=camp.splice(bi,1)[0]??{x:W-1,y:mid};enemies.push({id:'boss',name:b.name,template:evolvedClass(b.unitClass,base+3),level:base,at,behavior:'hold'});}
+  if(kind==='boss'){const b=region.boss,mid=Math.floor(H/2),bi=camp.reduce((best,c,i)=>Math.abs(c.y-mid)*2+(W-1-c.x)<Math.abs(camp[best]!.y-mid)*2+(W-1-camp[best]!.x)?i:best,0),at=camp.splice(bi,1)[0]??{x:W-1,y:mid};enemies.push({id:'boss',name:b.name,template:evolvedClass(b.unitClass,base+3),level:base-2,at,behavior:'hold'});}
   const party:UnitSpawnSpec[]=run.party.filter(u=>!u.hero).map(u=>({id:u.id,name:u.name,template:u.unitClass,level:u.level,region:'party_start',behavior:'advance'}));
   return {id:`R-${String(f).padStart(2,'0')}`,arc:'lower',order:100+f,title:`${region.name} · ${f}층`,subtitle:kind==='boss'?`우두머리 ${region.boss.name}`:kind==='elite'?'정예 전투':'원정 전투',
     synopsis:kind==='boss'?`${eul(region.boss.name)} 격퇴하면 승리. 쓰러진 부대는 원정에서 사라진다.`:'적을 모두 물리치면 승리. 쓰러진 부대는 원정에서 사라진다.',

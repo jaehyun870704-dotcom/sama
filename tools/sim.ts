@@ -142,7 +142,20 @@ function strikeQuarry(session: any, unit: any): boolean {
     if (k !== key(unit.pos) && !session.act({ kind: "move", unit: unit.id, to: { x, y } }).ok) continue;
     return session.act({ kind: "attack", unit: unit.id, target: quarry.id }).ok || unit.hasActed;
   }
-  return false;
+  // 닿지 않으면 도주로 쪽으로 쫓는다(사람은 도망치는 적장을 눈앞에서 놓치지 않으려 한다).
+  if (unit.hasMoved || manhattan(unit.pos, quarry.pos) <= 3) return false;
+  let best: { x: number; y: number } | undefined, bestD = manhattan(unit.pos, quarry.pos);
+  for (const k of reach.keys()) {
+    const [x, y] = k.split(",").map(Number) as [number, number];
+    if (state.unitAt({ x, y })) continue;
+    const d = manhattan({ x, y }, quarry.pos);
+    if (d < bestD) { bestD = d; best = { x, y }; }
+  }
+  if (!best || !session.act({ kind: "move", unit: unit.id, to: best }).ok) return false;
+  for (const cmd of decide(state, unit)) if (cmd.kind !== "move" && session.act(cmd).ok) break;
+  if (!unit.hasActed) session.act({ kind: "wait", unit: unit.id });
+  return true;
+
 }
 
 /** 일기토·설전 5합을 정해진 수순으로 끝낸다. 기합으로 기를 모아 필살기를 낸다. */
@@ -173,12 +186,14 @@ function tryDuel(session: any, unit: any): boolean {
   if (session.revision !== 4) return false;
   const enemies = session.state.living("enemy");
   const options: Array<{ kind: "duel" | "debate"; target: string; edge: number }> = [];
+  // 공격 책략을 가진 책사는 일기토로 턴을 쓰지 않는다(사람도 사마의로 칼싸움을 걸지 않는다).
+  const caster = unit.strategies.some((id: string) => (session.state.strategies.get(id)?.power ?? 0) > 0);
   for (const enemy of enemies) {
     const distance = manhattan(unit.pos, enemy.pos);
     if (distance <= 3) {
       options.push({ kind: "debate", target: enemy.id, edge: unit.stats.intellect - enemy.stats.intellect });
     }
-    if (distance <= 1) {
+    if (distance <= 1 && !caster) {
       options.push({ kind: "duel", target: enemy.id, edge: martialPower(unit) - martialPower(enemy) });
     }
   }

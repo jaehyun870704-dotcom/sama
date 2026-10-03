@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { makeUnit, evolveUnit, statsFor } from "../src/units.ts";
+import { makeUnit, evolveUnit, statsFor, profileOf } from "../src/units.ts";
+import { getTrait } from "../src/traits.ts";
+import "../src/index.ts";
 import { evolvedClass, familyOf, tierOf, nextEvolution, VARIANTS, EVOLUTION } from "../src/classes.ts";
 import { matchupMultiplier } from "../src/formulas.ts";
 import { flatMap } from "./fixtures.ts";
@@ -43,5 +45,31 @@ describe("병종 계통과 진화", () => {
     const r = makeUnit({ id: "r", side: "enemy", unitClass: "rattan", level: 5, pos: { x: 0, y: 0 } });
     expect(r.traitParams.physicalDamageReduction).toBe(25);
     expect(r.traits).toContain("fireWeakness");
+  });
+});
+
+describe('진화 개화와 능력치 성장', () => {
+  const STATS = ['hp', 'mp', 'attack', 'defense', 'intellect', 'spirit', 'agility'] as const;
+  it('raises every stat by at least 5% at each evolution step', () => {
+    const bad: string[] = [];
+    for (const [from, next] of Object.entries(EVOLUTION) as Array<[UnitClass, readonly [UnitClass, number]]>) {
+      const a = profileOf(from), b = profileOf(next[0]);
+      for (const k of STATS) if (b[k] < a[k] * 1.05 - 1e-9) bad.push(`${from}→${next[0]} ${k} ${a[k]}→${b[k]}`);
+      if (b.movement < a.movement) bad.push(`${from}→${next[0]} movement`);
+      if (b.range[1] < a.range[1] || b.range[0] > a.range[0]) bad.push(`${from}→${next[0]} range`);
+    }
+    expect(bad).toEqual([]);
+  });
+  it('blooms a named skill at every evolved tier, and the third tier keeps the second tier skills', () => {
+    for (const [id, v] of Object.entries(VARIANTS)) {
+      if (v!.tier < 2) continue;
+      expect(v!.bloom?.name, id).toBeTruthy();
+      expect(Object.keys(v!.traits ?? {}).length, id).toBeGreaterThan(0);
+      for (const t of Object.keys(v!.traits ?? {})) expect(() => getTrait(t), `${id}:${t}`).not.toThrow();
+    }
+    for (const [from, next] of Object.entries(EVOLUTION) as Array<[UnitClass, readonly [UnitClass, number]]>) {
+      if (tierOf(from) < 2) continue;
+      for (const t of Object.keys(VARIANTS[from]!.traits ?? {})) expect(Object.keys(VARIANTS[next[0]]!.traits ?? {}), `${next[0]} keeps ${t}`).toContain(t);
+    }
   });
 });

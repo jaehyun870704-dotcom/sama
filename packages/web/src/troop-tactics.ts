@@ -1,4 +1,4 @@
-import {matchupMultiplier,familyOf,tierOf,VARIANTS,type Unit,type UnitClass} from '../../core/src/index.ts';
+import {matchupMultiplier,familyOf,tierOf,VARIANTS,getTrait,type Unit,type UnitClass} from '../../core/src/index.ts';
 import type {TrialLandscape} from './expedition-scenes.ts';
 import {expeditionLandscape} from './expedition-scenes.ts';
 import {trialGoals} from './expedition-objectives.ts';
@@ -46,10 +46,10 @@ export function supportWarnings(units:Unit[]){const warnings:string[]=[];
 }
 export function physicalMatchup(a:UnitClass,d:UnitClass){const m=matchupMultiplier(a,d);return '물리 병종 상성 ×'+m.toFixed(2)+(m>1?' · 유리':m<1?' · 불리':' · 보통');}
 
-const traitHints:Record<string,string>={guardian:'인접 아군을 지킵니다',lastStand:'체력이 낮을수록 버팁니다',unlimitedCounter:'반격 횟수 제한이 없습니다',critical:'치명타가 잦습니다',physicalDamageReduction:'물리 피해를 덜 받습니다',penetrate:'방어를 꿰뚫습니다',strategyEvasion:'책략을 피합니다',strategyDamageReduction:'책략 피해를 덜 받습니다',fireWeakness:'불에 매우 약합니다'};
-/** 확장 병종은 계열의 운용법에 고유 특성 한 줄을 붙인다. */
+/** 확장 병종은 계열의 운용법에 개화 스킬(또는 고유 특성) 한 줄을 붙인다. */
 export function adviceFor(c:UnitClass):string{
   const own=troopAdvice[c];if(own)return own;
-  const traits=Object.keys(VARIANTS[c]?.traits??{}).map(t=>traitHints[t]).filter(Boolean);
-  return `${tierOf(c)>1?`${tierOf(c)}단계 진화 병종. `:''}${traits.length?traits.join(' · ')+'. ':''}${troopAdvice[familyOf(c)]??''}`;
+  const v=VARIANTS[c],tier=tierOf(c);
+  const skill=v?.bloom?`개화 「${v.bloom.name}」 ${v.bloom.description}. `:v?.traits?`고유 특성: ${Object.keys(v.traits).map(t=>getTrait(t).name).join(' · ')}. `:'';
+  return `${tier>1?`${tier}단계 진화 병종. `:''}${skill}${troopAdvice[familyOf(c)]??''}`;
 }

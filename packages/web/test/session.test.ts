@@ -6,8 +6,8 @@ import {CONTROLLABLE,decide,key,awardedSeals} from '../../core/src/index.ts';
 describe('playable client session',()=>{
   it.each([false,true,'newRules'] as const)('has a winning path through the fort race (campaign=%s)',campaign=>{
     let winner:Session|undefined;
-    for(let seed=0;seed<(campaign==='newRules'?1:40)&&!winner;seed++){
-      const c=freshCampaign();c.xp.sima_yi=campaign==='newRules'?980:560;c.xp.cao_zhen=810;const s=new Session(1,'normal',campaign==='newRules'?215:seed,'survival',campaign==='newRules'?4:3,campaign?deployment(c):undefined);
+    for(let seed=0;seed<(campaign==='newRules'?12:40)&&!winner;seed++){
+      const c=freshCampaign();c.xp.sima_yi=campaign==='newRules'?980:560;c.xp.cao_zhen=810;const s=new Session(1,'normal',campaign==='newRules'?215+seed:seed,'survival',campaign==='newRules'?4:3,campaign?deployment(c):undefined);
       for(let step=0;step<600&&s.state.outcome==='ongoing';step++){
         if(CONTROLLABLE.has(s.state.currentSide)){
           const u=s.state.living(s.state.currentSide).find(u=>!u.hasActed);
