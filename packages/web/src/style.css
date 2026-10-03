@@ -247,3 +247,66 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
 .route-result{font-size:14px}.route-result b{margin-right:6px;color:#e3c183}.route-result.what-if b{color:#c8b0ff}
 .ending-note{color:#e3c183;font-style:italic}
 @media(max-width:580px){.ss-caption{font-size:12px;line-height:1.6;padding:8px 10px;max-height:46%;overflow:auto}.ss-name{font-size:9px}}
+.sortie-picker{border:1px solid #6b6a4c;border-radius:4px;padding:10px 14px;margin:12px 0;display:flex;flex-wrap:wrap;gap:8px;align-items:center}.sortie-picker legend{font-size:12px;color:#e3c183;padding:0 6px}.sortie-chip{font-size:12px;border:1px solid #4f86e8;border-radius:14px;padding:4px 12px;display:inline-flex;gap:6px;align-items:center}.sortie-chip.forced{border-color:#c2a36b;color:#f0d79c}
+/* 조조전식 대화창 — 먹 붓 테두리의 검은 상자, 상자 밖으로 걸친 큰 초상, 주황 이름 · 흰 대사 */
+.ss-frame{position:relative}
+.ss-stage{max-height:62dvh}
+.ss-talk-slot{position:absolute;inset:0;z-index:220;pointer-events:none}
+.ss-talk{position:absolute;left:2.5%;right:2.5%;display:flex;align-items:flex-end;gap:16px;min-height:104px;padding:16px 30px 16px 0;animation:ss-talk-in .18s ease-out}
+.ss-talk.bottom{bottom:3%}.ss-talk.top{top:3%;align-items:flex-start}
+.ss-talk::before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#141210f2,#050505f5);
+  clip-path:polygon(0.6% 9%,4% 2%,12% 4%,24% 0.5%,38% 3%,55% 0%,71% 3.5%,86% 1%,97% 4%,99.6% 14%,98.8% 38%,100% 62%,98.6% 88%,95% 98%,80% 96%,63% 100%,44% 97%,27% 99.5%,10% 96.5%,1.6% 99%,0% 80%,1.2% 52%,0% 30%);
+  box-shadow:inset 0 0 0 2px #2c2620}
+.ss-talk::after{content:'';position:absolute;inset:5px 7px;z-index:-1;border-top:1px solid #6d5a3c66;border-bottom:1px solid #6d5a3c44;pointer-events:none}
+.ss-talk-face{flex:0 0 auto;width:clamp(96px,17%,168px);margin:-46px 0 -16px 1.5%;position:relative}
+.ss-talk.top .ss-talk-face{margin:-16px 0 -46px 1.5%}
+.ss-talk-face .officer-face{width:100%;max-width:none;margin:0;border:2px solid #1b1712;box-shadow:0 4px 0 #000,0 0 0 4px #0b0a08,0 0 0 5px #8b6f43;filter:drop-shadow(0 6px 8px #000c)}
+.ss-talk-body{flex:1;min-width:0;padding:4px 0 4px}
+.ss-talk-body b{display:block;font:700 15px/1.4 'Malgun Gothic',sans-serif;color:#ffaa3c;letter-spacing:1px;margin-bottom:6px;text-shadow:0 1px 0 #000}
+.ss-talk-body p{color:#fbf6ea;font:16px/1.75 LocalSerif,'Batang','Noto Serif KR',serif;text-shadow:0 1px 1px #000;overflow-wrap:anywhere}
+.ss-talk-next{position:absolute;right:20px;bottom:12px;color:#ffaa3c;font-size:12px;animation:ss-next .7s ease-in-out infinite alternate}
+.ss-stage.choosing .ss-talk-next{display:none}
+@keyframes ss-talk-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes ss-next{from{translate:0 0;opacity:.5}to{translate:0 3px;opacity:1}}
+.ss-caption{background:linear-gradient(0deg,#0a0907f2,#0a0907c4);border-top:1px solid #6d5a3c}
+/* 출진 전 진영: 사람들이 서성이고, 누르면 말을 건다 */
+.camp-host{min-height:0}
+.camp-root .ss-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.camp-hint{font-size:12px;color:#d9c79c}.camp-hint b{color:#ffaa3c;font-weight:700;margin-left:2px}
+.camp-root .ss-stage{cursor:default}
+.ss-actor.clickable{cursor:pointer;z-index:auto}
+.ss-actor.clickable::after{content:'💬';position:absolute;left:50%;bottom:98%;transform:translateX(-50%);font-size:clamp(12px,1.6vw,18px);animation:ss-next .8s ease-in-out infinite alternate;pointer-events:none}
+.ss-actor.clickable.talked::after{content:'✓';font:900 13px/1 sans-serif;color:#6fe19a;text-shadow:0 1px 2px #000;animation:none}
+.ss-actor.clickable:hover .ss-sprite,.ss-actor.clickable:focus-visible .ss-sprite{filter:drop-shadow(0 0 4px #ffd27a) drop-shadow(0 3px 2px #000a)}
+.ss-actor.clickable:focus-visible{outline:none}
+.ss-actor.clickable:hover .ss-name,.ss-actor.clickable:focus-visible .ss-name{color:#ffcf7a}
+.camp-root.talking .ss-actor.clickable::after{display:none}
+.camp-root.talking .ss-actor.clickable{cursor:default}
+.camp-root .ss-controls .camp-ready{min-width:160px}
+/* 정비 화면 배경: 군막 그림을 어둡게 깔고 그 위에 편성판 */
+.prep-screen,.camp-screen{position:relative;isolation:isolate}
+.prep-backdrop{position:absolute;inset:0;z-index:-1;background-size:cover;background-position:center;opacity:.34;filter:saturate(.8);pointer-events:none}
+.prep-backdrop::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,#0b1312cc,#0b131277 30%,#0b1312ee 85%)}
+.camp-screen .prep-backdrop{opacity:.4}
+.prep-rules{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:12px;margin:10px 0;padding:10px 12px;border:1px solid #6d5a3c;background:#0b1312b3}
+.prep-rules>span:not(.prep-diff){color:#efd9a6}
+.prep-diff{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}
+.prep-diff label{border:1px solid #556355;padding:5px 10px;font-size:11px;cursor:pointer}
+.prep-diff label:has(:checked){border-color:#cab078;background:#b7a07322;color:#f3e2b8}
+.prep-officer.must{border-color:#c79c4a;background:#c79c4a14}
+.prep-officer.must em{color:#ffbf5c}
+.prep-officer.full:not(.on){opacity:.55}
+.sortie-picker{display:flex;flex-wrap:wrap;align-items:center;gap:6px;border:1px solid #6d5a3c;padding:10px 12px;margin:12px 0;background:#0b1312b3}
+.sortie-picker legend{color:#e4c487;padding:0 6px;font-size:12px}
+.sortie-chips{display:flex;flex-wrap:wrap;gap:6px}
+.sortie-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid #556355;padding:5px 10px;font-size:12px}
+.sortie-chip.forced{border-color:#c79c4a;color:#ffd38a;background:#c79c4a14}
+.sortie-chip:has(:checked){border-color:#4f86e8;background:#4f86e81a}
+.sortie-chip:has(:disabled:not(:checked)){opacity:.5}
+@media(max-width:580px){
+  .ss-talk{min-height:84px;gap:10px;padding:12px 16px 12px 0}
+  .ss-talk-face{width:clamp(64px,22%,96px);margin-top:-30px}.ss-talk.top .ss-talk-face{margin-bottom:-30px}
+  .ss-talk-body b{font-size:13px;margin-bottom:2px}.ss-talk-body p{font-size:13px;line-height:1.6}
+  .camp-hint{font-size:11px}.prep-diff{margin-left:0}
+  .ss-root .ss-stage{aspect-ratio:1/1;max-height:64dvh}
+}

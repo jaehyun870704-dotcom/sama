@@ -337,23 +337,23 @@ export function nextEvolutionText(cls:UnitClass){const n=nextEvolution(cls);retu
 // ─────────────────────────────────────────────── 전장 생성
 
 /** 원정·가상 전장의 크기(가로×세로 칸). 연의 전장(24×16 이상)과 비슷한 넓이로. */
-export const RUN_MAP_W=24,RUN_MAP_H=16;
+export const RUN_MAP_W=34,RUN_MAP_H=24;
 const W=RUN_MAP_W,H=RUN_MAP_H;
 /** 원정 전장: 지역마다 다른 지형, 좌측 출진 칸과 우측 적진. 모든 칸에 보병이 닿도록 보장한다. */
 export function runMap(run:{seed:number;route?:Run['route']},floor:number,kind:NodeKind):MapFile{
   const r=rngFor(run,floor*977+kind.length),region=regionFor(run,floor).terrain;
   const g=Array.from({length:H},()=>Array<string>(W).fill('.'));
   const blob=(ch:string,n:number,size:number,x0=3,x1=W-4)=>{for(let k=0;k<n;k++){const cx=r.int(x0,x1),cy=r.int(1,H-2);for(let i=0;i<size;i++){const x=cx+r.int(-1,1),y=cy+r.int(-1,1);if(x>=2&&x<W-2&&y>=0&&y<H)g[y]![x]=ch;}}};
-  blob('f',region===0?7:5,6);blob('h',region===1?7:3,5);
-  if(region===1)blob('^',5,5,4,W-6);
-  if(region===2){const rx=r.int(9,13);for(let y=0;y<H;y++){g[y]![rx]='~';g[y]![rx+1]='~';}for(const fy of [r.int(1,5),r.int(6,9),r.int(11,H-2)]){g[fy]![rx]='_';g[fy]![rx+1]='_';}blob('m',3,4);}
+  blob('f',region===0?14:10,6);blob('h',region===1?12:6,5);
+  if(region===1)blob('^',7,5,5,W-7);
+  if(region===2){const rx=r.int(13,19);for(let y=0;y<H;y++){g[y]![rx]='~';g[y]![rx+1]='~';}for(const fy of [r.int(1,6),r.int(8,15),r.int(17,H-2)]){g[fy]![rx]='_';g[fy]![rx+1]='_';}blob('m',6,5);}
   const road=r.int(3,H-4);for(let x=0;x<W;x++)if(g[road]![x]==='.'||g[road]![x]==='f'||g[road]![x]==='h')g[road]![x]=',';
   // Keep both camps clear.
-  for(let y=0;y<H;y++)for(const x of [0,1,2,W-4,W-3,W-2,W-1])if(!'~_'.includes(g[y]![x]!))g[y]![x]=y===road?',':'.';
+  for(let y=0;y<H;y++)for(const x of [0,1,2,3,4,W-6,W-5,W-4,W-3,W-2,W-1])if(!'~_'.includes(g[y]![x]!))g[y]![x]=y===road?',':'.';
   const cells=(xs:number[],ys:number[])=>ys.flatMap(y=>xs.map(x=>({x,y})));
   const mid=Math.floor(H/2);
   return {id:`run-${floor}-${kind}`,name:regionFor(run,floor).name,legend:{'.':'plain',',':'road',f:'forest',h:'hill','^':'mountain','~':'water','_':'ford',m:'marsh'},
-    rows:g.map(row=>row.join('')),regions:{player_start:cells([0,1],[mid-2,mid-1,mid,mid+1]),enemy_camp:cells([W-4,W-3,W-2],Array.from({length:H-4},(_,i)=>i+2)),objective:cells([W-1],[mid])}};
+    rows:g.map(row=>row.join('')),regions:{player_start:cells([0,1],[mid-2,mid-1,mid,mid+1]),enemy_camp:cells([W-6,W-5,W-4,W-3,W-2],Array.from({length:H-6},(_,i)=>i+3)),objective:cells([W-1],[mid])}};
 }
 
 /** 원정 전투의 스테이지. 적은 층·지역·종류로 정해지고, 레벨이 높으면 그들도 진화해 있다. */
@@ -364,11 +364,12 @@ export interface BattleMods {reinforce?:Array<{name:string;unitClass:UnitClass;s
 export function runStage(run:Run,kind:NodeKind,map:MapFile,taleId?:string,opts:{mods?:BattleMods;enemyBase?:number}={}):StageDef{
   const f=run.floor,r=rngFor(run,f*613+kind.length),region=regionFor(run,f),tale=kind==='tale'?taleById(taleId):undefined,mods=opts.mods??{};
   const base=opts.enemyBase??2+Math.round(f*1.05)+(f>FLOORS_PER_ACT*2?1:0)+(kind==='battle'||kind==='tale'?0:1);
-  const count=Math.max(1,Math.min(9,3+Math.floor(f/4.5)+(kind==='elite'?1:kind==='boss'||kind==='tale'?-1:0)+(mods.bold?1:0)-(mods.scout?1:0)));
+  // 넓은 전장에는 적도 조금 더 많다. 우두머리 전은 호위를 예전 수준으로(우두머리 자체가 강하다).
+  const count=Math.max(1,Math.min(12,(kind==='boss'?2+Math.floor(f/4.5):4+Math.floor(f/4)+(kind==='elite'?1:kind==='tale'?-1:0))+(mods.bold?1:0)-(mods.scout?1:0)));
   const camp=(map.regions!.enemy_camp as Array<{x:number;y:number}>).slice();
   const enemies:UnitSpawnSpec[]=[];
   for(let i=0;i<count&&camp.length;i++){
-    const at=camp.splice(r.int(0,camp.length-1),1)[0]!,cls=region.pool[r.int(0,region.pool.length-1)]!,level=base+r.int(-1,1);
+    const at=camp.splice(r.int(0,camp.length-1),1)[0]!,cls=region.pool[r.int(0,region.pool.length-1)]!,level=base+r.int(-1,1)-(kind==='boss'?2:0);
     const elite=(kind==='elite'&&i<2)||(!!mods.bold&&i===0);const evolved=evolvedClass(cls,elite?level+8:level);
     enemies.push({id:`foe_${i}`,name:unitName(evolved),template:evolved,level,at,behavior:i%3===2?'hold':'advance'});
   }
@@ -387,7 +388,7 @@ export function runStage(run:Run,kind:NodeKind,map:MapFile,taleId?:string,opts:{
     defeat:[{type:'retreat',unit:'sima_yi'}],
     seals:[{slot:1,normal:'clear',extreme:'clear'},{slot:2,normal:'clear',extreme:'clear'},{slot:3,normal:'clear',extreme:'clear'}],
     difficulty:{normal:{minEnemyLevel:base,recommendedLevel:base},extreme:{minEnemyLevel:base+2,recommendedLevel:base+2}},
-    gimmicks:[],perf:{maxSimultaneousUnits:20,tier:'A'},
+    gimmicks:[],perf:{maxSimultaneousUnits:32,tier:'B'},
     events:[{id:'run/start',trigger:{type:'battle_start'},actions:[
       ...(party.length?[{type:'spawn_units' as const,side:'player' as const,units:party}]:[]),
       ...(help('ally').length?[{type:'spawn_units' as const,side:'ally' as const,units:help('ally')}]:[]),
