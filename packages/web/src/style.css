@@ -138,3 +138,12 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
 .epilogue p{line-height:1.85;margin:.45em 0;font-size:15px;max-width:62ch}
 .epilogue .muted{margin-top:1.2em;font-size:13px}
 .epilogue button{margin-top:1em}
+
+/* Named officers without painted art: troop face + seal of their side */
+.officer-face.named-face{background-image:none;position:relative;overflow:hidden}
+.named-face .face-img{position:absolute;inset:0;background-image:var(--base-atlas);background-size:800% 1200%}
+.named-face .face-mark{position:absolute;right:4px;bottom:4px;min-width:1.5em;height:1.5em;display:grid;place-items:center;border-radius:3px;font-size:13px;font-weight:700;color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.35)}
+.named-face.faction-wei{box-shadow:inset 0 0 0 2px #4a7cc4}.faction-wei .face-mark{background:#33589a}
+.named-face.faction-shu{box-shadow:inset 0 0 0 2px #4f9a63}.faction-shu .face-mark{background:#2f7346}
+.named-face.faction-wu{box-shadow:inset 0 0 0 2px #c0564a}.faction-wu .face-mark{background:#963a30}
+.named-face.faction-yan{box-shadow:inset 0 0 0 2px #8c6bb8}.faction-yan .face-mark{background:#64488e}

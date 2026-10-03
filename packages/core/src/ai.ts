@@ -22,6 +22,14 @@ export function decide(state: BattleState, unit: Unit): Command[] {
   if (behavior === "passive") return [{ kind: "wait", unit: unit.id }];
 
   const reach = state.map.reachable(unit, state.occupancy(), ignoresRough(unit));
+  // M-18: the player's side reads the warnings — never end a move on a cell a blow is due to land on.
+  // (Enemy and automatic allies keep their own plans; the marks are aimed at the player.)
+  if (unit.side === "player" || unit.side === "ally") {
+    for (const t of state.telegraphs) {
+      if (t.ratio <= 0) continue;
+      for (const c of t.cells) if (!sameCoord(c, unit.pos)) reach.delete(key(c));
+    }
+  }
   const hostiles = state.enemiesOf(unit.side);
 
   // M-05 ESCORT — 보호 대상은 교전하지 않고 목적지로만 전진한다.

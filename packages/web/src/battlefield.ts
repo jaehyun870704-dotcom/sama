@@ -9,6 +9,7 @@ import {structureKind,structureFrame} from './campaign-rules.ts';
 import { Application, CanvasSource, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 import {terrainLayer} from './terrain.ts';
 import {stageRules} from './stage-rules.ts';
+import {factionOf} from './officer-art.ts';
 import {crispZoom,groundScaleMode,unitTint} from './pixel-look.ts';
 import type {LogEntry} from '../../core/src/index.ts';
 import { key, manhattan, ignoresRough } from '../../core/src/index.ts';
@@ -22,6 +23,8 @@ export const terrainNames:Record<TerrainKind,string>={plain:'평지',road:'길',
 export const classNames:Record<string,string>={infantry:'보병',spearman:'창병',cavalry:'경기병',heavyCav:'중기병',archer:'궁병',crossbow:'노병',strategist:'책사',fengshui:'풍수사',ram:'충차',catapult:'포차',engineer:'공병',navy:'수군',civilian:'민중',...Object.fromEntries(Object.entries(troopRoles).map(([k,v])=>[k,v.name]))};
 export function unitName(u:Unit){return classNames[u.name]??u.name;}
 function iso(c:Coord){return {x:c.x*W+W/2,y:c.y*H+H/2};}
+/** A named officer on the field: a victory/defeat target or someone with a known allegiance. */
+function isCommander(state:BattleState,u:Unit){return [...state.victory,...state.defeat].some(c=>c.type==='retreat'&&c.unit===u.id)||factionOf(u.name)!==undefined;}
 function diamond(g:Graphics,x:number,y:number,color:number,alpha=1){return g.rect(x-W/2,y-H/2,W,H).fill({color,alpha});}
 function clear(c:Container){for(const child of c.removeChildren())child.destroy({children:true});}
 
@@ -272,8 +275,10 @@ export class Battlefield {
         const bar=new Graphics();if(unit.id===selected||unit.id==='rescue_target'||unit.id==='convoy_trial')bar.ellipse(0,7,22,10).stroke({color:0xffe9aa,width:2});
         const ratio=Math.max(0,unit.hp/unit.stats.maxHp);bar.rect(-18,12,36,7).fill(0x0d1310).rect(-17,13,34,5).fill(0x40312a).rect(-17,13,Math.round(34*ratio),5).fill(ratio<.3?0xf06a4f:sides[unit.side]).rect(-17,13,Math.round(34*ratio),1).fill({color:0xffffff,alpha:.35});actor.piece.addChild(bar);
         if(structureKind(unit.id)){const hp=new Text({text:unit.hp+'/'+unit.stats.maxHp,style:{fontFamily:'Malgun Gothic',fontSize:10,fontWeight:'700',fill:unit.hp<unit.stats.maxHp*.35?0xffa58a:0xfff1cf,stroke:{color:0x16130f,width:3}}});hp.anchor.set(.5,0);hp.y=20;actor.piece.addChild(hp);}
-        else if(unit.id===selected||unit.side==='player'||['rescue_target','convoy_trial'].includes(unit.id)){
-          const name=new Text({text:unitName(unit),style:{fontFamily:'Malgun Gothic',fontSize:11,fontWeight:'700',fill:0xfff4da,stroke:{color:0x0d1411,width:3}}});name.anchor.set(.5,0);name.y=20;actor.piece.addChild(name);
+        else if(unit.id===selected||unit.side==='player'||['rescue_target','convoy_trial'].includes(unit.id)||isCommander(state,unit)){
+          // Named commanders (targets, protected officers) carry their name so they stand out from the rank and file.
+          const foe=unit.side==='enemy'&&unit.id!==selected;
+          const name=new Text({text:unitName(unit),style:{fontFamily:'Malgun Gothic',fontSize:11,fontWeight:'700',fill:foe?0xffc2a8:unit.side==='allyAi'?0xffe39a:0xfff4da,stroke:{color:foe?0x2a0d08:0x0d1411,width:3}}});name.anchor.set(.5,0);name.y=20;actor.piece.addChild(name);
         }
       }
       this.pieces.sortableChildren=true;
