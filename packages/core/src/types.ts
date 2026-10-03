@@ -41,6 +41,7 @@ export interface Tile {
 // ─────────────────────────────────────────────────────────── 병종
 
 export type UnitClass =
+  | "warlock" | "priestess" | "stormSage" | "divineDoctor" | "warriorMonk" | "outlaw"
   | "shaman"
   | "maiden"
   | "taoist"

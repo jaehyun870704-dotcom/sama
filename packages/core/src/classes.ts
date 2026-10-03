@@ -72,6 +72,13 @@ export const VARIANTS: Partial<Record<UnitClass, ClassVariant>> = {
   phantom: { family: "bandit", tier: 2, profile: p(0.9, 0.4, 1.42, 0.78, 0.7, 0.85, 1.6, 6, [1, 1]), traits: { critical: 30 } },
   rattan: { family: "infantry", tier: 1, profile: p(1.15, 0.4, 1.0, 1.1, 0.5, 0.8, 0.85, 5, [1, 1]), traits: { physicalDamageReduction: 25, fireWeakness: 60 } },
   rattanElite: { family: "infantry", tier: 2, profile: p(1.3, 0.4, 1.12, 1.25, 0.5, 0.85, 0.88, 5, [1, 1]), traits: { physicalDamageReduction: 35, fireWeakness: 60 } },
+  // 특수 병종의 정예
+  warlock: { family: "shaman", tier: 2, profile: p(0.85, 1.7, 0.65, 0.68, 1.45, 1.3, 1.05, 5, [1, 1], true), traits: { strategyEvasion: 10 } },
+  priestess: { family: "maiden", tier: 2, profile: p(0.9, 1.6, 0.65, 0.85, 1.12, 1.68, 1.05, 5, [1, 1], true), traits: { strategyDamageReduction: 15 } },
+  stormSage: { family: "taoist", tier: 2, profile: p(0.85, 1.4, 0.65, 0.78, 1.48, 1.3, 1.35, 5, [1, 1], true) },
+  divineDoctor: { family: "physician", tier: 2, profile: p(0.9, 1.85, 0.45, 0.85, 1.32, 1.48, 1.05, 5, [1, 1], true) },
+  warriorMonk: { family: "monk", tier: 2, profile: p(1.25, 0.45, 1.3, 1.22, 0.6, 1.0, 1.35, 5, [1, 1], true), traits: { critical: 10 } },
+  outlaw: { family: "bandit", tier: 2, profile: p(1.25, 0.4, 1.38, 0.9, 0.6, 0.95, 1.0, 5, [1, 1]), traits: { critical: 15 } },
   elephant: { family: "heavyCav", tier: 1, profile: p(1.7, 0.3, 1.25, 1.2, 0.4, 0.8, 0.6, 4, [1, 1]) },
   warElephant: { family: "heavyCav", tier: 2, profile: p(2.0, 0.3, 1.4, 1.35, 0.4, 0.85, 0.65, 4, [1, 1]), traits: { physicalDamageReduction: 10 } },
 };
@@ -91,6 +98,8 @@ export const EVOLUTION: Partial<Record<UnitClass, readonly [UnitClass, number]>>
   assassin: ["phantom", 12],
   rattan: ["rattanElite", 12],
   elephant: ["warElephant", 12],
+  shaman: ["warlock", 12], maiden: ["priestess", 12], taoist: ["stormSage", 12], physician: ["divineDoctor", 12],
+  monk: ["warriorMonk", 10], bandit: ["outlaw", 10],
 };
 
 /** 이동·상성·그림의 기준이 되는 병종. 기존 병종은 자기 자신. */

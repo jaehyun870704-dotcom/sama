@@ -21,6 +21,8 @@ export interface Relic {id:string;name:string;effect:string}
 export interface Run {
   version:1;seed:number;floor:number;party:RunUnit[];relics:string[];fallen:string[];
   status:'map'|'reward'|'won'|'lost';nextId:number;
+  /** 지금 치르는 전투(끝나기 전에 다른 갈림길로 빠질 수 없다) */
+  active?:NodeKind;
   /** 보상 화면에서 고를 수 있는 것 */
   offer?:RewardOption[];
   /** 마지막으로 일어난 일 (진화·레벨업 등), 화면에 한 번 보여 준다 */
@@ -53,6 +55,16 @@ export const RECRUITS:UnitClass[]=['infantry','spearman','cavalry','archer','cro
 const rngFor=(run:{seed:number},salt:number)=>new Rng((run.seed*7919+salt*104729)>>>0||1);
 
 function unitName(cls:UnitClass){return classNames[cls]??cls;}
+/** 한국어 조사: 받침 유무(로는 ㄹ받침도 '로'). */
+const fin=(w:string)=>{const c=w.charCodeAt(w.length-1);return c>=0xac00&&c<=0xd7a3?(c-0xac00)%28:0;};
+export const ga=(w:string)=>w+(fin(w)?'이':'가'),eul=(w:string)=>w+(fin(w)?'을':'를'),ro=(w:string)=>{const f=fin(w);return w+(f&&f!==8?'으로':'로');};
+/** 같은 병종이 둘 이상이면 갑·을·병… 으로 구분한다. */
+function uniqueName(run:Run,cls:UnitClass,self?:RunUnit){
+  const base=unitName(cls),taken=new Set(run.party.filter(u=>u!==self&&!u.hero).map(u=>u.name));
+  if(!taken.has(base))return base;
+  for(const tag of ['을','병','정','무','기'])if(!taken.has(`${base} ${tag}`))return `${base} ${tag}`;
+  return base;
+}
 
 export function newRun(seed:number,start:UnitClass[]):Run{
   const run:Run={version:1,seed,floor:1,party:[],relics:[],fallen:[],status:'map',nextId:1,news:[]};
@@ -70,7 +82,7 @@ export function startingOffers(seed:number):UnitClass[][]{
 export function recruit(run:Run,cls:UnitClass,level:number){
   if(run.party.length>=PARTY_LIMIT)return false;
   const evolved=evolvedClass(cls,level);
-  run.party.push({id:'r'+run.nextId++,name:unitName(evolved),unitClass:evolved,level,xp:0,hp:1});
+  run.party.push({id:'r'+run.nextId++,name:uniqueName(run,evolved),unitClass:evolved,level,xp:0,hp:1});
   return true;
 }
 
@@ -112,22 +124,24 @@ function relicOffer(run:Run,r:Rng):RewardOption[]{const left=RELICS.filter(x=>!r
 
 /** 경험치를 나눠 주고 레벨업·진화를 소식으로 남긴다. */
 export function grantXp(run:Run,amount:number,who=run.party){
+  const ups:string[]=[];
   for(const u of who){
-    u.xp+=amount;
-    while(u.xp>=XP_PER_LEVEL){u.xp-=XP_PER_LEVEL;u.level++;
+    u.xp+=amount;let leveled=false;
+    while(u.xp>=XP_PER_LEVEL){u.xp-=XP_PER_LEVEL;u.level++;leveled=true;
       const to=evolvedClass(u.unitClass,u.level);
-      if(to!==u.unitClass){const from=u.unitClass;u.unitClass=to;if(!u.hero)u.name=unitName(to);run.news.push(`${u.hero?'사마의':unitName(from)}가 ${unitName(to)}(으)로 진화했다! (Lv.${u.level})`);}
-      else run.news.push(`${u.hero?'사마의':u.name} Lv.${u.level}`);
+      if(to!==u.unitClass){const from=u.hero?'사마의':u.name;u.unitClass=to;if(!u.hero)u.name=uniqueName(run,to,u);run.news.push(`진화! ${ga(from)} ${ro(unitName(to))} 거듭났다 (Lv.${u.level})`);}
     }
+    if(leveled)ups.push(`${u.hero?'사마의':u.name} ${u.level}`);
   }
+  if(ups.length)run.news.push(`레벨 상승 · ${ups.join(' · ')}`);
 }
 
 /** 전투 결과를 원정에 반영한다. survivors: 살아남은 부대의 체력 비율. */
 export function finishBattle(run:Run,node:RunNode,victory:boolean,survivors:Record<string,number>){
-  run.news=[];
+  run.news=[];delete run.active;
   const lost=run.party.filter(u=>survivors[u.id]===undefined);
   for(const u of lost)run.fallen.push(`${u.hero?'사마의':u.name} Lv.${u.level} · ${run.floor}층`);
-  if(!victory||!survivors.sima_yi){run.status='lost';run.party=run.party.filter(u=>survivors[u.id]!==undefined);return;}
+  if(!victory||!survivors.sima_yi){run.news.push(survivors.sima_yi?`${run.floor}층 전투에서 패했다. 원정은 여기서 끝난다.`:`사마의가 ${run.floor}층에서 쓰러졌다. 원정은 여기서 끝난다.`);run.status='lost';run.party=run.party.filter(u=>survivors[u.id]!==undefined);return;}
   run.party=run.party.filter(u=>survivors[u.id]!==undefined);
   for(const u of run.party)u.hp=Math.max(.05,survivors[u.id]!);
   if(lost.length)run.news.push(`잃은 부대: ${lost.map(u=>u.name).join(', ')}`);
@@ -143,7 +157,7 @@ export function finishBattle(run:Run,node:RunNode,victory:boolean,survivors:Reco
 
 export function takeReward(run:Run,i:number){
   const o=run.offer?.[i];if(!o)return;run.news=[];
-  if(o.kind==='recruit'){if(!recruit(run,o.unitClass,o.level))grantXp(run,60);else run.news.push(`${unitName(evolvedClass(o.unitClass,o.level))}이(가) 부대에 들어왔다.`);}
+  if(o.kind==='recruit'){if(!recruit(run,o.unitClass,o.level))grantXp(run,60);else run.news.push(`${ga(run.party.at(-1)!.name)} 부대에 들어왔다.`);}
   if(o.kind==='heal')for(const u of run.party)u.hp=Math.min(1,u.hp+o.amount);
   if(o.kind==='relic'){run.relics.push(o.relic);run.news.push(`보물 「${RELICS.find(x=>x.id===o.relic)!.name}」을 얻었다.`);}
   if(o.kind==='xp')grantXp(run,o.amount);
@@ -160,7 +174,7 @@ export function describeReward(o:RewardOption){
     case 'xp':return {title:'전훈',detail:`모든 부대 경험치 ${o.amount}`};
   }
 }
-export function nextEvolutionText(cls:UnitClass){const n=nextEvolution(cls);return n?`Lv.${n.level}에 ${unitName(n.to)}(으)로 진화`:'최종 단계';}
+export function nextEvolutionText(cls:UnitClass){const n=nextEvolution(cls);return n?`Lv.${n.level}에 ${ro(unitName(n.to))} 진화`:'최종 단계';}
 
 // ─────────────────────────────────────────────── 전장 생성
 
@@ -194,10 +208,10 @@ export function runStage(run:Run,kind:NodeKind,map:MapFile):StageDef{
     const elite=kind==='elite'&&i<2;const evolved=evolvedClass(cls,elite?level+8:level);
     enemies.push({id:`foe_${i}`,name:unitName(evolved),template:evolved,level,at,behavior:i%3===2?'hold':'advance'});
   }
-  if(kind==='boss'){const b=region.boss,at=camp.splice(0,1)[0]??{x:W-1,y:Math.floor(H/2)};enemies.push({id:'boss',name:b.name,template:evolvedClass(b.unitClass,base+3),level:base,at,behavior:'hold'});}
+  if(kind==='boss'){const b=region.boss,mid=Math.floor(H/2),bi=camp.reduce((best,c,i)=>Math.abs(c.y-mid)*2+(W-1-c.x)<Math.abs(camp[best]!.y-mid)*2+(W-1-camp[best]!.x)?i:best,0),at=camp.splice(bi,1)[0]??{x:W-1,y:mid};enemies.push({id:'boss',name:b.name,template:evolvedClass(b.unitClass,base+3),level:base,at,behavior:'hold'});}
   const party:UnitSpawnSpec[]=run.party.filter(u=>!u.hero).map(u=>({id:u.id,name:u.name,template:u.unitClass,level:u.level,region:'party_start',behavior:'advance'}));
   return {id:`R-${String(f).padStart(2,'0')}`,arc:'lower',order:100+f,title:`${region.name} · ${f}층`,subtitle:kind==='boss'?`우두머리 ${region.boss.name}`:kind==='elite'?'정예 전투':'원정 전투',
-    synopsis:kind==='boss'?`${region.boss.name}을(를) 격퇴하면 승리. 쓰러진 부대는 원정에서 사라진다.`:'적을 모두 물리치면 승리. 쓰러진 부대는 원정에서 사라진다.',
+    synopsis:kind==='boss'?`${eul(region.boss.name)} 격퇴하면 승리. 쓰러진 부대는 원정에서 사라진다.`:'적을 모두 물리치면 승리. 쓰러진 부대는 원정에서 사라진다.',
     mapId:map.id,deployment:{forced:['sima_yi'],slots:0,grantedUnits:[]},
     victory:kind==='boss'?[{type:'retreat',unit:'boss'}]:[{type:'annihilate',side:'enemy'}],
     defeat:[{type:'retreat',unit:'sima_yi'}],

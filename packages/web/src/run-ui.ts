@@ -10,6 +10,9 @@ export interface RunHost {
   showMenu():void;
   toast(text:string):void;
   startBattle(deployment:Deployment,seed:number):void;
+  /** 지금 열려 있는 원정 전투(끝나지 않은 것) */
+  liveRunBattle():{seed:number;floor:number;kind:string}|undefined;
+  backToBattle():void;
 }
 
 const KEY='sama-run-v1',BEST='sama-run-best';
@@ -36,7 +39,7 @@ function partyPanel(run:Run){
   const relics=run.relics.map(id=>RELICS.find(r=>r.id===id)!).map(r=>`<span class="run-relic" title="${esc(r.effect)}">${esc(r.name)}</span>`).join('');
   return `<div class="run-party">${run.party.map(unitCard).join('')}</div><p class="run-relics">${relics||'<span class="muted">보물 없음</span>'}</p>`;
 }
-const news=(run:Run)=>run.news.length?`<div class="run-news">${run.news.map(n=>`<p>${esc(n)}</p>`).join('')}</div>`:'';
+const news=(run:Run)=>run.news.length?`<div class="run-news">${run.news.map(n=>`<p${n.startsWith('진화!')?' class="evo"':''}>${esc(n)}</p>`).join('')}</div>`:'';
 
 /** 메뉴의 '천명의 원정' 단추. 진행 중인 원정이 있으면 이어서, 없으면 출발 부대 선택. */
 export function openRun(host:RunHost){
@@ -59,6 +62,7 @@ function showStart(host:RunHost){
 export function showRun(host:RunHost,run:Run){
   if(run.status==='reward')return showReward(host,run);
   if(run.status==='won'||run.status==='lost')return showEnd(host,run);
+  if(run.active)return showActive(host,run);
   const choices=floorChoices(run),region=regionOf(run.floor);
   host.modal(`<div class="briefing run-screen"><div class="eyebrow">천명의 원정 · ${run.floor}/${RUN_FLOORS}층 · ${esc(region.name)}</div>
   <h2>${isBossFloor(run.floor)?'우두머리가 기다린다':'갈림길'}</h2>${news(run)}${partyPanel(run)}
@@ -66,15 +70,31 @@ export function showRun(host:RunHost,run:Run){
   <div class="run-actions"><button id="run-menu">← 연의 지도 (원정은 저장됨)</button><button id="run-abandon">원정 포기</button></div></div>`,false);
   document.querySelectorAll<HTMLButtonElement>('[data-node]').forEach(b=>b.onclick=()=>choose(host,run,choices[Number(b.dataset.node)]!));
   document.getElementById('run-menu')!.onclick=host.showMenu;
-  document.getElementById('run-abandon')!.onclick=()=>{run.status='lost';run.news=['원정을 포기했다.'];saveRun(run);showEnd(host,run);};
+  const abandon=document.getElementById('run-abandon')!;
+  abandon.onclick=()=>{
+    // 한 번 더 눌러야 포기된다: 실수로 원정 전체를 잃지 않게.
+    if(abandon.dataset.armed!=='1'){abandon.dataset.armed='1';abandon.textContent='정말 포기 (부대 전원 해산)';abandon.classList.add('danger');return;}
+    run.status='lost';run.news=['원정을 포기했다.'];saveRun(run);showEnd(host,run);};
+}
+
+function launch(host:RunHost,run:Run,kind:'battle'|'elite'|'boss'){
+  const hero=run.party.find(u=>u.hero)!;
+  const deployment:Deployment={levels:{sima_yi:hero.level,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},run:battleRef(run,kind)};
+  run.active=kind;saveRun(run);host.startBattle(deployment,(run.seed+run.floor*97)%2147483647);
+}
+
+/** 전투 도중 메뉴로 나왔다면: 그 전장으로 돌아가거나, 같은 전장을 처음부터 다시 치른다. 다른 갈림길로는 빠질 수 없다. */
+function showActive(host:RunHost,run:Run){
+  const kind=run.active as 'battle'|'elite'|'boss',live=host.liveRunBattle(),same=live?.seed===run.seed&&live.floor===run.floor&&live.kind===kind;
+  host.modal(`<div class="briefing run-screen"><div class="eyebrow">천명의 원정 · ${run.floor}/${RUN_FLOORS}층 · ${esc(regionOf(run.floor).name)}</div>
+  <h2>전투가 아직 끝나지 않았다</h2><p>${same?'열려 있는 전장으로 돌아가 승부를 마저 낸다.':'진행하던 전장 기록이 다른 전투로 바뀌었다. 같은 전장을 처음부터 다시 치른다(지형·적 배치는 같다).'} 전투를 마치기 전에는 다른 갈림길을 고를 수 없다.</p>
+  ${partyPanel(run)}<div class="run-actions"><button id="run-resume" class="primary">${same?'전장으로 돌아가기':'같은 전장 다시 시작'}</button><button id="run-menu">← 연의 지도</button></div></div>`,false);
+  document.getElementById('run-resume')!.onclick=()=>same?host.backToBattle():launch(host,run,kind);
+  document.getElementById('run-menu')!.onclick=host.showMenu;
 }
 
 function choose(host:RunHost,run:Run,node:RunNode){
-  if(node.kind==='battle'||node.kind==='elite'||node.kind==='boss'){
-    const hero=run.party.find(u=>u.hero)!;
-    const deployment:Deployment={levels:{sima_yi:hero.level,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},run:battleRef(run,node.kind)};
-    saveRun(run);host.startBattle(deployment,(run.seed+run.floor*97)%2147483647);return;
-  }
+  if(node.kind==='battle'||node.kind==='elite'||node.kind==='boss')return launch(host,run,node.kind);
   visitNode(run,node);saveRun(run);showRun(host,run);
 }
 
@@ -102,7 +122,7 @@ function showEnd(host:RunHost,run:Run){
 /** 원정 전투가 끝났을 때 main.ts가 부른다. */
 export function finishRunBattle(host:RunHost,state:BattleState,deployment:Deployment){
   const ref=deployment.run!,run=loadRun();
-  if(!run||run.floor!==ref.floor||run.status!=='map'){host.toast('이 전투의 원정 기록을 찾을 수 없습니다.');return host.showMenu();}
+  if(!run||run.floor!==ref.floor||run.status!=='map'||!run.active){host.toast('이 전투의 원정 기록을 찾을 수 없습니다.');return host.showMenu();}
   finishBattle(run,{kind:ref.kind,label:'',detail:''},state.outcome==='victory',survivorsOf(state,ref));
   saveRun(run);showRun(host,run);
 }
