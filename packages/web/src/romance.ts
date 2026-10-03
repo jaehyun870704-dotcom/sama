@@ -77,6 +77,12 @@ const byName:Record<string,RomanceOfficer>={
   ...Object.fromEntries(Object.values(romance).map(r=>[r.name,r])),
   안량:o('안량','원소의 하북 명장 · 백마에서 관우에게 베이다',[93,32,80,22,52],{name:'하북 명장',description:'물리 공격 피해 10% 증가',trait:'physicalPower',param:10}),
   // 가상 시나리오(운명의 갈림길)에만 나오는 장수
+  관우:o('관우','미염공 · 청룡언월도의 무성(武聖)',[97,75,95,62,93],{name:'청룡언월도',description:'물리 공격 피해 15% 증가',trait:'physicalPower',param:15}),
+  장료:o('장료','합비의 귀신 · 요래요래',[92,78,91,58,78],{name:'요래요래',description:'적 방어 15% 무시',trait:'penetrate',param:15}),
+  원상:o('원상','원소의 셋째 아들 · 하북의 후계',[72,58,70,52,74]),
+  심배:o('심배','원씨의 충신 · 업성의 마지막 수비장',[48,84,78,72,70],{name:'업성 사수',description:'받는 물리 피해 10% 감소',trait:'commandDefense'}),
+  고간:o('고간','원소의 조카 · 병주 자사',[70,52,68,48,54]),
+  답돈:o('답돈','오환의 선우 · 백랑산의 기병',[84,40,78,30,62],{name:'오환 돌기',description:'물리 공격 피해 10% 증가',trait:'physicalPower',param:10}),
   조인:o('조인','조조의 종제 · 번성을 끝까지 지킨 장수',[86,58,88,50,72],{name:'철벽 수성',description:'받는 물리 피해 10% 감소',trait:'commandDefense'}),
   서황:o('서황','주아부의 풍모 · 관우를 물리친 위의 명장',[90,64,84,50,66],{name:'장구한 포위',description:'적 방어 15% 무시',trait:'penetrate',param:15}),
   우금:o('우금','엄정한 위의 오자양장 · 번성에서 칠군을 잃다',[74,62,82,48,56]),

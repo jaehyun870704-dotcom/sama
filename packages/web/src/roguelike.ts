@@ -11,7 +11,7 @@
 import {Rng,VARIANTS,evolvedClass,nextEvolution,profileOf,evolveUnit,familyOf,type UnitClass,type StageDef,type MapFile,type UnitSpawnSpec,type BattleState} from '../../core/src/index.ts';
 import {classNames,troopStrategies} from './troops.ts';
 import {availableStrategies,allStrategies} from './officers.ts';
-import {ROUTES,FATE_POINTS,routeById,type Tale} from './fate.ts';
+import {ROUTES,FATE_POINTS,routeById,fatePrompt,type Tale} from './fate.ts';
 
 export const FLOORS_PER_ACT=6;
 export const RUN_FLOORS=18;
@@ -46,7 +46,7 @@ export interface Run {
   /** 원정 종료 보상(천명)을 이미 받았는지 */
   mandateGranted?:boolean;
   /** 운명의 갈림길에서 고른 길(편 → 루트 id) */
-  route?:{2?:string;3?:string};
+  route?:{1?:string;2?:string;3?:string};
   /** 이번 원정에서 이긴 가상 전장 */
   talesDone?:string[];
   /** 지금 치르는 가상 전장 */
@@ -76,12 +76,12 @@ export const actOf=(floor:number)=>Math.min(3,Math.max(1,Math.ceil(floor/FLOORS_
 export const regionOf=(floor:number)=>REGIONS[actOf(floor)-1]!;
 /** 그 원정이 고른 길의 지역: 상편은 하나, 중편·하편은 운명의 갈림길에서 고른 루트(고르기 전에는 정사). */
 export function regionFor(run:{route?:Run['route']},floor:number):Region{
-  const act=actOf(floor);if(act===1)return REGIONS[0]!;
-  return routeById(run.route?.[act as 2|3])?.region??REGIONS[act-1]!;
+  const act=actOf(floor) as 1|2|3;
+  return routeById(run.route?.[act])?.region??REGIONS[act-1]!;
 }
 /** 이 편이 정사를 따라가는가(연의 전장이 이어지는가). 하편 정사는 중편도 정사여야 한다. */
 export function onHistory(run:{route?:Run['route']},act:number){
-  if(act===1)return true;
+  if(act===1)return (run.route?.[1]??'refuse')==='refuse';
   const r2=run.route?.[2]??'wei';if(act===2)return r2==='wei';
   return r2==='wei'&&(run.route?.[3]??'patience')==='patience';
 }
@@ -95,15 +95,15 @@ export const STORY_ORDER:Record<1|2|3,string[]>={
 };
 /** 이 층에서 나올 가상 전장: 고른 루트의 이야기 중 이번 원정에서 아직 치르지 않은 다음 것. */
 export function nextTale(run:Run):Tale|undefined{
-  const act=actOf(run.floor);if(act===1||onHistory(run,act))return undefined;
-  const route=routeById(run.route?.[act as 2|3]);if(!route)return undefined;
+  const act=actOf(run.floor) as 1|2|3;if(onHistory(run,act))return undefined;
+  const route=routeById(run.route?.[act]);if(!route)return undefined;
   const done=new Set(run.talesDone??[]);return route.tales.find(t=>!done.has(t.id));
 }
 export const taleById=(id:string|undefined)=>ROUTES.flatMap(r=>r.tales).find(t=>t.id===id);
 /** 운명의 갈림길에서 길을 고른다. 이미 고른 편이거나 다른 편의 길이면 거절한다. */
 export function chooseFate(run:Run,routeId:string){
-  const act=actOf(run.floor),route=routeById(routeId);
-  if(act===1||!route||route.act!==act||run.route?.[act as 2|3])return false;
+  const act=actOf(run.floor) as 1|2|3,route=routeById(routeId);
+  if(!route||route.act!==act||run.route?.[act])return false;
   run.route={...run.route,[act]:routeId};run.news=[`운명의 갈림길 — 「${route.choice}」. ${route.history?'역사대로 흘러간다.':'역사가 갈라졌다. 이제부터는 일어나지 않은 이야기다.'}`];
   return true;
 }
@@ -162,7 +162,7 @@ export function recruit(run:Run,cls:UnitClass,level:number){
 export function floorChoices(run:Run):RunNode[]{
   const f=run.floor;
   const act=actOf(f);
-  if(act>1&&!run.route?.[act as 2|3]){const p=FATE_POINTS[act as 2|3];return [{kind:'fate',label:`운명의 갈림길 · ${p.title}`,detail:p.prompt}];}
+  if(!run.route?.[act as 1|2|3]){const p=FATE_POINTS[act as 1|2|3];return [{kind:'fate',label:`운명의 갈림길 · ${p.title}`,detail:fatePrompt(act as 1|2|3,run.route)}];}
   if(isBossFloor(f)){const g=regionFor(run,f),b=g.boss;return [{kind:'boss',label:`우두머리 · ${b.name}`,detail:`${g.arc}의 끝, ${g.name}의 주인. 격퇴하면 체력이 모두 회복된다.`}];}
   const r=rngFor(run,f),kinds:NodeKind[]=['battle'],size=has(run,'scout_map')?4:3;
   // 각 편의 첫 층을 뺀 모든 층에 연의 전장이 하나 나온다(남아 있다면).
@@ -311,7 +311,7 @@ export function runMap(run:{seed:number;route?:Run['route']},floor:number,kind:N
 /** 원정 전투의 스테이지. 적은 층·지역·종류로 정해지고, 레벨이 높으면 그들도 진화해 있다. */
 export function runStage(run:Run,kind:NodeKind,map:MapFile,taleId?:string):StageDef{
   const f=run.floor,r=rngFor(run,f*613+kind.length),region=regionFor(run,f),tale=kind==='tale'?taleById(taleId):undefined;
-  const base=2+Math.round(f*1.05)+(f>FLOORS_PER_ACT*2?2:0)+(kind==='battle'?0:1);
+  const base=2+Math.round(f*1.05)+(f>FLOORS_PER_ACT*2?1:0)+(kind==='battle'||kind==='tale'?0:1);
   const count=Math.min(8,3+Math.floor(f/4.5)+(kind==='elite'?1:kind==='boss'||kind==='tale'?-1:0));
   const camp=(map.regions!.enemy_camp as Array<{x:number;y:number}>).slice();
   const enemies:UnitSpawnSpec[]=[];
@@ -321,7 +321,7 @@ export function runStage(run:Run,kind:NodeKind,map:MapFile,taleId?:string):Stage
     enemies.push({id:`foe_${i}`,name:unitName(evolved),template:evolved,level,at,behavior:i%3===2?'hold':'advance'});
   }
   if(kind==='boss'){const b=region.boss,mid=Math.floor(H/2),bi=camp.reduce((best,c,i)=>Math.abs(c.y-mid)*2+(W-1-c.x)<Math.abs(camp[best]!.y-mid)*2+(W-1-camp[best]!.x)?i:best,0),at=camp.splice(bi,1)[0]??{x:W-1,y:mid};enemies.push({id:'boss',name:b.name,template:evolvedClass(b.unitClass,base+3),level:base-2,at,behavior:'hold'});}
-  if(tale){const mid=Math.floor(H/2),bi=camp.reduce((best,c,i)=>Math.abs(c.y-mid)*2+(W-1-c.x)<Math.abs(camp[best]!.y-mid)*2+(W-1-camp[best]!.x)?i:best,0),at=camp.splice(bi,1)[0]??{x:W-1,y:mid};enemies.push({id:'target',name:tale.target.name,template:evolvedClass(tale.target.unitClass,base+3),level:base-1,at,behavior:'hold'});}
+  if(tale){const mid=Math.floor(H/2),bi=camp.reduce((best,c,i)=>Math.abs(c.y-mid)*2+(W-1-c.x)<Math.abs(camp[best]!.y-mid)*2+(W-1-camp[best]!.x)?i:best,0),at=camp.splice(bi,1)[0]??{x:W-1,y:mid};enemies.push({id:'target',name:tale.target.name,template:evolvedClass(tale.target.unitClass,base),level:base-1,at,behavior:'hold'});}
   const party:UnitSpawnSpec[]=run.party.filter(u=>!u.hero).map(u=>({id:u.id,name:u.name,template:u.unitClass,level:u.level,region:'party_start',behavior:'advance'}));
   return {id:`R-${String(f).padStart(2,'0')}`,arc:'lower',order:100+f,title:tale?`가상 전장 · ${tale.title}`:`${region.name} · ${f}층`,subtitle:kind==='boss'?`우두머리 ${region.boss.name}`:tale?`적장 ${tale.target.name}`:kind==='elite'?'정예 전투':'원정 전투',
     synopsis:kind==='boss'?`${eul(region.boss.name)} 격퇴하면 승리. 쓰러진 부대는 원정에서 사라진다.`:tale?`${eul(tale.target.name)} 물리치면 승리. ${tale.intro}`:'적을 모두 물리치면 승리. 쓰러진 부대는 원정에서 사라진다.',

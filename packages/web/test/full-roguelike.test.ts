@@ -5,7 +5,7 @@ import {storyDeployment} from '../src/run-ui.ts';
 import {Session,chapters} from '../src/session.ts';
 
 const start=['infantry','archer','cavalry'] as const;
-const fresh=(opts={})=>newRun(77,[...start],opts);
+const fresh=(opts={})=>{const r=newRun(77,[...start],opts);r.route={1:'refuse'};return r;};
 
 describe('전체 로그라이크 · 연의 전장',()=>{
  it('covers all 32 story battles across the three acts, in story order',()=>{
