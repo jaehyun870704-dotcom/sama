@@ -364,6 +364,9 @@ for(let f=1;f<=12;f++)stageRules[`R-${String(f).padStart(2,'0')}`]={
   phase:({state})=>{const boss=state.find('boss');return boss?.alive?`우두머리 ${boss.name} 격파`:'적 섬멸';},
 };
 
+/** 규칙표 항목이 없는 초기 전장의 적 전력 보정(%) — 항목을 새로 만들면 장별 기본 동작이 바뀌므로 따로 둔다. */
+export const foeEdges:Record<string,{normal?:number;extreme?:number}>={'S1-02':{normal:-15}};
+
 /** Korean subject particle: 이 after a final consonant, 가 otherwise. */
 export function subject(name:string){const c=name.charCodeAt(name.length-1);return name+(c>=0xac00&&c<=0xd7a3&&(c-0xac00)%28!==0?'이':'가');}
 export function protectedFailure(s:BattleState,ids:string[]){

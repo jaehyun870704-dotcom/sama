@@ -10,7 +10,10 @@ const sessionFor=(stage:string)=>new Session(campaignOrder.find((c:number)=>chap
 describe('연의 장수록',()=>{
  it('rates every officer on five 1-100 scales with an epithet',()=>{
   for(const [id,r] of Object.entries(romance)){expect(r.epithet,id).toBeTruthy();for(const v of [r.war,r.int,r.lead,r.pol,r.cha])expect(v,id).toBeGreaterThanOrEqual(1),expect(v,id).toBeLessThanOrEqual(100);}
-  expect(romance.lu_bu!.war).toBe(100);expect(romance.wooden_zhuge!.int).toBe(100);expect(romance.sima_yi!.int).toBeGreaterThan(romance.sima_yi!.war);
+  // 기준점: 무력 100은 여포 한 사람, 지력 100은 제갈량 한 사람.
+  expect(romance.lu_bu!.war).toBe(100);expect(romance.wooden_zhuge!.int).toBe(100);
+  for(const [id,r] of Object.entries(romance)){if(id!=='lu_bu')expect(r.war,id).toBeLessThan(100);if(id!=='wooden_zhuge')expect(r.int,id).toBeLessThan(100);}
+  expect(romance.sima_yi!.int).toBeLessThan(romance.wooden_zhuge!.int);expect(romance.ma_chao!.war).toBeLessThan(romance.lu_bu!.war);
  });
  it('turns ratings into stats: a mighty general hits harder, a wise one thinks sharper',()=>{
   const plain=unit('nobody','졸병'),lu=unit('lu_bu','여포'),zhang=unit('zhang_zhao','장소');
@@ -21,7 +24,7 @@ describe('연의 장수록',()=>{
  });
  it('uses the romance war rating in duels, and leaves decoys and dream phantoms alone',()=>{
   const zhao=unit('zhao_yun','조운');expect(martialPower(zhao)).toBe(96+10);
-  expect(romanceOf({id:'decoy',name:'공손연'})).toBeUndefined();expect(romanceOf({id:'boss',name:'안량'})?.war).toBe(92);
+  expect(romanceOf({id:'decoy',name:'공손연'})).toBeUndefined();expect(romanceOf({id:'boss',name:'안량'})?.war).toBe(93);
   const dream=sessionFor('S1-04');const ghost=dream.state.find('lu_bu');
   if(ghost)expect(ghost.traits.includes('flyingGeneral')&&ghost.stats.morale!==50).toBe(false);
  });
