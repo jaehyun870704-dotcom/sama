@@ -24,11 +24,12 @@ function autoplay(s:Session){
 }
 
 describe('천명의 원정 · 규칙',()=>{
- it('starts with Sima Yi and three troops, and walks twelve floors with a boss every fourth',()=>{
+ it('starts with Sima Yi and three troops, and walks three acts of six floors with a boss closing each',()=>{
   const run=fresh();expect(run.party).toHaveLength(4);expect(run.party[0]!.hero).toBe(true);
   expect(floorChoices(run)).toHaveLength(3);expect(floorChoices(run).some(n=>n.kind==='battle')).toBe(true);
-  expect(floorChoices(run)).toEqual(floorChoices(fresh()));
-  run.floor=4;expect(floorChoices(run).map(n=>n.kind)).toEqual(['boss']);expect(RUN_FLOORS).toBe(12);
+  expect(floorChoices(run)).toEqual(floorChoices(fresh()));expect(RUN_FLOORS).toBe(18);
+  for(const f of [6,12,18]){run.floor=f;expect(floorChoices(run).map(n=>n.kind)).toEqual(['boss']);}
+  expect([6,12,18].map(f=>{run.floor=f;return floorChoices(run)[0]!.label;})).toEqual(['우두머리 · 마초','우두머리 · 제갈량','우두머리 · 공손연']);
  });
  it('levels units with experience and evolves them at the lineage thresholds',()=>{
   const run=fresh(),foot=run.party.find(u=>u.unitClass==='infantry')!;
@@ -53,7 +54,7 @@ describe('천명의 원정 · 규칙',()=>{
   const lost=fresh();finishBattle(lost,{kind:'battle',label:'',detail:''},false,{});expect(lost.status).toBe('lost');
   const boss=fresh();boss.floor=4;const sv:Record<string,number>={};for(const u of boss.party)sv[u.id]=.2;
   finishBattle(boss,{kind:'boss',label:'',detail:''},true,sv);expect(boss.party.every(u=>u.hp===1)).toBe(true);
-  boss.floor=12;boss.status='map';finishBattle(boss,{kind:'boss',label:'',detail:''},true,sv);expect(boss.status).toBe('won');
+  boss.floor=18;boss.status='map';finishBattle(boss,{kind:'boss',label:'',detail:''},true,sv);expect(boss.status).toBe('won');expect(boss.bosses).toBe(2);
  });
  it('writes natural Korean and tells same-class troops apart',()=>{
   expect([ga('보병'),ga('사마의'),ro('궁병'),ro('귀모'),ro('신궁'),ro('호표기'),eul('안량'),eul('마초')]).toEqual(['보병이','사마의가','궁병으로','귀모로','신궁으로','호표기로','안량을','마초를']);
@@ -92,14 +93,14 @@ describe('천명의 원정 · 전장',()=>{
   const s=battle(run),foot=s.state.get(run.party[1]!.id);
   expect(foot.unitClass).toBe(run.party[1]!.unitClass);expect(Math.abs(foot.hp/foot.stats.maxHp-.5)).toBeLessThan(.05);
   expect(s.state.living('player')).toHaveLength(4);expect(s.state.living('enemy').length).toBeGreaterThanOrEqual(3);
-  run.floor=12;const late=battle(run,'boss');
+  run.floor=18;const late=battle(run,'boss');
   expect(late.state.living('enemy').some(u=>tierOf(u.unitClass)>=2)).toBe(true);expect(late.state.find('boss')?.alive).toBe(true);
   run.party[0]!.unitClass='mastermind';run.party[0]!.level=17;
   for(const kind of ['battle','elite','boss'] as const){const st=battle(run,kind).state;
    for(const u of st.living())for(const id of u.strategies)expect(st.strategies.has(id),`${u.id}:${id}`).toBe(true);}
  });
  it('keeps the boss in plain view near the middle of the enemy line',()=>{
-  const run=fresh();for(const f of [4,8,12]){run.floor=f;const boss=battle(run,'boss').state.find('boss')!;
+  const run=fresh();for(const f of [6,12,18]){run.floor=f;const boss=battle(run,'boss').state.find('boss')!;
    expect(boss.pos.x).toBeGreaterThanOrEqual(14);expect(Math.abs(boss.pos.y-6)).toBeLessThanOrEqual(1);}
  });
  it('saves and reloads a run battle exactly',()=>{
@@ -119,7 +120,7 @@ describe('천명의 원정 · 전장',()=>{
    const u=st.living(st.currentSide).find(x=>!x.hasActed);if(!u){s.act({kind:'endPhase'});continue;}
    for(const cmd of decide(st,u)){if(cmd.kind==='move'&&(key(cmd.to)===key(u.pos)||u.id==='sima_yi'))continue;s.act(cmd);}
    if(!u.hasActed&&st.outcome==='ongoing')s.act({kind:'wait',unit:u.id});}return s;};
-  for(const [floor,xp] of [[4,300],[8,800]] as const){let wins=0;
+  for(const [floor,xp] of [[6,450],[12,1100]] as const){let wins=0;
    for(let seed=1;seed<=6;seed++){const run=newRun(seed*37,start);run.floor=floor;
     for(let i=0;i<Math.floor(floor/3);i++)recruit(run,(['spearman','crossbow'] as const)[i]!,4);grantXp(run,xp);
     if(hold(new Session(RUN_CHAPTER,'normal',seed,'survival',4,deploy(run,'boss'))).state.outcome==='victory')wins++;}

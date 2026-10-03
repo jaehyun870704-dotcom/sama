@@ -1,6 +1,6 @@
 import {repairError,repairAmount,fortifyError,parseCell,buildBarricade,placeBarricade,breachRally,BARRICADES_PER_ENGINEER} from './siege.ts';
 import {troopStrategies,supportOptions} from './troops.ts';
-import {refBattle,prepareRunBattle} from './roguelike.ts';
+import {refBattle,prepareRunBattle,applyRelics,RUN_FLOORS} from './roguelike.ts';
 import {applyRomance} from './romance.ts';
 import {expeditionBattle,expeditions} from './expeditions.ts';
 import {newDuel,duelRound,type DuelState,type DuelAction} from './duel.ts';
@@ -214,6 +214,8 @@ export class Session {
     }
     // 원정 부대의 병종·체력·책략·보물은 기본 정비가 끝난 뒤 덮어쓴다.
     if(this.deployment?.run)prepareRunBattle(state,this.deployment.run);
+    // 원정의 연의 전장: 사마의는 원정에서 남은 체력으로 나서고, 원정 보물이 본대에 실린다.
+    if(this.deployment?.runStory){const r=this.deployment.runStory,h=state.find('sima_yi');if(h)h.hp=Math.max(1,Math.round(h.stats.maxHp*r.heroHp));applyRelics(state,r.relics);}
     this.applyRomanceToNew(state);
     return battle;
   }
@@ -456,9 +458,13 @@ export class Session {
     if(data.revision!==undefined&&data.revision!==2&&data.revision!==3&&data.revision!==4)throw new Error('지원하지 않는 전장 버전입니다.');
     if(data.deployment){const d=data.deployment;if(!d.levels||!d.equipped||!OFFICERS.every(id=>Number.isInteger(d.levels[id])&&d.levels[id]!>=1&&d.levels[id]!<=40)||Object.entries(d.equipped).some(([id,item])=>!OFFICERS.includes(id as typeof OFFICERS[number])||!treasures.some(t=>t.id===item)))throw new Error('잘못된 출진 기록입니다.');}
     if(data.deployment?.run){const r=data.deployment.run;
-      if(!Number.isInteger(r.floor)||r.floor<1||r.floor>12||!['battle','elite','boss'].includes(r.kind)||!Number.isSafeInteger(r.seed)||!Array.isArray(r.party)||r.party.length<1||r.party.length>6||!r.party.some(u=>u.hero)||!Array.isArray(r.relics)
+      if(!Number.isInteger(r.floor)||r.floor<1||r.floor>RUN_FLOORS||!['battle','elite','boss'].includes(r.kind)||!Number.isSafeInteger(r.seed)||!Array.isArray(r.party)||r.party.length<1||r.party.length>6||!r.party.some(u=>u.hero)||!Array.isArray(r.relics)
         ||r.party.some(u=>typeof u.id!=='string'||!Number.isInteger(u.level)||u.level<1||u.level>60||!(u.hp>0&&u.hp<=1)))throw new Error('잘못된 원정 기록');
       for(const u of r.party)statsFor(u.unitClass,u.level);
+    }
+    if(data.deployment?.runStory){const r=data.deployment.runStory;
+      if(!Number.isInteger(r.floor)||r.floor<1||r.floor>RUN_FLOORS||typeof r.stage!=='string'||!chapters.some(c=>c.stage.id===r.stage)||chapters[data.chapter]?.stage.id!==r.stage||!Number.isSafeInteger(r.seed)
+        ||!Number.isInteger(r.heroLevel)||r.heroLevel<1||r.heroLevel>60||!(r.heroHp>0&&r.heroHp<=1)||!Array.isArray(r.relics)||r.relics.some(x=>typeof x!=='string'))throw new Error('잘못된 원정 기록');
     }
     if(data.deployment?.loadouts){const seen=new Set<string>();for(const [who,gear] of Object.entries(data.deployment.loadouts)){if(!OFFICERS.includes(who as typeof OFFICERS[number])||!gear||typeof gear!=='object')throw new Error('잘못된 장비');for(const [slot,id] of Object.entries(gear)){if(typeof id!=='string'||!treasures.some(t=>t.id===id)||treasureInfo(id).slot!==slot||seen.has(id))throw new Error('잘못된 장비');seen.add(id);}}}
     if(data.deployment?.mission&&(!expeditions.some(m=>m.id===data.deployment!.mission!.id)||typeof data.deployment.mission.runId!=='string'||data.deployment.mission.runId.length<1||data.chapter!==7||(data.deployment.mission.version!==undefined&&data.deployment.mission.version!==2&&data.deployment.mission.version!==3&&data.deployment.mission.version!==4)))throw new Error('잘못된 외전 기록');
