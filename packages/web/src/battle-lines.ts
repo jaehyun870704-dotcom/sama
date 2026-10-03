@@ -210,6 +210,17 @@ function met(state:BattleState,w:LineWhen){
   if('lockedBy' in w)return state.firedEvents.has(w.lockedBy);
   const g=raceGap(state);return !!g&&g.ally!==undefined&&g.hero!==undefined&&g.ally<g.hero;
 }
+/** 천명의 원정: 지역마다 첫 턴 한마디, 우두머리 퇴각 한마디. */
+const RUN_OPENING=[
+  ['사마의','평원에서는 기병이 먼저 닿는다. 창과 방패를 앞에 세워라.'],
+  ['사마의','산길은 좁다. 높은 곳을 먼저 잡는 쪽이 이긴다.'],
+  ['사마의','물길이 발을 묶는다. 여울을 건너는 적부터 끊어라.'],
+] as const;
+for(let f=1;f<=12;f++){const [speaker,text]=RUN_OPENING[Math.min(2,Math.floor((f-1)/4))]!;
+  battleLines[`R-${String(f).padStart(2,'0')}`]=[
+    {id:'open',when:{turn:1},speaker,text},
+    {id:'boss-down',when:{retreat:'boss'},speaker:'사마의',text:'우두머리가 물러났다. 이 길은 우리 것이다.'},
+  ];}
 /** Lines whose moment has come and that have not been shown yet, in script order. */
 export function dueLines(stageId:string,state:BattleState,seen:ReadonlySet<string>){
   return (battleLines[stageId]??[]).filter(l=>!seen.has(l.id)&&met(state,l.when));

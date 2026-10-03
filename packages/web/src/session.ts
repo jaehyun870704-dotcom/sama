@@ -1,5 +1,6 @@
 import {repairError,repairAmount,fortifyError,parseCell,buildBarricade,placeBarricade,breachRally,BARRICADES_PER_ENGINEER} from './siege.ts';
 import {troopStrategies,supportOptions} from './troops.ts';
+import {refBattle,prepareRunBattle} from './roguelike.ts';
 import {expeditionBattle,expeditions} from './expeditions.ts';
 import {newDuel,duelRound,type DuelState,type DuelAction} from './duel.ts';
 import {availableStrategies,learnedStrategies,allStrategies,applyOfficerFeatures,martialPower} from './officers.ts';
@@ -12,7 +13,7 @@ import retreatMap from '../../data/maps/yangtze-retreat.json';
 import {stageRules} from './stage-rules.ts';
 import {campaignStage,addFortifications,addSiegeCompany,structureKind,encircled,encounterLevels} from './campaign-rules.ts';
 import {applyTreasure,equippedItems,treasureInfo,type Deployment,OFFICERS,treasures} from './progression.ts';
-import { assemble, Battle, CONTROLLABLE, isHostile, key, manhattan } from '../../core/src/index.ts';
+import { assemble, Battle, CONTROLLABLE, isHostile, key, manhattan, statsFor } from '../../core/src/index.ts';
 import type { Command, Difficulty, MapFile, StageDef, StrategyDef } from '../../core/src/index.ts';
 import escapeStage from '../../data/stages/S1-02.json';
 import fortStage from '../../data/stages/S1-08.json';
@@ -146,7 +147,8 @@ export class Session {
     this.balancedEnemies.clear();
     let entry=this.chapter===1&&this.revision===2?{stage:legacyFortStage as StageDef,map:legacyFortMap as MapFile}:chapters[this.chapter];
     if(!entry) throw new Error('알 수 없는 전장');
-    if(this.deployment?.mission)entry={...entry,...expeditionBattle(this.deployment.mission.id,this.seed,this.deployment.mission.version??1,this.deployment.mission.supportClasses)};
+    if(this.deployment?.run)entry={...entry,...refBattle(this.deployment.run)};
+    else if(this.deployment?.mission)entry={...entry,...expeditionBattle(this.deployment.mission.id,this.seed,this.deployment.mission.version??1,this.deployment.mission.supportClasses)};
     else if(this.deployment)entry={...entry,stage:campaignStage(entry.stage)};
     const level=entry.stage.difficulty[this.difficulty].recommendedLevel;
     const state=assemble({stage:entry.stage,map:entry.map,difficulty:this.difficulty,seed:this.seed,roster:[
@@ -203,6 +205,8 @@ export class Session {
       }
       addSiegeCompany(state);
     }
+    // 원정 부대의 병종·체력·책략·보물은 기본 정비가 끝난 뒤 덮어쓴다.
+    if(this.deployment?.run)prepareRunBattle(state,this.deployment.run);
     return battle;
   }
   act(cmd:Command){
@@ -433,6 +437,11 @@ export class Session {
     if(!data || data.version!==2 || !chapters[data.chapter] || !['survival','strategy','command'].includes(data.preparation) || !['normal','extreme'].includes(data.difficulty) || !Number.isSafeInteger(data.seed) || !Array.isArray(data.journal) || data.journal.length>20000 || !Array.isArray(data.checkpoints) || !data.checkpoints.every((n,i,a)=>Number.isInteger(n)&&n>=0&&n<data.journal.length&&(i===0||n>a[i-1]!))) throw new Error('저장 파일을 읽을 수 없습니다.');
     if(data.revision!==undefined&&data.revision!==2&&data.revision!==3&&data.revision!==4)throw new Error('지원하지 않는 전장 버전입니다.');
     if(data.deployment){const d=data.deployment;if(!d.levels||!d.equipped||!OFFICERS.every(id=>Number.isInteger(d.levels[id])&&d.levels[id]!>=1&&d.levels[id]!<=40)||Object.entries(d.equipped).some(([id,item])=>!OFFICERS.includes(id as typeof OFFICERS[number])||!treasures.some(t=>t.id===item)))throw new Error('잘못된 출진 기록입니다.');}
+    if(data.deployment?.run){const r=data.deployment.run;
+      if(!Number.isInteger(r.floor)||r.floor<1||r.floor>12||!['battle','elite','boss'].includes(r.kind)||!Number.isSafeInteger(r.seed)||!Array.isArray(r.party)||r.party.length<1||r.party.length>6||!r.party.some(u=>u.hero)||!Array.isArray(r.relics)
+        ||r.party.some(u=>typeof u.id!=='string'||!Number.isInteger(u.level)||u.level<1||u.level>60||!(u.hp>0&&u.hp<=1)))throw new Error('잘못된 원정 기록');
+      for(const u of r.party)statsFor(u.unitClass,u.level);
+    }
     if(data.deployment?.loadouts){const seen=new Set<string>();for(const [who,gear] of Object.entries(data.deployment.loadouts)){if(!OFFICERS.includes(who as typeof OFFICERS[number])||!gear||typeof gear!=='object')throw new Error('잘못된 장비');for(const [slot,id] of Object.entries(gear)){if(typeof id!=='string'||!treasures.some(t=>t.id===id)||treasureInfo(id).slot!==slot||seen.has(id))throw new Error('잘못된 장비');seen.add(id);}}}
     if(data.deployment?.mission&&(!expeditions.some(m=>m.id===data.deployment!.mission!.id)||typeof data.deployment.mission.runId!=='string'||data.deployment.mission.runId.length<1||data.chapter!==7||(data.deployment.mission.version!==undefined&&data.deployment.mission.version!==2&&data.deployment.mission.version!==3&&data.deployment.mission.version!==4)))throw new Error('잘못된 외전 기록');
     if(data.deployment?.mission?.balance!==undefined&&data.deployment.mission.balance!==1)throw new Error('지원하지 않는 성장 규칙입니다.');
