@@ -15,6 +15,14 @@ export type LineWhen=
 export interface BattleLine {id:string;when:LineWhen;speaker:string;text:string}
 
 export const battleLines:Record<string,BattleLine[]>={
+  'S2-04':[
+    {id:'open-1',when:{turn:1},speaker:'사마의',text:'성문 앞 두 칸을 내주면 끝입니다. 여덟 턴만 버티십시오.'},
+    {id:'open-2',when:{turn:1},speaker:'조진',text:'강변 상륙대는 책략을 잘 견딘다! 창과 활로 상대하라.'},
+    {id:'east',when:{turn:3},speaker:'장패',text:'양양 성문은 내가 연다! 기병은 큰길로 달려라!'},
+    {id:'zhang-ba',when:{turn:4},speaker:'사마의',text:'장패는 창칼에 단단합니다. 책략으로 상대하십시오.'},
+    {id:'south',when:{turn:5},speaker:'조진',text:'남쪽 숲에서 셋째 물결이다! 성문 남쪽을 비우지 마라.'},
+    {id:'zhuge',when:{turn:6},speaker:'제갈근',text:'양양을 얻으면 형주가 온전해진다. 끝까지 밀어붙여라.'},
+  ],
   'S2-03':[
     {id:'open-1',when:{turn:1},speaker:'조진',text:'고수를 먼저 꺾는다! 의원은 다친 자를 고치고, 궁병은 결사대를 끊어라.'},
     {id:'open-2',when:{turn:1},speaker:'고수',text:'위의 황제가 여기 있다! 수레 덮개라도 베어 와라!'},

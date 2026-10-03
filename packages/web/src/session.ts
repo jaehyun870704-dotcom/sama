@@ -36,6 +36,8 @@ import dongkouStage from '../../data/stages/S2-02.json';
 import dongkouMap from '../../data/maps/dongkou-river.json';
 import guanglingStage from '../../data/stages/S2-03.json';
 import guanglingMap from '../../data/maps/guangling-camp.json';
+import xiangyangStage from '../../data/stages/S2-04.json';
+import xiangyangMap from '../../data/maps/xiangyang-walls.json';
 import legacyFortMap from './legacy/hanzhong-map-v2.json';
 import legacyFortStage from './legacy/hanzhong-stage-v2.json';
 import { makeUnit, awardedSeals } from '../../core/src/index.ts';
@@ -55,9 +57,10 @@ export const chapters = [
   {stage:wuweiStage as StageDef,map:wuweiMap as MapFile,year:'황초 원년 · 220년',label:'성채 사수와 반사 책략',quote:'세게 친다고 이기는 것이 아니다. 무엇이 되돌아오는지 먼저 보라.'},
   {stage:dongkouStage as StageDef,map:dongkouMap as MapFile,year:'황초 삼년 · 222년',label:'폭풍 속 철수',quote:'하늘의 칼은 피할 수 있다. 미리 보았다면.'},
   {stage:guanglingStage as StageDef,map:guanglingMap as MapFile,year:'황초 육년 · 225년',label:'야습과 황제 탈출',quote:'곁에 없다 해도, 길러 둔 손발이 대신 싸운다.'},
+  {stage:xiangyangStage as StageDef,map:xiangyangMap as MapFile,year:'황초 칠년 · 226년',label:'세 길목 방어',quote:'모든 문을 같은 칼로 지킬 수는 없다.'},
 ];
 // Stable indices preserve the existing v2 command saves.
-export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13];
+export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14];
 export type Preparation='survival'|'strategy'|'command';
 export const strategies: StrategyDef[] = [
   {id:'windDragon',name:'풍룡',element:'wind',shape:'spread',range:4,radius:1,mpCost:18,power:130,targetSides:['enemy']},
