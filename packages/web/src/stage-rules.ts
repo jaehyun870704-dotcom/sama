@@ -23,6 +23,8 @@ export interface StageRules {
   seals?:(v:StageView)=>number[]|undefined;
   /** Map labels drawn over regions (first cell of each region). */
   labels?:Array<{region:string;text:string}>;
+  /** Regions outlined on the map every frame (shelter, rally points). */
+  zones?:Array<{region:string;color:number}>;
   /** Scenario upkeep after every action: may change units and returns a defeat reason when lost. */
   tick?:(v:StageView)=>string|undefined;
   /** Turn after which the battle is lost (forced marches, sieges against the clock). */
@@ -35,6 +37,25 @@ export interface StageRules {
 const HILL=['ma_su','hill_spear','hill_bow','hill_foot_a','hill_foot_b','hill_xbow'];
 
 export const stageRules:Record<string,StageRules>={
+  'S2-13':{
+    sealNames:['호로곡 탈출','부대 보존','신속한 탈출'],
+    weather:'마른 하늘 · 골짜기의 불',
+    zones:[{region:'shelter',color:0x8fd0ff}],
+    labels:[{region:'rally',text:'합류 지점'},{region:'exit_label',text:'불타는 목책 · 비가 오면 열림'},{region:'shelter_label',text:'바위 그늘 · 포격 차폐'}],
+    tough:[{unit:'sima_shi',hpScale:2,defense:4},{unit:'sima_zhao',hpScale:2,defense:4}],
+    tick:({state})=>{
+      if(!state.firedEvents.has('hulu/joined')){
+        const inRally=(id:string)=>{const u=state.find(id);return !!u?.alive&&state.map.regionCoords('rally').some(c=>c.x===u.pos.x&&c.y===u.pos.y);};
+        if(inRally('sima_yi')&&inRally('sima_shi')){state.firedEvents.add('hulu/joined');state.survivalClocks.set('hulu',state.turn);state.scenarioPhase='버티기';}
+      }
+      return undefined;
+    },
+    phase:({state})=>{const p=state.scenarioPhase??'합류';const start=state.survivalClocks.get('hulu');
+      if(p==='합류')return '합류 · 사마의와 사마사가 합류 지점으로 (합류 뒤 7턴 버티기)';
+      if(p==='버티기'&&start!==undefined)return `버티기 · 비까지 ${Math.max(0,7-(state.turn-start))}턴`;
+      return '퇴로 열림 · 사마의를 서쪽 출구로';},
+    failure:({state})=>protectedFailure(state,['sima_shi','sima_zhao']),
+  },
   'S2-12':{
     sealNames:['도하 저지','부대 보존','신속한 격퇴'],
     weather:'흐림 · 강바람',

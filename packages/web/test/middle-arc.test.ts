@@ -161,3 +161,22 @@ describe('중편 · 위수 수비전',()=>{
   expect(s.state.outcome).toBe('defeat');expect(s.failure).toContain('북안 진영');
  });
 });
+describe('중편 · 호로곡 탈출전',()=>{
+ it('announces the hold before the join and keeps rock shelter out of the bombardment',()=>{
+  const s=open('S2-13');expect(s.phase).toContain('합류 뒤 7턴 버티기');
+  const yi=s.state.get('sima_yi');yi.pos={x:11,y:6};yi.stats.maxHp=yi.hp=999;yi.stats.defense=99;
+  for(let i=0;i<3000&&s.state.turn<2&&s.state.outcome==='ongoing';i++){if(CONTROLLABLE.has(s.state.currentSide))s.act({kind:'endPhase'});else s.tick();}
+  const fire=s.state.telegraphs.find(t=>t.label==='화공 포격');expect(fire).toBeDefined();
+  expect(fire!.cells.some(c=>c.x===11&&c.y===5)).toBe(false);expect(fire!.cells.some(c=>c.x===11&&c.y===6)).toBe(true);
+ });
+ it('starts the seven-turn hold on joining, then the rain opens the west gate',()=>{
+  const s=open('S2-13');expect(s.state.map.tileAt({x:0,y:7}).terrain).toBe('cliff');
+  s.state.get('sima_yi').pos={x:11,y:7};s.state.get('sima_shi').pos={x:12,y:7};s.act({kind:'endPhase'});
+  expect(s.state.scenarioPhase).toBe('버티기');expect(s.phase).toContain('비까지 7턴');
+  for(let i=0;i<20000&&!s.state.activeDialogue&&s.state.outcome==='ongoing';i++){
+   for(const id of ['sima_yi','sima_shi','sima_zhao']){const u=s.state.find(id);if(u?.alive)u.hp=u.stats.maxHp;}
+   if(CONTROLLABLE.has(s.state.currentSide))s.act({kind:'endPhase'});else s.tick();}
+  expect(s.state.activeDialogue).toBe('hulu_rain');expect(s.state.map.tileAt({x:0,y:7}).terrain).toBe('road');
+  s.act({kind:'choose',nodeId:'hulu_rain',optionId:'run'});expect(s.state.victory).toEqual([{type:'reach',unit:'sima_yi',target:'exit'}]);
+ });
+});
