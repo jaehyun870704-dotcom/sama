@@ -22,3 +22,19 @@ describe('하편 · 요수 전투',()=>{
   expect(s.state.firedEvents.has('liaoshui/collapse')).toBe(false);
  });
 });
+describe('하편 · 공손연 진압전',()=>{
+ it('feeds the garrison while granaries stand, then sends out three identical banners',()=>{
+  const s=open('S3-02');expect(s.phase).toContain('남은 군량고 2/2');
+  for(const id of ['convoy_depot_a','convoy_depot_b'])s.state.retreat(s.state.get(id));s.act({kind:'endPhase'});
+  const flags=s.state.living('enemy').filter(u=>u.name==='공손연');expect(flags).toHaveLength(3);
+  expect(s.phase).toContain('성을 버릴 채비');expect(s.state.get('gongsun_yuan').behavior).not.toBe('flee');
+ });
+ it('reveals the decoys to a scout and fails if the real Gongsun Yuan leaves by a gate',()=>{
+  const s=open('S3-02');for(const id of ['convoy_depot_a','convoy_depot_b'])s.state.retreat(s.state.get(id));s.act({kind:'endPhase'});
+  const scout=s.state.living('ally').find(u=>!u.hasActed&&u.canUseItems!==false)??s.state.living('ally')[0]!;
+  s.act({kind:'item',unit:scout.id,item:'scout'});
+  expect(s.state.living('enemy').filter(u=>u.name==='공손연')).toHaveLength(1);expect(s.state.living('enemy').filter(u=>u.name==='미끼 깃발대')).toHaveLength(2);
+  const gy=s.state.get('gongsun_yuan');gy.pos={x:17,y:1};s.act({kind:'endPhase'});
+  expect(s.state.outcome).toBe('defeat');expect(s.failure).toContain('공손연');
+ });
+});
