@@ -7,7 +7,62 @@ import {classFamily} from '../src/music.ts';
 import {deployment,freshCampaign,award,levelInfo} from '../src/progression.ts';
 import {growthMilestones,officerEvolution} from '../src/growth-milestones.ts';
 import {chapters,campaignOrder} from '../src/session.ts';
-import {getTrait,makeUnit,type DamageContext,type UnitClass} from '../../core/src/index.ts';
+import {getTrait,makeUnit,VARIANTS,EVOLUTION,familyOf,tierOf,profileOf,evolvedClass,statsFor,type DamageContext,type UnitClass} from '../../core/src/index.ts';
+import {classNames,troopRoles,artClass,evolutionLines} from '../src/troops.ts';
+import {adviceFor} from '../src/troop-tactics.ts';
+import {RECRUITS} from '../src/roguelike.ts';
+
+/** 병종 확장 2차: 2단계에서 끝나던 계통의 3단계와 새 기본 계통(투창병). */
+const NEW_CLASSES:Array<[UnitClass,UnitClass,1|2|3]>=[
+ ['ironPagoda','heavyCav',3],['elephantKing','heavyCav',3],['boulderCorps','archer',3],['wraith','bandit',3],
+ ['wuguoRattan','infantry',3],['greenwoodKing','bandit',3],['arhat','monk',3],['demonKing','shaman',3],
+ ['celestial','maiden',3],['thunderGod','taoist',3],['medicineSaint','physician',3],
+ ['javelin','spearman',1],['eliteJavelin','spearman',2],['flyingSpear','spearman',3],
+];
+const STATS=['hp','mp','attack','defense','intellect','spirit','agility'] as const;
+describe('새 병종과 진화 계통',()=>{
+ it('adds at least 12 classes, each with a name, role, family, tier and lineage art',()=>{
+  expect(NEW_CLASSES.length).toBeGreaterThanOrEqual(12);
+  for(const [c,family,tier] of NEW_CLASSES){
+   expect(VARIANTS[c],c).toBeDefined();expect(familyOf(c),c).toBe(family);expect(tierOf(c),c).toBe(tier);
+   expect(classNames[c],c).toBeTruthy();expect(troopRoles[c]?.role,c).toBeTruthy();
+   expect(familyOf(troopRoles[c]!.base),c).toBe(family);expect(familyOf(artClass(c)),c).toBe(family);
+   expect(adviceFor(c),c).toBeTruthy();
+   if(tier>1){expect(VARIANTS[c]!.bloom?.name,c).toBeTruthy();expect(VARIANTS[c]!.bloom?.description,c).toBeTruthy();}
+  }
+ });
+ it('gives every class name a distinct Korean name',()=>{
+  const names=Object.values(classNames);expect(new Set(names).size).toBe(names.length);
+ });
+ it('places every new class on an evolution line with ascending levels',()=>{
+  const lines=evolutionLines();
+  for(const [c] of NEW_CLASSES)expect(lines.some(l=>l.some(([x])=>x===c)),c).toBe(true);
+  for(const line of lines){
+   for(let i=1;i<line.length;i++){expect(line[i]![1],line.map(x=>x[0]).join('→')).toBeGreaterThan(line[i-1]![1]);expect(tierOf(line[i]![0])).toBeGreaterThan(tierOf(line[i-1]![0]));}
+  }
+  expect(evolvedClass('javelin',9)).toBe('javelin');expect(evolvedClass('javelin',10)).toBe('eliteJavelin');expect(evolvedClass('javelin',30)).toBe('flyingSpear');
+  expect(evolvedClass('heavyCav',20)).toBe('ironPagoda');expect(evolvedClass('elephant',21)).toBe('warElephant');expect(evolvedClass('elephant',22)).toBe('elephantKing');
+ });
+ it('makes each new tier 3 stronger than its tier 2 and keeps the tier 2 skills',()=>{
+  for(const [c,,tier] of NEW_CLASSES){
+   if(tier!==3)continue;
+   const from=(Object.keys(EVOLUTION) as UnitClass[]).find(k=>EVOLUTION[k]![0]===c)!;
+   expect(tierOf(from),c).toBe(2);
+   const a=profileOf(from),b=profileOf(c);
+   for(const k of STATS)expect(b[k],`${c} ${k}`).toBeGreaterThan(a[k]);
+   const lv=EVOLUTION[from]![1],sa=statsFor(from,lv),sb=statsFor(c,lv);
+   expect(sb.maxHp+sb.attack+sb.defense+sb.intellect+sb.spirit,c).toBeGreaterThan(sa.maxHp+sa.attack+sa.defense+sa.intellect+sa.spirit);
+   const t2=VARIANTS[from]!.traits??{},t3=VARIANTS[c]!.traits??{};
+   for(const t of Object.keys(t2)){expect(t3[t],`${c} keeps ${t}`).toBeDefined();if(t!=='fireWeakness')expect(t3[t]!,`${c} ${t}`).toBeGreaterThanOrEqual(t2[t]!);}
+   expect(Object.keys(t3).length,c).toBeGreaterThanOrEqual(Object.keys(t2).length);
+  }
+ });
+ it('lets the javelin line be recruited and strike at range 1~2',()=>{
+  expect(RECRUITS).toContain('javelin');
+  const u=makeUnit({id:'j',unitClass:'javelin',level:5,side:'player',pos:{x:0,y:0}});
+  expect(u.range).toEqual([1,2]);expect(cryFor('flyingSpear')).toEqual(cryFor('spearman'));expect(classFamily('arhat')).toBe(classFamily('monk'));
+ });
+});
 
 /** 진화 병종은 계열의 기능(치유 명령·외침·음악·보물 조건)을 그대로 이어받는다. */
 describe('진화 병종의 계열 기능',()=>{

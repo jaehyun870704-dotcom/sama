@@ -8,6 +8,7 @@
  * 연의에 이름난 일화가 있는 장수는 그 일화에서 딴 고유능력(특성)을 하나 가진다.
  */
 import type {Unit} from '../../core/src/index.ts';
+import type {Temper} from './duel.ts';
 
 export interface RomanceSkill {name:string;description:string;trait:string;param?:number}
 export interface RomanceOfficer {
@@ -115,6 +116,41 @@ const byName:Record<string,RomanceOfficer>={
   문흠:o('문흠','수춘에서 난을 일으킨 맹장',[84,40,70,30,46],{name:'수춘 돌파',description:'물리 공격 피해 10% 증가',trait:'physicalPower',param:10}),
   가규:o('가규','예주를 다스린 충신',[64,78,76,84,72]),
   호준:o('호준','사마의의 오랜 부장',[74,56,76,52,62]),
+  // 시나리오(가상)에서 만나는 인물들
+  문추:o('문추','하북의 맹장 · 안량의 짝',[92,30,78,22,52],{name:'하북 명장',description:'물리 공격 피해 10% 증가',trait:'physicalPower',param:10}),
+  견초:o('견초','조조 휘하의 기병장',[72,48,66,40,52]),
+  전주:o('전주','무종의 은사 · 백랑산의 길잡이',[70,76,72,70,74]),
+  저수:o('저수','원소의 감군 · 바른 말의 책사',[38,92,82,86,72],{name:'감군',description:'책략 공격 피해 10% 증가',trait:'strategyPower',param:10}),
+  채모:o('채모','형주 수군의 대도독',[72,66,78,62,54]),
+  전풍:o('전풍','강직한 원소의 모사',[30,93,70,88,64],{name:'직간',description:'받는 책략 피해 15% 감소',trait:'strategicGuard'}),
+  가후:o('가후','독사 · 계책은 버리지 않는다',[42,97,80,90,62],{name:'난무',description:'책략 공격 피해 12% 증가',trait:'strategyPower',param:12}),
+  서서:o('서서','단복 · 유비를 떠난 효자',[66,92,80,80,82],{name:'팔문금쇄 간파',description:'받는 책략 피해 15% 감소',trait:'strategicGuard'}),
+  사마부:o('사마부','숙달 · 사마의의 아우',[48,80,72,90,82]),
+  양준:o('양준','하내의 명사',[36,78,60,84,78]),
+  양수:o('양수','계륵 · 재주가 넘친 주부',[30,92,52,74,70]),
+  조창:o('조창','황수아 · 조조의 날랜 아들',[90,40,80,34,70],{name:'황수아',description:'물리 공격 피해 10% 증가',trait:'physicalPower',param:10}),
+  만총:o('만총','합비 신성의 수장',[66,82,86,84,70]),
+  문빙:o('문빙','강하를 지킨 형주의 장수',[80,62,84,56,70]),
+  가충:o('가충','사마씨의 심복',[50,82,64,78,52]),
+  석포:o('석포','정위의 장수',[78,68,80,60,64]),
+  관평:o('관평','관우의 양자',[82,60,76,48,72]),
+  유봉:o('유봉','유비의 양자',[80,46,68,40,54]),
+  마대:o('마대','마초의 사촌 · 위연을 벤 자',[82,52,74,42,62]),
+  관색:o('관색','관우의 셋째 아들',[84,52,70,40,72]),
+  장제:o('장제','태위 · 사마의의 벗',[40,86,70,86,74]),
+  왕관:o('왕관','엄정한 관리',[56,72,68,84,60]),
+  왕창:o('왕창','형주를 지킨 위의 장수',[70,74,82,76,70]),
+  황권:o('황권','촉에서 위로 온 충신',[66,82,78,80,78]),
+  조홍:o('조홍','조조의 사촌 · 재물을 아낀 장수',[82,46,76,40,58]),
+  악진:o('악진','선봉의 작은 거인',[84,48,76,40,62]),
+  정봉:o('정봉','눈 속의 단병 돌격',[84,56,76,40,64]),
+  하후패:o('하후패','하후연의 아들',[86,52,78,40,62]),
+  하후무:o('하후무','청강의 부마',[46,40,40,38,50]),
+  타사대왕:o('타사대왕','독천의 주인',[74,52,70,30,46]),
+  전종:o('전종','오의 수군 대장',[74,68,78,62,66]),
+  서성:o('서성','거짓 성벽의 주인',[82,72,82,58,66]),
+  조우:o('조우','연왕 · 조예의 숙부',[46,64,56,70,70]),
+  원희:o('원희','원소의 둘째 아들',[64,52,62,48,58]),
 };
 /** 가짜(미끼)는 진짜의 이름을 달고 있어도 능력이 없다. */
 const DECOYS=new Set(['decoy']);
@@ -149,3 +185,20 @@ export function applyRomance(u:Unit):boolean{
 
 /** 일기토 무력: 연의 무력에 레벨을 더한다(연의에 없는 장수는 공격력으로 어림). */
 export function romanceWar(u:Unit):number|undefined{const r=romanceOf(u);return r?r.war:undefined;}
+
+/** 연의 속 성격(일기토·설전에 응하는 방식). 적어 두지 않은 장수는 능력으로 어림한다. */
+const TEMPERS:Record<string,Temper>={
+  여포:'reckless',허저:'reckless',맹획:'reckless',올돌골:'reckless',답돈:'reckless',문흠:'reckless',
+  마초:'brave',조운:'brave',장료:'brave',감녕:'brave',하후돈:'brave',하후연:'brave',강유:'brave',황충:'brave',안량:'brave',조진:'brave',손례:'brave',축융:'brave',고람:'brave',
+  관우:'proud',위연:'proud',진궁:'proud',주유:'proud',조조:'proud',방통:'proud',마속:'proud',종회:'proud',조식:'proud',원상:'proud',
+  문추:'brave',조창:'reckless',하후패:'brave',악진:'brave',정봉:'brave',
+  가후:'wise',전풍:'wise',저수:'wise',서서:'wise',
+  장합:'calm',서황:'calm',유비:'calm',노숙:'calm',여몽:'calm',등애:'calm',곽회:'calm',학소:'calm',진태:'calm',
+  조인:'cautious',우금:'cautious',손권:'cautious',조비:'cautious',조예:'cautious',심배:'cautious',왕릉:'cautious',
+  사마의:'wise',제갈량:'wise',순욱:'wise',육손:'wise',환범:'wise',가규:'wise',
+  조상:'timid',하안:'timid',조희:'timid',원담:'timid',
+};
+export function temperOf(name:string):Temper|undefined{
+  if(TEMPERS[name])return TEMPERS[name];const r=byName[name];if(!r)return undefined;
+  return r.int>=85&&r.war<75?'wise':r.war>=85?'brave':r.lead<55&&r.war<60?'timid':r.war>=78?'proud':'calm';
+}

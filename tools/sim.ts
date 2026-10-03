@@ -197,6 +197,11 @@ function tryDuel(session: any, unit: any): boolean {
       options.push({ kind: "duel", target: enemy.id, edge: martialPower(unit) - martialPower(enemy) });
     }
   }
+  // 상대가 응할 도전만 건다(성격·연의의 실제 대결 — Session.challengeAnswer).
+  for (let i = options.length - 1; i >= 0; i--) {
+    const o = options[i]!, enemy = session.state.find(o.target);
+    if (!enemy || !session.challengeAnswer(unit, enemy, o.kind).accept) options.splice(i, 1);
+  }
   options.sort((a, b) => b.edge - a.edge || (a.target < b.target ? -1 : 1));
   const pick = options[0];
   if (!pick || pick.edge <= 0) return false;

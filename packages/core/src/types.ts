@@ -66,7 +66,9 @@ export type UnitClass =
   | "shieldGuard" | "royalGuard" | "pikeman" | "halberdier" | "lancer" | "tigerRider" | "ironCav"
   | "longbow" | "sharpshooter" | "repeater" | "greatBow" | "tactician" | "mastermind" | "sage" | "immortal"
   | "nomad" | "whiteHorse" | "slinger" | "hurler" | "assassin" | "phantom" | "rattan" | "rattanElite"
-  | "elephant" | "warElephant";
+  | "elephant" | "warElephant"
+  | "ironPagoda" | "elephantKing" | "boulderCorps" | "wraith" | "wuguoRattan" | "greenwoodKing" | "arhat"
+  | "demonKing" | "celestial" | "thunderGod" | "medicineSaint" | "javelin" | "eliteJavelin" | "flyingSpear";
 
 // ─────────────────────────────────────────────────────────── 진영
 
@@ -166,7 +168,7 @@ export interface Unit {
   movedThisTurn?: boolean;
   /** 이번 차례에 움직인 거리(칸). 기병 돌격 같은 병종 전법이 읽는다. */
   movedSteps?: number;
-  /** 병종 전법(tactics.ts)을 쓰는 전투인가. 현행 규칙 전투만 켠다(옛 규칙 저장 재생이 달라지지 않게). */
+  /** 현행 규칙 전투인가: 병종 전법(tactics.ts)과 지력 비례 책략 피해를 쓴다. 옛 규칙 저장 재생이 달라지지 않게 현행 전투만 켠다. */
   classTactics?: boolean;
   hasActed: boolean;
   alive: boolean;

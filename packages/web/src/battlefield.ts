@@ -12,6 +12,7 @@ import {stageRules} from './stage-rules.ts';
 import {factionOf,officerLook} from './officer-art.ts';
 import {romanceOf} from './romance.ts';
 import {crispZoom,groundScaleMode,unitTint} from './pixel-look.ts';
+import {dyeOfSide,dyePixels,clothBand,needsDye,type Dye} from './dye.ts';
 import type {LogEntry} from '../../core/src/index.ts';
 import { key, manhattan, ignoresRough, tierOf, familyOf } from '../../core/src/index.ts';
 import type { BattleState, Coord, Unit, TerrainKind } from '../../core/src/index.ts';
@@ -19,7 +20,8 @@ import type { BattleState, Coord, Unit, TerrainKind } from '../../core/src/index
 const W=48,H=48;
 async function imageCanvas(url:string){const img=new Image();img.src=url;await img.decode();const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;c.getContext('2d')!.drawImage(img,0,0);return c;}
 const colors:Record<TerrainKind,number>={plain:0x6b7560,road:0xada084,forest:0x435f50,mountain:0x69736d,hill:0x83846a,water:0x3d6770,rapids:0x3d6770,bridge:0x98846a,fort:0xab9e7b,gate:0x8b8a77,wall:0x777f74,cliff:0x5b554b,marsh:0x6f8a5c,plank:0x8a6a45,ford:0x6f9ea3};
-const sides={player:0x68c9bf,ally:0x86b7d9,allyAi:0xd3b06b,enemy:0xe78b79};
+/** 진영 색: 아군 파랑, 편입 아군 옅은 파랑, NPC(자동 우군) 초록, 적군 빨강. */
+const sides={player:0x3d86ff,ally:0x6fa8ff,allyAi:0x3fbf5a,enemy:0xff4a3d};
 export const terrainNames:Record<TerrainKind,string>={plain:'평지',road:'길',forest:'숲',mountain:'산지',hill:'구릉',water:'수상',rapids:'완류',bridge:'다리',fort:'성채',gate:'성문',wall:'성벽',cliff:'절벽(통행 불가)',marsh:'갈대늪',plank:'잔도',ford:'여울'};
 export {classNames} from './troops.ts';
 import {classNames} from './troops.ts';
@@ -228,7 +230,8 @@ export class Battlefield {
     this.terrainTextures.forEach((texture,i)=>texture.destroy(i===0));this.terrainTextures=[];
     this.paintTerrain();
     // 전장 전체가 보이면 그대로 고정한다. 아주 큰 전장만 아군 쪽을 보여 주고 시작한다.
-    if(this.overviewZoom()>=(this.app.screen.width<500?.4:.5))this.reset();
+    // 칸이 충분히 크게 보일 때만 전체 보기로 고정하고, 넓은 전장은 아군 쪽을 크게 보여 준 채 시작한다(드래그·미니맵으로 살핀다).
+    if(this.overviewZoom()>=(this.app.screen.width<500?.42:.72))this.reset();
     else{this.zoom=crispZoom(this.app.screen.width<500?.78:1,this.app.renderer.resolution);this.focus(state.living('player')[0]?.pos??{x:0,y:0});}
   }
   /** A bridge was built or the river rose: repaint the ground from the changed map. */
@@ -333,19 +336,30 @@ export class Battlefield {
   private hasReaction(u:Unit){const k=artClass(u.unitClass);return !structureKind(u.id)&&!u.id.startsWith('convoy_')&&!!(troopArt[k]||basicReactionArt[k]);}
   private unitTexture(u:Unit,pose=0){
     if(artClass(u.unitClass)!==u.unitClass)u={...u,unitClass:artClass(u.unitClass)};
-    const basic=basicReactionArt[u.unitClass];if(pose>=8&&basic&&!structureKind(u.id)&&!u.id.startsWith('convoy_')){const frame=pose%4,id=basic.sheet+':'+basic.row+':'+frame,old=this.textures.get(id);if(old)return old;const atlas=this.troopTextures.get(basic.sheet)!,w=atlas.width/4,h=atlas.height/basic.rows,t=new Texture({source:atlas.source,frame:new Rectangle(frame*w,basic.row*h,w,h)});this.textures.set(id,t);return t;}
-    const art=troopArt[u.unitClass];if(art){const sheet=art.sheet+(pose>=8?'-reaction':pose>=4?'-walk':''),frame=pose%4;const id=sheet+':'+art.row+':'+frame,old=this.textures.get(id);if(old)return old;const atlas=this.troopTextures.get(sheet)!,w=atlas.width/4,h=atlas.height/art.rows;const texture=new Texture({source:atlas.source,frame:new Rectangle(frame*w,art.row*h,w,h)});this.textures.set(id,texture);return texture;}
-    if(u.unitClass==='navy'){const row=navalCrewRow(u.id,u.name),frame=pose%4,id='naval:'+row+':'+frame,old=this.textures.get(id);if(old)return old;const a=this.naval!,w=a.width/4,h=a.height/4,t=new Texture({source:a.source,frame:new Rectangle(frame*w,row*h,w,h)});this.textures.set(id,t);return t;}
+    const dye=dyeOfSide(u.side);
+    // 진영 색으로 물든 시트에서 한 칸을 잘라 쓴다(sheet가 없으면 물들이지 않는다: 배·충차·성채·수송대).
+    const cut=(id:string,atlas:Texture,rect:Rectangle,sheet?:string)=>{const key=(sheet&&needsDye(sheet,dye)?dye+':':'')+id,old=this.textures.get(key);if(old)return old;
+      const t=new Texture({source:sheet&&needsDye(sheet,dye)?this.dyedSource(atlas,sheet,dye):atlas.source,frame:rect});this.textures.set(key,t);return t;};
+    const basic=basicReactionArt[u.unitClass];if(pose>=8&&basic&&!structureKind(u.id)&&!u.id.startsWith('convoy_')){const frame=pose%4,atlas=this.troopTextures.get(basic.sheet)!,w=atlas.width/4,h=atlas.height/basic.rows;return cut(basic.sheet+':'+basic.row+':'+frame,atlas,new Rectangle(frame*w,basic.row*h,w,h),basic.sheet);}
+    const art=troopArt[u.unitClass];if(art){const sheet=art.sheet+(pose>=8?'-reaction':pose>=4?'-walk':''),frame=pose%4,atlas=this.troopTextures.get(sheet)!,w=atlas.width/4,h=atlas.height/art.rows;return cut(sheet+':'+art.row+':'+frame,atlas,new Rectangle(frame*w,art.row*h,w,h),sheet);}
+    if(u.unitClass==='navy'){const row=navalCrewRow(u.id,u.name),frame=pose%4,a=this.naval!,w=a.width/4,h=a.height/4;return cut('naval:'+row+':'+frame,a,new Rectangle(frame*w,row*h,w,h));}
     if(troopRoles[u.unitClass])u={...u,unitClass:visualClass(u.unitClass)};
-    if(u.unitClass==='ram'){const id='ram:'+pose,old=this.textures.get(id);if(old)return old;const a=this.ram!,w=a.width/2,h=a.height/2,t=new Texture({source:a.source,frame:new Rectangle(pose%2*w,Math.floor(pose/2)*h,w,h)});this.textures.set(id,t);return t;}
-    if(u.id.startsWith('convoy_')){const row=u.id==='convoy_b'?1:0,id='convoy:'+row+':'+pose;const old=this.textures.get(id);if(old)return old;const atlas=this.convoys!,w=atlas.width/4,h=atlas.height/2;const t=new Texture({source:atlas.source,frame:new Rectangle(pose*w,row*h,w,h)});this.textures.set(id,t);return t;}
+    if(u.unitClass==='ram'){const a=this.ram!,w=a.width/2,h=a.height/2;return cut('ram:'+pose,a,new Rectangle(pose%2*w,Math.floor(pose/2)*h,w,h));}
+    if(u.id.startsWith('convoy_')){const row=u.id==='convoy_b'?1:0,atlas=this.convoys!,w=atlas.width/4,h=atlas.height/2;return cut('convoy:'+row+':'+pose,atlas,new Rectangle(pose*w,row*h,w,h));}
     const structure=structureKind(u.id),extraRow=['crossbow','heavyCav','engineer','fengshui'].indexOf(u.unitClass);
-    if(structure||extraRow>=0){const id=structure??('extra:'+extraRow+':'+pose);const old=this.textures.get(id);if(old)return old;const atlas=structure?this.scenery!:this.extra!,w=atlas.width/4,h=atlas.height/(structure?2:4),col=structure?structureFrame(structure)%4:pose,row=structure?Math.floor(structureFrame(structure)/4):extraRow;const t=new Texture({source:atlas.source,frame:new Rectangle(col*w,row*h,w,h)});this.textures.set(id,t);return t;}
-
+    if(structure){const atlas=this.scenery!,w=atlas.width/4,h=atlas.height/2,f=structureFrame(structure);return cut(structure,atlas,new Rectangle(f%4*w,Math.floor(f/4)*h,w,h));}
+    if(extraRow>=0){const atlas=this.extra!,w=atlas.width/4,h=atlas.height/4;return cut('extra:'+extraRow+':'+pose,atlas,new Rectangle(pose*w,extraRow*h,w,h),'extra');}
     const row=['strategist','fengshui','civilian'].includes(u.unitClass)?4:u.unitClass==='spearman'?1:['archer','crossbow'].includes(u.unitClass)?2:['cavalry','heavyCav'].includes(u.unitClass)?3:u.unitClass==='catapult'?5:0;
-    const id=row+':'+pose,old=this.textures.get(id);if(old)return old;
     const atlas=this.atlas!,w=atlas.width/4,h=atlas.height/6;
-    const texture=new Texture({source:atlas.source,frame:new Rectangle(pose*w,row*h,w,h)});this.textures.set(id,texture);return texture;
+    return cut(row+':'+pose,atlas,new Rectangle(pose*w,row*h,w,h),'base');
+  }
+  /** 시트 하나를 진영 색으로 물들인 사본(처음 쓸 때 한 번 만들고 둔다). */
+  private dyed=new Map<string,CanvasSource>();
+  private dyedSource(atlas:Texture,sheet:string,dye:Dye){
+    const key=sheet+':'+dye,old=this.dyed.get(key);if(old)return old;
+    const from=atlas.source.resource as HTMLCanvasElement,c=document.createElement('canvas');c.width=from.width;c.height=from.height;
+    const g=c.getContext('2d',{willReadFrequently:true})!;g.drawImage(from,0,0);const img=g.getImageData(0,0,c.width,c.height);dyePixels(img.data,clothBand(sheet),dye);g.putImageData(img,0,0);
+    const src=new CanvasSource({resource:c,autoGenerateMipmaps:true,scaleMode:'linear'});this.dyed.set(key,src);return src;
   }
   /** Sequential log playback keeps attack, impact and counterattack visibly separate. */
   play(logs:LogEntry[]){

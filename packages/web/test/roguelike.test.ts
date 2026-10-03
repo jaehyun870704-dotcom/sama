@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {newRun,floorChoices,runBattle,battleRef,grantXp,finishBattle,takeReward,visitNode,recruit,survivorsOf,ga,ro,eul,RUN_FLOORS,PARTY_LIMIT,RECRUITS,type Run} from '../src/roguelike.ts';
+import {newRun,floorChoices,runBattle,battleRef,grantXp,finishBattle,takeReward,visitNode,recruit,survivorsOf,ga,ro,eul,RUN_FLOORS,PARTY_LIMIT,RECRUITS,RUN_MAP_W,RUN_MAP_H,type Run} from '../src/roguelike.ts';
 import {artClass,troopArt,troopRoles,evolutionLines} from '../src/troops.ts';
 import {Session} from '../src/session.ts';
 import {RUN_CHAPTER} from '../src/run-ui.ts';
@@ -87,7 +87,7 @@ describe('천명의 원정 · 전장',()=>{
   const run=fresh();
   for(let f=1;f<=RUN_FLOORS;f++){run.floor=f;for(const kind of ['battle','elite','boss'] as const){
    const a=runBattle(run,kind),b=runBattle(run,kind);expect(a).toEqual(b);
-   expect(validateStage(a.stage)).toEqual([]);expect(a.map.rows).toHaveLength(12);
+   expect(validateStage(a.stage)).toEqual([]);expect(a.map.rows).toHaveLength(RUN_MAP_H);expect(a.map.rows[0]).toHaveLength(RUN_MAP_W);
   }}
  });
  it('fields the party with its classes, wounds and relics, and later floors bring evolved enemies',()=>{
@@ -103,7 +103,7 @@ describe('천명의 원정 · 전장',()=>{
  });
  it('keeps the boss in plain view near the middle of the enemy line',()=>{
   const run=fresh();for(const f of [6,12,18]){run.floor=f;const boss=battle(run,'boss').state.find('boss')!;
-   expect(boss.pos.x).toBeGreaterThanOrEqual(14);expect(Math.abs(boss.pos.y-6)).toBeLessThanOrEqual(1);}
+   expect(boss.pos.x).toBeGreaterThanOrEqual(RUN_MAP_W-4);expect(Math.abs(boss.pos.y-RUN_MAP_H/2)).toBeLessThanOrEqual(1);}
  });
  it('saves and reloads a run battle exactly',()=>{
   const s=battle(fresh());s.act({kind:'endPhase'});

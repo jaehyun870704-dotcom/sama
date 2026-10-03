@@ -163,3 +163,87 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
 .run-track span.if{border-color:#8a6fb0;color:#d9c8f5}.ending-card{border:1px solid #b49b63;background:#b69e650f;padding:16px 18px;margin:12px 0 16px}.ending-card.what-if{border-color:#8a6fb0;background:#6d4f9a14}.ending-card h3{font:22px LocalSerif,'Batang',serif;color:#f0d08e;margin:6px 0 10px}.ending-card.what-if h3{color:#e2d0ff}.ending-card p{font-size:13px;line-height:1.9;color:#c9c0a0}
 .stat-bar.xp i i{background:linear-gradient(90deg,#b48a3c,#f0d58a)}.tactic-name{color:#e3c183;font-weight:600;font-size:11px}.run-unit.officer{border-color:#8a7a5288}
 .evo-tactic{flex-basis:100%;font-size:11px;color:#d9bf86;margin-top:2px}
+.unit-symbol{background:#1f3f78;border-color:#4f86e8;color:#cfe0ff}.unit-symbol.ally{background:#24406a;border-color:#6fa8ff;color:#d4e4ff}.unit-symbol.allyAi{background:#1f5a32;border-color:#3fbf5a;color:#cff5d8}.unit-symbol.enemy{background:#6a1f1c;border-color:#ff4a3d;color:#ffd6d0}.mini-hp i{background:#4f8ff0}
+.map{height:max(580px,calc(100dvh - 300px))}.layout{grid-template-columns:220px minmax(300px,1fr) 250px}@media(max-width:580px){.battle-panel .map{height:min(70dvh,560px);min-height:420px}}
+.temper-tag{font-size:10px;color:#e3c183;border:1px solid #7a6a45;border-radius:3px;padding:0 5px;margin-left:6px}.refusal-effect{margin-top:14px;color:#e3c183;font-size:12px}
+.duel-accept{color:#f0d79c;font-size:13px;margin:-8px 0 12px}.duel-accept b{color:#ffb070}
+/* 이야기 무대 (story-stage.ts) */
+.ss-root{display:flex;flex-direction:column;gap:12px;padding:26px 30px 24px}
+.ss-head .eyebrow{font-size:11px}
+.ss-stage{position:relative;width:100%;aspect-ratio:16/8;max-height:56dvh;border:1px solid #7e775a;border-radius:4px;overflow:hidden;background-color:#1c2a28;cursor:pointer;user-select:none}
+.ss-shade{position:absolute;inset:0;background:linear-gradient(0deg,#0b131488,transparent 40%),radial-gradient(ellipse at 50% 60%,transparent 50%,#0b131466);pointer-events:none}
+.ss-place{position:absolute;left:12px;top:10px;z-index:200;background:#101b1dcc;border:1px solid #8a7a52;color:#f0d79c;font-size:12px;padding:3px 10px;border-radius:3px}
+.ss-caption{position:absolute;left:0;right:0;bottom:0;z-index:210;background:linear-gradient(0deg,#060b0cee,#060b0cbb);color:#efe4c4;font:15px/1.8 LocalSerif,'Batang','Noto Serif KR',serif;padding:16px 26px;text-align:center}
+.ss-actor{position:absolute;width:clamp(56px,10.5%,112px);aspect-ratio:1;transform:translate(-50%,-92%);transition-property:left,top;transition-timing-function:linear}
+.ss-actor.off{visibility:hidden}
+.ss-sprite{width:100%;height:100%;image-rendering:auto;filter:drop-shadow(0 3px 2px #000a)}
+.ss-actor.face-left .ss-sprite{transform:scaleX(-1)}
+.ss-actor.walking .ss-sprite{animation:ss-bob .28s ease-in-out infinite alternate}
+.ss-actor.speaking .ss-sprite{animation:ss-hop .5s ease-in-out infinite alternate}
+@keyframes ss-bob{from{translate:0 0}to{translate:0 -6%}}
+@keyframes ss-hop{from{translate:0 0}to{translate:0 -3%}}
+.ss-name{position:absolute;left:50%;top:100%;transform:translate(-50%,-6px);white-space:nowrap;font-size:11px;font-weight:700;color:#fff4da;text-shadow:0 1px 2px #000,0 0 3px #000}
+.ss-bubble{position:absolute;left:50%;bottom:96%;transform:translateX(-50%);min-width:26px;padding:2px 8px;border-radius:10px;background:#fffaf0;color:#2a2620;font-weight:900;font-size:13px;text-align:center;border:2px solid #2a2620;white-space:nowrap;animation:ss-pop .25s ease-out}
+.ss-bubble.emote{background:#ffd76a}
+@keyframes ss-pop{from{transform:translateX(-50%) scale(.3)}to{transform:translateX(-50%) scale(1)}}
+.ss-dialog{min-height:118px}
+.ss-dialog .story-caption{margin:0}
+.ss-choices{display:grid;gap:8px}
+.ss-choices button{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;padding:12px 16px 12px 46px;position:relative;background:#ffffff06;border-color:#7a6a45}
+.ss-choices button:hover{border-color:#e3c183;background:#e3c18314}
+.ss-choices strong{font-size:14px;color:#f3e6c4;font-weight:600}
+.ss-choices small{font-size:12px;color:#d9bf86}
+.ss-choice-no{position:absolute;left:14px;top:12px;font:16px Georgia,serif;color:#c2a36b}
+.ss-controls{display:flex;justify-content:space-between;gap:10px}
+@media(max-width:580px){.ss-root{padding:18px 12px}.ss-stage{aspect-ratio:4/3}.ss-actor{width:clamp(40px,13%,70px)}.ss-caption{font-size:13px;padding:10px 14px}}
+/* 시나리오 장 선택 (scenario-ui.ts) */
+.scenario-screen{padding:26px 28px 22px;display:flex;flex-direction:column;gap:14px}
+.sc-top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 20px}
+.sc-top h2{font-size:30px;margin:4px 0 0;color:#e8d8b0}
+.sc-route{display:flex;flex-wrap:wrap;gap:6px}
+.sc-route span{font-size:11px;padding:4px 10px;border:1px solid #4d5a4c;border-radius:12px;color:#b8c2ae}
+.sc-route span.now{border-color:#c2a36b;color:#f0d79c}
+.sc-route span.if{border-color:#8a6ad0;color:#d6c6ff}
+.sc-body{display:grid;grid-template-columns:minmax(220px,330px) 1fr;gap:16px;min-height:0}
+.sc-list{max-height:62dvh;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:6px;scrollbar-width:thin}
+.sc-act{font-size:12px;color:#c2a36b;margin:10px 0 2px;letter-spacing:1px}
+.sc-card{display:flex;align-items:center;gap:10px;text-align:left;padding:6px 10px 6px 6px;border-color:#3e4b42;min-height:58px}
+.sc-card[aria-pressed="true"]{border-color:#e3c183;background:#e3c18314}
+.sc-card.locked{opacity:.55}.sc-card.done b{color:#c2a36b}.sc-card.now b{color:#ffd77a}
+.sc-thumb{flex:0 0 74px;height:46px;border-radius:3px;border:1px solid #5a5a44}
+.sc-card-text{flex:1;min-width:0}.sc-card-text small{display:block;font-size:10px;color:#93a092}.sc-card-text strong{display:block;font-size:13px;font-weight:600;color:#ece0c0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sc-card.kind-fate .sc-card-text strong{color:#ffd99a}.sc-card.kind-tale .sc-card-text strong,.sc-card.kind-boss .sc-card-text strong{color:#d6c6ff}
+.sc-detail{display:flex;flex-direction:column;gap:12px;min-width:0}
+.sc-banner{position:relative;aspect-ratio:16/7;border:1px solid #7e775a;border-radius:4px;overflow:hidden}
+.sc-banner:after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,#0d1517ee,transparent 60%)}
+.sc-banner-title{position:absolute;left:18px;bottom:12px;z-index:1}.sc-banner-title small{color:#d8c79a;font-size:12px}.sc-banner-title h3{font:28px LocalSerif,'Batang',serif;color:#f6ead0;margin:2px 0 0}
+.sc-kind{position:absolute;right:12px;top:10px;z-index:1;font-size:11px;padding:3px 10px;border-radius:3px;background:#2a3d34;border:1px solid #7fae8f;color:#d7f0dc}
+.sc-kind.kind-fate{background:#4a3a18;border-color:#e3c183;color:#ffe3a6}.sc-kind.kind-tale,.sc-kind.kind-boss{background:#33264f;border-color:#a88ae8;color:#e6dbff}.sc-kind.kind-ending{background:#4a1f1f;border-color:#e08a7a}
+.sc-synopsis{font-size:13px;line-height:1.9;color:#cfd6c6}
+.sc-rows{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:12px}.sc-rows dt{color:#c2a36b}.sc-rows dd{margin:0;color:#dfe5d6}
+.sc-actions{display:flex;gap:10px}.sc-actions .primary{min-width:180px}
+.sc-foot{display:flex;justify-content:space-between}.hidden{display:none}
+@media(max-width:760px){.sc-body{grid-template-columns:1fr}.sc-list{max-height:34dvh}.scenario-screen{padding:20px 14px}}
+/* 가상 전장 출진 전 정비 */
+.prep-screen .camp-mission{font-size:12px;color:#cfd6c6}
+.prep-mods{font-size:12px;color:#e3c183}.prep-mods b{margin-right:6px}
+.prep-body{display:grid;grid-template-columns:minmax(240px,1fr) minmax(260px,1.1fr);gap:16px;margin:12px 0}
+.prep-list{display:flex;flex-direction:column;gap:6px;max-height:52dvh;overflow-y:auto}
+.prep-officer{display:flex;align-items:center;gap:10px;text-align:left;padding:6px 10px;border-color:#3e4b42}
+.prep-officer.on{border-color:#4f86e8;background:#4f86e814}.prep-officer.focus{outline:2px solid #e3c183}
+.prep-officer>span:nth-child(2){flex:1;min-width:0}.prep-officer strong{display:block;font-size:13px}.prep-officer small{font-size:11px}
+.prep-officer em{font-size:11px;color:#e3c183;font-style:normal}
+.prep-sprite{display:inline-block;width:48px;height:48px;flex:0 0 48px}.prep-sprite.big{width:110px;height:110px;flex-basis:110px}
+.prep-xp{display:block;height:3px;background:#35463d;margin-top:4px}.prep-xp i{display:block;height:3px;background:linear-gradient(90deg,#b48a3c,#f0d58a)}
+.prep-toggle{font-size:11px;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.prep-detail{border:1px solid #4b5a4c;border-radius:4px;padding:14px;display:flex;flex-direction:column;gap:8px;font-size:12px}
+.prep-portrait{display:flex;gap:12px;align-items:center}.prep-portrait h3{font-size:20px;margin:0}
+.prep-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+@media(max-width:760px){.prep-body{grid-template-columns:1fr}}
+.quest-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:14px 0}
+.quest-grid article{border:1px solid #4b5a4c;border-radius:4px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.quest-grid h3{font-size:16px;color:#ecd9a8}.quest-grid h3 small{font-size:11px;color:#93a092;margin-left:6px}.quest-grid p{font-size:12px;color:#c5cfbf}
+.scenario-result .run-news{text-align:left;max-width:560px;margin:12px auto}
+.route-result{font-size:14px}.route-result b{margin-right:6px;color:#e3c183}.route-result.what-if b{color:#c8b0ff}
+.ending-note{color:#e3c183;font-style:italic}
+@media(max-width:580px){.ss-caption{font-size:12px;line-height:1.6;padding:8px 10px;max-height:46%;overflow:auto}.ss-name{font-size:9px}}
