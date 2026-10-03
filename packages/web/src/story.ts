@@ -8,6 +8,7 @@ export function storyBackdrop(index:number){
 }
 /** Atlas cell + narrative location per beat, independent of saved chapter indexes. */
 export const storyLocations:Record<string,Array<{art:number;name:string;companion:string;actor?:number}>>={
+  'S2-07':[{art:14,name:'장안 · 조진의 출정',companion:'곽회'},{art:4,name:'자오곡 · 서른 날의 비',companion:'곽회'},{art:11,name:'한중 · 양평관 어귀',companion:'곽회'}],
   'S2-06':[{art:14,name:'장안 · 출격 군의',companion:'장합'},{art:4,name:'가정 · 남산을 바라보는 고개',companion:'장합'},{art:11,name:'가정 · 북쪽 샘',companion:'장합'}],
   'S2-05':[{art:12,name:'완성 · 표문을 쓰는 밤',companion:'사마사'},{art:4,name:'신성 가는 길 · 산길 행군',companion:'사마사'},{art:8,name:'신성 · 성벽 아래',companion:'사마소'}],
   'S2-04':[{art:14,name:'낙양 · 새 황제의 조회',companion:'조진'},{art:8,name:'양양 · 성루',companion:'조진'},{art:16,name:'양양 · 성 밖 길목',companion:'조진'}],
@@ -34,6 +35,11 @@ export const storyLocations:Record<string,Array<{art:number;name:string;companio
   'S1-09':[{art:14,name:'한중 · 철수 군의',companion:'조진'},{art:15,name:'한수 · 불탄 부교터',companion:'조진'},{art:7,name:'한수 · 강변 정찰',companion:'조진'}],
 };
 export const storyBeats:Record<string,StoryBeat[]>={
+  'S2-07':[
+    {speaker:'곽회',line:'도독, 비가 그치지 않습니다. 길이 끊기고 군량이 늦어 조 대사마께서 회군을 고민하십니다.',pose:'enter',actor:0},
+    {speaker:'사마의',line:'회군은 대사마께서 정하실 일이오. 그보다 위연이 서쪽으로 돌아 곽 장군의 진영을 노린다는 첩보가 있소.',pose:'speak',actor:4},
+    {speaker:'곽회',line:'진영은 버티겠습니다. 다만 위연이 양평관으로 빠지기 전에 잡아야 합니다.',pose:'resolve',actor:0},
+  ],
   'S2-06':[
     {speaker:'장합',line:'제갈량이 기산으로 나왔소. 선봉 마속이 가정을 맡았는데, 길목을 버리고 남산 위에 진을 쳤다는군.',pose:'enter',actor:3},
     {speaker:'사마의',line:'산 위의 진은 높아서 강해 보이지만 물이 없습니다. 북쪽 샘 두 곳만 지키면 사흘을 못 버틸 겁니다.',pose:'speak',actor:4},
@@ -147,10 +153,14 @@ export const stories=[
   ['세 갈래 물결','226년, 황제 조비가 세상을 떠나며 조진·사마의·진군에게 어린 황제를 맡겼다. 국상의 틈을 노려 손권의 군대가 양양으로 밀려든다. 강변, 동쪽 큰길, 남쪽 숲길. 물결마다 다른 적이 온다.'],
   ['여드레 천이백 리','228년, 신성의 맹달이 촉의 제갈량과 내통한다. 사마의는 조정의 허락을 기다리지 않고 군을 움직인다. 천이백 리를 여드레에. 두 아들 사마사와 사마소가 처음으로 아버지의 곁에서 싸운다.'],
   ['물을 끊다','228년, 제갈량이 기산으로 나오고 천수·남안·안정이 촉에 붙었다. 길목 가정을 맡은 마속은 제갈량의 지시를 어기고 남산 위에 진을 쳤다. 산 위에는 물이 없다. 장합과 사마의는 샘을 끊고, 무너질 촉군의 도주로를 막는다.'],
+  ['젖은 잔도','230년, 대사마 조진이 촉 정벌에 나선다. 사마의는 한수를 거슬러 서쪽으로 오르지만 서른 날 이어진 비에 길이 끊긴다. 그 틈에 위연이 곽회의 진영을 치고 양평관으로 돌아가려 한다. 잔도로 질러갈 것인가, 계곡으로 돌 것인가.'],
 ];
 
 /** After a main-battle victory: where the story picks up, and what changed. */
 export const storyAftermath:Record<string,{art:number;name:string;beats:Array<{speaker:string;line:string}>}>={
+  'S2-07':{art:11,name:'양평관 · 비 그친 저녁',beats:[
+    {speaker:'곽회',line:'진영은 지켰습니다. 그러나 조 대사마께서 회군을 명하셨습니다.'},
+    {speaker:'사마의',line:'비가 우리를 막았고, 위연은 길을 알았소. 다음에는 우리가 길을 먼저 알아야 하오.'}]},
   'S2-06':{art:4,name:'가정 · 무너진 남산의 진',beats:[
     {speaker:'장합',line:'마속의 진이 무너졌소. 제갈량은 한중으로 물러갈 수밖에 없겠지.'},
     {speaker:'사마의',line:'제갈량은 마속을 벨 겁니다. 법을 세우려고요. 그리고 반드시 다시 나옵니다. 다음에는 더 단단하게.'}]},

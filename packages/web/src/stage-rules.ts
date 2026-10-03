@@ -5,6 +5,8 @@ import type {BattleState,Difficulty} from '../../core/src/index.ts';
 export interface StageView {state:BattleState;difficulty:Difficulty;journalLength:number}
 export interface StageRules {
   sealNames:[string,string,string];
+  /** Weather line shown over the map. */
+  weather?:string;
   /** Non-combatants under escort: unarmed, sturdier, slower. */
   protect?:Array<{unit:string;hp:number;movement?:number}>;
   /** Named foes that must be handled by the gimmick rather than worn down. */
@@ -25,8 +27,32 @@ export interface StageRules {
 const HILL=['ma_su','hill_spear','hill_bow','hill_foot_a','hill_foot_b','hill_xbow'];
 
 export const stageRules:Record<string,StageRules>={
+  'S2-07':{
+    sealNames:['위연 또는 7부대 격퇴','곽회 생존','위연을 놓치지 않음'],
+    weather:'장맛비 · 길이 젖음',
+    labels:[{region:'pass_exit',text:'양평관'},{region:'guo_camp',text:'곽회 진영'}],
+    tough:[{unit:'guo_huai',hpScale:1.4,defense:2}],
+    deadline:15,
+    tick:({state})=>{
+      const route=state.choices.find(c=>c.nodeId==='route')?.optionId;
+      if(route&&!state.firedEvents.has('yangping/flee')&&state.turn>=(route==='valley'?5:7)&&state.find('wei_yan')?.alive){
+        state.firedEvents.add('yangping/flee');
+        // Wei Yan runs for the pass; his guards stay behind as the rearguard.
+        const wei=state.get('wei_yan');wei.behavior='flee';wei.goalRegion='pass_exit';
+        for(const id of ['wei_guard_0','wei_guard_1']){const u=state.find(id);if(u?.alive)u.behavior='hold';}
+      }
+      const wei=state.find('wei_yan');
+      if(wei?.alive&&wei.behavior==='flee'&&state.map.regionCoords('pass_exit').some(c=>c.x===wei.pos.x&&c.y===wei.pos.y)){state.units.delete(wei.id);state.firedEvents.add('yangping/escaped');}
+      return undefined;
+    },
+    phase:({state})=>{const left=Math.max(0,16-state.turn),down=state.losses.enemy;
+      if(state.firedEvents.has('yangping/escaped'))return `위연 탈출 · 격퇴 ${down}/7 · ${left}턴 남음`;
+      return `${state.firedEvents.has('yangping/flee')?'위연 도주 중':(state.scenarioPhase??'길 선택')} · 격퇴 ${down}/7 · ${left}턴 남음`;},
+    seals:({state})=>[1,...(state.find('guo_huai')?.alive?[2]:[]),...(state.find('wei_yan')?.alive===false?[3]:[])],
+  },
   'S2-06':{
     sealNames:['남산 공략','도주 최소화','신속한 수원 차단'],
+    weather:'☀ 맑음 · 메마른 산',
     labels:[{region:'spring',text:'북쪽 샘'},{region:'south_exit',text:'남쪽 출구'}],
     // The hill camp is strong while it has water; cutting the spring is what breaks it.
     tough:HILL.map(unit=>({unit,hpScale:1.5,defense:3})),
@@ -51,8 +77,8 @@ export const stageRules:Record<string,StageRules>={
   },
   'S2-05':{sealNames:['맹달 격퇴','부대 보존','신속한 공성'],deadline:14,labels:[{region:'keep',text:'신성 본채'}],phase:({state})=>state.scenarioPhase?`${state.scenarioPhase} · ${Math.max(0,15-state.turn)}턴 남음`:undefined,tough:[{unit:'sima_shi',hpScale:1.5,defense:3},{unit:'sima_zhao',hpScale:1.5,defense:3}],failure:({state})=>protectedFailure(state,['sima_shi','sima_zhao'])},
   'S2-04':{sealNames:['양양 수성','수비대 전원 생환','적 격퇴 수'],tough:[{unit:'gate_captain',hpScale:1.8,defense:4}],labels:[{region:'xiangyang',text:'양양 성문'}],phase:({state})=>`${state.scenarioPhase} · ${Math.max(0,8-(state.turn-(state.survivalClocks.get('xiangyang')??1)))}턴 남음`,failure:({state})=>state.captured.get('xiangyang')==='enemy'?'오군이 양양 성문을 차지했습니다.':undefined},
-  'S2-03':{sealNames:['황제 탈출','부대 보존','신속한 탈출'],protect:[{unit:'cao_pi',hp:150,movement:3}],tough:[{unit:'gao_shou',hpScale:1.6}],labels:[{region:'exit',text:'북쪽 출구'}],failure:({state})=>state.find('cao_pi')?.alive===false?'조비가 퇴각했습니다.':undefined},
-  'S2-02':{sealNames:['황제 철수','함대 보존','신속한 철수'],protect:[{unit:'cao_pi',hp:150,movement:3}],labels:[{region:'exit',text:'북서쪽 출구'}],failure:({state})=>state.find('cao_pi')?.alive===false?'조비가 퇴각했습니다.':undefined},
+  'S2-03':{sealNames:['황제 탈출','부대 보존','신속한 탈출'],weather:'혹한 · 강이 얼어붙음',protect:[{unit:'cao_pi',hp:150,movement:3}],tough:[{unit:'gao_shou',hpScale:1.6}],labels:[{region:'exit',text:'북쪽 출구'}],failure:({state})=>state.find('cao_pi')?.alive===false?'조비가 퇴각했습니다.':undefined},
+  'S2-02':{sealNames:['황제 철수','함대 보존','신속한 철수'],weather:'폭풍 · 낙뢰',protect:[{unit:'cao_pi',hp:150,movement:3}],labels:[{region:'exit',text:'북서쪽 출구'}],failure:({state})=>state.find('cao_pi')?.alive===false?'조비가 퇴각했습니다.':undefined},
   'S2-01':{
     sealNames:['반란 진압','수비대 전원 생환','신속한 진압'],
     labels:[{region:'citadel',text:'무위 성채'}],

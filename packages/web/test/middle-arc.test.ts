@@ -54,7 +54,7 @@ describe('중편 · 맹달 차단전',()=>{
   expect(subject('사마소')).toBe('사마소가');expect(subject('맹달')).toBe('맹달이');
  });
 });
-const toPlayer=(s:Session)=>{for(let i=0;i<40&&s.state.currentSide!=='player'&&s.state.outcome==='ongoing';i++){if(CONTROLLABLE.has(s.state.currentSide))s.act({kind:'endPhase'});else s.tick();}};
+const toPlayer=(s:Session)=>{for(let i=0;i<3000&&s.state.currentSide!=='player'&&s.state.outcome==='ongoing';i++){if(CONTROLLABLE.has(s.state.currentSide))s.act({kind:'endPhase'});else s.tick();}};
 describe('중편 · 가정 전투',()=>{
  it('makes the hill camp sturdy until the spring is cut, then breaks it toward the south exit',()=>{
   const s=open('S2-06'),ma=s.state.get('ma_su'),def=ma.stats.defense,hp=ma.stats.maxHp;
@@ -72,5 +72,21 @@ describe('중편 · 가정 전투',()=>{
   toPlayer(s);
   if(s.state.outcome==='ongoing'){runners[2]!.pos={x:9,y:15};s.act({kind:'endPhase'});}
   expect(s.state.outcome).toBe('defeat');expect(s.failure).toContain('남쪽 출구');
+ });
+});
+describe('중편 · 양평관 추격전',()=>{
+ it('asks for the route first and names its risks',()=>{
+  const s=open('S2-07');expect(s.state.activeDialogue).toBe('route');
+  s.act({kind:'choose',nodeId:'route',optionId:'valley'});expect(s.state.find('ambush_0')?.alive).toBe(true);
+  const p=open('S2-07');p.act({kind:'choose',nodeId:'route',optionId:'plank'});expect(p.state.find('ambush_0')).toBeUndefined();expect(p.state.scenarioPhase).toBe('잔도 · 낙석 주의');
+ });
+ it('lets Wei Yan run for the pass alone and still leaves enough foes to win by count',()=>{
+  const s=open('S2-07');s.act({kind:'choose',nodeId:'route',optionId:'valley'});
+  for(let i=0;i<3000&&s.state.turn<6&&s.state.outcome==='ongoing';i++){if(CONTROLLABLE.has(s.state.currentSide))s.act({kind:'endPhase'});else s.tick();}
+  expect(s.state.outcome).toBe('ongoing');
+  const wei=s.state.get('wei_yan');expect(wei.behavior).toBe('flee');expect(s.state.find('wei_guard_0')?.behavior).toBe('hold');
+  wei.pos={x:0,y:9};toPlayer(s);wei.pos={x:0,y:7};s.act({kind:'endPhase'});
+  expect(s.state.find('wei_yan')).toBeUndefined();expect(s.phase).toContain('위연 탈출');
+  expect(s.state.living('enemy').length+s.state.losses.enemy).toBeGreaterThanOrEqual(7);
  });
 });

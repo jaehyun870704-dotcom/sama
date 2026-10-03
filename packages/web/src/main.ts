@@ -204,7 +204,7 @@ function render(){
   $('#stage-title').textContent=c.stage.title;$('#stage-subtitle').textContent=`제 ${c.stage.order}장 · ${s.difficulty==='normal'?'일반':'극한'}`;
   $('#map-name').textContent=c.stage.subtitle??c.stage.title;$('#year').textContent=`${c.year} · ${s.map.width}×${s.map.height}`;
   document.body.classList.toggle('nightmare',session.chapter===4);
-  $('.weather').textContent=session.chapter===4?'☾ 흉몽 · 짙은 안개':'☀ 맑음 · 바람 약함';
+  $('.weather').textContent=session.weather;
   const objective=(session.deployment?.mission?.version??1)>=3?trialProgress(s):session.chapter===6?`${session.phase} · 조조 HP ${s.find('cao_cao')?.hp??0}/180 · 3턴 후방 복병`:session.chapter===5?`${session.phase} · 수송대 ${s.living('allyAi').length}/2 생존`:session.chapter===3?`${session.phase} · 추격 압박 ${session.pressure}/${session.pressureLimit}`:session.chapter===0?`${session.phase} · 지참금 ${session.funds}전`:session.chapter===1?`${session.phase} · ${raceLabel(s)}`:`${session.phase} · 남은 적 ${s.living('enemy').length}부대`;
   $('#compact-objective').textContent=objective;
   $('#objectives').innerHTML=`<p><b>◇</b> ${objective}</p><small>${c.stage.deployment.forced.map(id=>officerNames[id]).join(' · ')} 생존 필수</small><div class="resource-strip">구급약 ${session.medicine} · ${session.scouted?'정찰 완료':'살피기로 경로 확인'}</div>`;

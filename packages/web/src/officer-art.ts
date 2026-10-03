@@ -16,7 +16,7 @@ const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 export function officerLook(name:string){return officerLooks.find(p=>p.id===name||p.name===name);}
 /** Named speakers without a painted portrait show the upper body of their troop art
  * (rows of units-v3: 0 infantry, 1 spear, 2 bow, 3 horse, 4 robe, 5 siege). */
-const troopFaces:Record<string,number>={'양앙':0,'성채 수비대장':0,'교관':0,'노장':0,'학자':4,'의원':4,'상인':4,'장인':4,'꿈속의 황제':4,'장소':4,'제갈근':4,'손권':4,'여몽':3,'사마사':3,'사마소':2,'맹달':0,'이엄':4,'장합':3,'곽회':0,'제갈량':4,'마속':4};
+const troopFaces:Record<string,number>={'양앙':0,'성채 수비대장':0,'교관':0,'노장':0,'학자':4,'의원':4,'상인':4,'장인':4,'꿈속의 황제':4,'장소':4,'제갈근':4,'손권':4,'여몽':3,'사마사':3,'사마소':2,'맹달':0,'이엄':4,'장합':3,'곽회':0,'제갈량':4,'마속':4,'왕평':0,'위연':0};
 export function troopFaceRow(name:string){
   if(name in troopFaces)return troopFaces[name]!;
   if(/창병/.test(name))return 1;if(/궁병|노병/.test(name))return 2;if(/기병|전차/.test(name))return 3;
