@@ -69,6 +69,6 @@ export function settleRun(m:MetaState,run:Run){
   m.best=Math.max(m.best,run.status==='won'?RUN_FLOORS:run.floor);
   for(const s of run.storyDone??[])recordStory(m,s);
   for(const t of run.talesDone??[])if(!m.tales.includes(t))m.tales.push(t);
-  if(run.status==='won'){const e=endingFor(run.route?.[2],run.route?.[3],run.route?.[1]).id;if(!m.endings.includes(e))m.endings.push(e);}
+  if(run.status==='won'){const e=endingFor(run.route).id;if(!m.endings.includes(e))m.endings.push(e);}
   return gain;
 }
