@@ -1,9 +1,9 @@
 /**
  * 운명의 갈림길 — 사마의의 선택으로 갈라지는 정사·가상 시나리오.
  *
- * 원정의 중편·하편 첫 층에서 사마의가 선택한다. 정사를 고르면 연의 전장(스토리 32전장)이 이어지고,
+ * 원정의 상편·중편·하편 첫 층에서 사마의가 선택한다. 정사를 고르면 연의 전장(스토리 32전장)이 이어지고,
  * 가상을 고르면 그 편의 지역·적·우두머리가 바뀌고 '가상 전장'(서사와 이름난 적장이 있는 전투)이 나온다.
- * 두 번의 선택 조합으로 결말 아홉 가지가 갈린다. 가상 시나리오는 이 게임의 창작이다.
+ * 중편·하편의 선택 조합으로 결말 아홉 가지가 갈리고, 상편의 선택은 그 결말의 첫머리를 바꾼다. 가상 시나리오는 이 게임의 창작이다.
  */
 import type {UnitClass} from '../../core/src/index.ts';
 
@@ -16,7 +16,7 @@ export interface Tale {
 }
 export interface RouteRegion {name:string;arc:string;terrain:0|1|2;boss:{name:string;unitClass:UnitClass};pool:UnitClass[]}
 export interface Route {
-  id:string;act:2|3;history:boolean;
+  id:string;act:1|2|3;history:boolean;
   /** 선택지에 쓰는 말 */
   choice:string;detail:string;
   /** 루트 이름(진행 표시·결말에 쓴다) */
@@ -25,15 +25,33 @@ export interface Route {
   /** 가상 전장(정사 루트는 연의 전장을 쓴다) */
   tales:Tale[];
 }
-export interface FatePoint {act:2|3;year:string;title:string;prompt:string}
+export interface FatePoint {act:1|2|3;year:string;title:string;prompt:string}
 
-export const FATE_POINTS:Record<2|3,FatePoint>={
+export const FATE_POINTS:Record<1|2|3,FatePoint>={
+  1:{act:1,year:'201년 · 하내 온현',title:'조조의 출사 요청',prompt:'사공 조조의 사자가 하내의 사마씨 집 문을 두드렸다. 스물셋의 사마의를 막부로 부른다는 명이다. 한실은 기울었고, 북쪽에는 아직 원소가 버티고 있다. 이 부름에 어떻게 답하는가.'},
   2:{act:2,year:'220년 · 낙양',title:'조조의 죽음',prompt:'조조가 낙양에서 숨을 거두었다. 세자 조비가 위왕을 잇지만, 업성에는 조식을 따르는 문사들이 모이고 서쪽에서는 유비가 한중왕을 칭했다. 천하가 숨을 죽인 이 밤, 사마의는 어디에 서는가.'},
   3:{act:3,year:'234년 이후 · 낙양',title:'오래 기다린 자의 선택',prompt:'긴 싸움이 끝났다. 조정에서는 대장군 조상이 병권을 쥐고 노신을 밀어낸다. 몸은 늙었고 남은 날은 많지 않다. 은인자중의 끝에서, 사마의는 남은 생을 어디에 거는가.'},
 };
 
 const WEI_POOL:UnitClass[]=['infantry','spearman','cavalry','crossbow','archer','heavyCav'];
 export const ROUTES:Route[]=[
+  // ── 분기 ⓪ 조조의 출사 요청
+  {id:'refuse',act:1,history:true,choice:'병을 핑계로 거절한다',detail:'풍비(마비)를 칭하고 일곱 해를 버틴다. 정사대로 늦게 조조의 막하에 들어가 관중에서 마초를 막는다. 연의 전장이 이어진다.',name:'정사 · 기다리는 자',
+    region:{name:'관중 평원',arc:'상편',terrain:0,boss:{name:'마초',unitClass:'cavalry'},pool:['infantry','spearman','cavalry','archer','crossbow','slinger','horseArcher']},tales:[]},
+  {id:'serve',act:1,history:false,choice:'즉시 출사한다',detail:'부름에 곧장 응해 조조의 참모가 된다. 원소가 죽은 뒤 갈라진 하북을 평정하는 싸움에 앞장선다.',name:'가상 · 조조의 젊은 참모',
+    region:{name:'하북 평원',arc:'상편',terrain:0,boss:{name:'원상',unitClass:'cavalry'},pool:['infantry','spearman','cavalry','archer','crossbow','heavyCav']},
+    tales:[
+      {id:'IF1-srv-1',title:'여양 공방',intro:'원소가 죽자 아들들이 서로 칼을 겨눈다. 젊은 사마의가 조조에게 아뢴다. "형제가 다툴 때를 기다리십시오." 그러나 여양의 길목은 원소의 조카 고간이 막고 있다.',target:{name:'고간',unitClass:'infantry'}},
+      {id:'IF1-srv-2',title:'업성 수공',intro:'원상의 충신 심배가 업성을 지킨다. 장수(漳水)를 끌어 성을 잠기게 하자는 계책이 사마의의 붓끝에서 나왔다. 물이 차오르기 전에 심배의 수비대를 꺾어야 한다.',target:{name:'심배',unitClass:'strategist'}},
+      {id:'IF1-srv-3',title:'백랑산 원정',intro:'원상은 오환으로 달아났다. 사막을 건너는 강행군 끝에, 오환의 선우 답돈이 백랑산 아래 기병을 펼쳤다.',target:{name:'답돈',unitClass:'horseArcher'}},
+    ]},
+  {id:'yuan',act:1,history:false,choice:'원소에게 간다',detail:'조조의 부름을 물리치고 하북의 원소에게 몸을 맡긴다. 관도의 승부를 뒤집으려 한다.',name:'가상 · 하북의 책사',
+    region:{name:'관도 평원',arc:'상편',terrain:0,boss:{name:'조조',unitClass:'infantry'},pool:WEI_POOL},
+    tales:[
+      {id:'IF1-yuan-1',title:'백마 구원',intro:'원소의 대장 안량이 백마에서 쓰러졌다. 그를 벤 붉은 얼굴의 장수 관우가 아직 전장에 있다. 저 자를 막지 못하면 하북군의 기세가 꺾인다.',target:{name:'관우',unitClass:'cavalry'}},
+      {id:'IF1-yuan-2',title:'오소 수비',intro:'사마의는 원소에게 오소의 군량을 지키라 간언했고, 이번에는 원소가 들었다. 밤을 틈타 조조의 기병이 온다. 선두에 선 자는 장료다.',target:{name:'장료',unitClass:'cavalry'}},
+      {id:'IF1-yuan-3',title:'관도 결전',intro:'관도의 진채가 마주 섰다. 조조의 본진 앞을 웃통 벗은 장사 허저가 막아선다. 그를 넘으면 조조가 보인다.',target:{name:'허저',unitClass:'infantry'}},
+    ]},
   // ── 분기 ① 조조의 죽음
   {id:'wei',act:2,history:true,choice:'조비를 받든다',detail:'정사대로 위를 지키며 기산에서 제갈량의 북벌을 막는다. 연의 전장이 이어진다.',name:'정사 · 위의 방패',
     region:{name:'기산 산악',arc:'중편',terrain:1,boss:{name:'제갈량',unitClass:'strategist'},pool:['infantry','spearman','bandit','assassin','archer','crossbow','taoist','strategist','heavyCav']},tales:[]},
@@ -73,7 +91,13 @@ export const ROUTES:Route[]=[
     ]},
 ];
 export const routeById=(id:string|undefined)=>ROUTES.find(r=>r.id===id);
-export const routesFor=(act:2|3)=>ROUTES.filter(r=>r.act===act);
+export const routesFor=(act:1|2|3)=>ROUTES.filter(r=>r.act===act);
+/** 앞선 선택에 따라 갈림길의 첫머리가 달라진다. */
+const PREFACE:Record<string,string>={
+  serve:'하북을 평정한 공으로 조조의 신임을 얻은 지 십수 년. ',
+  yuan:'관도의 승리도 원씨 형제의 내분을 막지 못했다. 원씨가 무너지자 사마의는 다시 천하의 흐름을 살폈다. ',
+};
+export function fatePrompt(act:1|2|3,route?:{1?:string}){return (act===2&&route?.[1]?PREFACE[route[1]]??'':'')+FATE_POINTS[act].prompt;}
 
 /** 결말: 하편의 선택이 줄기, 중편의 선택이 빛깔을 정한다. */
 export interface Ending {id:string;title:string;lines:string[];history:boolean}
@@ -87,10 +111,15 @@ const ACT3_END:Record<string,{title:string;line:string}>={
   coup:{title:'낙양의 주인',line:'기다림을 버리고 칼을 뽑았다. 낙양은 하룻밤 사이 사마씨의 것이 되었고, 역사는 그를 찬탈자이자 구원자로 함께 기록했다.'},
   unify:{title:'천하통일',line:'남은 생을 강동에 걸었다. 건업이 무너진 날, 백 년 만에 천하가 한 사람의 이름 아래 모였다.'},
 };
-export function endingFor(route2:string|undefined,route3:string|undefined):Ending{
+const ACT1_NOTE:Record<string,string>={
+  serve:'젊은 날 망설임 없이 조조의 부름에 응했던 그는, 일곱 해의 기다림 대신 하북의 전장에서 이름을 얻었다.',
+  yuan:'한때 원소의 막하에서 관도를 뒤집으려 했던 책사를, 천하는 끝내 잊지 않았다.',
+};
+export function endingFor(route2:string|undefined,route3:string|undefined,route1?:string):Ending{
   const a2=route2&&ACT2_TONE[route2]?route2:'wei',a3=route3&&ACT3_END[route3]?route3:'patience';
   const end=ACT3_END[a3]!;
   const flavor=a2==='wei'?'':a2==='cao_zhi'?' · 업성의 왕':' · 촉의 승상';
-  return {id:`${a2}/${a3}`,title:end.title+flavor,lines:[`${ACT2_TONE[a2]!} ${end.line}`,a2==='wei'&&a3==='patience'?'정사의 결말이다. 천하는 결국 사마씨에게로 흘러갔다.':'이것은 일어나지 않은 역사, 사마의가 다른 길을 고른 세계의 이야기다.'],history:a2==='wei'&&a3==='patience'};
+  const history=a2==='wei'&&a3==='patience'&&(route1??'refuse')==='refuse',note=route1?ACT1_NOTE[route1]:undefined;
+  return {id:`${a2}/${a3}`,title:end.title+flavor,lines:[...(note?[note]:[]),`${ACT2_TONE[a2]!} ${end.line}`,history?'정사의 결말이다. 천하는 결국 사마씨에게로 흘러갔다.':'이것은 일어나지 않은 역사, 사마의가 다른 길을 고른 세계의 이야기다.'],history};
 }
 export const ALL_ENDINGS=routesFor(2).flatMap(a=>routesFor(3).map(b=>`${a.id}/${b.id}`));
