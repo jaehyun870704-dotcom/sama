@@ -15,6 +15,13 @@ export type LineWhen=
 export interface BattleLine {id:string;when:LineWhen;speaker:string;text:string}
 
 export const battleLines:Record<string,BattleLine[]>={
+  'S2-12':[
+    {id:'open-1',when:{turn:1},speaker:'사마의',text:'가운데 여울부터 온다. 측면 증원은 예고가 뜨면 예비대를 보내라.'},
+    {id:'open-2',when:{turn:1},speaker:'맹염',text:'위수만 건너면 사마의의 진영이다! 밀어붙여라!'},
+    {id:'west',when:{turn:3},speaker:'곽회',text:'서쪽 여울 너머에 먼지가 입니다. 두 턴 뒤 도착합니다!'},
+    {id:'east',when:{turn:6},speaker:'사마의',text:'이번에는 동쪽이다. 기병을 동쪽 여울로 돌려라.'},
+    {id:'meng',when:{retreat:'meng_yan'},speaker:'곽회',text:'맹염이 물러갑니다! 가운데 여울이 비었습니다!'},
+  ],
   'S2-11':[
     {id:'open-1',when:{turn:1},speaker:'장합',text:'선봉은 내가 맡겠소. 본대는 너무 떨어지지 마시오.'},
     {id:'open-2',when:{turn:2},speaker:'사마의',text:'장 장군과 떨어지면 고립된다. 본대도 서둘러라.'},

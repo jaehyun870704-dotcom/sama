@@ -212,7 +212,8 @@ export class Battlefield {
     clear(this.warnings);
     for(const t of state.telegraphs??[]){
       const left=Math.max(1,t.at-state.turn),g=new Graphics();
-      for(const c of t.cells){const p=iso(c);diamond(g,p.x,p.y,0xd83a2a,left<=1?.38:.22).stroke({color:0xffb08a,width:2,alpha:.9});}
+      const warn=t.ratio<=0;
+      for(const c of t.cells){const p=iso(c);diamond(g,p.x,p.y,warn?0xe0b030:0xd83a2a,left<=1?.38:.22).stroke({color:warn?0xffe08a:0xffb08a,width:2,alpha:.9});}
       this.warnings.addChild(g);
       const head=t.cells[0]!,p=iso(head),tag=new Text({text:`${t.label??'경고'} · ${left}턴`,style:{fontFamily:'Malgun Gothic',fontSize:12,fontWeight:'700',fill:0xffe0c8,stroke:{color:0x3a0c08,width:4}}});
       tag.anchor.set(.5,1);tag.position.set(p.x,p.y-H*.35);this.warnings.addChild(tag);

@@ -175,7 +175,7 @@ function activate(){
   $<HTMLDialogElement>('#modal').close();render();pump();
 }
 function persist(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(session.save()));saveAvailable=true;$('#save-status').textContent='✓ 자동 저장됨';}catch{$('#save-status').textContent='저장 공간 사용 불가';}}
-function describe(e:LogEntry){const name=(id:string)=>session.state.find(id)?.name??id;switch(e.t){case 'telegraph':return `⚠ ${e.label??'광역 공격'} 예고 · ${e.turns}턴 뒤 붉은 칸에 떨어집니다. 칸을 비우세요.`;case 'strike':return `${e.hits.length?e.hits.map(h=>name(h.unit)+' −'+h.damage).join(', '):'아무도 맞지 않았습니다'} · 예고된 공격이 떨어졌습니다.`;
+function describe(e:LogEntry){const name=(id:string)=>session.state.find(id)?.name??id;switch(e.t){case 'telegraph':return e.warning?`⚠ ${e.label??'적 증원'} 예고 · ${e.turns}턴 뒤 노란 칸으로 적이 들어옵니다. 미리 대비하세요.`:`⚠ ${e.label??'광역 공격'} 예고 · ${e.turns}턴 뒤 붉은 칸에 떨어집니다. 칸을 비우세요.`;case 'strike':return `${e.hits.length?e.hits.map(h=>name(h.unit)+' −'+h.damage).join(', '):'아무도 맞지 않았습니다'} · 예고된 공격이 떨어졌습니다.`;
   case 'turnStart':return `${e.turn}턴 · ${sideNames[e.side]}의 차례입니다.`;
   case 'move':return `${name(e.unit)} 이동 · ${terrainNames[session.state.map.tileAt(e.to).terrain]}`;
   case 'attack':case 'counter':return `${name(e.attacker)}${e.t==='counter'?' 반격':' 공격'} → ${name(e.defender)} · ${e.hit?e.damage+' 피해':'회피'}`;

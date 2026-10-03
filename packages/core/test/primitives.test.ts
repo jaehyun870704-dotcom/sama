@@ -576,6 +576,20 @@ describe("M-18 telegraph_aoe", () => {
     const strike = state.log.find((e) => e.t === "strike");
     expect(strike && strike.t === "strike" && strike.hits.map((h) => h.unit)).toEqual(["stay"]);
   });
+  it("treats a zero-damage telegraph as a warning marker that never strikes", () => {
+    const regions = new Map<string, Coord[]>([["ford", [{ x: 2, y: 2 }]], ["objective", [{ x: 6, y: 6 }]]]);
+    const stage = minimalStage({ events: [{ id: "warn", trigger: { type: "battle_start" }, actions: [{ type: "telegraph_aoe", region: "ford", duration: 2, magnitude: 0, label: "증원" }] }] });
+    const state = new BattleState(stage, mapWithWalls(8, 8, [], regions), 1);
+    state.add(makeUnit({ id: "stay", side: "player", unitClass: "infantry", level: 20, pos: { x: 2, y: 2 } }));
+    state.add(sentinel({ x: 7, y: 0 }));
+    const battle = new Battle(state, { seed: 1 });
+    battle.start();
+    expect(state.log.some((e) => e.t === "telegraph" && e.warning === true)).toBe(true);
+    for (let i = 0; i < 8; i++) battle.endPhase();
+    expect(state.telegraphs).toHaveLength(0);
+    expect(state.log.some((e) => e.t === "strike")).toBe(false);
+    expect(state.get("stay").hp).toBe(state.get("stay").stats.maxHp);
+  });
   it("never retreats a unit", () => {
     const { state, battle } = setup();
     state.get("stay").hp = 3;
