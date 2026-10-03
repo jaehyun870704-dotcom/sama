@@ -46,6 +46,8 @@ import yangpingStage from '../../data/stages/S2-07.json';
 import yangpingMap from '../../data/maps/yangping-pass.json';
 import shitingStage from '../../data/stages/S2-08.json';
 import shitingMap from '../../data/maps/shiting-gorge.json';
+import chengguStage from '../../data/stages/S2-09.json';
+import chengguMap from '../../data/maps/chenggu-river.json';
 import legacyFortMap from './legacy/hanzhong-map-v2.json';
 import legacyFortStage from './legacy/hanzhong-stage-v2.json';
 import { makeUnit, awardedSeals } from '../../core/src/index.ts';
@@ -70,9 +72,10 @@ export const chapters = [
   {stage:jietingStage as StageDef,map:jietingMap as MapFile,year:'태화 이년 · 228년',label:'수원 차단과 도주 저지',quote:'산 위의 진은 물이 없으면 사흘을 못 간다.'},
   {stage:yangpingStage as StageDef,map:yangpingMap as MapFile,year:'태화 사년 · 230년',label:'추격과 구원',quote:'쫓는 자도 길을 고르고, 쫓기는 자도 길을 고른다.'},
   {stage:shitingStage as StageDef,map:shitingMap as MapFile,year:'태화 이년 · 228년',label:'협석 돌파',quote:'아버지는 능선에 서고, 아들들은 골짜기를 달린다.'},
+  {stage:chengguStage as StageDef,map:chengguMap as MapFile,year:'태화 오년 · 231년',label:'고착 전선과 성채',quote:'막힌 곳을 두드리지 말고, 열린 길로 돌아 들어가라.'},
 ];
 // Stable indices preserve the existing v2 command saves.
-export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15,16,17,18];
+export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15,16,17,18,19];
 export type Preparation='survival'|'strategy'|'command';
 export const strategies: StrategyDef[] = [
   {id:'windDragon',name:'풍룡',element:'wind',shape:'spread',range:4,radius:1,mpCost:18,power:130,targetSides:['enemy']},
