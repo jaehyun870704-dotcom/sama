@@ -2,6 +2,7 @@ import {describe,it,expect} from 'vitest';
 import {Session,chapters,campaignOrder} from '../src/session.ts';
 import {freshCampaign,deployment} from '../src/progression.ts';
 import {stageRules} from '../src/stage-rules.ts';
+import {CONTROLLABLE} from '../../core/src/index.ts';
 
 const at=(id:string)=>chapters.findIndex(c=>c.stage.id===id);
 const open=(id:string,d:'normal'|'extreme'='normal')=>new Session(at(id),d,215,'survival',4,deployment(freshCampaign(),true));
@@ -48,5 +49,20 @@ describe('하편 · 번성 구원전',()=>{
  it('fails when Wu takes the keep',()=>{
   const s=open('S3-03');s.state.captured.set('keep','enemy');s.act({kind:'endPhase'});
   expect(s.state.outcome).toBe('defeat');expect(s.failure).toContain('번성 본채');
+ });
+});
+describe('하편 · 환성 점령전',()=>{
+ it('builds the bridge after the engineer holds the site for two player turns',()=>{
+  const s=open('S3-04');expect(s.state.get('shield_0').traits).toContain('guardian');expect(s.state.get('far_xbow_0').traits).toContain('penetrate');
+  const eng=s.state.get('engineer');eng.stats.maxHp=eng.hp=999;eng.stats.defense=99;eng.pos={x:11,y:9};
+  const yi=s.state.get('sima_yi');yi.stats.maxHp=yi.hp=999;yi.stats.defense=99;
+  expect(s.state.map.tileAt({x:11,y:8}).terrain).toBe('water');
+  for(let i=0;i<5000&&!s.state.firedEvents.has('huancheng/bridge')&&s.state.outcome==='ongoing'&&s.state.turn<5;i++){eng.pos={x:11,y:9};if(CONTROLLABLE.has(s.state.currentSide))s.act({kind:'endPhase'});else s.tick();}
+  expect(s.state.firedEvents.has('huancheng/bridge')).toBe(true);expect(s.state.map.tileAt({x:11,y:8}).terrain).toBe('bridge');
+  expect(s.state.victory).toEqual([{type:'retreat',unit:'zhuge_ke'}]);
+ });
+ it('fails when the engineer is lost before the bridge stands',()=>{
+  const s=open('S3-04');s.state.retreat(s.state.get('engineer'));s.act({kind:'endPhase'});
+  expect(s.state.outcome).toBe('defeat');expect(s.failure).toContain('공병');
  });
 });

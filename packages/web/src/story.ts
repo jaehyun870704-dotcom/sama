@@ -8,6 +8,7 @@ export function storyBackdrop(index:number){
 }
 /** Atlas cell + narrative location per beat, independent of saved chapter indexes. */
 export const storyLocations:Record<string,Array<{art:number;name:string;companion:string;actor?:number}>>={
+  'S3-04':[{art:14,name:'낙양 · 늙은 태부의 출정',companion:'사마사'},{art:11,name:'환성 · 남쪽 강변',companion:'사마소'},{art:8,name:'환성 · 비워진 성',companion:'사마사'}],
   'S3-03':[{art:14,name:'낙양 · 출정을 청하는 조정',companion:'사마사'},{art:4,name:'번성 · 남쪽 들판',companion:'사마사'},{art:8,name:'번성 · 열린 포위망',companion:'사마사'}],
   'S3-02':[{art:8,name:'양평 · 에워싼 성',companion:'사마사'},{art:14,name:'양평 · 장마 뒤의 진영',companion:'사마사'},{art:8,name:'양평 · 열린 성문',companion:'사마사'}],
   'S3-01':[{art:14,name:'낙양 · 출정 전 조정',companion:'사마사'},{art:11,name:'요수 · 서쪽 강변',companion:'사마사'},{art:8,name:'요수 · 무너진 연군 진영',companion:'사마사'}],
@@ -45,6 +46,11 @@ export const storyLocations:Record<string,Array<{art:number;name:string;companio
   'S1-09':[{art:14,name:'한중 · 철수 군의',companion:'조진'},{art:15,name:'한수 · 불탄 부교터',companion:'조진'},{art:7,name:'한수 · 강변 정찰',companion:'조진'}],
 };
 export const storyBeats:Record<string,StoryBeat[]>={
+  'S3-04':[
+    {speaker:'사마소',line:'제갈각이 환성에 군량을 쌓고 있습니다. 강을 건널 다리가 없습니다.',pose:'enter',actor:2},
+    {speaker:'사마의',line:'공병이 다리를 놓는다. 이틀이면 된다. 그 이틀 동안 방패를 공병 곁에 붙여라. 다만 건너편 노병의 화살은 방패로도 못 막는다.',pose:'speak',actor:4},
+    {speaker:'사마사',line:'노병은 제가 맡겠습니다. 다리가 놓이는 순간 건너가겠습니다.',pose:'resolve',actor:3},
+  ],
   'S3-03':[
     {speaker:'사마사',line:'아버님, 오의 주연이 번성을 에워쌌습니다. 조정에서는 성이 오래 버틸 테니 서두를 것 없다고 합니다.',pose:'enter',actor:3},
     {speaker:'사마의',line:'성 안 사람들은 오래 버티라는 말을 듣고 싶지 않다. 내가 직접 간다.',pose:'speak',actor:4},
@@ -224,10 +230,14 @@ export const stories=[
   ['깃발은 남쪽에','238년, 일흔을 바라보는 사마의가 요동 정벌에 나선다. 공손연의 장수 비연이 요수 동쪽에 긴 전열을 친다. 사마의는 남쪽에 깃발을 세우고, 북쪽으로 건넌다. 오장원에서 배운 것을 이제 그가 쓴다.'],
   ['같은 깃발','238년 가을, 장마가 그치자 사마의는 양평성을 에워싼다. 성 안의 군량이 공손연을 버티게 한다. 군량이 끊기면 그는 달아날 것이다. 그리고 그는 자기와 똑같은 깃발을 든 부대를 함께 내보낼 것이다.'],
   ['늙은 장수의 걸음','241년, 오의 주연이 번성을 에워싼다. 예순을 넘긴 사마의가 직접 구원에 나선다. 그는 이제 빨리 걷지 않는다. 다만 한 걸음도 헛되이 쓰지 않는다.'],
+  ['하루를 지키는 자','243년, 예순다섯의 사마의가 다시 출정한다. 오의 제갈각이 환성에 군량을 쌓고 북쪽을 엿본다. 강 위에 다리는 없다. 공병이 다리를 놓는 이틀이 이 싸움의 전부다.'],
 ];
 
 /** After a main-battle victory: where the story picks up, and what changed. */
 export const storyAftermath:Record<string,{art:number;name:string;beats:Array<{speaker:string;line:string}>}>={
+  'S3-04':{art:8,name:'환성 · 비워진 성',beats:[
+    {speaker:'사마사',line:'제갈각이 군량을 불태우고 물러갔습니다.'},
+    {speaker:'사마의',line:'다리를 놓은 공병에게 상을 내려라. 이 싸움은 칼보다 망치가 이겼다.'}]},
   'S3-03':{art:8,name:'번성 · 열린 포위망',beats:[
     {speaker:'사마사',line:'주연이 물러갔습니다. 수비대가 성문을 열고 아버님을 맞습니다.'},
     {speaker:'사마의',line:'병사들은 내 곁에 있으면 덜 두려워한다. 그것이 늙은 장수가 줄 수 있는 것이다.'}]},

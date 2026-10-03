@@ -42,6 +42,24 @@ export interface StageRules {
 const HILL=['ma_su','hill_spear','hill_bow','hill_foot_a','hill_foot_b','hill_xbow'];
 
 export const stageRules:Record<string,StageRules>={
+  'S3-04':{
+    sealNames:['환성 점령','부대 보존','신속한 도하'],
+    weather:'흐림 · 강안개',
+    labels:[{region:'site_label',text:'가교 터 · 공병 2턴'},{region:'huan_keep',text:'환성 · 제갈각'}],
+    zones:[{region:'bridge_site',color:0xffd27a},{region:'span',color:0x8fd0ff}],
+    tough:[{unit:'engineer',hpScale:1.5,defense:2}],
+    tick:({state})=>{
+      if(!state.firedEvents.has('huancheng/bridge')){
+        const eng=state.find('engineer'),onSite=!!eng?.alive&&state.map.regionCoords('bridge_site').some(c=>c.x===eng.pos.x&&c.y===eng.pos.y);
+        if(state.currentSide==='player'&&(state.survivalClocks.get('build_turn')??0)<state.turn){state.survivalClocks.set('build_turn',state.turn);
+          state.survivalClocks.set('built',onSite?(state.survivalClocks.get('built')??0)+1:(state.survivalClocks.get('built')??0));}
+        if((state.survivalClocks.get('built')??0)>=2)fireScripted(state,'huancheng/bridge');
+        if(!eng?.alive)return '공병을 잃어 다리를 놓을 수 없습니다.';
+      }
+      return undefined;
+    },
+    phase:({state})=>state.firedEvents.has('huancheng/bridge')?'교량 돌파 · 제갈각 격퇴':`가교 건설 · ${state.survivalClocks.get('built')??0}/2턴 · 공병을 가교 터에`,
+  },
   'S3-03':{
     sealNames:['번성 구원','부대 보존','신속한 구원'],
     weather:'맑음 · 한수의 바람',
