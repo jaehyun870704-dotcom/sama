@@ -386,6 +386,8 @@ export class Battle {
     if (!due.length) return;
     this.state.telegraphs = this.state.telegraphs.filter((t) => t.at > this.state.turn);
     for (const t of due) {
+      // 피해 0의 예고는 "이 길로 적이 온다"는 표식일 뿐이다 — 착탄 없이 사라진다.
+      if (t.ratio <= 0) continue;
       const hits: Array<{ unit: string; damage: number }> = [];
       for (const c of t.cells) {
         const u = this.state.unitAt(c);

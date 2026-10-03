@@ -35,6 +35,14 @@ export interface StageRules {
 const HILL=['ma_su','hill_spear','hill_bow','hill_foot_a','hill_foot_b','hill_xbow'];
 
 export const stageRules:Record<string,StageRules>={
+  'S2-12':{
+    sealNames:['도하 저지','부대 보존','신속한 격퇴'],
+    weather:'흐림 · 강바람',
+    labels:[{region:'north_camp',text:'북안 진영'},{region:'guo_post',text:'곽회 · 북원'}],
+    tough:[{unit:'meng_yan',hpScale:1.4,defense:2}],
+    phase:({state})=>`${state.scenarioPhase??'가운데 여울'} · 격퇴 ${state.losses.enemy}/7`,
+    failure:({state})=>state.captured.get('north_camp')==='enemy'?'촉군이 북안 진영을 점령했습니다.':undefined,
+  },
   'S2-11':{
     sealNames:['회군 완료','남은 병력 보존','신속한 회군'],
     somber:true,

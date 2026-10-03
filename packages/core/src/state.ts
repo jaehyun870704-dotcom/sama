@@ -20,7 +20,7 @@ export type LogEntry =
   | { t: "guard"; protector: string; protected: string }
   | { t: "spotted"; watcher: string; target: string }
   | { t: "terrain"; region: string; terrain: TerrainKind }
-  | { t: "telegraph"; id: string; cells: Coord[]; turns: number; label?: string }
+  | { t: "telegraph"; id: string; cells: Coord[]; turns: number; label?: string; warning?: boolean }
   | { t: "strike"; id: string; cells: Coord[]; hits: Array<{ unit: string; damage: number }> }
   | { t: "outcome"; outcome: BattleOutcome };
 

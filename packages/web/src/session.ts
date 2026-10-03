@@ -52,6 +52,8 @@ import shangguiStage from '../../data/stages/S2-10.json';
 import shangguiMap from '../../data/maps/shanggui-fields.json';
 import mumenStage from '../../data/stages/S2-11.json';
 import mumenMap from '../../data/maps/mumen-gorge.json';
+import weishuiStage from '../../data/stages/S2-12.json';
+import weishuiMap from '../../data/maps/weishui-banks.json';
 import legacyFortMap from './legacy/hanzhong-map-v2.json';
 import legacyFortStage from './legacy/hanzhong-stage-v2.json';
 import { makeUnit, awardedSeals } from '../../core/src/index.ts';
@@ -79,9 +81,10 @@ export const chapters = [
   {stage:chengguStage as StageDef,map:chengguMap as MapFile,year:'태화 오년 · 231년',label:'고착 전선과 성채',quote:'막힌 곳을 두드리지 말고, 열린 길로 돌아 들어가라.'},
   {stage:shangguiStage as StageDef,map:shangguiMap as MapFile,year:'태화 오년 · 231년',label:'불길과 함정의 추격',quote:'불이 길을 막으면, 불이 꺼질 때까지 기다릴 수 없는 쪽이 진다.'},
   {stage:mumenStage as StageDef,map:mumenMap as MapFile,year:'태화 오년 · 231년',label:'선봉과 본대',quote:'쫓으라 한 것도 나였고, 멈추라 하지 못한 것도 나였다.'},
+  {stage:weishuiStage as StageDef,map:weishuiMap as MapFile,year:'청룡 이년 · 234년',label:'세 여울의 방어',quote:'적이 어디로 오는지 알면, 예비대는 한 번만 움직이면 된다.'},
 ];
 // Stable indices preserve the existing v2 command saves.
-export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15,16,17,18,19,20,21];
+export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22];
 export type Preparation='survival'|'strategy'|'command';
 export const strategies: StrategyDef[] = [
   {id:'windDragon',name:'풍룡',element:'wind',shape:'spread',range:4,radius:1,mpCost:18,power:130,targetSides:['enemy']},

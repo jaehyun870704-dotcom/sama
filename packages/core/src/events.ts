@@ -306,7 +306,7 @@ export function applyAction(state: BattleState, action: Action): void {
       const turns = Math.max(1, action.duration ?? 1);
       const id = `${action.label ?? "aoe"}@${state.turn}:${cells[0]!.x},${cells[0]!.y}`;
       state.telegraphs.push({ id, cells, at: state.turn + turns, ratio: action.magnitude ?? 30, ...(action.effect ? { effect: action.effect } : {}), ...(action.label ? { label: action.label } : {}) });
-      state.push({ t: "telegraph", id, cells, turns, ...(action.label ? { label: action.label } : {}) });
+      state.push({ t: "telegraph", id, cells, turns, ...(action.label ? { label: action.label } : {}), ...(action.magnitude === 0 ? { warning: true } : {}) });
       break;
     }
     case "start_duel":

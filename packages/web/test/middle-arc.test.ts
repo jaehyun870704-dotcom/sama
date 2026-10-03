@@ -149,3 +149,15 @@ describe('중편 · 목둔 골짜기 전투',()=>{
   expect(s.state.victory).toEqual([{type:'reach',unit:'sima_yi',target:'retreat_exit'}]);
  });
 });
+describe('중편 · 위수 수비전',()=>{
+ it('warns of each flank crossing two turns ahead without striking anyone',()=>{
+  const s=open('S2-12');expect(s.phase).toContain('격퇴 0/7');
+  for(let i=0;i<3000&&s.state.turn<3&&s.state.outcome==='ongoing';i++){if(CONTROLLABLE.has(s.state.currentSide))s.act({kind:'endPhase'});else s.tick();}
+  const warn=s.state.telegraphs.find(t=>t.label==='서쪽 여울 증원');expect(warn?.ratio).toBe(0);expect(warn?.at).toBe(5);
+  expect(s.phase).toContain('서쪽 여울 예고');
+ });
+ it('fails if Shu takes the north-bank camp',()=>{
+  const s=open('S2-12');s.state.captured.set('north_camp','enemy');s.act({kind:'endPhase'});
+  expect(s.state.outcome).toBe('defeat');expect(s.failure).toContain('북안 진영');
+ });
+});
