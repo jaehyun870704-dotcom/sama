@@ -12,7 +12,7 @@ import {stageRules} from './stage-rules.ts';
 import {factionOf} from './officer-art.ts';
 import {crispZoom,groundScaleMode,unitTint} from './pixel-look.ts';
 import type {LogEntry} from '../../core/src/index.ts';
-import { key, manhattan, ignoresRough, tierOf } from '../../core/src/index.ts';
+import { key, manhattan, ignoresRough, tierOf, familyOf } from '../../core/src/index.ts';
 import type { BattleState, Coord, Unit, TerrainKind } from '../../core/src/index.ts';
 
 const W=48,H=48;
@@ -248,7 +248,7 @@ export class Battlefield {
     }
     if(u?.alive&&u.side===state.currentSide&&!u.hasActed){
       if((mode==='repair'||mode==='fortify')&&u.unitClass==='engineer')for(const d of [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}]){const at={x:u.pos.x+d.x,y:u.pos.y+d.y};if(!state.map.inBounds(at))continue;const occupant=state.unitAt(at),ok=mode==='repair'?!!occupant&&occupant.side!=='enemy':!occupant;if(ok){const p=iso(at);diamond(this.ranges,p.x,p.y,mode==='repair'?0x9fe0a8:0xe0c27a,.28).stroke({color:mode==='repair'?0xb9f2c0:0xf2d79a,width:1.4});}}
-      if(mode==='heal'&&u.unitClass==='fengshui')for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){if(manhattan(u.pos,{x,y})<=3){const p=iso({x,y});diamond(this.ranges,p.x,p.y,0x83e8b2,.22);}}
+      if(mode==='heal'&&familyOf(u.unitClass)==='fengshui')for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){if(manhattan(u.pos,{x,y})<=3){const p=iso({x,y});diamond(this.ranges,p.x,p.y,0x83e8b2,.22);}}
       if(mode==='move'&&!u.hasMoved){const reach=state.map.reachable(u,state.occupancy(),ignoresRough(u));for(const k of reach.keys()){const [x,y]=k.split(',').map(Number);const p=iso({x:x!,y:y!});diamond(this.ranges,p.x,p.y,0x62ddd0,.24).stroke({color:0x8de2cb,width:.7,alpha:.55});}}
       else if(mode==='attack'||mode==='duel'||mode==='debate'||state.strategies.has(mode)){
         const def=state.strategies.get(mode);for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){const d=manhattan(u.pos,{x,y});if(d<=(def?.range??(mode==='debate'?3:mode==='duel'?1:u.range[1]))&&d>=(def?0:u.range[0])){const p=iso({x,y});diamond(this.ranges,p.x,p.y,def?0xd3b878:0xe58e78,.22).stroke({color:def?0xe5c88b:0xf0a091,width:.8,alpha:.5});}}

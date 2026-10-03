@@ -1,6 +1,7 @@
 /** Speech-balloon emotes shown above units, written in Korean only: each troop
  * class has its own battle cry, and reactions (critical, evade, guard, crisis,
  * status) share a set. */
+import {familyOf,type UnitClass} from '../../core/src/index.ts';
 export type EmoteShape='balloon'|'burst';
 export interface Emote {text:string;color:number;shape:EmoteShape}
 
@@ -47,7 +48,9 @@ export const reactions:Record<string,Emote>={
   immobile:{text:'속박',color:PURPLE,shape:'balloon'},
   breach:{text:'성문 돌파!',color:GOLD,shape:'burst'},
 };
-export function cryFor(unitClass:string,isStrategy=false,strategy=''){
+export function cryFor(kind:string,isStrategy=false,strategy=''){
+  // 진화 병종은 계열의 외침을 쓴다.
+  const unitClass:string=familyOf(kind as UnitClass);
   if(strategy==='heal'||strategy==='calm'||strategy==='mend'||strategy==='greatMend')return reactions.heal!;
   if(strategy==='repair')return reactions.repair!;
   const cry=classCries[unitClass];

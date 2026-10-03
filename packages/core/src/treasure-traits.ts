@@ -1,5 +1,6 @@
 import {defineTrait,combine,type DamageContext} from './traits.ts';
 import type {Unit} from './types.ts';
+import {familyOf} from './classes.ts';
 type Condition='always'|'physical'|'strategy'|'melee'|'ranged'|'wounded'|'healthy'|'mounted'|'armored'|'caster'|'stationary'|'moving';
 type Effect='power'|'pierce'|'critical'|'accuracy'|'reduction'|'evade'|'safe'|'hp'|'mp'|'rough'|'counter';
 type Rule=readonly [Effect,number,Condition?];
@@ -70,9 +71,9 @@ const conditionText:Record<Condition,string>={always:'',physical:'물리 공격 
 function matches(c:Condition,ctx:DamageContext,self:Unit){switch(c){
  case 'physical':return ctx.kind==='physical';case 'strategy':return ctx.kind==='strategy';case 'melee':return ctx.distance===1;case 'ranged':return ctx.distance>=2;
  case 'wounded':return self.hp<=self.stats.maxHp*.5;case 'healthy':return self.hp>=self.stats.maxHp*.8;
- case 'mounted':return ctx.kind==='physical'&&['cavalry','heavyCav','horseArcher'].includes(ctx.defender.unitClass);
- case 'armored':return ctx.kind==='physical'&&['infantry','spearman','heavyCav','ram'].includes(ctx.defender.unitClass);
- case 'caster':return ctx.kind==='physical'&&['strategist','fengshui','shaman','taoist','maiden','physician'].includes(ctx.defender.unitClass);
+ case 'mounted':return ctx.kind==='physical'&&['cavalry','heavyCav','horseArcher'].includes(familyOf(ctx.defender.unitClass));
+ case 'armored':return ctx.kind==='physical'&&['infantry','spearman','heavyCav','ram'].includes(familyOf(ctx.defender.unitClass));
+ case 'caster':return ctx.kind==='physical'&&['strategist','fengshui','shaman','taoist','maiden','physician'].includes(familyOf(ctx.defender.unitClass));
  case 'stationary':return !self.movedThisTurn;case 'moving':return !!self.movedThisTurn;default:return true;
 }}
 export function treasurePowerText(id:string){return treasurePowers.find(t=>t.id===id)?.rules.map(([effect,n,when='always'])=>{

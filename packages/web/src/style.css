@@ -151,3 +151,4 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
 @media(max-width:580px){.run-party{grid-template-columns:1fr 1fr}.run-choices{grid-template-columns:1fr}}
 .run-news p.evo{color:#f0d08e;font-weight:600}.run-actions button.danger{border-color:#c0705a;color:#f1b6a3;background:#6d2d2024}
 .evo-title{margin:26px 0 6px;color:#d8c495}.evo-lines{display:grid;gap:6px;margin:12px 0 22px}.evo-line{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:8px 10px;border:1px solid #4a574b;background:#151d1e66}.evo-node{display:inline-flex;align-items:baseline;gap:5px;font-size:13px;color:#e1d6b9;cursor:help}.evo-node b{color:#d4b678;font-size:9px;font-weight:400;letter-spacing:1px}.evo-arrow{font-size:11px;color:#8f9d8c}
+.growth-summary .evo-news{color:#f0d08e}

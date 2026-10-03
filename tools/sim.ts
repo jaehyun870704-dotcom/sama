@@ -88,14 +88,53 @@ function isRacing(state: any, unit: any): boolean {
  * 사람은 달아나는 목표 장수를 두고 옆의 졸병을 치지 않는다. (S2-10 고상)
  * 버티는 강적(S1-04 여포)에게 무작정 달려들지는 않는다.
  */
+/**
+ * 닿는 적이 없는데 '지역을 n턴 지켜라'(region_held) 사건이 아직이면 그 지역으로 간다.
+ * 사람은 단계 안내("강변을 지키세요")를 읽고 움직인다 — 적을 일찍 섬멸했다고 멈춰 서지 않는다.
+ */
+function holdGround(session: any, unit: any): boolean {
+  const state = session.state;
+  const pending = (state.stage.events ?? []).find(
+    (e: any) => e.trigger?.type === "region_held" && e.trigger.by === "player" && !state.firedEvents.has(e.id),
+  );
+  if (!pending) return false;
+  const cells = state.map.regionCoords(pending.trigger.region) as Array<{ x: number; y: number }>;
+  if (!cells.length || cells.some((c) => key(c) === key(unit.pos))) return false;
+  const reach = state.map.reachable(unit, state.occupancy());
+  let best: { x: number; y: number } | undefined, bestD = Infinity;
+  for (const k of reach.keys()) {
+    const [x, y] = k.split(",").map(Number) as [number, number];
+    if (state.unitAt({ x, y })) continue;
+    const d = Math.min(...cells.map((c) => manhattan(c, { x, y })));
+    if (d < bestD) { bestD = d; best = { x, y }; }
+  }
+  if (!best || key(best) === key(unit.pos)) return false;
+  return session.act({ kind: "move", unit: unit.id, to: best }).ok;
+}
+
 function strikeQuarry(session: any, unit: any): boolean {
   const state = session.state;
   const quarry = state.victory
     .filter((c: { type: string; unit?: string }) => c.type === "retreat" && c.unit)
     .map((c: { unit: string }) => state.find(c.unit))
     .find((u: any) => u?.alive && u.side === "enemy" && u.behavior === "flee");
-  if (!quarry || unit.range[1] <= 0) return false;
+  if (!quarry) return false;
   const reach = state.map.reachable(unit, state.occupancy());
+  // 책략이 닿으면 가장 센 공격 책략으로 노린다(사람은 도망치는 적장에게 화력을 모은다).
+  const spells = unit.strategies
+    .map((id: string) => state.strategies.get(id))
+    .filter((d: any) => d && d.power > 0 && d.targetSides?.includes("enemy") && unit.mp >= d.mpCost && !state.hasStatus(unit, "seal"))
+    .sort((a: any, b: any) => b.power - a.power);
+  for (const spell of spells) {
+    for (const k of [key(unit.pos), ...reach.keys()]) {
+      const [x, y] = k.split(",").map(Number);
+      if (manhattan({ x, y }, quarry.pos) > spell.range) continue;
+      if (k !== key(unit.pos) && (state.unitAt({ x, y }) || !session.act({ kind: "move", unit: unit.id, to: { x, y } }).ok)) continue;
+      if (session.act({ kind: "strategy", unit: unit.id, strategy: spell.id, at: quarry.pos }).ok) return true;
+      return unit.hasActed;
+    }
+  }
+  if (unit.range[1] <= 0) return false;
   for (const k of reach.keys()) {
     const [x, y] = k.split(",").map(Number);
     const d = manhattan({ x, y }, quarry.pos);
@@ -241,11 +280,14 @@ function play(chapter: number, difficulty: Difficulty, seed: number) {
       for (const cmd of decide(asView(), unit)) {
         // 제자리 이동은 Session이 거절한다 — 결정에서 걸러 낸다.
         if (cmd.kind === "move" && key(cmd.to) === key(unit.pos)) continue;
+        if (cmd.kind === "wait" && holdGround(session, unit)) { accepted = true; continue; }
         if (session.act(cmd).ok) accepted = true;
         if (state.outcome !== "ongoing") break;
       }
       if (accepted || state.outcome !== "ongoing") break;
     }
+    // 할 일이 없으면(닿는 적 없음) 지켜야 할 지역으로 간다.
+    if (!accepted && !unit.hasMoved && state.outcome === "ongoing") holdGround(session, unit);
     if (!unit.hasActed && state.outcome === "ongoing") {
       session.act({ kind: "wait", unit: unit.id });
     }
@@ -283,6 +325,7 @@ for (const chapter of targets) {
         if (process.env.SIM_DEBUG && reasons.get(reason) === 1) {
           console.log(`  [${stage.id} ${difficulty} seed ${seed}] ${reason} · ${session.state.turn}턴`);
           for (const e of session.state.log.slice(-Number(process.env.SIM_DEBUG_TAIL ?? 10))) console.log("    " + JSON.stringify(e));
+          if (process.env.SIM_DEBUG_UNITS) console.log("    units", JSON.stringify(session.state.living().map((u: any) => [u.id, u.side, u.pos.x, u.pos.y, u.hp])), JSON.stringify([...session.state.regionHolds]));
         }
       }
     }
