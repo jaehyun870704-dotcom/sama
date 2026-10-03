@@ -24,7 +24,7 @@ export const placeThemes:Record<Place,PlaceTheme>={
   court:   {name:'흉몽의 궁정',root:58,mode:JUE,tempo:.62,lead:'bell',counter:'erhu',pulse:'temple',pad:'drone',phrase:[0,1,3,2,0,-1,-2,0,1,2,4,3,1,0,-1,0]},
   field:   {name:'들판의 결전',root:62,mode:YU,tempo:.4,lead:'erhu',counter:'zheng',pulse:'march',pad:'drone',phrase:[0,2,3,4,2,3,1,0,2,4,5,6,4,3,2,0]},
 };
-const stagePlaces:Record<string,Place>={'S1-01':'estate','S1-02':'city','S1-03':'mountain','S1-04':'court','S1-05':'river','S1-06':'fortress','S1-07':'forest','S1-08':'fortress','S1-09':'river','S1-10':'river','S1-11':'court','S2-01':'fortress','S2-02':'naval','S2-03':'river','S2-04':'fortress','S2-05':'fortress','S2-06':'mountain','S2-07':'mountain','S2-08':'mountain'};
+const stagePlaces:Record<string,Place>={'S1-01':'estate','S1-02':'city','S1-03':'mountain','S1-04':'court','S1-05':'river','S1-06':'fortress','S1-07':'forest','S1-08':'fortress','S1-09':'river','S1-10':'river','S1-11':'court','S2-01':'fortress','S2-02':'naval','S2-03':'river','S2-04':'fortress','S2-05':'fortress','S2-06':'mountain','S2-07':'mountain','S2-08':'mountain','S2-09':'fortress'};
 const landscapePlaces={field:'field',forest:'forest',river:'river',pass:'mountain',court:'court',fort:'fortress',naval:'naval'} as const;
 
 /** Stage first, then the expedition landscape, then what the map is made of. */

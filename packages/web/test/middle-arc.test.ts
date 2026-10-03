@@ -35,7 +35,7 @@ describe('중편 · 양양 전투',()=>{
   for(const u of s.state.living('player'))expect(s.state.map.tileAt(u.pos).terrain).not.toBe('wall');
  });
 });
-import {subject} from '../src/stage-rules.ts';
+import {subject,stageRules} from '../src/stage-rules.ts';
 import {CONTROLLABLE} from '../../core/src/index.ts';
 describe('중편 · 맹달 차단전',()=>{
  it('trades fatigue against relief armies at the march choice',()=>{
@@ -101,5 +101,21 @@ describe('중편 · 석정 전투',()=>{
  it('wins when both sons stand in the camp, not just one',()=>{
   const s=open('S2-08');s.state.get('sima_shi').pos={x:20,y:8};s.act({kind:'endPhase'});expect(s.state.outcome).toBe('ongoing');
   toPlayer(s);s.state.get('sima_shi').pos={x:20,y:8};s.state.get('sima_zhao').pos={x:22,y:8};s.act({kind:'endPhase'});expect(s.state.outcome).toBe('victory');
+ });
+});
+describe('중편 · 성고 전투',()=>{
+ it('marks the flooded river as impassable and points to the mountain road',()=>{
+  const s=open('S2-09');expect(s.state.map.tileAt({x:9,y:13}).terrain).toBe('water');
+  expect(stageRules['S2-09']!.labels!.map(l=>l.text).join()).toContain('도하 불가');expect(stageRules['S2-09']!.labels!.map(l=>l.text).join()).toContain('북쪽 산길');
+  expect(s.state.get('shu_catapult').stats.movement).toBe(0);expect(s.phase).toContain('대릉 체력 100%');
+ });
+ it('opens the envoy talk once the citadel is taken and rewards reading the letter',()=>{
+  const s=open('S2-09');
+  for(const id of ['citadel_captain','citadel_bow','citadel_xbow'])s.state.retreat(s.state.get(id));
+  const yi=s.state.get('sima_yi');yi.pos={x:20,y:3};
+  expect(s.act({kind:'capture',unit:'sima_yi',region:'citadel'}).ok).toBe(true);
+  expect(s.state.activeDialogue).toBe('envoy');expect(s.state.hasStatus(s.state.get('shu_catapult'),'confusion')).toBe(true);
+  s.act({kind:'choose',nodeId:'envoy',optionId:'letter'});
+  expect(s.state.outcome).toBe('victory');expect(s.seals).toContain(3);
  });
 });

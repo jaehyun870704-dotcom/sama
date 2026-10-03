@@ -33,6 +33,19 @@ export interface StageRules {
 const HILL=['ma_su','hill_spear','hill_bow','hill_foot_a','hill_foot_b','hill_xbow'];
 
 export const stageRules:Record<string,StageRules>={
+  'S2-09':{
+    sealNames:['성고 탈환','대릉 전선 보존','이엄의 편지'],
+    weather:'큰비 뒤 · 강물이 불어남',
+    labels:[{region:'citadel',text:'성고 성채'},{region:'flooded',text:'불어난 강 · 도하 불가'},{region:'mountain_road',text:'북쪽 산길 → 성고'}],
+    anchored:['dai_ling','front_spear','front_shield','shu_catapult'],
+    tough:[{unit:'dai_ling',hpScale:2,defense:6},{unit:'citadel_captain',hpScale:1.5,defense:2}],
+    deadline:18,
+    deadlineText:'대릉의 전선이 더 버티지 못했습니다.',
+    phase:({state})=>{const d=state.find('dai_ling'),hp=d?.alive?Math.round(100*d.hp/d.stats.maxHp):0;
+      return `${state.scenarioPhase??'성채 탈환'} · 대릉 체력 ${hp}% · ${Math.max(0,19-state.turn)}턴 남음`;},
+    seals:({state})=>[1,...(['dai_ling','front_spear','front_shield'].every(id=>state.find(id)?.alive)?[2]:[]),...(state.choices.some(c=>c.nodeId==='envoy'&&c.optionId==='letter')?[3]:[])],
+    failure:({state})=>protectedFailure(state,['dai_ling']),
+  },
   'S2-08':{
     sealNames:['조휴 구출','부대 보존','신속한 구출'],
     labels:[{region:'camp',text:'조휴 진영'},{region:'ridge',text:'능선'}],

@@ -15,6 +15,13 @@ export type LineWhen=
 export interface BattleLine {id:string;when:LineWhen;speaker:string;text:string}
 
 export const battleLines:Record<string,BattleLine[]>={
+  'S2-09':[
+    {id:'open-1',when:{turn:1},speaker:'사마의',text:'강은 불어 건널 수 없다. 북쪽 산길로 돌아 성고를 친다.'},
+    {id:'open-2',when:{turn:1},speaker:'대릉',text:'투석기가 쉬지 않습니다! 오래는 못 버팁니다!'},
+    {id:'ambush',when:{turn:3},speaker:'곽회',text:'산길 옆 숲에서 복병이 나옵니다!'},
+    {id:'relief',when:{turn:7},speaker:'대릉',text:'성고 쪽에서 촉의 기병이 내려옵니다!'},
+    {id:'taken',when:{lockedBy:'chenggu/taken'},speaker:'곽회',text:'성고를 되찾았습니다! 강 건너 촉군이 흔들립니다!'},
+  ],
   'S2-08':[
     {id:'open-1',when:{turn:1},speaker:'사마의',text:'나는 이 능선에서 움직이지 않는다. 목책과 비탈의 궁수는 책략으로 친다.'},
     {id:'open-2',when:{turn:1},speaker:'사마사',text:'소야, 목책이 열리면 곧장 달린다. 조휴 장군의 진영까지!'},
