@@ -23,7 +23,18 @@ export function troopFaceRow(name:string){
   if(/피난민|민중|책사|사자|환영/.test(name))return 4;if(/병|대|장$/.test(name))return 0;
   return undefined;
 }
-export function officerPortrait(name:string){const p=officerLook(name),row=p?undefined:troopFaceRow(name);if(row!==undefined)return `<div class="officer-face troop-face" role="img" aria-label="${escape(name)} 병종 초상" style="background-position:9% ${((2*row+.62)/11*100).toFixed(2)}%"></div>`;return p?`<div class="officer-face" role="img" aria-label="${p.name} 초상" data-officer="${p.id}" style="background-position:${p.slot%4/3*100}% ${Math.floor(p.slot/4)/2*100}%"></div>`:`<div class="officer-face unknown-face" role="img" aria-label="${escape(name)} · 전용 초상 미등록"><span>${name==='꿈속의 목소리'?'夢':'言'}</span></div>`;}
+/** Allegiance of the named officers drawn with a troop face, so a speaker's side reads at a glance. */
+const factions:Record<string,'wei'|'shu'|'wu'|'yan'>={'사마사':'wei','사마소':'wei','장합':'wei','곽회':'wei','조상':'wei','대릉':'wei','공병':'wei','맹달':'shu','제갈량':'shu','마속':'shu','왕평':'shu','위연':'shu','강유':'shu','맹염':'shu','고상':'shu','이엄':'shu','손권':'wu','여몽':'wu','장소':'wu','제갈근':'wu','주연':'wu','제갈각':'wu','비연':'yan','공손연':'yan'};
+export function factionOf(name:string){return factions[name];}
+function nameHash(name:string){let h=0;for(const ch of name)h=(h*31+ch.charCodeAt(0))>>>0;return h;}
+export function officerPortrait(name:string){const p=officerLook(name),row=p?undefined:troopFaceRow(name);if(row!==undefined){
+  // A named officer without painted art: the troop face, nudged in hue per person and marked with
+  // the first syllable of the name on a seal in the colour of their side.
+  const f=factions[name],named=name in troopFaces&&f!==undefined,h=nameHash(name);
+  const tint=named?`;filter:hue-rotate(${(h%7-3)*14}deg) saturate(${(0.85+(h%5)*0.08).toFixed(2)})`:'';
+  const y=((2*row+.62)/11*100).toFixed(2);
+  if(!named)return `<div class="officer-face troop-face" role="img" aria-label="${escape(name)} 병종 초상" style="background-position:9% ${y}%"></div>`;
+  return `<div class="officer-face troop-face named-face faction-${f}" role="img" aria-label="${escape(name)} 병종 초상"><i class="face-img" style="background-position:9% ${y}%${tint}"></i><span class="face-mark">${escape([...name][0]!)}</span></div>`;}return p?`<div class="officer-face" role="img" aria-label="${p.name} 초상" data-officer="${p.id}" style="background-position:${p.slot%4/3*100}% ${Math.floor(p.slot/4)/2*100}%"></div>`:`<div class="officer-face unknown-face" role="img" aria-label="${escape(name)} · 전용 초상 미등록"><span>${name==='꿈속의 목소리'?'夢':'言'}</span></div>`;}
 export function dialogueCaption(speaker:string,line:string){const p=officerLook(speaker);return `<div class="story-caption with-officer" aria-live="polite">${officerPortrait(speaker)}<div class="dialogue-copy"><small>${p?.title??'이야기'}</small><strong>${escape(p?.name??speaker)}</strong><p>${escape(line)}</p></div></div>`;}
 export function splitSpokenLine(line:string){const at=line.indexOf(':');return at>0&&at<20?{speaker:line.slice(0,at).trim(),line:line.slice(at+1).trim()}:{speaker:'해설',line};}
 export function storyActorStyle(name:string,fallbackRow=0){const p=officerLook(name);return p&&p.slot<8?`background-image:var(--officer-story-atlas);background-size:400% 200%;background-position:${p.slot%4/3*100}% ${Math.floor(p.slot/4)*100}%`:`--row:${fallbackRow*20}%`;}

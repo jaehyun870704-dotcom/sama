@@ -115,7 +115,7 @@ import {epilogueLines} from '../src/story.ts';
 describe('에필로그',()=>{
  it('reflects saved lives and the use of deception in the closing recap',()=>{
   const kind=epilogueLines({'S1-01:normal':[1,2],'S3-01:extreme':[1,2],'S3-06:normal':[1,2]}),hard=epilogueLines({});
-  expect(kind[0]).toContain('한 사람도 잃지 않았다');expect(kind[3]).toContain('기만');expect(kind[4]).toContain('두 아들은 모두 살아서');
-  expect(hard[0]).toContain('지킬 수 있는 것만');expect(hard).toHaveLength(5);
+  expect(kind[0]).toContain('한 사람도 잃지 않았다');expect(kind.join()).toContain('기만을 처음으로');expect(kind.at(-1)).toContain('두 아들은 모두 살아서');
+  expect(hard[0]).toContain('지킬 수 있는 것만');expect(hard).toHaveLength(8);
  });
 });

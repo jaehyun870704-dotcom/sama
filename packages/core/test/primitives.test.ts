@@ -610,3 +610,19 @@ describe("fire hazard movement", () => {
     expect(map.reachable(u, new Map()).get("3,1")).toBe((before ?? 0) + 2);
   });
 });
+
+describe("M-18 telegraph awareness", () => {
+  it("never lets a player-side unit end its move on a cell a blow is due to land on", () => {
+    const regions = new Map<string, Coord[]>([["objective", [{ x: 7, y: 2 }]]]);
+    const state = new BattleState(minimalStage({}), mapWithWalls(8, 5, [], regions), 1);
+    state.add(makeUnit({ id: "p", side: "player", unitClass: "infantry", level: 10, pos: { x: 0, y: 2 } }));
+    state.add(makeUnit({ id: "foe", side: "enemy", unitClass: "infantry", level: 1, pos: { x: 6, y: 2 }, behavior: "hold" }));
+    const marked = [1, 2, 3, 4].flatMap((x) => [0, 1, 2, 3, 4].map((y) => ({ x, y })));
+    state.telegraphs.push({ id: "t", cells: marked, at: 2, ratio: 30 });
+    for (const cmd of decide(state, state.get("p"))) {
+      if (cmd.kind === "move") expect(marked.some((c) => c.x === cmd.to.x && c.y === cmd.to.y)).toBe(false);
+    }
+    state.telegraphs[0]!.ratio = 0; // a warning marker only: no reason to avoid it
+    expect(decide(state, state.get("p")).some((c) => c.kind === "move")).toBe(true);
+  });
+});

@@ -228,6 +228,13 @@ function play(chapter: number, difficulty: Difficulty, seed: number) {
     }
     if (!racing && tryDuel(session, unit)) continue;
     if (!racing && strikeQuarry(session, unit)) continue;
+    // 진정(S2-14): 구급약이 남았으면 2칸 안의 혼란에 빠진 아군을 먼저 깨운다.
+    if (!racing && session.canCalm && session.medicine > 0) {
+      const dazed = [...state.living("player"), ...state.living("ally")].find(
+        (u: any) => u.id !== unit.id && state.hasStatus(u, "confusion") && manhattan(u.pos, unit.pos) <= 2,
+      );
+      if (dazed && session.act({ kind: "item", unit: unit.id, item: "calm", target: dazed.id }).ok) continue;
+    }
 
     let accepted = false;
     for (const asView of [() => state, () => withoutCaptureGoals(state)]) {
