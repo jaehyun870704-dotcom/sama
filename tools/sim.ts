@@ -165,6 +165,15 @@ function play(chapter: number, difficulty: Difficulty, seed: number) {
         (a: { correct?: boolean }, b: { correct?: boolean }) =>
           (b.correct === true ? 1 : 0) - (a.correct === true ? 1 : 0),
       );
+      // S1-02: a second bribe (1,500전) would leave less than the 1,000전 gate toll.
+      // A player who can count, and whose party can match the patrols, cuts through instead.
+      const power = (side: string) => {
+        const us = state.living(side);
+        return us.reduce((n: number, u: { stats: { maxHp: number; attack: number; defense: number } }) => n + u.stats.maxHp * (u.stats.attack + u.stats.defense), 0);
+      };
+      if (node.id === "bribe" && session.bribes > 0 && session.funds - 1500 < 1000 && power("player") >= power("enemy") * 0.8) {
+        ordered.sort((a: { id: string }, b: { id: string }) => (b.id === "fight" ? 1 : 0) - (a.id === "fight" ? 1 : 0));
+      }
       const answered = ordered.some(
         (pick: { id: string }) =>
           session.act({ kind: "choose", nodeId: node.id, optionId: pick.id }).ok,
