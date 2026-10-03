@@ -15,6 +15,12 @@ export type LineWhen=
 export interface BattleLine {id:string;when:LineWhen;speaker:string;text:string}
 
 export const battleLines:Record<string,BattleLine[]>={
+  'S2-13':[
+    {id:'open-1',when:{turn:1},speaker:'사마의',text:'골짜기 가운데에서 사와 합류한다. 합류한 뒤 7턴을 버티면 길이 열린다. 포격 표식이 뜨면 바위 그늘로 숨어라.'},
+    {id:'open-2',when:{turn:1},speaker:'사마사',text:'아버님, 북쪽 길도 막혔습니다! 가운데로 가겠습니다!'},
+    {id:'joined',when:{lockedBy:'hulu/joined'},speaker:'사마의',text:'모였다. 이제 버틴다. 바위 그늘을 잃지 마라.'},
+    {id:'rain',when:{lockedBy:'hulu/rain'},speaker:'사마소',text:'비입니다! 아버님, 비가 옵니다! 서쪽 목책의 불이 꺼졌습니다!'},
+  ],
   'S2-12':[
     {id:'open-1',when:{turn:1},speaker:'사마의',text:'가운데 여울부터 온다. 측면 증원은 예고가 뜨면 예비대를 보내라.'},
     {id:'open-2',when:{turn:1},speaker:'맹염',text:'위수만 건너면 사마의의 진영이다! 밀어붙여라!'},

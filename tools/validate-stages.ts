@@ -70,6 +70,7 @@ for (const f of stageFiles) {
     if (ev.trigger.region) regionsUsed.add(ev.trigger.region);
     for (const a of ev.actions) {
       if (a.region) regionsUsed.add(a.region);
+      if (a.exceptRegion) regionsUsed.add(a.exceptRegion);
       for (const u of a.units ?? []) if (u.region) regionsUsed.add(u.region);
     }
   }

@@ -302,6 +302,11 @@ export function applyAction(state: BattleState, action: Action): void {
           if (state.map.inBounds(c) && !cells.some((k) => k.x === c.x && k.y === c.y)) cells.push(c);
         }
       }
+      // 차폐: 바위 그늘 같은 칸은 표식에서 뺀다 — 그 칸으로 피하면 맞지 않는다.
+      if (action.exceptRegion) {
+        const cover = state.map.regionCoords(action.exceptRegion);
+        for (let i = cells.length - 1; i >= 0; i--) if (cover.some((c) => sameCoord(c, cells[i]!))) cells.splice(i, 1);
+      }
       if (!cells.length) break;
       const turns = Math.max(1, action.duration ?? 1);
       const id = `${action.label ?? "aoe"}@${state.turn}:${cells[0]!.x},${cells[0]!.y}`;

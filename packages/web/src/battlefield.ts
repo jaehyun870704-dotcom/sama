@@ -224,6 +224,7 @@ export class Battlefield {
       const tile=state.map.tileAt({x,y});if(tile.hazard==='fire'){const p=iso({x,y});diamond(hazards,p.x,p.y,0xff6a1a,.3).stroke({color:0xffb060,width:2,alpha:.85});hazards.rect(p.x-W*.22,p.y-H*.1,W*.44,H*.36).fill({color:0xffc04a,alpha:.22});}
       else if(tile.hazard==='trap'&&scouted){const p=iso({x,y});diamond(hazards,p.x,p.y,0x5a1810,.18).stroke({color:0xe0503a,width:2,alpha:.9});hazards.moveTo(p.x-W*.16,p.y-H*.16).lineTo(p.x+W*.16,p.y+H*.16).moveTo(p.x+W*.16,p.y-H*.16).lineTo(p.x-W*.16,p.y+H*.16).stroke({color:0xe0503a,width:2.5,alpha:.95});}
     }
+    for(const z of stageRules[state.stage.id]?.zones??[])for(const at of state.map.regionCoords(z.region)){const p=iso(at);diamond(hazards,p.x,p.y,z.color,.16).stroke({color:z.color,width:2,alpha:.85});}
     this.warnings.addChild(hazards);
     const u=state.find(selected);
     for(const goal of state.victory){

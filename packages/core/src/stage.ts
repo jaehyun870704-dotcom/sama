@@ -107,6 +107,8 @@ export interface Action {
   hpRatioDamage?: number;
   /** telegraph_aoe: shown name of the coming blow (e.g. "낙뢰"). */
   label?: string;
+  /** telegraph_aoe: cells in this region are sheltered and never marked (M-18 cover). */
+  exceptRegion?: string;
 }
 
 export interface UnitSpawnSpec {
