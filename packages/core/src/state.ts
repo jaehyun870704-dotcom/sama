@@ -6,8 +6,8 @@ import type { StageDef, VictoryCondition, Difficulty } from "./stage.ts";
 export type LogEntry =
   | { t: "turnStart"; turn: number; side: Side }
   | { t: "move"; unit: string; from: Coord; to: Coord }
-  | { t: "attack"; attacker: string; defender: string; damage: number; hit: boolean; critical: boolean }
-  | { t: "counter"; attacker: string; defender: string; damage: number; hit: boolean }
+  | { t: "attack"; attacker: string; defender: string; damage: number; hit: boolean; critical: boolean; tactic?: string }
+  | { t: "counter"; attacker: string; defender: string; damage: number; hit: boolean; tactic?: string }
   | { t: "strategy"; caster: string; strategy: string; targets: string[]; damage: number[] }
   | { t: "retreat"; unit: string; side: Side }
   | { t: "status"; unit: string; kind: StatusKind; turns: number }

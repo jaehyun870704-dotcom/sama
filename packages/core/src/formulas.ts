@@ -9,6 +9,7 @@ import type { Rng } from "./rng.ts";
 import { applyTraitHooks, combine, type AttackKind, type DamageContext } from "./traits.ts";
 import { familyOf } from "./classes.ts";
 import { hasTrait, traitParam } from "./traits.ts";
+import { tacticMultiplier } from "./tactics.ts";
 
 /** 최소 보장 피해. 방어력이 아무리 높아도 이만큼은 들어간다. */
 export const MIN_DAMAGE = 1;
@@ -135,7 +136,8 @@ export function computePhysical(
   const variance = 0.95 + rng.next() * 0.1;
   const critical = ctx.criticalChance > 0 && rng.chance(ctx.criticalChance);
 
-  let dmg = base * matchup * terrain * elevation * morale * variance * (1 - ctx.reduction);
+  const tactic = tacticMultiplier(attacker, defender, map, !!opts.isCounter);
+  let dmg = base * matchup * terrain * elevation * morale * variance * (1 - ctx.reduction) * tactic.mul;
   if (critical) dmg *= CRITICAL_MULTIPLIER;
   if (opts.isCounter) dmg *= counterMultiplier(attacker);
 
@@ -148,6 +150,7 @@ export function computePhysical(
     critical,
     lethal: damage >= defender.hp,
     breakdown: { base, matchup, terrain, elevation, morale, variance, reduction: ctx.reduction },
+    ...(tactic.name ? { tactic: tactic.name } : {}),
   };
 }
 
@@ -261,6 +264,7 @@ export function estimatePhysical(attacker: Unit, defender: Unit, map: BattleMap)
     elevationMultiplier(map.heightAt(attacker.pos), map.heightAt(defender.pos)) *
     moraleMultiplier(attacker.stats.morale) *
     (1 - ctx.reduction) *
+    tacticMultiplier(attacker, defender, map, false).mul *
     (1 + (Math.min(100, ctx.criticalChance) / 100) * (CRITICAL_MULTIPLIER - 1));
 
   const hitRate = ctx.alwaysHit ? 1 : accuracy(ctx, map) / 100;
@@ -293,7 +297,7 @@ export { combine };
 /** What the player sees before attacking: hit chance and damage on a normal hit,
  * plus the counterattack if the defender survives and can answer. No RNG is drawn. */
 export interface AttackPreview { hit: number; damage: number; lethal: boolean; counter?: { hit: number; damage: number } }
-function hitPreview(attacker: Unit, defender: Unit, map: BattleMap): { hit: number; damage: number } {
+function hitPreview(attacker: Unit, defender: Unit, map: BattleMap, counter = false): { hit: number; damage: number } {
   const ctx = createDamageContext(attacker, defender, "physical");
   applyTraitHooks(ctx);
   if (ctx.immune) return { hit: 0, damage: 0 };
@@ -303,12 +307,12 @@ function hitPreview(attacker: Unit, defender: Unit, map: BattleMap): { hit: numb
     matchupMultiplier(attacker.unitClass, defender.unitClass) *
     map.terrainAffinity(attacker.unitClass, attacker.pos) *
     elevationMultiplier(map.heightAt(attacker.pos), map.heightAt(defender.pos)) *
-    moraleMultiplier(attacker.stats.morale) * (1 - ctx.reduction);
+    moraleMultiplier(attacker.stats.morale) * (1 - ctx.reduction) * tacticMultiplier(attacker, defender, map, counter).mul;
   return { hit: ctx.alwaysHit ? 100 : Math.round(accuracy(ctx, map)), damage: Math.max(MIN_DAMAGE, Math.round(dmg)) };
 }
 export function previewAttack(attacker: Unit, defender: Unit, map: BattleMap, canCounter: boolean): AttackPreview {
   const strike = hitPreview(attacker, defender, map), lethal = strike.hit > 0 && strike.damage >= defender.hp;
   if (!canCounter || lethal) return { ...strike, lethal };
-  const back = hitPreview(defender, attacker, map);
+  const back = hitPreview(defender, attacker, map, true);
   return { ...strike, lethal, counter: { hit: back.hit, damage: Math.max(MIN_DAMAGE, Math.round(back.damage * counterMultiplier(defender))) } };
 }

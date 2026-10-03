@@ -124,7 +124,7 @@ describe('천명의 원정 · 전장',()=>{
    if(!u.hasActed&&st.outcome==='ongoing')s.act({kind:'wait',unit:u.id});}return s;};
   for(const [floor,xp] of [[6,450],[12,1100]] as const){let wins=0;
    for(let seed=1;seed<=6;seed++){const run=newRun(seed*37,start);run.floor=floor;
-    for(let i=0;i<Math.floor(floor/3);i++)recruit(run,(['spearman','crossbow'] as const)[i]!,4);grantXp(run,xp);
+    for(const cls of (['spearman','crossbow'] as const).slice(0,Math.floor(floor/3)))recruit(run,cls,4);grantXp(run,xp);
     if(hold(new Session(RUN_CHAPTER,'normal',seed,'survival',4,deploy(run,'boss'))).state.outcome==='victory')wins++;}
    expect(wins,`floor ${floor}`).toBeGreaterThanOrEqual(2);}
  },30000);
