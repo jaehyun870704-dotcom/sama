@@ -1,7 +1,8 @@
 /** 천명의 원정 화면: 본영(첫 화면) · 출발 · 층 갈림길 · 보상 · 원정 종료 · 천명 해금. 규칙은 roguelike.ts, 영구 진행은 meta.ts. */
 import {newRun,startingOffers,floorChoices,visitNode,finishBattle,finishStory,takeReward,skipReward,describeReward,nextEvolutionText,battleRef,survivorsOf,
-  regionOf,actOf,isBossFloor,mandateEarned,RELICS,REGIONS,STORY_ORDER,RUN_FLOORS,PARTY_LIMIT,XP_PER_LEVEL,type Run,type RunNode,type RunUnit} from './roguelike.ts';
+  regionFor,actOf,isBossFloor,mandateEarned,chooseFate,taleById,RELICS,REGIONS,STORY_ORDER,RUN_FLOORS,PARTY_LIMIT,XP_PER_LEVEL,type Run,type RunNode,type RunUnit} from './roguelike.ts';
 import {loadMeta,saveMeta,buyUnlock,recordStory,settleRun,UNLOCKS,type MetaState} from './meta.ts';
+import {FATE_POINTS,ROUTES,routesFor,routeById,endingFor,ALL_ENDINGS} from './fate.ts';
 import {classNames} from './troops.ts';
 import {chapters,campaignOrder} from './session.ts';
 import {freshCampaign,award,deployment as campaignDeployment} from './progression.ts';
@@ -53,7 +54,7 @@ function partyPanel(run:Run){
   return `<div class="run-party">${run.party.map(unitCard).join('')}</div><p class="run-relics">${relics||'<span class="muted">보물 없음</span>'}${run.secondChance?'<span class="run-relic grace" title="원정마다 한 번, 패배해도 원정이 끝나지 않는다">천명의 가호</span>':''}</p>`;
 }
 const news=(run:Run)=>run.news.length?`<div class="run-news">${run.news.map(n=>`<p${n.startsWith('진화!')?' class="evo"':''}>${esc(n)}</p>`).join('')}</div>`:'';
-const actTrack=(run:Run)=>`<div class="run-track" aria-label="원정 진행">${REGIONS.map((r,i)=>{const act=i+1,cur=actOf(run.floor);return `<span class="${act<cur?'done':act===cur?'now':''}">${r.arc} · ${r.name}</span>`;}).join('')}</div>`;
+const actTrack=(run:Run)=>`<div class="run-track" aria-label="원정 진행">${[1,2,3].map(act=>{const cur=actOf(run.floor),r=regionFor(run,(act-1)*6+1),route=act>1?routeById(run.route?.[act as 2|3]):undefined;return `<span class="${act<cur?'done':act===cur?'now':''}${route&&!route.history?' if':''}">${r.arc} · ${act>1&&!route?'갈림길 전':r.name}${route&&!route.history?' · 가상':''}</span>`;}).join('')}</div>`;
 
 // ─────────────────────────────────────────────── 본영 (첫 화면)
 
@@ -62,9 +63,9 @@ export function showHub(host:RunHost){
   const meta=loadMeta(),run=loadRun(),told=meta.chronicle.length,total=STORY_ORDER[1].length+STORY_ORDER[2].length+STORY_ORDER[3].length;
   host.modal(`<div class="campaign run-hub"><div class="campaign-art"><img src="/sima-portrait-v2.png" alt="부채를 든 사마의 창작 초상"><div class="art-caption">司 馬 懿 <span>천명은 기다리는 자에게 온다</span></div></div>
   <div class="campaign-copy"><div class="eyebrow">三國志 · ROGUELIKE CHRONICLE</div><p class="chapter-pretitle">천명의 원정 · 3편 ${RUN_FLOORS}층</p><h2>사마의전</h2><p class="tagline">한 번의 원정, 한 번뿐인 목숨.</p>
-  <div class="hub-stats"><span><b>${meta.mandate}</b><small>천명</small></span><span><b>${told}/${total}</b><small>연의 기록</small></span><span><b>${meta.best}층</b><small>최고 기록</small></span><span><b>${meta.runs}</b><small>원정 · 완주 ${meta.wins}</small></span></div>
-  <p class="intro">상편(관중)·중편(기산)·하편(요동) 열여덟 층을 지나 마초·제갈량·공손연을 꺾는다. 층마다 갈림길을 고르고, 쓰러진 부대는 돌아오지 않는다. 연의 전장을 이기면 영구 기록에 남아 다음 원정은 그다음 이야기로 이어진다. 원정이 끝나면 천명을 얻어 영구 해금에 쓴다.</p>
-  <div class="hub-actions">${ongoing(run)?`<button id="hub-continue" class="primary">원정 이어하기 · ${run.floor}층 ${esc(regionOf(run.floor).arc)}</button>`:''}<button id="hub-new" class="${ongoing(run)?'':'primary'}">${ongoing(run)?'새 원정 (지금 원정은 포기)':'새 원정 시작'}</button>
+  <div class="hub-stats"><span><b>${meta.mandate}</b><small>천명</small></span><span><b>${told}/${total}</b><small>연의 기록</small></span><span><b>${meta.best}층</b><small>최고 기록</small></span><span><b>${meta.endings.length}/${ALL_ENDINGS.length}</b><small>결말 · 원정 ${meta.runs}회</small></span></div>
+  <p class="intro">상편·중편·하편 열여덟 층을 지난다. 중편과 하편의 첫머리에서 사마의는 운명의 갈림길에 선다 — 정사를 따르면 연의 전장이, 다른 길을 고르면 일어나지 않은 역사가 펼쳐진다. 층마다 갈림길을 고르고, 쓰러진 부대는 돌아오지 않는다. 연의 전장을 이기면 영구 기록에 남아 다음 원정은 그다음 이야기로 이어진다. 원정이 끝나면 천명을 얻어 영구 해금에 쓴다.</p>
+  <div class="hub-actions">${ongoing(run)?`<button id="hub-continue" class="primary">원정 이어하기 · ${run.floor}층 ${esc(regionFor(run,run.floor).arc)}</button>`:''}<button id="hub-new" class="${ongoing(run)?'':'primary'}">${ongoing(run)?'새 원정 (지금 원정은 포기)':'새 원정 시작'}</button>
   <button id="hub-shop">천명 해금 <small>${meta.unlocks.length}/${UNLOCKS.length}</small></button><button id="hub-chronicle">연의 기록 · 회상</button>${host.resumeSaved?'<button id="hub-resume">전투 이어하기</button>':''}<button id="hub-slots">저장 칸</button><button id="hub-troops">병종 도감</button><button id="hub-officers">장수 · 연의 장수록</button></div>
   <p class="prototype-note">기록은 이 브라우저에 저장됩니다.</p></div></div>`,false);
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
@@ -89,6 +90,8 @@ function showChronicleSummary(host:RunHost){
   host.modal(`<div class="briefing run-screen"><div class="eyebrow">연의 기록</div><h2>원정에서 이긴 연의 전장</h2>
   <p>연의 전장은 원정의 갈림길로 나온다. 한 번 이기면 여기 남고, 다음 원정은 그다음 이야기를 보여 준다. 이긴 전장은 '연의 회상'에서 다시 치를 수 있다.</p>
   ${REGIONS.map((r,i)=>{const list=STORY_ORDER[(i+1) as 1|2|3];return `<h3>${r.arc} · ${list.filter(id=>known.has(id)).length}/${list.length}</h3><div class="chronicle-list">${list.map(id=>`<span class="${known.has(id)?'done':''}">${known.has(id)?'◆':'·'} ${esc(known.has(id)?stageTitle(id):'아직 모르는 이야기')}</span>`).join('')}</div>`;}).join('')}
+  <h3>가상 시나리오 · 이긴 가상 전장 ${meta.tales.length}/${ROUTES.reduce((n,r)=>n+r.tales.length,0)}</h3><div class="chronicle-list">${ROUTES.filter(r=>!r.history||r.tales.length).map(r=>r.tales.map(t=>`<span class="${meta.tales.includes(t.id)?'done':''}">${meta.tales.includes(t.id)?'◆':'·'} ${esc(meta.tales.includes(t.id)?`${t.title} (${r.choice})`:'아직 가 보지 않은 길')}</span>`).join('')).join('')}</div>
+  <h3>결말 ${meta.endings.length}/${ALL_ENDINGS.length}</h3><div class="chronicle-list">${ALL_ENDINGS.map(id=>{const [a,b]=id.split('/');const e=endingFor(a,b),seen=meta.endings.includes(id);return `<span class="${seen?'done':''}">${seen?'◆ '+esc(e.title):'· 아직 보지 못한 결말'}</span>`;}).join('')}</div>
   <div class="run-actions"><button id="chron-replay" class="primary" ${known.size?'':'disabled'}>연의 회상 (이긴 전장 다시 치르기)</button><button id="chron-back">← 본영</button></div></div>`,false);
   document.getElementById('chron-replay')!.onclick=host.showChronicle;
   document.getElementById('chron-back')!.onclick=host.showMenu;
@@ -132,7 +135,7 @@ export function showRun(host:RunHost,run:Run){
   if(run.status==='reward')return showReward(host,run);
   if(run.status==='won'||run.status==='lost')return showEnd(host,run);
   if(run.active)return showActive(host,run);
-  const choices=floorChoices(run),region=regionOf(run.floor);
+  const choices=floorChoices(run),region=regionFor(run,run.floor);
   host.modal(`<div class="briefing run-screen"><div class="eyebrow">천명의 원정 · ${run.floor}/${RUN_FLOORS}층 · ${esc(region.arc)} · ${esc(region.name)}</div>${actTrack(run)}
   <h2>${isBossFloor(run.floor)?`${esc(region.arc)}의 끝 · 우두머리가 기다린다`:'갈림길'}</h2>${news(run)}${partyPanel(run)}
   <div class="run-choices">${choices.map((c,i)=>`<button data-node="${i}" class="${c.kind==='boss'?'primary':c.kind==='story'?'story':''}"><strong>${esc(c.label)}${c.stage?` · ${esc(stageTitle(c.stage))}`:''}</strong><small>${esc(c.detail)}</small></button>`).join('')}</div>
@@ -146,10 +149,32 @@ export function showRun(host:RunHost,run:Run){
     run.status='lost';run.news=['원정을 포기했다.'];saveRun(run);showEnd(host,run);};
 }
 
-function launch(host:RunHost,run:Run,kind:'battle'|'elite'|'boss'){
+/** 운명의 갈림길: 사마의가 역사의 길과 다른 길 가운데 하나를 고른다. 고른 길은 그 편 끝까지 간다. */
+function showFate(host:RunHost,run:Run){
+  const act=actOf(run.floor) as 2|3,p=FATE_POINTS[act];
+  host.modal(`<div class="briefing run-screen fate-screen"><div class="eyebrow">${esc(p.year)} · 운명의 갈림길</div><h2>${esc(p.title)}</h2>
+  <blockquote>${esc(p.prompt)}</blockquote>
+  <div class="run-choices">${routesFor(act).map(r=>`<button data-route="${r.id}" class="${r.history?'history':'what-if'}"><strong><span class="route-tag">${r.history?'정사':'가상'}</span>${esc(r.choice)}</strong><small>${esc(r.detail)}</small><small class="route-meta">${esc(r.region.name)} · 우두머리 ${esc(r.region.boss.name)}</small></button>`).join('')}</div>
+  <p class="muted">한 번 고른 길은 이 편이 끝날 때까지 바꿀 수 없다. 두 번의 선택이 결말을 정한다.</p>
+  <div class="run-actions"><button id="run-menu">← 본영 (원정은 저장됨)</button></div></div>`,false);
+  document.querySelectorAll<HTMLButtonElement>('[data-route]').forEach(b=>b.onclick=()=>{if(chooseFate(run,b.dataset.route!)){saveRun(run);showRun(host,run);}});
+  document.getElementById('run-menu')!.onclick=host.showMenu;
+}
+
+/** 가상 전장: 출진 전에 그 세계의 이야기를 한 장 보여 준다. */
+function showTale(host:RunHost,run:Run,taleId:string){
+  const t=taleById(taleId);if(!t)return;
+  host.modal(`<div class="briefing run-screen fate-screen"><div class="eyebrow">가상 전장 · ${esc(regionFor(run,run.floor).name)} · ${run.floor}층</div><h2>${esc(t.title)}</h2>
+  <blockquote>${esc(t.intro)}</blockquote><p class="muted">승리 조건: 적장 ${esc(t.target.name)} 격퇴 · 쓰러진 부대는 원정에서 사라진다.</p>
+  <div class="run-actions"><button id="tale-go" class="primary">출진</button><button id="tale-back">← 갈림길</button></div></div>`,false);
+  document.getElementById('tale-go')!.onclick=()=>launch(host,run,'tale',taleId);
+  document.getElementById('tale-back')!.onclick=()=>showRun(host,run);
+}
+
+function launch(host:RunHost,run:Run,kind:'battle'|'elite'|'boss'|'tale',tale?:string){
   const hero=run.party.find(u=>u.hero)!;
-  const deployment:Deployment={levels:{sima_yi:Math.min(40,hero.level),sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},run:battleRef(run,kind)};
-  run.active=kind;saveRun(run);host.startBattle(deployment,(run.seed+run.floor*97)%2147483647);
+  const deployment:Deployment={levels:{sima_yi:Math.min(40,hero.level),sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},run:battleRef(run,kind,tale)};
+  run.active=kind;if(tale)run.activeTale=tale;else delete run.activeTale;saveRun(run);host.startBattle(deployment,(run.seed+run.floor*97)%2147483647);
 }
 
 /** 연의 전장의 장수 레벨: 연의를 그 장까지 따라온 사람의 레벨, 사마의는 원정 레벨이 더 높으면 그것. */
@@ -172,16 +197,18 @@ function launchStory(host:RunHost,run:Run,stage:string){
 /** 전투 도중 메뉴로 나왔다면: 그 전장으로 돌아가거나, 같은 전장을 처음부터 다시 치른다. 다른 갈림길로는 빠질 수 없다. */
 function showActive(host:RunHost,run:Run){
   const kind=run.active!,live=host.liveRunBattle(),same=live?.seed===run.seed&&live.floor===run.floor&&live.kind===kind;
-  host.modal(`<div class="briefing run-screen"><div class="eyebrow">천명의 원정 · ${run.floor}/${RUN_FLOORS}층 · ${esc(regionOf(run.floor).name)}</div>
+  host.modal(`<div class="briefing run-screen"><div class="eyebrow">천명의 원정 · ${run.floor}/${RUN_FLOORS}층 · ${esc(regionFor(run,run.floor).name)}</div>
   <h2>전투가 아직 끝나지 않았다</h2><p>${same?'열려 있는 전장으로 돌아가 승부를 마저 낸다.':'진행하던 전장 기록이 다른 전투로 바뀌었다. 같은 전장을 처음부터 다시 치른다(지형·적 배치는 같다).'} 전투를 마치기 전에는 다른 갈림길을 고를 수 없다.</p>
   ${partyPanel(run)}<div class="run-actions"><button id="run-resume" class="primary">${same?'전장으로 돌아가기':'같은 전장 다시 시작'}</button><button id="run-menu">← 본영</button></div></div>`,false);
-  document.getElementById('run-resume')!.onclick=()=>same?host.backToBattle():kind==='story'?launchStory(host,run,run.activeStage!):launch(host,run,kind as 'battle'|'elite'|'boss');
+  document.getElementById('run-resume')!.onclick=()=>same?host.backToBattle():kind==='story'?launchStory(host,run,run.activeStage!):launch(host,run,kind as 'battle'|'elite'|'boss'|'tale',run.activeTale);
   document.getElementById('run-menu')!.onclick=host.showMenu;
 }
 
 function choose(host:RunHost,run:Run,node:RunNode){
   if(node.kind==='battle'||node.kind==='elite'||node.kind==='boss')return launch(host,run,node.kind);
   if(node.kind==='story'&&node.stage)return launchStory(host,run,node.stage);
+  if(node.kind==='fate')return showFate(host,run);
+  if(node.kind==='tale'&&node.tale)return showTale(host,run,node.tale);
   visitNode(run,node);saveRun(run);showRun(host,run);
 }
 
@@ -198,8 +225,9 @@ function showEnd(host:RunHost,run:Run){
   const meta=loadMeta(),gain=settleRun(meta,run);saveMeta(meta);
   const won=run.status==='won',reached=won?RUN_FLOORS:run.floor;
   host.modal(`<div class="briefing run-screen"><div class="eyebrow">천명의 원정 · ${won?'완주':'원정 종료'}</div><h2>${won?'천명을 거머쥐다':'원정이 끝났다'}</h2>${news(run)}
-  <p>${won?'세 편의 우두머리를 모두 꺾었다.':`${reached}층(${esc(regionOf(reached).arc)})에서 멈췄다.`} 최고 기록 ${meta.best}층.</p>
-  <div class="hub-stats"><span><b>+${gain||mandateEarned(run)}</b><small>얻은 천명</small></span><span><b>${meta.mandate}</b><small>쓸 수 있는 천명</small></span><span><b>${run.storyDone?.length??0}</b><small>이긴 연의 전장</small></span><span><b>${run.bosses??0}</b><small>꺾은 우두머리</small></span></div>
+  ${won?(()=>{const e=endingFor(run.route?.[2],run.route?.[3]);return `<div class="ending-card ${e.history?'history':'what-if'}"><div class="eyebrow">결말 · ${e.history?'정사':'가상'}</div><h3>${esc(e.title)}</h3>${e.lines.map(l=>`<p>${esc(l)}</p>`).join('')}</div>`;})():''}
+  <p>${won?'세 편의 우두머리를 모두 꺾었다.':`${reached}층(${esc(regionFor(run,reached).arc)})에서 멈췄다.`} 최고 기록 ${meta.best}층 · 본 결말 ${meta.endings.length}/${ALL_ENDINGS.length}.</p>
+  <div class="hub-stats"><span><b>+${gain||mandateEarned(run)}</b><small>얻은 천명</small></span><span><b>${meta.mandate}</b><small>쓸 수 있는 천명</small></span><span><b>${(run.storyDone?.length??0)+(run.talesDone?.length??0)}</b><small>이긴 연의·가상 전장</small></span><span><b>${run.bosses??0}</b><small>꺾은 우두머리</small></span></div>
   ${run.party.length?`<h3>끝까지 남은 부대</h3>${partyPanel(run)}`:''}
   ${run.fallen.length?`<h3>쓰러진 부대</h3><p class="muted">${run.fallen.map(esc).join(' · ')}</p>`:''}
   <div class="run-actions"><button id="run-new" class="primary">새 원정</button><button id="run-shop">천명 해금</button><button id="run-menu">← 본영</button></div></div>`,false);
@@ -213,7 +241,7 @@ function showEnd(host:RunHost,run:Run){
 export function finishRunBattle(host:RunHost,state:BattleState,deployment:Deployment){
   const ref=deployment.run!,run=loadRun();
   if(!run||run.floor!==ref.floor||run.status!=='map'||!run.active||run.active==='story'){host.toast('이 전투의 원정 기록을 찾을 수 없습니다.');return host.showMenu();}
-  finishBattle(run,{kind:ref.kind,label:'',detail:''},state.outcome==='victory',survivorsOf(state,ref));
+  finishBattle(run,{kind:ref.kind,label:'',detail:'',...(ref.tale?{tale:ref.tale}:{})},state.outcome==='victory',survivorsOf(state,ref));
   saveRun(run);showRun(host,run);
 }
 

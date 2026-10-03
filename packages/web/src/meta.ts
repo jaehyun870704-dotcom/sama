@@ -6,6 +6,7 @@
  * 이긴 연의 전장은 '연의 회상'에서 다시 치를 수 있다.
  */
 import {mandateEarned,RUN_FLOORS,type Run} from './roguelike.ts';
+import {endingFor,ALL_ENDINGS,ROUTES} from './fate.ts';
 
 export interface MetaState {
   version:1;
@@ -16,6 +17,10 @@ export interface MetaState {
   unlocks:string[];
   /** 원정에서 이긴 연의 전장 */
   chronicle:string[];
+  /** 이긴 가상 전장 */
+  tales:string[];
+  /** 본 결말(중편 루트/하편 루트) */
+  endings:string[];
   runs:number;wins:number;best:number;
 }
 export interface Unlock {id:string;name:string;cost:number;effect:string}
@@ -31,7 +36,8 @@ export const UNLOCKS:Unlock[]=[
 ];
 
 const KEY='sama-meta-v1';
-export const freshMeta=():MetaState=>({version:1,mandate:0,earned:0,unlocks:[],chronicle:[],runs:0,wins:0,best:0});
+const TALE_IDS=new Set(ROUTES.flatMap(r=>r.tales.map(t=>t.id)));
+export const freshMeta=():MetaState=>({version:1,mandate:0,earned:0,unlocks:[],chronicle:[],tales:[],endings:[],runs:0,wins:0,best:0});
 
 export function readMeta(raw:string|null):MetaState{
   try{
@@ -40,7 +46,9 @@ export function readMeta(raw:string|null):MetaState{
     const ids=new Set(UNLOCKS.map(u=>u.id)),num=(v:unknown)=>Number.isFinite(v)&&(v as number)>=0?Math.floor(v as number):0;
     return {version:1,mandate:num(m.mandate),earned:num(m.earned),runs:num(m.runs),wins:num(m.wins),best:Math.min(RUN_FLOORS,num(m.best)),
       unlocks:Array.isArray(m.unlocks)?m.unlocks.filter(x=>typeof x==='string'&&ids.has(x)):[],
-      chronicle:Array.isArray(m.chronicle)?m.chronicle.filter(x=>typeof x==='string'&&/^S[1-3]-\d\d$/.test(x)):[]};
+      chronicle:Array.isArray(m.chronicle)?m.chronicle.filter(x=>typeof x==='string'&&/^S[1-3]-\d\d$/.test(x)):[],
+      tales:Array.isArray(m.tales)?m.tales.filter(x=>typeof x==='string'&&TALE_IDS.has(x)):[],
+      endings:Array.isArray(m.endings)?m.endings.filter(x=>typeof x==='string'&&ALL_ENDINGS.includes(x)):[]};
   }catch{return freshMeta();}
 }
 export function loadMeta():MetaState{try{return readMeta(localStorage.getItem(KEY));}catch{return freshMeta();}}
@@ -60,5 +68,7 @@ export function settleRun(m:MetaState,run:Run){
   m.mandate+=gain;m.earned+=gain;m.runs++;if(run.status==='won')m.wins++;
   m.best=Math.max(m.best,run.status==='won'?RUN_FLOORS:run.floor);
   for(const s of run.storyDone??[])recordStory(m,s);
+  for(const t of run.talesDone??[])if(!m.tales.includes(t))m.tales.push(t);
+  if(run.status==='won'){const e=endingFor(run.route?.[2],run.route?.[3]).id;if(!m.endings.includes(e))m.endings.push(e);}
   return gain;
 }

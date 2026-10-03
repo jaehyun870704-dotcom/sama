@@ -1,6 +1,7 @@
 import {repairError,repairAmount,fortifyError,parseCell,buildBarricade,placeBarricade,breachRally,BARRICADES_PER_ENGINEER} from './siege.ts';
 import {troopStrategies,supportOptions} from './troops.ts';
-import {refBattle,prepareRunBattle,applyRelics,RUN_FLOORS} from './roguelike.ts';
+import {refBattle,prepareRunBattle,applyRelics,taleById,RUN_FLOORS} from './roguelike.ts';
+import {routeById} from './fate.ts';
 import {applyRomance} from './romance.ts';
 import {expeditionBattle,expeditions} from './expeditions.ts';
 import {newDuel,duelRound,type DuelState,type DuelAction} from './duel.ts';
@@ -458,7 +459,7 @@ export class Session {
     if(data.revision!==undefined&&data.revision!==2&&data.revision!==3&&data.revision!==4)throw new Error('지원하지 않는 전장 버전입니다.');
     if(data.deployment){const d=data.deployment;if(!d.levels||!d.equipped||!OFFICERS.every(id=>Number.isInteger(d.levels[id])&&d.levels[id]!>=1&&d.levels[id]!<=40)||Object.entries(d.equipped).some(([id,item])=>!OFFICERS.includes(id as typeof OFFICERS[number])||!treasures.some(t=>t.id===item)))throw new Error('잘못된 출진 기록입니다.');}
     if(data.deployment?.run){const r=data.deployment.run;
-      if(!Number.isInteger(r.floor)||r.floor<1||r.floor>RUN_FLOORS||!['battle','elite','boss'].includes(r.kind)||!Number.isSafeInteger(r.seed)||!Array.isArray(r.party)||r.party.length<1||r.party.length>6||!r.party.some(u=>u.hero)||!Array.isArray(r.relics)
+      if(!Number.isInteger(r.floor)||r.floor<1||r.floor>RUN_FLOORS||!['battle','elite','boss','tale'].includes(r.kind)||(r.kind==='tale')!==!!taleById(r.tale)||(r.route&&Object.entries(r.route).some(([act,id])=>routeById(id)?.act!==Number(act)))||!Number.isSafeInteger(r.seed)||!Array.isArray(r.party)||r.party.length<1||r.party.length>6||!r.party.some(u=>u.hero)||!Array.isArray(r.relics)
         ||r.party.some(u=>typeof u.id!=='string'||!Number.isInteger(u.level)||u.level<1||u.level>60||!(u.hp>0&&u.hp<=1)))throw new Error('잘못된 원정 기록');
       for(const u of r.party)statsFor(u.unitClass,u.level);
     }

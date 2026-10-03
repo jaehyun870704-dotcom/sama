@@ -28,6 +28,7 @@ describe('천명의 원정 · 규칙',()=>{
   const run=fresh();expect(run.party).toHaveLength(4);expect(run.party[0]!.hero).toBe(true);
   expect(floorChoices(run)).toHaveLength(3);expect(floorChoices(run).some(n=>n.kind==='battle')).toBe(true);
   expect(floorChoices(run)).toEqual(floorChoices(fresh()));expect(RUN_FLOORS).toBe(18);
+  run.route={2:'wei',3:'patience'};
   for(const f of [6,12,18]){run.floor=f;expect(floorChoices(run).map(n=>n.kind)).toEqual(['boss']);}
   expect([6,12,18].map(f=>{run.floor=f;return floorChoices(run)[0]!.label;})).toEqual(['우두머리 · 마초','우두머리 · 제갈량','우두머리 · 공손연']);
  });

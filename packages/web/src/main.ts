@@ -18,6 +18,7 @@ import {readCampaign,writeCampaign,deployment,levelInfo,award,equip,equipSlot,tr
 import {storyBeats,storyLocations,storyBackdrop,storyAftermath,acts,stories,epilogueLines} from './story.ts';
 import {showHub,finishRunBattle,finishRunStory,RUN_CHAPTER,type RunHost} from './run-ui.ts';
 import {loadMeta} from './meta.ts';
+import {RUN_FLOORS} from './roguelike.ts';
 import {romance,romanceOf} from './romance.ts';
 import './style.css';
 import catalogue from './campaign.json';
@@ -234,7 +235,7 @@ const ARCS:Record<string,[string,string,string]>={upper:['Ⅰ','상편','살아�
 function render(){
   {const [no,arc,name]=session.deployment?.run?['∞','원정','천명의 길']:ARCS[(session.state.stage as {arc?:string}).arc??'upper']??ARCS.upper!;$('#arc-crumb').innerHTML=`${arc} <span>/</span> ${name}`;$('#arc-eyebrow').innerHTML=`CHAPTER ${no} <span>${arc}</span>`;}
   const s=session.state,c=session.deployment?.run?{...chapters[session.chapter]!,stage:s.stage,year:`천명의 원정 · ${session.deployment.run.floor}층`}:session.deployment?.mission?{...chapters[session.chapter]!,stage:s.stage,year:'외전 · 수련과 인연'}:chapters[session.chapter]!;
-  $('#stage-title').textContent=c.stage.title;$('#stage-subtitle').textContent=session.deployment?.run?`천명의 원정 · ${session.deployment.run.floor}/12층`:`제 ${c.stage.order}장 · ${s.difficulty==='normal'?'일반':'극한'}`;
+  $('#stage-title').textContent=c.stage.title;$('#stage-subtitle').textContent=session.deployment?.run?`천명의 원정 · ${session.deployment.run.floor}/${RUN_FLOORS}층`:session.deployment?.runStory?`천명의 원정 · ${session.deployment.runStory.floor}/${RUN_FLOORS}층 · 연의 전장`:`제 ${c.stage.order}장 · ${s.difficulty==='normal'?'일반':'극한'}`;
   $('#map-name').textContent=c.stage.subtitle??c.stage.title;$('#year').textContent=`${c.year} · ${s.map.width}×${s.map.height}`;
   document.body.classList.toggle('nightmare',session.chapter===4);
   $('.weather').textContent=session.weather;
