@@ -15,6 +15,14 @@ export type LineWhen=
 export interface BattleLine {id:string;when:LineWhen;speaker:string;text:string}
 
 export const battleLines:Record<string,BattleLine[]>={
+  'S2-07':[
+    {id:'open-1',when:{turn:1},speaker:'사마의',text:'위연이 관으로 빠지기 전에 잡는다. 곽 장군의 진영도 오래 버티지 못한다.'},
+    {id:'open-2',when:{turn:2},speaker:'위연',text:'사마의가 왔다고? 진영은 됐다, 관으로 돌아갈 채비를 해라!'},
+    {id:'guo',when:{turn:3},speaker:'곽회',text:'도독! 진영의 목책이 무너지고 있습니다!'},
+    {id:'flee',when:{lockedBy:'yangping/flee'},speaker:'위연',text:'물러난다! 양평관으로!'},
+    {id:'gone',when:{lockedBy:'yangping/escaped'},speaker:'사마의',text:'위연이 관을 빠져나갔다. 남은 적을 쳐서 이 싸움을 매듭짓는다.'},
+    {id:'down',when:{retreat:'wei_yan'},speaker:'곽회',text:'위연이 꺾였습니다! 진영이 살았습니다!'},
+  ],
   'S2-06':[
     {id:'open-1',when:{turn:1},speaker:'사마의',text:'북쪽 샘 두 칸을 지키면 물이 줄어듭니다. 물이 다 떨어지면 촉군이 무너집니다.'},
     {id:'open-2',when:{turn:1},speaker:'마속',text:'높은 곳에 진을 치면 내려다보며 깨뜨린다. 병법에 그렇게 쓰여 있다!'},
