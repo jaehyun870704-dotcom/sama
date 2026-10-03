@@ -8,6 +8,7 @@ export function storyBackdrop(index:number){
 }
 /** Atlas cell + narrative location per beat, independent of saved chapter indexes. */
 export const storyLocations:Record<string,Array<{art:number;name:string;companion:string;actor?:number}>>={
+  'S2-14':[{art:14,name:'위수 · 별이 떨어진 밤',companion:'곽회'},{art:4,name:'오장원 · 비어 가는 진영',companion:'곽회'},{art:11,name:'오장원 · 동쪽으로 돌아가는 길',companion:'곽회'}],
   'S2-13':[{art:14,name:'위수 · 사마의의 군막',companion:'사마사'},{art:4,name:'호로곡 · 불길 속 골짜기',companion:'사마소'},{art:11,name:'호로곡 · 비 그친 출구',companion:'사마사'}],
   'S2-12':[{art:14,name:'위수 북안 · 군막',companion:'곽회'},{art:11,name:'위수 · 세 여울',companion:'곽회'},{art:4,name:'위수 · 물러선 남안',companion:'곽회'}],
   'S2-11':[{art:14,name:'기산 · 물러나는 촉군',companion:'장합'},{art:4,name:'목둔 · 골짜기 어귀',companion:'장합'},{art:11,name:'목둔 · 돌아오는 길',companion:'곽회'}],
@@ -41,6 +42,11 @@ export const storyLocations:Record<string,Array<{art:number;name:string;companio
   'S1-09':[{art:14,name:'한중 · 철수 군의',companion:'조진'},{art:15,name:'한수 · 불탄 부교터',companion:'조진'},{art:7,name:'한수 · 강변 정찰',companion:'조진'}],
 };
 export const storyBeats:Record<string,StoryBeat[]>={
+  'S2-14':[
+    {speaker:'곽회',line:'도독, 어젯밤 큰 별이 오장원 쪽으로 떨어졌습니다. 촉군 진영이 조용합니다.',pose:'enter',actor:0},
+    {speaker:'사마의',line:'제갈량이 죽었소. 촉군이 물러나기 시작할 것이오. 지금 쫓으면 그들의 꼬리를 자를 수 있소.',pose:'speak',actor:4},
+    {speaker:'곽회',line:'그러나 그는 물러날 때마다 덫을 남겼습니다. 장 장군을 잃은 목둔처럼요.',pose:'resolve',actor:0},
+  ],
   'S2-13':[
     {speaker:'사마소',line:'아버님, 호로곡에 촉군의 군량 창고가 있다는 첩보입니다. 지키는 병사도 적다고 합니다.',pose:'enter',actor:2},
     {speaker:'사마의',line:'제갈량이 군량을 그렇게 허술하게 둘 리 없다. 그러나 확인은 해야 한다. 사야, 너는 북쪽 길로, 나는 남쪽 길로 들어간다.',pose:'speak',actor:4},
@@ -196,10 +202,14 @@ export const stories=[
   ['목문도의 화살','231년, 군량이 떨어진 제갈량이 기산에서 물러난다. 사마의는 장합에게 추격을 명한다. 장합은 물러나는 군을 쫓지 말라 했지만 명을 따른다. 목둔의 골짜기는 좁고, 양쪽 벼랑은 높다.'],
   ['세 여울','234년, 제갈량이 다섯 번째로 나온다. 이번에는 오장원에 둔전을 일구며 오래 머물 채비를 한다. 사마의는 위수 북안에 선다. 건널 수 있는 여울은 셋. 장합을 잃은 뒤의 첫 싸움이다.'],
   ['하늘이 내린 비','234년, 제갈량은 싸움을 받지 않는 사마의를 끌어내려 호로곡에 미끼를 둔다. 사마의 부자가 골짜기로 들어서자 입구에 불이 붙는다. 갈라진 두 부대가 골짜기 가운데에서 다시 만나야 한다. 그리고 하늘을 기다린다.'],
+  ['산 중달이 달아나다','234년 가을, 제갈량이 오장원의 진중에서 숨을 거둔다. 촉군은 소리 없이 물러난다. 사마의는 추격에 나선다. 그러나 촉군의 후미에는 강유가 있고, 강유의 수레에는 아직 제갈량의 깃발이 있다.'],
 ];
 
 /** After a main-battle victory: where the story picks up, and what changed. */
 export const storyAftermath:Record<string,{art:number;name:string;beats:Array<{speaker:string;line:string}>}>={
+  'S2-14':{art:11,name:'오장원 · 동쪽으로 돌아가는 길',beats:[
+    {speaker:'곽회',line:'촉군이 다 빠져나갔습니다. 그 수레에 있던 것은 나무로 깎은 상이었다고 합니다.'},
+    {speaker:'사마의',line:'산 사람의 뜻은 헤아릴 수 있어도, 죽은 사람의 뜻은 헤아릴 수 없었소. 사람들이 웃어도 좋소. 나는 살아서 돌아왔소.'}]},
   'S2-13':{art:11,name:'호로곡 · 비 그친 출구',beats:[
     {speaker:'사마사',line:'아버님, 비가 아니었다면…'},
     {speaker:'사마의',line:'하늘이 우리를 살렸다. 그러나 다시는 저자의 미끼를 물지 않겠다. 이제 우리는 싸우지 않고 기다린다.'}]},

@@ -119,6 +119,9 @@ function matches(state: BattleState, trig: Trigger, phase: EventPhase): boolean 
       return state.heldTurns(trig.region, trig.by ?? "player") >= (trig.n ?? 1);
     }
 
+    case "scripted":
+      return false;
+
     // M-02 PATROL_STEALTH — 순찰 유닛의 시야에 적대 유닛이 들어왔는가
     case "unit_spotted": {
       const watchers = trig.watcher
@@ -134,6 +137,16 @@ function matches(state: BattleState, trig: Trigger, phase: EventPhase): boolean 
       });
     }
   }
+}
+
+/** 호스트 규칙이 조건을 판정하는 이벤트를 id로 한 번 발동한다. 이미 발동했으면 false. */
+export function fireScripted(state: BattleState, id: string): boolean {
+  const ev = (state.stage.events ?? []).find((e) => e.id === id);
+  if (!ev || state.firedEvents.has(id)) return false;
+  state.firedEvents.add(id);
+  state.push({ t: "event", id });
+  for (const action of ev.actions) applyAction(state, action);
+  return true;
 }
 
 export function applyAction(state: BattleState, action: Action): void {

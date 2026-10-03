@@ -15,6 +15,12 @@ export type LineWhen=
 export interface BattleLine {id:string;when:LineWhen;speaker:string;text:string}
 
 export const battleLines:Record<string,BattleLine[]>={
+  'S2-14':[
+    {id:'open-1',when:{turn:1},speaker:'사마의',text:'물러나는 촉군을 쫓는다. 너무 깊이 들어가지는 마라.'},
+    {id:'open-2',when:{turn:2},speaker:'곽회',text:'서쪽 길 끝이 촉의 퇴로입니다. 빠져나가기 전에 붙잡아야 합니다.'},
+    {id:'banner',when:{lockedBy:'wuzhang/banner'},speaker:'강유',text:'승상께서 여기 계시다! 위군은 물러가라!'},
+    {id:'calm',when:{lockedBy:'wuzhang/banner'},speaker:'곽회',text:'병사들이 흩어집니다! 구급약으로 진정시키며 동쪽으로 물러나십시오!'},
+  ],
   'S2-13':[
     {id:'open-1',when:{turn:1},speaker:'사마의',text:'골짜기 가운데에서 사와 합류한다. 합류한 뒤 7턴을 버티면 길이 열린다. 포격 표식이 뜨면 바위 그늘로 숨어라.'},
     {id:'open-2',when:{turn:1},speaker:'사마사',text:'아버님, 북쪽 길도 막혔습니다! 가운데로 가겠습니다!'},
