@@ -42,6 +42,13 @@ export class Battle {
 
   /** 전투 시작. battle_start 이벤트를 발화시킨다. */
   start(): void {
+    // "Hold for N turns" goals count from the first turn unless a scenario started the clock.
+    for (const c of [...this.state.victory, ...this.state.defeat]) {
+      if (c.type === "survive_turns") {
+        const label = c.target ?? "default";
+        if (!this.state.survivalClocks.has(label)) this.state.survivalClocks.set(label, this.state.turn);
+      }
+    }
     this.state.updateRegionHolds();
     runEvents(this.state, { kind: "battle_start" });
     this.beginPhase();

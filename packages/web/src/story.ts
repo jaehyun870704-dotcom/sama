@@ -8,6 +8,7 @@ export function storyBackdrop(index:number){
 }
 /** Atlas cell + narrative location per beat, independent of saved chapter indexes. */
 export const storyLocations:Record<string,Array<{art:number;name:string;companion:string;actor?:number}>>={
+  'S2-04':[{art:14,name:'낙양 · 새 황제의 조회',companion:'조진'},{art:8,name:'양양 · 성루',companion:'조진'},{art:16,name:'양양 · 성 밖 길목',companion:'조진'}],
   'S2-03':[{art:12,name:'허창 · 유수의 집무실',companion:'조진'},{art:16,name:'광릉 · 얼어붙은 강가',companion:'조진'},{art:14,name:'광릉 · 황제의 행영',companion:'조진'}],
   'S2-02':[{art:14,name:'수춘 · 동정의 군막',companion:'조진'},{art:7,name:'동구 · 폭풍 전야의 강',companion:'조진'},{art:15,name:'동구 · 북쪽 강둑',companion:'조진'}],
   'S1-07':[
@@ -31,6 +32,11 @@ export const storyLocations:Record<string,Array<{art:number;name:string;companio
   'S1-09':[{art:14,name:'한중 · 철수 군의',companion:'조진'},{art:15,name:'한수 · 불탄 부교터',companion:'조진'},{art:7,name:'한수 · 강변 정찰',companion:'조진'}],
 };
 export const storyBeats:Record<string,StoryBeat[]>={
+  'S2-04':[
+    {speaker:'조진',line:'선황께서 돌아가셨네. 폐하께서는 자네와 나, 그리고 진군에게 뒷일을 맡기셨어. 그 틈에 손권이 양양으로 온다는군.',pose:'enter',actor:3},
+    {speaker:'사마의',line:'오군은 세 갈래로 옵니다. 강에서 내리는 자들은 책략에 강하고, 동쪽의 장패는 창칼에 단단합니다. 한 가지 병종으로는 막을 수 없습니다.',pose:'speak',actor:4},
+    {speaker:'조진',line:'길목마다 맞는 부대를 세우세. 여덟 턴만 버티면 오군은 물러갈 걸세.',pose:'resolve',actor:3},
+  ],
   'S2-03':[
     {speaker:'사마의',line:'폐하께서 다시 강동으로 나서십니다. 저는 허창을 지키라는 명을 받았습니다. 이번에는 장군 혼자 가셔야 합니다.',pose:'enter',actor:4},
     {speaker:'조진',line:'걱정 말게. 자네가 늘 말하던 대로, 다치면 고치고 막히면 뚫고 멀면 쏘면 되지 않나.',pose:'speak',actor:3},
@@ -126,10 +132,14 @@ export const stories=[
   ['되돌아오는 화살','220년, 조조가 죽고 조비가 한의 제위를 넘겨받았다. 새 왕조가 서던 해, 양주의 호족들이 무위에서 들고일어난다. 반란군 속에는 책략의 힘을 되돌리는 무당이 섞여 있다. 강하게 치는 것만이 답이 아니다.'],
   ['하늘의 칼','222년, 황제 조비가 강동 원정에 나섰다. 동구에 모인 위의 함대 위로 폭풍이 몰려온다. 번개가 떨어질 자리는 하늘이 먼저 알려 준다. 오군 상륙대가 퇴로를 막기 전에 황제를 북서쪽으로 모셔야 한다.'],
   ['얼어붙은 강','225년, 황제 조비가 다시 광릉으로 나섰다. 그러나 강은 얼어붙어 배가 움직이지 않는다. 사마의는 허창에 남았고, 오의 장수 고수가 결사대를 이끌고 밤의 행영을 친다. 조진은 사마의 없이 부대를 이끌어야 한다.'],
+  ['세 갈래 물결','226년, 황제 조비가 세상을 떠나며 조진·사마의·진군에게 어린 황제를 맡겼다. 국상의 틈을 노려 손권의 군대가 양양으로 밀려든다. 강변, 동쪽 큰길, 남쪽 숲길. 물결마다 다른 적이 온다.'],
 ];
 
 /** After a main-battle victory: where the story picks up, and what changed. */
 export const storyAftermath:Record<string,{art:number;name:string;beats:Array<{speaker:string;line:string}>}>={
+  'S2-04':{art:8,name:'양양 · 물러가는 오군의 깃발',beats:[
+    {speaker:'조진',line:'제갈근이 물러났네! 장패도 다시는 강을 건너지 못할 걸세.'},
+    {speaker:'사마의',line:'폐하께서 저를 형주·예주의 군사를 맡는 자리에 앉히셨습니다. 이제부터는 제가 먼저 판을 짜야 합니다.'}]},
   'S2-03':{art:16,name:'광릉 · 새벽의 얼음 강',beats:[
     {speaker:'조진',line:'폐하를 모셨네. 고수에게 수레 덮개를 빼앗긴 것은 부끄럽지만… 사람은 잃지 않았어.'},
     {speaker:'사마의',line:'장군께서 부대를 기르신 덕입니다. 폐하의 건강이 좋지 않다는 소식이 들립니다. 조정이 흔들릴 때를 대비해야 합니다.'}]},

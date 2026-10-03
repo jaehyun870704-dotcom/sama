@@ -28,3 +28,10 @@ describe('중편 · 광릉 전투',()=>{
   expect(s.state.victory.map(v=>v.type)).toEqual(['retreat','reach']);expect(s.state.get('cao_pi').range).toEqual([0,0]);
  });
 });
+describe('중편 · 양양 전투',()=>{
+ it('starts the eight-turn hold on its own and shows the turns left',()=>{
+  const s=open('S2-04');expect(s.state.survivalClocks.get('xiangyang')).toBe(1);expect(s.phase).toContain('8턴 남음');
+  expect(s.state.get('gate_captain').pos).toEqual({x:4,y:6});
+  for(const u of s.state.living('player'))expect(s.state.map.tileAt(u.pos).terrain).not.toBe('wall');
+ });
+});
