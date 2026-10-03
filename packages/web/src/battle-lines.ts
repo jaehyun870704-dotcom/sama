@@ -15,6 +15,12 @@ export type LineWhen=
 export interface BattleLine {id:string;when:LineWhen;speaker:string;text:string}
 
 export const battleLines:Record<string,BattleLine[]>={
+  'S3-03':[
+    {id:'open-1',when:{turn:1},speaker:'사마의',text:'들판은 빠르고 숲길은 안전하다. 내 곁을 떠나지 말라, 곁에 있으면 사기가 오른다.'},
+    {id:'open-2',when:{turn:2},speaker:'주연',text:'사마의가 왔다고? 성이 떨어지기 전에 밀어붙여라!'},
+    {id:'wave',when:{turn:4},speaker:'사마사',text:'강 쪽에서 오군이 상륙합니다!'},
+    {id:'zhu',when:{retreat:'zhu_ran'},speaker:'사마의',text:'주연이 물러났다. 포위는 끝났다.'},
+  ],
   'S3-02':[
     {id:'open-1',when:{turn:1},speaker:'사마의',text:'포차로 성 안 군량고를 노려라. 군량고가 남아 있는 동안 연군은 기운을 되찾는다.'},
     {id:'open-2',when:{turn:2},speaker:'공손연',text:'성은 높고 군량은 넉넉하다. 사마의는 늙었다, 오래 버티지 못한다.'},

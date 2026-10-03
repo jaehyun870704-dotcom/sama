@@ -38,3 +38,15 @@ describe('하편 · 공손연 진압전',()=>{
   expect(s.state.outcome).toBe('defeat');expect(s.failure).toContain('공손연');
  });
 });
+describe('하편 · 번성 구원전',()=>{
+ it('rallies the units standing within two tiles of Sima Yi once a turn',()=>{
+  const s=open('S3-03'),yi=s.state.get('sima_yi');
+  const near=[...s.state.living('player'),...s.state.living('ally')].find(u=>u.id!=='sima_yi')!;near.pos={x:yi.pos.x+1,y:yi.pos.y};
+  s.act({kind:'wait',unit:'sima_yi'});expect(s.state.hasStatus(near,'rally')).toBe(true);
+  expect(s.phase).toContain('수비대 2/2');
+ });
+ it('fails when Wu takes the keep',()=>{
+  const s=open('S3-03');s.state.captured.set('keep','enemy');s.act({kind:'endPhase'});
+  expect(s.state.outcome).toBe('defeat');expect(s.failure).toContain('번성 본채');
+ });
+});

@@ -62,6 +62,8 @@ import liaoshuiStage from '../../data/stages/S3-01.json';
 import liaoshuiMap from '../../data/maps/liaoshui-fords.json';
 import xiangpingStage from '../../data/stages/S3-02.json';
 import xiangpingMap from '../../data/maps/xiangping-walls.json';
+import fanchengStage from '../../data/stages/S3-03.json';
+import fanchengMap from '../../data/maps/fancheng-relief.json';
 import legacyFortMap from './legacy/hanzhong-map-v2.json';
 import legacyFortStage from './legacy/hanzhong-stage-v2.json';
 import { makeUnit, awardedSeals } from '../../core/src/index.ts';
@@ -94,9 +96,10 @@ export const chapters = [
   {stage:wuzhangStage as StageDef,map:wuzhangMap as MapFile,year:'청룡 이년 · 234년',label:'추격과 동요',quote:'죽은 제갈이 산 중달을 달아나게 했다.'},
   {stage:liaoshuiStage as StageDef,map:liaoshuiMap as MapFile,year:'경초 이년 · 238년',label:'양동과 진짜 공격',quote:'이번에는 우리가 깃발을 세워 적을 움직인다.'},
   {stage:xiangpingStage as StageDef,map:xiangpingMap as MapFile,year:'경초 이년 · 238년',label:'보급 차단과 포획',quote:'같은 깃발 셋 가운데 하나만 사람이다.'},
+  {stage:fanchengStage as StageDef,map:fanchengMap as MapFile,year:'정시 이년 · 241년',label:'짧은 길과 안전한 길',quote:'늙은 장수는 빨리 걷지 않는다. 다만 헛걸음을 하지 않는다.'},
 ];
 // Stable indices preserve the existing v2 command saves.
-export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26];
+export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27];
 export type Preparation='survival'|'strategy'|'command';
 export const strategies: StrategyDef[] = [
   {id:'windDragon',name:'풍룡',element:'wind',shape:'spread',range:4,radius:1,mpCost:18,power:130,targetSides:['enemy']},
