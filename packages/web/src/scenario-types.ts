@@ -97,7 +97,27 @@ export interface Scene {
   steps:ScriptStep[];
 }
 
+/**
+ * 출진 전 진영 — 조조전의 거점처럼, 이야기가 끝난 뒤 진영에서 사람들이 오가고(제자리 근처를 걷는다)
+ * 플레이어가 누군가를 누르면 사마의가 다가가 말을 건다. 대화는 그 장의 상황·인물 관계·다가올 전투의
+ * 실마리를 담는다. 말을 다 걸지 않아도 출진할 수 있다.
+ */
+export interface CampPerson {
+  name:string;look:Look;at:At;
+  /** 처음 말을 걸 때. say 의 화자는 이 사람이나 '사마의'(다른 사람은 cast 에 없으니 쓰지 않는다). */
+  talk:ScriptStep[];
+  /** 두 번째부터(없으면 talk 의 마지막 대사를 다시). */
+  again?:ScriptStep[];
+  /** 이 사람이 나타나는 조건(표식). */
+  when?:string;unless?:string;
+}
+export interface Camp {place:string;art:number;people:CampPerson[]}
+
 export interface ChapterScript {
+  /** 출진 전 진영(전투가 있는 장에만). */
+  camp?:Camp;
+  /** 가상 전장: 반드시 출진해야 하는 장수(부대에 있을 때만 적용). 사마의는 언제나 필수. */
+  required?:string[];
   /**
    * 연의 장: 스테이지 id('S1-01'…). 가상 전장: 가상 전장 id('IF1-srv-1'…). 루트의 우두머리 전: `${루트id}:boss`.
    * 운명의 갈림길: 'fate:1', 'fate:2:refuse', 'fate:2:serve'… (fate:${편}:${앞 루트}). 결말: `ending:${하편 루트id}`.
@@ -154,6 +174,21 @@ export function checkPack(pack:ScenarioPack,known:{unitClasses:readonly string[]
           }
           const fate=known.fateOptions?.[c.id];
           if(fate){const ids=st.options.map(o=>o.id).sort().join(),want=[...fate].sort().join();if(ids!==want)out.push(where(`갈림길 선택지 ${ids} ≠ ${want}`));}
+        }
+      }
+    }
+    if(c.camp){
+      const cp=c.camp;if(!Number.isInteger(cp.art)||cp.art<0||cp.art>17)out.push(where(`진영 배경 번호 ${cp.art}`));
+      if(cp.people.length<2||cp.people.length>7)out.push(where(`진영 인물 ${cp.people.length}명(2~7)`));
+      for(const person of cp.people){
+        if(!looks.has(person.look))out.push(where(`진영 ${person.name}의 겉모습 ${person.look}`));
+        if(person.name==='사마의')out.push(where('진영 인물에 사마의는 넣지 않는다(사마의는 자동으로 선다)'));
+        if(!person.talk.length)out.push(where(`진영 ${person.name}의 대화가 없다`));
+        for(const st of [...person.talk,...(person.again??[])]){
+          const who='say' in st?st.say:'move' in st?st.move:'emote' in st?st.emote:undefined;
+          if('choice' in st||'enter' in st||'exit' in st)out.push(where(`진영 대화에는 say/emote/move/narrate만`));
+          if(who!==undefined&&who!==person.name&&who!=='사마의')out.push(where(`진영 ${person.name} 대화에 다른 사람 ${who}`));
+          if('say' in st&&(!st.line||st.line.length>140))out.push(where(`진영 ${st.say}의 대사 길이`));
         }
       }
     }

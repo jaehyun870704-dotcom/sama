@@ -3,7 +3,7 @@ import {PACKS,EXTRA_TALES,freshScenario,scenarioPath,currentStep,choose,finishSt
 import {modsOf} from '../src/scenario-ui.ts';
 import {checkPack} from '../src/scenario-types.ts';
 import {ROUTES,routeById} from '../src/fate.ts';
-import {refBattle,taleById,type RunBattleRef} from '../src/roguelike.ts';
+import {refBattle,taleById,RUN_MAP_H,type RunBattleRef} from '../src/roguelike.ts';
 import {Session} from '../src/session.ts';
 import {RUN_CHAPTER} from '../src/run-ui.ts';
 import {allUnitClasses,validateStage} from '../../core/src/index.ts';
@@ -24,6 +24,13 @@ describe('시나리오 대본',()=>{
   for(const r of routes){const path=scenarioPath(walk(r));
    expect(path.at(-1)!.id).toBe(`ending:${r[3]}`);
    for(const step of path)expect(scriptOf(step.id),`${r[1]}/${r[2]}/${r[3]} → ${step.id}`).toBeDefined();}
+ });
+ it('gives every battle chapter on every path a camp to walk and talk in, and keeps required officers few',()=>{
+  const seen=new Set<string>();
+  for(const r of allRoutes())for(const step of scenarioPath(walk(r))){if(step.kind==='fate'||step.kind==='ending'||seen.has(step.id)||!/^S\d/.test(step.id))continue;seen.add(step.id);
+   const sc=scriptOf(step.id)!;expect(sc.camp,step.id).toBeDefined();expect(sc.camp!.people.length,step.id).toBeGreaterThanOrEqual(2);
+   expect(sc.camp!.people.every(p=>p.talk.some(st=>'say' in st)),step.id).toBe(true);
+   if(sc.required){expect(sc.required.length,step.id).toBeLessThanOrEqual(3);expect(sc.required,step.id).not.toContain('사마의');}}
  });
  it('scripts every path-alternative tale and lets a choice in the route switch to it',()=>{
   for(const t of EXTRA_TALES){expect(scriptOf(t.id),t.id).toBeDefined();expect(routeById(t.route)!.tales.some(x=>x.id===t.replaces)).toBe(true);
@@ -73,9 +80,9 @@ describe('시나리오의 가상 전장',()=>{
  const setup=()=>{const s=freshScenario();choose(s,scenarioPath(s).at(-1)!,'serve',[],8);return s;};
  const refFor=(s:ScenarioState,id:string,mods={}):RunBattleRef=>{const step=scenarioPath(s).find(x=>x.id===id)!;
   return {seed:77,floor:floorFor(step,s),kind:step.kind==='boss'?'boss':'tale',party:scenarioParty(s,8,0),relics:[],route:{...s.route},...(step.kind==='tale'?{tale:id}:{}),mods,enemyBase:8,scenario:id};};
- it('fields Sima Yi with the chosen officers on a 24×16 map and is a valid stage',()=>{
+ it('fields Sima Yi with the chosen officers on a large map and is a valid stage',()=>{
   const s=setup(),ref=refFor(s,'IF1-srv-1'),b=refBattle(ref);
-  expect(validateStage(b.stage)).toEqual([]);expect(b.map.rows).toHaveLength(16);
+  expect(validateStage(b.stage)).toEqual([]);expect(b.map.rows).toHaveLength(RUN_MAP_H);
   const session=new Session(RUN_CHAPTER,'normal',77,'survival',4,deploy(ref));
   expect(session.state.living('player').map(u=>u.name).sort()).toEqual(['곽회','사마랑','사마의','장합','조진'].sort());
   expect(session.state.find('target')?.name).toBe('고간');

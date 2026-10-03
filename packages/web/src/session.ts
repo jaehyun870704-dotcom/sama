@@ -3,6 +3,7 @@ import {troopStrategies,supportOptions} from './troops.ts';
 import {refBattle,prepareRunBattle,applyBattleMods,applyRelics,taleById,xpFromLog,levelUpInBattle,RUN_FLOORS,PARTY_LIMIT,XP_PER_LEVEL,type XpGain} from './roguelike.ts';
 import {validRoute} from './fate.ts';
 import './scenario.ts';
+import {pickExtras} from './sortie.ts';
 import {applyRomance,temperOf} from './romance.ts';
 import {expeditionBattle,expeditions} from './expeditions.ts';
 import {newDuel,duelRound,duelResponse,type DuelState,type DuelAction} from './duel.ts';
@@ -164,6 +165,11 @@ export class Session {
     if(this.deployment?.run)entry={...entry,...refBattle(this.deployment.run)};
     else if(this.deployment?.mission)entry={...entry,...expeditionBattle(this.deployment.mission.id,this.seed,this.deployment.mission.version??1,this.deployment.mission.supportClasses)};
     else if(this.deployment)entry={...entry,stage:campaignStage(entry.stage)};
+    // 연의 장: 필수 장수에 더해 고른 장수를 데려간다(시기·출진 칸·난이도 인원 안에서).
+    if(this.deployment?.extraOfficers?.length&&!this.deployment.run&&!this.deployment.mission){
+      const extra=pickExtras(entry.stage,entry.map,this.deployment.extraOfficers,this.difficulty);
+      if(extra.length)entry={...entry,stage:{...entry.stage,deployment:{...entry.stage.deployment,forced:[...entry.stage.deployment.forced,...extra]}}};
+    }
     const level=entry.stage.difficulty[this.difficulty].recommendedLevel;
     const state=assemble({stage:entry.stage,map:entry.map,difficulty:this.difficulty,seed:this.seed,roster:[
       {id:'sima_yi',name:'사마의',unitClass:'strategist',level,strategies:['windDragon','fire'],traits:['alwaysHit']},
@@ -523,6 +529,7 @@ export class Session {
       if(!Number.isInteger(r.floor)||r.floor<1||r.floor>RUN_FLOORS||typeof r.stage!=='string'||!chapters.some(c=>c.stage.id===r.stage)||chapters[data.chapter]?.stage.id!==r.stage||!Number.isSafeInteger(r.seed)
         ||!Number.isInteger(r.heroLevel)||r.heroLevel<1||r.heroLevel>60||(r.heroXp!==undefined&&(!Number.isInteger(r.heroXp)||r.heroXp<0||r.heroXp>=XP_PER_LEVEL))||!(r.heroHp>0&&r.heroHp<=1)||!Array.isArray(r.relics)||r.relics.some(x=>typeof x!=='string'))throw new Error('잘못된 원정 기록');
     }
+    if(data.deployment?.extraOfficers!==undefined&&(!Array.isArray(data.deployment.extraOfficers)||data.deployment.extraOfficers.length>2||data.deployment.extraOfficers.some(id=>!OFFICERS.includes(id as typeof OFFICERS[number]))))throw new Error('잘못된 출진 편성');
     if(data.deployment?.loadouts){const seen=new Set<string>();for(const [who,gear] of Object.entries(data.deployment.loadouts)){if(!OFFICERS.includes(who as typeof OFFICERS[number])||!gear||typeof gear!=='object')throw new Error('잘못된 장비');for(const [slot,id] of Object.entries(gear)){if(typeof id!=='string'||!treasures.some(t=>t.id===id)||treasureInfo(id).slot!==slot||seen.has(id))throw new Error('잘못된 장비');seen.add(id);}}}
     if(data.deployment?.mission&&(!expeditions.some(m=>m.id===data.deployment!.mission!.id)||typeof data.deployment.mission.runId!=='string'||data.deployment.mission.runId.length<1||data.chapter!==7||(data.deployment.mission.version!==undefined&&data.deployment.mission.version!==2&&data.deployment.mission.version!==3&&data.deployment.mission.version!==4)))throw new Error('잘못된 외전 기록');
     if(data.deployment?.mission?.balance!==undefined&&data.deployment.mission.balance!==1)throw new Error('지원하지 않는 성장 규칙입니다.');
