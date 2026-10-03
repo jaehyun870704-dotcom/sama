@@ -251,7 +251,7 @@ for (const chapter of targets) {
         // SIM_DEBUG=1: show how the first lost run ended (who fell, to whom).
         if (process.env.SIM_DEBUG && reasons.get(reason) === 1) {
           console.log(`  [${stage.id} ${difficulty} seed ${seed}] ${reason} · ${session.state.turn}턴`);
-          for (const e of session.state.log.slice(-10)) console.log("    " + JSON.stringify(e));
+          for (const e of session.state.log.slice(-Number(process.env.SIM_DEBUG_TAIL ?? 10))) console.log("    " + JSON.stringify(e));
         }
       }
     }

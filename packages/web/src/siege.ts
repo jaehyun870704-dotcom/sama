@@ -23,7 +23,11 @@ export function fortifyError(state:BattleState,engineer:Unit,at:Coord|undefined,
   return '';
 }
 export function buildBarricade(state:BattleState,engineer:Unit,at:Coord){
-  const unit=makeUnit({id:`barricade_${at.x}_${at.y}`,name:'방책',side:engineer.side==='enemy'?'enemy':'allyAi',unitClass:'infantry',level:engineer.level,pos:at,behavior:'passive',statOverrides:{maxHp:70,attack:0,defense:14,movement:0,agility:0}});
+  return placeBarricade(state,at,engineer.side==='enemy'?'enemy':'allyAi',engineer.level);
+}
+/** A stationary barricade: blocks the tile until it is broken. Stages also pre-place them. */
+export function placeBarricade(state:BattleState,at:Coord,side:'enemy'|'allyAi',level:number){
+  const unit=makeUnit({id:`barricade_${at.x}_${at.y}`,name:'방책',side,unitClass:'infantry',level,pos:at,behavior:'passive',statOverrides:{maxHp:70,attack:0,defense:14,movement:0,agility:0}});
   unit.range=[0,0];unit.canUseItems=false;state.add(unit);return unit;
 }
 /** Units within two tiles of a destroyed gate gain rally for two turns. */

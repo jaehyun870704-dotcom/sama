@@ -11,6 +11,10 @@ export interface StageRules {
   protect?:Array<{unit:string;hp:number;movement?:number}>;
   /** Named foes that must be handled by the gimmick rather than worn down. */
   tough?:Array<{unit:string;hpScale:number;defense?:number}>;
+  /** Units that hold their ground for the whole battle (fixed support). */
+  anchored?:string[];
+  /** Enemy barricades standing at the start. */
+  barricades?:Array<{x:number;y:number}>;
   /** Live phase text; return undefined to show the scenario phase as is. */
   phase?:(v:StageView)=>string|undefined;
   /** Seal slots earned on victory; undefined falls back to the stage's seal expressions. */
@@ -21,12 +25,26 @@ export interface StageRules {
   tick?:(v:StageView)=>string|undefined;
   /** Turn after which the battle is lost (forced marches, sieges against the clock). */
   deadline?:number;
+  /** Failure line when the deadline passes (defaults to a generic one). */
+  deadlineText?:string;
   /** Reason shown on defeat. */
   failure?:(v:StageView)=>string|undefined;
 }
 const HILL=['ma_su','hill_spear','hill_bow','hill_foot_a','hill_foot_b','hill_xbow'];
 
 export const stageRules:Record<string,StageRules>={
+  'S2-08':{
+    sealNames:['조휴 구출','부대 보존','신속한 구출'],
+    labels:[{region:'camp',text:'조휴 진영'},{region:'ridge',text:'능선'}],
+    anchored:['sima_yi','cao_xiu'],
+    barricades:[{x:9,y:6},{x:9,y:7},{x:9,y:8},{x:13,y:6},{x:13,y:8}],
+    tough:[{unit:'cao_xiu',hpScale:1.6,defense:3},{unit:'sima_shi',hpScale:1.4,defense:2},{unit:'sima_zhao',hpScale:1.4,defense:2}],
+    deadline:14,
+    deadlineText:'조휴의 진영이 더 버티지 못하고 무너졌습니다.',
+    phase:({state})=>{const inCamp=['sima_shi','sima_zhao'].filter(id=>{const u=state.find(id);return !!u?.alive&&state.map.regionCoords('camp').some(c=>c.x===u.pos.x&&c.y===u.pos.y);}).length;
+      return `협석 돌파 · 진영 도착 ${inCamp}/2 · 조휴 진영 버팀 ${Math.max(0,15-state.turn)}턴`;},
+    failure:({state})=>protectedFailure(state,['sima_shi','sima_zhao','cao_xiu']),
+  },
   'S2-07':{
     sealNames:['위연 또는 7부대 격퇴','곽회 생존','위연을 놓치지 않음'],
     weather:'장맛비 · 길이 젖음',

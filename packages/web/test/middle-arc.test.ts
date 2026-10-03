@@ -90,3 +90,16 @@ describe('중편 · 양평관 추격전',()=>{
   expect(s.state.living('enemy').length+s.state.losses.enemy).toBeGreaterThanOrEqual(7);
  });
 });
+describe('중편 · 석정 전투',()=>{
+ it('anchors Sima Yi on the ridge and walls the gorge with barricades',()=>{
+  const s=open('S2-08'),yi=s.state.get('sima_yi');
+  expect(yi.pos).toEqual({x:11,y:4});expect(yi.stats.movement).toBe(0);
+  for(const id of ['barricade_9_6','barricade_9_7','barricade_9_8'])expect(s.state.get(id).side).toBe('enemy');
+  expect(s.state.get('sima_shi').side).toBe('ally');expect(s.state.get('sima_zhao').side).toBe('ally');
+  expect(s.phase).toContain('진영 도착 0/2');expect(s.phase).toContain('버팀 14턴');
+ });
+ it('wins when both sons stand in the camp, not just one',()=>{
+  const s=open('S2-08');s.state.get('sima_shi').pos={x:20,y:8};s.act({kind:'endPhase'});expect(s.state.outcome).toBe('ongoing');
+  toPlayer(s);s.state.get('sima_shi').pos={x:20,y:8};s.state.get('sima_zhao').pos={x:22,y:8};s.act({kind:'endPhase'});expect(s.state.outcome).toBe('victory');
+ });
+});
