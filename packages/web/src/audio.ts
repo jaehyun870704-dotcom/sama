@@ -26,7 +26,7 @@ export class Soundscape {
   private samples=new Map<string,AudioBuffer[]>();
   private lastTake=new Map<string,number>();
   /** Base URL for recorded samples; tests and offline renders can point elsewhere. */
-  sampleBase='/sfx/';
+  sampleBase='sfx/';
   private active=0;
   private beat=0;
   private next=0;

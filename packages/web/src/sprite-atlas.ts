@@ -72,6 +72,8 @@ async function onMainThread(url:string,rows:number,columns:number){
   return toCanvas(isolateFrames(context.getImageData(0,0,canvas.width,canvas.height),rows,columns));
 }
 export function spriteAtlas(url:string,rows:number,columns=4){
+  // 문서 기준 상대 경로를 완전한 주소로: 워커는 자기 스크립트 위치를 기준으로 경로를 풀기 때문이다.
+  url=typeof document!=='undefined'?new URL(url,document.baseURI).href:url;
   const key=url+':'+rows+':'+columns;
   if(!cache.has(key))cache.set(key,typeof Worker==='undefined'||typeof OffscreenCanvas==='undefined'?onMainThread(url,rows,columns):
     new Promise<HTMLCanvasElement>((resolve,reject)=>{queue.push({url,rows,columns,resolve,reject});dispatch();}).catch(()=>onMainThread(url,rows,columns)));

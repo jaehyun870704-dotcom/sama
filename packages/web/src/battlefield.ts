@@ -80,7 +80,7 @@ export class Battlefield {
     // every stroke instead of dropping random pixels, and the dark rim keeps the dot look.
     const smooth=(canvas:HTMLCanvasElement,rim=true)=>new Texture({source:new CanvasSource({resource:rim?outlinedCanvas(canvas):canvas,autoGenerateMipmaps:true,scaleMode:'linear'})});
     // Every sheet is requested at once so the worker pool cuts them in parallel.
-    const [troops,ram,naval,convoys,extra,atlas,scenery]=await Promise.all([Promise.all(troopSheets.map(sheet=>spriteAtlas(sheet.url,sheet.rows))),spriteAtlas('/ram-v1.png',2,2),navalAtlas(),imageCanvas('/convoys-v1.png'),spriteAtlas('/units-extra-v1.png',4),spriteAtlas('/units-v3.png',6),imageCanvas('/scenery-v3.png')]);
+    const [troops,ram,naval,convoys,extra,atlas,scenery]=await Promise.all([Promise.all(troopSheets.map(sheet=>spriteAtlas(sheet.url,sheet.rows))),spriteAtlas('ram-v1.png',2,2),navalAtlas(),imageCanvas('convoys-v1.png'),spriteAtlas('units-extra-v1.png',4),spriteAtlas('units-v3.png',6),imageCanvas('scenery-v3.png')]);
     troopSheets.forEach((sheet,i)=>this.troopTextures.set(sheet.id,smooth(troops[i]!)));
     this.ram=smooth(ram);this.naval=smooth(naval);this.convoys=smooth(convoys);this.extra=smooth(extra);this.atlas=smooth(atlas);this.scenery=smooth(scenery,false);
     privateHost.appendChild(this.app.canvas);

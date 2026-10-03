@@ -11,7 +11,8 @@
 import {Rng,VARIANTS,evolvedClass,nextEvolution,profileOf,evolveUnit,familyOf,type UnitClass,type StageDef,type MapFile,type UnitSpawnSpec,type BattleState} from '../../core/src/index.ts';
 import {classNames,troopStrategies} from './troops.ts';
 import {availableStrategies,allStrategies} from './officers.ts';
-import {ROUTES,FATE_POINTS,routeById,fatePrompt,type Tale} from './fate.ts';
+import {ROUTES,routeById,routesFor,fatePoint,type Tale} from './fate.ts';
+import {romanceOf} from './romance.ts';
 
 export const FLOORS_PER_ACT=6;
 export const RUN_FLOORS=18;
@@ -103,7 +104,7 @@ export const taleById=(id:string|undefined)=>ROUTES.flatMap(r=>r.tales).find(t=>
 /** 운명의 갈림길에서 길을 고른다. 이미 고른 편이거나 다른 편의 길이면 거절한다. */
 export function chooseFate(run:Run,routeId:string){
   const act=actOf(run.floor) as 1|2|3,route=routeById(routeId);
-  if(!route||route.act!==act||run.route?.[act])return false;
+  if(!route||route.act!==act||run.route?.[act]||!routesFor(act,run.route).includes(route))return false;
   run.route={...run.route,[act]:routeId};run.news=[`운명의 갈림길 — 「${route.choice}」. ${route.history?'역사대로 흘러간다.':'역사가 갈라졌다. 이제부터는 일어나지 않은 이야기다.'}`];
   return true;
 }
@@ -162,7 +163,7 @@ export function recruit(run:Run,cls:UnitClass,level:number){
 export function floorChoices(run:Run):RunNode[]{
   const f=run.floor;
   const act=actOf(f);
-  if(!run.route?.[act as 1|2|3]){const p=FATE_POINTS[act as 1|2|3];return [{kind:'fate',label:`운명의 갈림길 · ${p.title}`,detail:fatePrompt(act as 1|2|3,run.route)}];}
+  if(!run.route?.[act as 1|2|3]){const p=fatePoint(act as 1|2|3,run.route);return [{kind:'fate',label:`운명의 갈림길 · ${p.title}`,detail:p.prompt}];}
   if(isBossFloor(f)){const g=regionFor(run,f),b=g.boss;return [{kind:'boss',label:`우두머리 · ${b.name}`,detail:`${g.arc}의 끝, ${g.name}의 주인. 격퇴하면 체력이 모두 회복된다.`}];}
   const r=rngFor(run,f),kinds:NodeKind[]=['battle'],size=has(run,'scout_map')?4:3;
   // 각 편의 첫 층을 뺀 모든 층에 연의 전장이 하나 나온다(남아 있다면).
@@ -321,7 +322,9 @@ export function runStage(run:Run,kind:NodeKind,map:MapFile,taleId?:string):Stage
     enemies.push({id:`foe_${i}`,name:unitName(evolved),template:evolved,level,at,behavior:i%3===2?'hold':'advance'});
   }
   if(kind==='boss'){const b=region.boss,mid=Math.floor(H/2),bi=camp.reduce((best,c,i)=>Math.abs(c.y-mid)*2+(W-1-c.x)<Math.abs(camp[best]!.y-mid)*2+(W-1-camp[best]!.x)?i:best,0),at=camp.splice(bi,1)[0]??{x:W-1,y:mid};enemies.push({id:'boss',name:b.name,template:evolvedClass(b.unitClass,base+3),level:base-2,at,behavior:'hold'});}
-  if(tale){const mid=Math.floor(H/2),bi=camp.reduce((best,c,i)=>Math.abs(c.y-mid)*2+(W-1-c.x)<Math.abs(camp[best]!.y-mid)*2+(W-1-camp[best]!.x)?i:best,0),at=camp.splice(bi,1)[0]??{x:W-1,y:mid};enemies.push({id:'target',name:tale.target.name,template:evolvedClass(tale.target.unitClass,base),level:base-1,at,behavior:'hold'});}
+  if(tale){const mid=Math.floor(H/2),bi=camp.reduce((best,c,i)=>Math.abs(c.y-mid)*2+(W-1-c.x)<Math.abs(camp[best]!.y-mid)*2+(W-1-camp[best]!.x)?i:best,0),at=camp.splice(bi,1)[0]??{x:W-1,y:mid};// 연의의 맹장은 능력치로 이미 강하다: 무력 75를 넘는 8마다 레벨을 하나 낮춰 균형을 맞춘다.
+    const war=romanceOf({id:'target',name:tale.target.name})?.war??70,level=Math.max(1,base-1-Math.max(0,Math.round((war-75)/8)));
+    enemies.push({id:'target',name:tale.target.name,template:evolvedClass(tale.target.unitClass,level),level,at,behavior:'hold'});}
   const party:UnitSpawnSpec[]=run.party.filter(u=>!u.hero).map(u=>({id:u.id,name:u.name,template:u.unitClass,level:u.level,region:'party_start',behavior:'advance'}));
   return {id:`R-${String(f).padStart(2,'0')}`,arc:'lower',order:100+f,title:tale?`가상 전장 · ${tale.title}`:`${region.name} · ${f}층`,subtitle:kind==='boss'?`우두머리 ${region.boss.name}`:tale?`적장 ${tale.target.name}`:kind==='elite'?'정예 전투':'원정 전투',
     synopsis:kind==='boss'?`${eul(region.boss.name)} 격퇴하면 승리. 쓰러진 부대는 원정에서 사라진다.`:tale?`${eul(tale.target.name)} 물리치면 승리. ${tale.intro}`:'적을 모두 물리치면 승리. 쓰러진 부대는 원정에서 사라진다.',

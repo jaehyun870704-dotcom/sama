@@ -77,7 +77,7 @@ function drawBoat(g:CanvasRenderingContext2D,ox:number,oy:number,row:number,pose
 let cache:Promise<HTMLCanvasElement>|undefined;
 export function navalAtlas(){
   cache??=(async()=>{
-    const [units,ram]=await Promise.all([spriteAtlas('/units-v3.png',6),spriteAtlas('/ram-v1.png',2,2)]);
+    const [units,ram]=await Promise.all([spriteAtlas('units-v3.png',6),spriteAtlas('ram-v1.png',2,2)]);
     const out=document.createElement('canvas');out.width=SPRITE_CELL*4;out.height=SPRITE_CELL*NAVAL_ROWS;
     const g=out.getContext('2d')!;g.imageSmoothingEnabled=false;
     const wood=g.createPattern(crop(ram,WOOD),'repeat')!,head=crop(ram,HEAD),banner=crop(ram,BANNER);
