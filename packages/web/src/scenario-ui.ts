@@ -5,7 +5,7 @@
 import {loadScenario,saveScenario,freshScenario,scenarioPath,winOver,currentStep,scriptOf,choose,finishStep,fateChoices,floorFor,scenarioParty,rewardOfficers,endingNotes,routeTales,COMPANIONS,type ScenarioState,type ScenarioStep} from './scenario.ts';
 import {playScenes,spriteStyle} from './story-stage.ts';
 import {openCamp} from './story-camp.ts';
-import {storyBackdrop} from './story.ts';
+import {isoBackdrop} from './story-iso.ts';
 import {routeById,fatePoint,endingFor,type Route} from './fate.ts';
 import {chapters} from './session.ts';
 import {encounterLevels} from './campaign-rules.ts';
@@ -89,13 +89,13 @@ export function showScenario(host:ScenarioHost,selected?:string){
   const track=[1,2,3].map(a=>{const r=route(a as 1|2|3);return `<span class="${r&&!r.history?'if':''} ${cur&&cur.act===a?'now':''}">${ACT_NAMES[a-1]!.split(' · ')[0]} · ${r?esc(r.name):'갈림길 전'}</span>`;}).join('');
   const hero=host.hero();
   const card=(s:ScenarioStep,i:number)=>{const st=done.has(s.id)?'done':s===cur?'now':'locked';
-    return `<button class="sc-card ${st} kind-${s.kind}" data-step="${esc(s.id)}" aria-pressed="${s===sel}"><span class="sc-thumb" style="${storyBackdrop(firstArt(s))}"></span><span class="sc-card-text"><small>${String(i+1).padStart(2,'0')} · ${kindTag[s.kind]} · ${esc(stepYear(s,state))}</small><strong>${esc(stepTitle(s,state))}</strong></span><b>${st==='done'?'◆':st==='now'?'▶':'·'}</b></button>`;};
+    return `<button class="sc-card ${st} kind-${s.kind}" data-step="${esc(s.id)}" aria-pressed="${s===sel}"><span class="sc-thumb" style="${isoBackdrop(firstArt(s))}"></span><span class="sc-card-text"><small>${String(i+1).padStart(2,'0')} · ${kindTag[s.kind]} · ${esc(stepYear(s,state))}</small><strong>${esc(stepTitle(s,state))}</strong></span><b>${st==='done'?'◆':st==='now'?'▶':'·'}</b></button>`;};
   const groups=[1,2,3].map(a=>{const items=path.map((s,i)=>({s,i})).filter(x=>x.s.act===a);return items.length?`<h3 class="sc-act">${ACT_NAMES[a-1]}</h3>${items.map(x=>card(x.s,x.i)).join('')}`:'';}).join('');
   const isCur=sel===cur,isDone=done.has(sel.id);
   host.modal(`<div class="scenario-screen"><div class="sc-top"><div><div class="eyebrow">三國志 · 사마의전 · 시나리오</div><h2>천명의 길</h2></div>
     <div class="sc-route">${track}</div><p class="muted">사마의 Lv.${hero.level} · 함께하는 장수 ${Object.keys(state.officers).length}명 · 마친 장 ${state.done.length}</p></div>
     <div class="sc-body"><nav class="sc-list" aria-label="장 목록">${groups}</nav>
-    <section class="sc-detail"><div class="sc-banner" style="${storyBackdrop(firstArt(sel))}"><span class="sc-kind kind-${sel.kind}">${kindTag[sel.kind]}</span><div class="sc-banner-title"><small>${esc(stepYear(sel,state))}</small><h3>${esc(stepTitle(sel,state))}</h3></div></div>
+    <section class="sc-detail"><div class="sc-banner" style="${isoBackdrop(firstArt(sel))}"><span class="sc-kind kind-${sel.kind}">${kindTag[sel.kind]}</span><div class="sc-banner-title"><small>${esc(stepYear(sel,state))}</small><h3>${esc(stepTitle(sel,state))}</h3></div></div>
       <p class="sc-synopsis">${esc(stepSynopsis(sel,state))}</p>${detailRows(sel,state,hero.level)}
       <div class="sc-actions">${isCur?`<button class="primary" id="sc-enter">${sel.kind==='fate'?'갈림길로 ▶':sel.kind==='ending'?'결말 보기 ▶':'이야기 시작 ▶'}</button>`:isDone?`<button id="sc-replay">이야기 다시 보기</button>`:'<button disabled>앞 장을 마치면 열린다</button>'}</div></section></div>
     <div class="sc-foot"><button id="sc-back">← 본영</button><button id="sc-reset" class="${state.done.length?'':'hidden'}">처음부터 다시</button></div></div>`,false);
@@ -214,7 +214,7 @@ export function showIfPrep(host:ScenarioHost,state:ScenarioState,step:ScenarioSt
   const card=(name:string)=>{const u=unitOf(name),c=evolvedClass(u.unitClass,u.level),must=name==='사마의'||required.includes(name),on=must||sel.includes(name);
     return `<button class="prep-officer ${on?'on':''} ${must?'must':''} ${f===name?'focus':''}" data-officer="${esc(name)}"><span class="prep-sprite" style="${spriteStyle(lookOf(c))}"></span><span><strong>${esc(name)}</strong><small>${esc(classNames[c]??c)} · Lv.${u.level} ${'◆'.repeat(tierOf(c))}</small><i class="prep-xp"><i style="width:${Math.round(u.xp/XP_PER_LEVEL*100)}%"></i></i></span>${name==='사마의'?'<em>총대장</em>':must?'<em>🔒 필수</em>':`<label class="prep-toggle"><input type="checkbox" data-sortie="${esc(name)}" ${on?'checked':''}> 출진</label>`}</button>`;};
   const u=unitOf(f),c=evolvedClass(u.unitClass,u.level),r=romanceByName(f),temper=temperOf(f),t=classTactics(c);
-  host.modal(`<div class="briefing prep-screen" style="--prep-art:url('story-backgrounds-2.png')"><div class="prep-backdrop" style="${storyBackdrop(14)}"></div><div class="eyebrow">출진 전 정비 · ${esc(kindTag[step.kind])} · ${esc(stepTitle(step,state))}</div><h2>누구를 데리고 갈 것인가</h2>
+  host.modal(`<div class="briefing prep-screen" style="--prep-art:url('story-backgrounds-2.png')"><div class="prep-backdrop" style="${isoBackdrop(14)}"></div><div class="eyebrow">출진 전 정비 · ${esc(kindTag[step.kind])} · ${esc(stepTitle(step,state))}</div><h2>누구를 데리고 갈 것인가</h2>
   <p class="camp-mission">승리: ${esc(foe.name)} 격퇴 · 패배: 사마의 퇴각. 지역 ${esc(route.region.name)} · 적 수준 Lv.${base} 안팎.</p>
   <div class="prep-rules"><span>필수 ${1+required.length}명(사마의${required.length?' · '+esc(required.join(' · ')):''})</span><span>선택 ${sel.length}/${limit}명</span>
   <span class="prep-diff"><label><input type="radio" name="if-diff" value="normal" ${difficulty==='normal'?'checked':''}> 일반</label><label><input type="radio" name="if-diff" value="extreme" ${difficulty==='extreme'?'checked':''}> 극한 · 적 +2레벨 · 동행 −1 · 경험치 ×1.3</label></span></div>

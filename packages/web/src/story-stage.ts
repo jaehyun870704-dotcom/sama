@@ -6,7 +6,7 @@
  * Stage 하나가 무대 하나를 맡는다(이야기 장면, 출진 전 진영이 함께 쓴다). DOM과 CSS 전환만 쓴다.
  */
 import type {Scene,ScriptStep,ChoiceOption,Look,At,CastMember} from './scenario-types.ts';
-import {storyBackdrop} from './story.ts';
+import {isoScene,stepsBetween,offscreenCell,type Cell,type IsoScene} from './story-iso.ts';
 import {officerPortrait,officerLook} from './officer-art.ts';
 
 /** 겉모습 → 병사 그림(시트·줄). 시트는 main.ts가 CSS 변수(--이름-atlas)로 올려 둔다. */
@@ -35,51 +35,113 @@ export interface StageHooks {
   /** 표식(when/unless 판정) — 선택으로 늘어날 수 있어 매번 읽는다. */
   flags():readonly string[];
 }
-type Actor={el:HTMLElement;at:At;face:'left'|'right';look:Look;on:boolean};
+type Actor={el:HTMLElement;cell:Cell;face:'left'|'right';look:Look;on:boolean};
+const STEP_MS=230;
+const same=(a:Cell,b:Cell)=>a[0]===b[0]&&a[1]===b[1];
 
-/** 무대 하나: 배경·인물·대화창·자막·선택지. */
+/** 무대 하나: 아이소메트릭 배경·인물·대화창·자막·선택지. 인물은 칸 위에 서고 한 칸씩 걷는다. */
 export class Stage {
   readonly el:HTMLElement;
   readonly actors=new Map<string,Actor>();
+  readonly scene:IsoScene;
   private talk:HTMLElement;private caption:HTMLElement;private choices:HTMLElement;
   private advance:(()=>void)|undefined;
   skipping=false;
   constructor(host:HTMLElement,art:number,place:string,cast:CastMember[]){
-    host.innerHTML=`<div class="ss-stage" style="${storyBackdrop(art)}"><div class="ss-shade"></div><span class="ss-place">${esc(place)}</span><div class="ss-caption" hidden></div><div class="ss-talk-slot"></div></div><div class="ss-choices"></div>`;
-    this.el=host.querySelector<HTMLElement>('.ss-stage')!;this.talk=host.querySelector<HTMLElement>('.ss-talk-slot')!;this.caption=host.querySelector<HTMLElement>('.ss-caption')!;this.choices=host.querySelector<HTMLElement>('.ss-choices')!;
+    this.scene=isoScene(art,place);
+    host.innerHTML=`<div class="ss-stage iso"><div class="ss-shade"></div><span class="ss-place">${esc(place)}</span><div class="ss-caption" hidden></div><div class="ss-talk-slot"></div></div><div class="ss-choices"></div>`;
+    this.el=host.querySelector<HTMLElement>('.ss-stage')!;this.el.style.backgroundImage=`url(${this.scene.url})`;
+    this.talk=host.querySelector<HTMLElement>('.ss-talk-slot')!;this.caption=host.querySelector<HTMLElement>('.ss-caption')!;this.choices=host.querySelector<HTMLElement>('.ss-choices')!;
     // 대사·해설을 기다리는 중이면 어디를 눌러도(인물·대화창 위라도) 넘어간다. 기다리는 게 없을 때만 인물 누르기가 말 걸기다.
     this.el.addEventListener('click',e=>{if(!this.advance&&(e.target as HTMLElement).closest('.ss-actor.clickable'))return;this.next();});
     for(const m of cast)this.addActor(m);
   }
   next(){this.advance?.();}
+  /** 이 칸에 다른 사람이 서 있는가. */
+  private taken(cell:Cell,except?:string){for(const [n,a] of this.actors)if(n!==except&&a.on&&same(a.cell,cell))return true;return false;}
+  /** 원하는 칸이 차 있으면 가장 가까운 빈 칸. */
+  private free(cell:Cell,except?:string):Cell{
+    if(this.scene.standable(cell)&&!this.taken(cell,except))return cell;
+    for(let d=1;d<12;d++)for(let i=-d;i<=d;i++)for(const c of [[cell[0]+i,cell[1]+d-Math.abs(i)],[cell[0]+i,cell[1]-d+Math.abs(i)]] as Cell[])if(this.scene.standable(c)&&!this.taken(c,except))return c;
+    return cell;
+  }
   addActor(m:CastMember){
     const el=document.createElement('div');el.className='ss-actor';el.dataset.name=m.name;
-    el.innerHTML=`<div class="ss-sprite" style="${spriteStyle(m.look)}"></div><span class="ss-name">${esc(m.name)}</span><div class="ss-bubble" hidden></div>`;
-    const at=m.at??[-12,60],face=m.face??(at[0]<50?'right':'left');
-    place(el,at,face,false);if(!m.at)el.classList.add('off');this.el.appendChild(el);
-    const a:Actor={el,at,face,look:m.look,on:!!m.at};this.actors.set(m.name,a);return a;
+    el.innerHTML=`<div class="ss-shadow"></div><div class="ss-sprite" style="${spriteStyle(m.look)}"></div><span class="ss-name">${esc(m.name)}</span><div class="ss-bubble" hidden></div>`;
+    const cell=m.at?this.free(this.scene.toCell(m.at)):this.scene.toCell([-12,60]);
+    const face=m.face??(this.scene.toPct(cell)[0]<50?'right':'left');
+    const a:Actor={el,cell,face,look:m.look,on:!!m.at};this.actors.set(m.name,a);
+    this.place(a,false);if(!m.at)el.classList.add('off');this.el.appendChild(el);return a;
   }
+  /** 화면 위 자리(%). */
+  at(name:string):At|undefined{const a=this.actors.get(name);return a?this.scene.toPct(a.cell):undefined;}
+  cellOf(name:string){return this.actors.get(name)?.cell;}
+  private place(a:Actor,animate:boolean){
+    const [x,y]=this.scene.toPct(a.cell);a.el.style.left=x+'%';a.el.style.top=y+'%';a.el.style.zIndex=String(100+a.cell[0]+a.cell[1]);
+    a.el.classList.toggle('face-left',a.face==='left');if(!animate)a.el.style.transitionDuration='0ms';
+  }
+  /** 다른 사람 쪽을 본다. */
+  faceTo(name:string,other:string){const a=this.actors.get(name),b=this.actors.get(other);if(!a||!b||a===b)return;const ax=this.scene.toPct(a.cell)[0],bx=this.scene.toPct(b.cell)[0];if(ax!==bx){a.face=bx>ax?'right':'left';a.el.classList.toggle('face-left',a.face==='left');}}
   private waitClick(){return this.skipping?Promise.resolve():new Promise<void>(r=>{this.advance=()=>{this.advance=undefined;r();};});}
   bubble(name:string,text:string,kind:'emote'|'talk'){const a=this.actors.get(name);if(a)bubble(a.el,text,kind);}
   /** 화자가 말한다: 화자 쪽 반대편(위/아래)에 대화창. */
   async say(speaker:string,line:string,to?:string){
     const a=this.actors.get(speaker);for(const o of this.actors.values())o.el.classList.remove('speaking');
-    if(a){a.el.classList.add('speaking');const t=to?this.actors.get(to):undefined;if(t&&t!==a){a.face=t.at[0]>=a.at[0]?'right':'left';place(a.el,a.at,a.face,false);}bubble(a.el,'…','talk');}
-    this.talk.innerHTML=talkBox(speaker,line,a&&a.at[1]>58?'top':'bottom');
+    if(a){a.el.classList.add('speaking');if(to)this.faceTo(speaker,to);bubble(a.el,'…','talk');}
+    this.talk.innerHTML=talkBox(speaker,line,a&&this.scene.toPct(a.cell)[1]>58?'top':'bottom');
     await this.waitClick();if(a)a.el.classList.remove('speaking');this.talk.innerHTML='';
   }
   async narrate(text:string){this.caption.hidden=false;this.caption.textContent=text;this.talk.innerHTML='';await this.waitClick();this.caption.hidden=true;}
+  /** 칸을 하나씩 밟아 걷는다. 걸음마다 발을 떼고(들썩임) 방향을 바꾼다. */
+  private async stepAlong(a:Actor,path:readonly Cell[]){
+    if(!path.length)return;
+    if(this.skipping){a.cell=path.at(-1)!;this.place(a,false);return;}
+    const sprite=a.el.querySelector<HTMLElement>('.ss-sprite')!,walkSheet=!!SPRITES[a.look].walk;
+    a.el.classList.add('walking');a.el.style.transitionDuration=STEP_MS+'ms';
+    for(let i=0;i<path.length;i++){
+      const next=path[i]!,[x0,y0]=this.scene.toPct(a.cell),[x1,y1]=this.scene.toPct(next);
+      if(x1!==x0)a.face=x1>x0?'right':'left';
+      // 뒤로(화면 위쪽) 걸으면 뒷모습 그림이 있는 병종은 뒷모습으로
+      const back=y1<y0&&walkSheet;sprite.setAttribute('style',spriteStyle(a.look,(back?2:0)+(i%2),true));
+      a.el.classList.toggle('step-b',i%2===1);
+      a.cell=next;this.place(a,true);
+      await wait(STEP_MS);
+    }
+    a.el.classList.remove('walking','step-b');a.el.style.transitionDuration='';sprite.setAttribute('style',spriteStyle(a.look));
+  }
+  /** 대각으로 한 칸씩(화면 가로로 걸어 들어오고 나갈 때). */
+  private stairs(from:Cell,to:Cell){const out:Cell[]=[];let [c,r]=from;let flip=false;
+    while(c!==to[0]||r!==to[1]){const mc=c!==to[0],mr=r!==to[1];if(mc&&(!mr||flip))c+=Math.sign(to[0]-c);else r+=Math.sign(to[1]-r);flip=!flip;out.push([c,r]);}
+    return out;}
   async walk(name:string,to:At,mode:'move'|'enter'|'exit'='move',from?:'left'|'right'){
     const a=this.actors.get(name);if(!a)return;
-    if(mode==='enter'){const side=from??(to[0]<50?'left':'right');a.at=[side==='left'?-12:112,to[1]];place(a.el,a.at,side==='left'?'right':'left',false);a.el.classList.remove('off');a.on=true;await wait(30);}
-    const face:'left'|'right'=to[0]>a.at[0]?'right':to[0]<a.at[0]?'left':a.face;
-    const dist=Math.hypot(to[0]-a.at[0],to[1]-a.at[1]),ms=this.skipping?0:Math.min(1400,Math.max(300,dist*22));
-    a.el.style.transitionDuration=ms+'ms';a.el.classList.add('walking');
-    const sprite=a.el.querySelector<HTMLElement>('.ss-sprite')!,walkable=!!SPRITES[a.look].walk;
-    let frame=0;const timer=setInterval(()=>{frame=(frame+1)%4;sprite.setAttribute('style',spriteStyle(a.look,walkable?frame:0,true));},140);
-    a.face=face;a.at=to;place(a.el,to,face,true);await wait(ms+30);
-    clearInterval(timer);sprite.setAttribute('style',spriteStyle(a.look));a.el.classList.remove('walking');a.el.style.transitionDuration='';
-    if(mode==='exit'){a.el.classList.add('off');a.on=false;}
+    if(mode==='exit'){
+      const side=from??(this.scene.toPct(a.cell)[0]<50?'left':'right');
+      await this.stepAlong(a,this.stairs(a.cell,offscreenCell(a.cell,side)));a.el.classList.add('off');a.on=false;return;
+    }
+    const target=this.free(this.scene.toCell(to),name);
+    if(mode==='enter'){
+      const side=from??(to[0]<50?'left':'right');a.cell=offscreenCell(target,side);a.face=side==='left'?'right':'left';
+      this.place(a,false);a.el.classList.remove('off');a.on=true;await wait(30);
+      await this.stepAlong(a,this.stairs(a.cell,target));return;
+    }
+    await this.stepAlong(a,stepsBetween(this.scene,a.cell,target,c=>this.taken(c,name)));
+  }
+  /** 다른 사람 곁(앞·옆 빈 칸)으로 걸어가 마주 본다. */
+  async approach(name:string,other:string){
+    const a=this.actors.get(name),b=this.actors.get(other);if(!a||!b)return;
+    // 나란히 서서 마주 보는 자리(화면 가로 옆)가 먼저, 그다음 앞뒤 칸.
+    const near=([[1,-1],[-1,1],[1,0],[0,1],[-1,0],[0,-1]] as const).map(([dc,dr]):Cell=>[b.cell[0]+dc,b.cell[1]+dr]).filter(c=>this.scene.standable(c)&&(!this.taken(c,name)||same(c,a.cell)));
+    near.sort((p,q)=>(Math.abs(p[0]-a.cell[0])+Math.abs(p[1]-a.cell[1])+(Math.abs(p[0]-b.cell[0])+Math.abs(p[1]-b.cell[1])===2?0:3))-(Math.abs(q[0]-a.cell[0])+Math.abs(q[1]-a.cell[1])+(Math.abs(q[0]-b.cell[0])+Math.abs(q[1]-b.cell[1])===2?0:3)));
+    const spot=near[0];if(spot&&!same(spot,a.cell))await this.stepAlong(a,stepsBetween(this.scene,a.cell,spot,c=>this.taken(c,name)));
+    this.faceTo(name,other);this.faceTo(other,name);
+  }
+  /** 제자리 근처의 빈 칸으로 몇 걸음. */
+  async wander(name:string,home:Cell,radius=2){
+    const a=this.actors.get(name);if(!a||a.el.classList.contains('walking'))return;
+    const options:Cell[]=[];for(let dc=-radius;dc<=radius;dc++)for(let dr=-radius;dr<=radius;dr++){const c:Cell=[home[0]+dc,home[1]+dr];if(Math.abs(dc)+Math.abs(dr)<=radius&&this.scene.standable(c)&&!this.taken(c,name))options.push(c);}
+    const pick=options[Math.floor(Math.random()*options.length)];if(!pick||same(pick,a.cell))return;
+    await this.stepAlong(a,stepsBetween(this.scene,a.cell,pick,c=>this.taken(c,name)));
   }
   /** 대본의 단계들을 차례로. 이어진 걷기·등장·퇴장은 함께 움직인다. */
   async run(steps:ScriptStep[],hooks:StageHooks){
@@ -89,7 +151,7 @@ export class Stage {
       if('move' in st||'enter' in st||'exit' in st){
         const group:ScriptStep[]=[st];
         while(i+1<steps.length){const n=steps[i+1]!;if(!('move' in n||'enter' in n||'exit' in n))break;i++;if((n.when&&!flags.includes(n.when))||(n.unless&&flags.includes(n.unless)))continue;group.push(n);}
-        await Promise.all(group.map(g=>'enter' in g?this.walk(g.enter,g.at,'enter',g.from):'exit' in g?this.walk(g.exit,[((g.to??((this.actors.get(g.exit)?.at[0]??0)<50?'left':'right'))==='left'?-14:114),this.actors.get(g.exit)?.at[1]??60],'exit'):this.walk((g as {move:string}).move,(g as {to:At}).to)));continue;
+        await Promise.all(group.map(g=>'enter' in g?this.walk(g.enter,g.at,'enter',g.from):'exit' in g?this.walk(g.exit,[0,0],'exit',g.to):this.walk((g as {move:string}).move,(g as {to:At}).to)));continue;
       }
       if('emote' in st){this.bubble(st.emote,st.text,'emote');if(!this.skipping)await wait(650);continue;}
       if('narrate' in st){await this.narrate(st.narrate);continue;}
@@ -97,7 +159,7 @@ export class Stage {
       if('choice' in st){
         this.skipping=false;this.el.classList.add('choosing');
         const hero=this.actors.get(st.choice);if(hero){hero.el.classList.add('speaking');bubble(hero.el,'?','emote');}
-        this.talk.innerHTML=talkBox(st.choice,'…어떻게 할 것인가.',hero&&hero.at[1]>58?'top':'bottom');
+        this.talk.innerHTML=talkBox(st.choice,'…어떻게 할 것인가.',hero&&this.scene.toPct(hero.cell)[1]>58?'top':'bottom');
         const picked=await new Promise<ChoiceOption>(r=>{this.choices.innerHTML=st.options.map((o,k)=>`<button type="button" data-k="${k}"><span class="ss-choice-no">${k+1}</span><strong>${esc(o.text)}</strong>${o.note?`<small>${esc(o.note)}</small>`:''}</button>`).join('');
           this.choices.querySelectorAll<HTMLButtonElement>('[data-k]').forEach(b=>b.onclick=()=>r(st.options[Number(b.dataset.k)]!));});
         this.choices.innerHTML='';this.talk.innerHTML='';this.el.classList.remove('choosing');hero?.el.classList.remove('speaking');
@@ -108,7 +170,6 @@ export class Stage {
     }
   }
 }
-
 /**
  * 장면들을 차례로 연출한다. root 안을 통째로 그린다. 끝나면(또는 건너뛰면) resolve.
  * 선택이 있는 장면은 건너뛰기를 눌러도 선택에서 멈춘다.
@@ -125,10 +186,6 @@ export async function playScenes(root:HTMLElement,scenes:Scene[],hooks:StageHook
     await stage.run(scene.steps,hooks);skipping=stage.skipping;
     if(!skipping)await wait(250);
   }
-}
-function place(el:HTMLElement,[x,y]:At,face:'left'|'right',animate:boolean){
-  el.style.left=x+'%';el.style.top=y+'%';el.style.zIndex=String(Math.round(y));
-  el.classList.toggle('face-left',face==='left');if(!animate)el.style.transitionDuration='0ms';
 }
 function bubble(el:HTMLElement,text:string,kind:'emote'|'talk'){
   const b=el.querySelector<HTMLElement>('.ss-bubble')!;b.textContent=text;b.className='ss-bubble '+kind;b.hidden=false;

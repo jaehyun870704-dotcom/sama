@@ -7,7 +7,6 @@ import {Stage} from './story-stage.ts';
 import type {Camp,CampPerson,At} from './scenario-types.ts';
 
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
-const clamp=(v:number,lo:number,hi:number)=>Math.max(lo,Math.min(hi,v));
 
 export interface CampOptions {
   camp:Camp;heading:string;
@@ -34,20 +33,18 @@ export function openCamp(host:HTMLElement,o:CampOptions){
   }
   mark();
   // 사람들은 제자리 근처를 서성인다(말하는 동안에는 멈춘다).
-  const homes=new Map(people.map(p=>[p.name,p.at] as const));
+  const homes=new Map(people.map(p=>[p.name,stage.cellOf(p.name)!] as const));
   const idle=setInterval(()=>{
     if(!document.contains(stage.el)){clearInterval(idle);return;}
     if(busy||!people.length)return;
-    const p=people[Math.floor(Math.random()*people.length)]!,home=homes.get(p.name)!,a=stage.actors.get(p.name)!;
-    if(a.el.classList.contains('walking'))return;
-    void stage.walk(p.name,[clamp(home[0]+(Math.random()*12-6),6,94),clamp(home[1]+(Math.random()*8-4),36,90)]);
-  },1700);
+    const p=people[Math.floor(Math.random()*people.length)]!;
+    void stage.wander(p.name,homes.get(p.name)!,2);
+  },1900);
   async function talk(p:CampPerson){
     if(busy)return;busy=true;host.querySelector('.ss-root')!.classList.add('talking');
-    const a=stage.actors.get(p.name)!,me=stage.actors.get('사마의')!;
-    // 사마의가 상대 곁으로 걸어가고, 상대는 사마의 쪽을 본다.
-    const side=me.at[0]<a.at[0]?-1:1,spot:At=[clamp(a.at[0]+side*9,5,95),clamp(a.at[1]+2,36,90)];
-    await stage.walk('사마의',spot);
+    // 사마의가 상대 곁으로 한 칸씩 걸어가 마주 본다(상대가 걷던 중이면 멈출 때까지 기다린다).
+    for(let i=0;i<20&&stage.actors.get(p.name)!.el.classList.contains('walking');i++)await new Promise(r=>setTimeout(r,60));
+    await stage.approach('사마의',p.name);
     stage.bubble(p.name,'!','emote');
     const steps=o.talked.has(p.name)&&p.again?.length?p.again:p.talk;
     stage.skipping=false;await stage.run(steps,{flags:o.flags});
