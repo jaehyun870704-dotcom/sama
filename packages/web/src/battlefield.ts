@@ -217,6 +217,13 @@ export class Battlefield {
       const head=t.cells[0]!,p=iso(head),tag=new Text({text:`${t.label??'경고'} · ${left}턴`,style:{fontFamily:'Malgun Gothic',fontSize:12,fontWeight:'700',fill:0xffe0c8,stroke:{color:0x3a0c08,width:4}}});
       tag.anchor.set(.5,1);tag.position.set(p.x,p.y-H*.35);this.warnings.addChild(tag);
     }
+    // Tile hazards: fire is always visible; traps only once the field has been scouted.
+    const hazards=new Graphics();
+    for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){
+      const tile=state.map.tileAt({x,y});if(tile.hazard==='fire'){const p=iso({x,y});diamond(hazards,p.x,p.y,0xff6a1a,.3).stroke({color:0xffb060,width:2,alpha:.85});hazards.rect(p.x-W*.22,p.y-H*.1,W*.44,H*.36).fill({color:0xffc04a,alpha:.22});}
+      else if(tile.hazard==='trap'&&scouted){const p=iso({x,y});diamond(hazards,p.x,p.y,0x5a1810,.18).stroke({color:0xe0503a,width:2,alpha:.9});hazards.moveTo(p.x-W*.16,p.y-H*.16).lineTo(p.x+W*.16,p.y+H*.16).moveTo(p.x+W*.16,p.y-H*.16).lineTo(p.x-W*.16,p.y+H*.16).stroke({color:0xe0503a,width:2.5,alpha:.95});}
+    }
+    this.warnings.addChild(hazards);
     const u=state.find(selected);
     for(const goal of state.victory){
       if(!goal.target?.startsWith('trial_'))continue;

@@ -584,3 +584,15 @@ describe("M-18 telegraph_aoe", () => {
     expect(state.get("stay").alive).toBe(true);
   });
 });
+
+describe("fire hazard movement", () => {
+  it("charges two extra movement for crossing a burning tile", () => {
+    const map = flatMap(8, 3);
+    const u = makeUnit({ id: "c", side: "player", unitClass: "infantry", level: 5, pos: { x: 0, y: 1 } });
+    const before = map.reachable(u, new Map()).get("3,1");
+    (map.tileAt({ x: 1, y: 1 }) as Tile).hazard = "fire";
+    (map.tileAt({ x: 1, y: 0 }) as Tile).hazard = "fire";
+    (map.tileAt({ x: 1, y: 2 }) as Tile).hazard = "fire";
+    expect(map.reachable(u, new Map()).get("3,1")).toBe((before ?? 0) + 2);
+  });
+});

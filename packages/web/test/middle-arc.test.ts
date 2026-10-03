@@ -119,3 +119,16 @@ describe('중편 · 성고 전투',()=>{
   expect(s.state.outcome).toBe('victory');expect(s.seals).toContain(3);
  });
 });
+describe('중편 · 상규 전투',()=>{
+ it('opens with a burning field and hidden ravine traps',()=>{
+  const s=open('S2-10');expect(s.state.map.tileAt({x:14,y:7}).hazard).toBe('fire');expect(s.state.map.tileAt({x:16,y:12}).hazard).toBe('trap');
+  expect(s.phase).toContain('고상과 출구 사이 11칸');
+ });
+ it('fails when Gao Xiang reaches the western exit with the wheat',()=>{
+  const s=open('S2-10');
+  for(let i=0;i<3000&&s.state.turn<4&&s.state.outcome==='ongoing';i++){if(CONTROLLABLE.has(s.state.currentSide))s.act({kind:'endPhase'});else s.tick();}
+  toPlayer(s);s.act({kind:'endPhase'});const gao=s.state.get('gao_xiang');expect(gao.behavior).toBe('flee');expect(gao.stats.movement).toBe(3);
+  gao.pos={x:0,y:7};toPlayer(s);if(s.state.outcome==='ongoing')s.act({kind:'endPhase'});
+  expect(s.state.outcome).toBe('defeat');expect(s.failure).toContain('서쪽 골짜기');
+ });
+});

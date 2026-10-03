@@ -33,6 +33,19 @@ export interface StageRules {
 const HILL=['ma_su','hill_spear','hill_bow','hill_foot_a','hill_foot_b','hill_xbow'];
 
 export const stageRules:Record<string,StageRules>={
+  'S2-10':{
+    sealNames:['고상 격퇴','부대 보존','신속한 추격'],
+    weather:'맑음 · 마른 바람',
+    labels:[{region:'escape',text:'서쪽 골짜기 출구'},{region:'fields',text:'불타는 보리밭'}],
+    tick:({state})=>{
+      const gao=state.find('gao_xiang');if(!gao?.alive)return undefined;
+      if(state.turn>=4&&gao.behavior!=='flee'){gao.behavior='flee';gao.goalRegion='escape';gao.stats.movement=3;}
+      return state.map.regionCoords('escape').some(c=>c.x===gao.pos.x&&c.y===gao.pos.y)?'고상이 보리 수레를 끌고 서쪽 골짜기로 빠져나갔습니다.':undefined;
+    },
+    phase:({state})=>{const gao=state.find('gao_xiang');if(!gao?.alive)return '고상 격퇴';
+      const left=Math.min(...state.map.regionCoords('escape').map(c=>Math.abs(c.x-gao.pos.x)+Math.abs(c.y-gao.pos.y)));
+      return `${state.scenarioPhase??'고상 추격'} · 고상과 출구 사이 ${left}칸`;},
+  },
   'S2-09':{
     sealNames:['성고 탈환','대릉 전선 보존','이엄의 편지'],
     weather:'큰비 뒤 · 강물이 불어남',

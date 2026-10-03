@@ -15,6 +15,13 @@ export type LineWhen=
 export interface BattleLine {id:string;when:LineWhen;speaker:string;text:string}
 
 export const battleLines:Record<string,BattleLine[]>={
+  'S2-10':[
+    {id:'open-1',when:{turn:1},speaker:'사마의',text:'밭이 타고 있다. 불길을 뚫을지, 돌아갈지 정하라. 남쪽 골짜기는 먼저 살펴라.'},
+    {id:'open-2',when:{turn:2},speaker:'고상',text:'수레를 서쪽으로! 불이 꺼지기 전에 골짜기를 빠져나간다!'},
+    {id:'fire2',when:{turn:3},speaker:'곽회',text:'밭 서쪽에도 불을 질렀습니다! 길이 또 막힙니다!'},
+    {id:'ambush',when:{turn:4},speaker:'곽회',text:'골짜기와 북쪽 길에서 복병이 나옵니다!'},
+    {id:'down',when:{retreat:'gao_xiang'},speaker:'사마의',text:'고상이 쓰러졌다. 수레를 거두어라.'},
+  ],
   'S2-09':[
     {id:'open-1',when:{turn:1},speaker:'사마의',text:'강은 불어 건널 수 없다. 북쪽 산길로 돌아 성고를 친다.'},
     {id:'open-2',when:{turn:1},speaker:'대릉',text:'투석기가 쉬지 않습니다! 오래는 못 버팁니다!'},
