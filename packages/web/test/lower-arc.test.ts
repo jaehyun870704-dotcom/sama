@@ -66,3 +66,17 @@ describe('하편 · 환성 점령전',()=>{
   expect(s.state.outcome).toBe('defeat');expect(s.failure).toContain('공병');
  });
 });
+describe('하편 · 낙곡대전',()=>{
+ it('fields Sima Zhao without his father and walks Cao Shuang into the valley after the fort falls',()=>{
+  const s=open('S3-05');expect(s.state.find('sima_yi')).toBeUndefined();expect(s.state.get('sima_zhao').side).toBe('player');
+  for(const u of s.state.living('enemy'))s.state.retreat(u);
+  const zh=s.state.get('sima_zhao');zh.stats.maxHp=zh.hp=999;zh.pos={x:11,y:7};
+  expect(s.act({kind:'capture',unit:'sima_zhao',region:'shu_fort'}).ok).toBe(true);
+  expect(s.state.outcome).toBe('ongoing');expect(s.state.get('cao_shuang').behavior).toBe('race');expect(s.phase).toContain('노란 칸');
+  const cs=s.state.get('cao_shuang');cs.stats.maxHp=cs.hp=999;
+  for(let i=0;i<5000&&!s.state.activeDialogue&&s.state.outcome==='ongoing';i++){if(CONTROLLABLE.has(s.state.currentSide))s.act({kind:'endPhase'});else s.tick();
+   if(s.state.firedEvents.has('luogu/clue')&&!s.state.firedEvents.has('luogu/ambush'))expect(s.state.telegraphs.some(t=>t.label==='벼랑 위 깃발'&&t.ratio===0)).toBe(true);}
+  expect(s.state.activeDialogue).toBe('luogu_turn');expect(s.state.get('cao_shuang').behavior).toBe('escortee');
+  s.act({kind:'choose',nodeId:'luogu_turn',optionId:'escort'});expect(s.state.victory).toEqual([{type:'reach',unit:'cao_shuang',target:'exit'}]);
+ });
+});

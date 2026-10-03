@@ -15,6 +15,12 @@ export type LineWhen=
 export interface BattleLine {id:string;when:LineWhen;speaker:string;text:string}
 
 export const battleLines:Record<string,BattleLine[]>={
+  'S3-05':[
+    {id:'open-1',when:{turn:1},speaker:'사마소',text:'먼저 흥세 앞 요새를 차지한다. 그 다음은 조상 대장군을 지켜봐야 한다.'},
+    {id:'push',when:{lockedBy:'luogu/taken'},speaker:'조상',text:'요새를 얻었다! 더 들어간다, 북서쪽 끝까지 밀어붙여라!'},
+    {id:'clue',when:{lockedBy:'luogu/clue'},speaker:'사마소',text:'벼랑 위에 깃발이 보입니다. 다음 턴이면 복병이 내려옵니다!'},
+    {id:'turn',when:{lockedBy:'luogu/ambush'},speaker:'사마소',text:'대장군을 모시고 동남쪽 출구로 물러납니다! 친위는 대장군 곁을 떠나지 마라!'},
+  ],
   'S3-04':[
     {id:'open-1',when:{turn:1},speaker:'사마의',text:'공병은 가교 터로. 방패 호위병은 상하좌우로 붙어라. 대각선은 지키지 못한다.'},
     {id:'open-2',when:{turn:1},speaker:'사마소',text:'건너편 노병의 관통 사격은 방패를 무시합니다. 먼저 쏘아 떨어뜨려야 합니다.'},

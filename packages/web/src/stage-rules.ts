@@ -42,6 +42,33 @@ export interface StageRules {
 const HILL=['ma_su','hill_spear','hill_bow','hill_foot_a','hill_foot_b','hill_xbow'];
 
 export const stageRules:Record<string,StageRules>={
+  'S3-05':{
+    sealNames:['조상 호송','부대 보존','신속한 회군'],
+    somber:true,
+    weather:'흐림 · 좁은 골짜기',
+    labels:[{region:'shu_fort',text:'흥세 앞 요새'},{region:'advance_label',text:'조상의 진격 목표'},{region:'exit_label',text:'동남쪽 출구'}],
+    zones:[{region:'advance_point',color:0xffd27a}],
+    tough:[{unit:'cao_shuang',hpScale:1.6,defense:3},{unit:'sima_zhao',hpScale:1.5,defense:3}],
+    tick:({state})=>{
+      const cs=state.find('cao_shuang');
+      if(state.firedEvents.has('luogu/taken')&&!state.firedEvents.has('luogu/clue')&&cs?.alive){
+        if(cs.behavior!=='race'){cs.behavior='race';cs.goalRegion='advance_point';cs.stats.movement=3;state.survivalClocks.set('push_turn',state.turn);}
+        if(state.turn>=(state.survivalClocks.get('push_turn')??state.turn)+2&&fireScripted(state,'luogu/clue'))state.survivalClocks.set('clue_turn',state.turn);
+      }
+      // The warning comes one turn before the ambush: time to close up on Cao Shuang.
+      if(state.firedEvents.has('luogu/clue')&&!state.firedEvents.has('luogu/ambush')&&state.turn>=(state.survivalClocks.get('clue_turn')??state.turn)+1){
+        fireScripted(state,'luogu/ambush');
+        if(cs?.alive){cs.behavior='escortee';cs.goalRegion='exit';}
+      }
+      return undefined;
+    },
+    phase:({state})=>{const p=state.scenarioPhase??'요새 확보';
+      if(p==='조상의 진격')return '조상의 진격 · 조상이 북서쪽 노란 칸으로 달려간다 — 곁을 지켜라';
+      if(p==='복병 단서')return '복병 단서 · 다음 턴 벼랑에서 복병 — 조상 곁에 모여라';
+      if(p==='조상 호송')return '조상 호송 · 동남쪽 출구까지';
+      return '요새 확보 · 흥세 앞 요새를 점령';},
+    failure:({state})=>protectedFailure(state,['cao_shuang','sima_zhao']),
+  },
   'S3-04':{
     sealNames:['환성 점령','부대 보존','신속한 도하'],
     weather:'흐림 · 강안개',

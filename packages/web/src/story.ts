@@ -8,6 +8,7 @@ export function storyBackdrop(index:number){
 }
 /** Atlas cell + narrative location per beat, independent of saved chapter indexes. */
 export const storyLocations:Record<string,Array<{art:number;name:string;companion:string;actor?:number}>>={
+  'S3-05':[{art:14,name:'낙양 · 출정하는 대장군',companion:'사마소'},{art:4,name:'낙곡 · 흥세 앞 골짜기',companion:'사마소'},{art:11,name:'낙곡 · 돌아오는 길',companion:'사마소'}],
   'S3-04':[{art:14,name:'낙양 · 늙은 태부의 출정',companion:'사마사'},{art:11,name:'환성 · 남쪽 강변',companion:'사마소'},{art:8,name:'환성 · 비워진 성',companion:'사마사'}],
   'S3-03':[{art:14,name:'낙양 · 출정을 청하는 조정',companion:'사마사'},{art:4,name:'번성 · 남쪽 들판',companion:'사마사'},{art:8,name:'번성 · 열린 포위망',companion:'사마사'}],
   'S3-02':[{art:8,name:'양평 · 에워싼 성',companion:'사마사'},{art:14,name:'양평 · 장마 뒤의 진영',companion:'사마사'},{art:8,name:'양평 · 열린 성문',companion:'사마사'}],
@@ -46,6 +47,11 @@ export const storyLocations:Record<string,Array<{art:number;name:string;companio
   'S1-09':[{art:14,name:'한중 · 철수 군의',companion:'조진'},{art:15,name:'한수 · 불탄 부교터',companion:'조진'},{art:7,name:'한수 · 강변 정찰',companion:'조진'}],
 };
 export const storyBeats:Record<string,StoryBeat[]>={
+  'S3-05':[
+    {speaker:'사마소',line:'조상 대장군이 공을 세우겠다며 낙곡으로 들어갑니다. 아버님은 병을 핑계로 따라가지 않으셨습니다.',pose:'enter',actor:2},
+    {speaker:'사마소',line:'아버님 말씀이 떠오릅니다. 골짜기에서는 들어가는 길보다 나오는 길을 먼저 보라고.',pose:'speak',actor:2},
+    {speaker:'조상',line:'사마 가문의 둘째인가. 이번 공은 내 것이다. 너는 뒤나 지켜라.',pose:'resolve',actor:4},
+  ],
   'S3-04':[
     {speaker:'사마소',line:'제갈각이 환성에 군량을 쌓고 있습니다. 강을 건널 다리가 없습니다.',pose:'enter',actor:2},
     {speaker:'사마의',line:'공병이 다리를 놓는다. 이틀이면 된다. 그 이틀 동안 방패를 공병 곁에 붙여라. 다만 건너편 노병의 화살은 방패로도 못 막는다.',pose:'speak',actor:4},
@@ -231,10 +237,14 @@ export const stories=[
   ['같은 깃발','238년 가을, 장마가 그치자 사마의는 양평성을 에워싼다. 성 안의 군량이 공손연을 버티게 한다. 군량이 끊기면 그는 달아날 것이다. 그리고 그는 자기와 똑같은 깃발을 든 부대를 함께 내보낼 것이다.'],
   ['늙은 장수의 걸음','241년, 오의 주연이 번성을 에워싼다. 예순을 넘긴 사마의가 직접 구원에 나선다. 그는 이제 빨리 걷지 않는다. 다만 한 걸음도 헛되이 쓰지 않는다.'],
   ['하루를 지키는 자','243년, 예순다섯의 사마의가 다시 출정한다. 오의 제갈각이 환성에 군량을 쌓고 북쪽을 엿본다. 강 위에 다리는 없다. 공병이 다리를 놓는 이틀이 이 싸움의 전부다.'],
+  ['낙곡의 그림자','244년, 대장군 조상이 촉을 치러 낙곡으로 들어간다. 일흔을 앞둔 사마의는 따라가지 않는다. 사마소가 그 자리를 대신한다. 골짜기는 길고, 조상은 멈출 줄 모른다.'],
 ];
 
 /** After a main-battle victory: where the story picks up, and what changed. */
 export const storyAftermath:Record<string,{art:number;name:string;beats:Array<{speaker:string;line:string}>}>={
+  'S3-05':{art:11,name:'낙곡 · 돌아오는 길',beats:[
+    {speaker:'사마소',line:'조상 대장군을 모시고 돌아왔습니다. 군의 절반을 잃었습니다.'},
+    {speaker:'사마의',line:'조상은 이번 일로 우리를 더 미워할 것이다. 그리고 더 깔볼 것이다. 둘 다 좋다.'}]},
   'S3-04':{art:8,name:'환성 · 비워진 성',beats:[
     {speaker:'사마사',line:'제갈각이 군량을 불태우고 물러갔습니다.'},
     {speaker:'사마의',line:'다리를 놓은 공병에게 상을 내려라. 이 싸움은 칼보다 망치가 이겼다.'}]},
