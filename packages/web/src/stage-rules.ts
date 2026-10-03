@@ -42,6 +42,30 @@ export interface StageRules {
 const HILL=['ma_su','hill_spear','hill_bow','hill_foot_a','hill_foot_b','hill_xbow'];
 
 export const stageRules:Record<string,StageRules>={
+  'S3-01':{
+    sealNames:['비연 격퇴','양동으로 진형 붕괴','신속한 도하'],
+    weather:'맑음 · 요동의 찬바람',
+    labels:[{region:'feint_label',text:'양동 지점 · 남쪽 여울'},{region:'north_label',text:'진짜 공격 · 북쪽 여울'},{region:'yan_camp',text:'비연 본진'}],
+    zones:[{region:'south_feint',color:0xffd27a},{region:'north_ford',color:0x8fd0ff}],
+    tick:({state})=>{
+      const on=(region:string,u:{pos:{x:number;y:number}})=>state.map.regionCoords(region).some(c=>c.x===u.pos.x&&c.y===u.pos.y);
+      if(!state.firedEvents.has('liaoshui/feint')&&!state.firedEvents.has('liaoshui/collapse')&&state.living('ally').some(u=>u.id.startsWith('feint_banner')&&on('south_feint',u))){
+        fireScripted(state,'liaoshui/feint');
+        // The Yan line swings south to meet the banners.
+        for(const u of state.living('enemy'))if(u.id.startsWith('yan_line')){u.behavior='race';u.goalRegion='south_guard';}
+      }
+      const main=[...state.living('player'),...state.living('ally')].filter(u=>!u.id.startsWith('feint_banner'));
+      if(state.firedEvents.has('liaoshui/feint')&&!state.firedEvents.has('liaoshui/collapse')&&!state.firedEvents.has('liaoshui/too-early')&&main.some(u=>on('north_ford',u))){
+        fireScripted(state,'liaoshui/collapse');
+        for(const u of state.living('enemy'))if(u.id.startsWith('yan_line')){u.behavior='advance';delete u.goalRegion;}
+      }
+      // Crossing north before the feint: the line simply holds where it is (no collapse).
+      if(!state.firedEvents.has('liaoshui/feint')&&main.some(u=>on('north_ford',u)))state.firedEvents.add('liaoshui/too-early');
+      return undefined;
+    },
+    phase:({state})=>state.scenarioPhase==='양동 전개'?(state.firedEvents.has('liaoshui/too-early')?'양동 없이 도하 · 전열이 북쪽을 막는다':'양동 전개 · 깃발대를 남쪽 여울로'):state.scenarioPhase,
+    seals:({state,difficulty})=>[1,...(state.firedEvents.has('liaoshui/collapse')?[2]:[]),...(state.turn<=(difficulty==='extreme'?12:11)?[3]:[])],
+  },
   'S2-14':{
     sealNames:['무사 철수','추격 저지','병력 보존'],
     somber:true,

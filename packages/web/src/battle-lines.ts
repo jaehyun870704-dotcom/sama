@@ -15,6 +15,13 @@ export type LineWhen=
 export interface BattleLine {id:string;when:LineWhen;speaker:string;text:string}
 
 export const battleLines:Record<string,BattleLine[]>={
+  'S3-01':[
+    {id:'open-1',when:{turn:1},speaker:'사마의',text:'양동 깃발대는 남쪽 여울로. 본대는 깃발이 선 뒤에 북쪽 여울을 건넌다.'},
+    {id:'open-2',when:{turn:1},speaker:'비연',text:'사마의가 어디로 오든 이 전열은 뚫리지 않는다.'},
+    {id:'feint',when:{lockedBy:'liaoshui/feint'},speaker:'비연',text:'남쪽이다! 위군의 깃발이 남쪽 여울에 섰다! 전열을 남쪽으로!'},
+    {id:'collapse',when:{lockedBy:'liaoshui/collapse'},speaker:'사마사',text:'북쪽이 비었습니다! 연군의 진형이 무너집니다!'},
+    {id:'reserve',when:{turn:5},speaker:'사마사',text:'동쪽에서 양평의 원군이 옵니다!'},
+  ],
   'S2-14':[
     {id:'open-1',when:{turn:1},speaker:'사마의',text:'물러나는 촉군을 쫓는다. 너무 깊이 들어가지는 마라.'},
     {id:'open-2',when:{turn:2},speaker:'곽회',text:'서쪽 길 끝이 촉의 퇴로입니다. 빠져나가기 전에 붙잡아야 합니다.'},
