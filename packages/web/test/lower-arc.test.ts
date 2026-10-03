@@ -80,3 +80,23 @@ describe('하편 · 낙곡대전',()=>{
   s.act({kind:'choose',nodeId:'luogu_turn',optionId:'escort'});expect(s.state.victory).toEqual([{type:'reach',unit:'cao_shuang',target:'exit'}]);
  });
 });
+describe('하편 · 낙양 점령전',()=>{
+ it('keeps the guard firm and reinforcing until the armory falls, then flips the battlefield',()=>{
+  const s=open('S3-06');s.act({kind:'wait',unit:'sima_yi'});
+  expect(s.state.living('enemy').every(u=>s.state.hasStatus(u,'guard'))).toBe(true);expect(s.phase).toContain('적 견고');
+  for(const u of s.state.living('enemy'))if(u.id.startsWith('armory'))s.state.retreat(u);
+  s.state.get('sima_shi').pos={x:19,y:8};expect(s.act({kind:'capture',unit:'sima_shi',region:'armory'}).ok).toBe(true);
+  expect(s.state.living('enemy').some(u=>s.state.hasStatus(u,'guard'))).toBe(false);
+  expect(s.state.find('sima_shi')).toBeUndefined();expect(s.state.find('sima_zhao')).toBeUndefined();expect(s.state.losses.player).toBe(0);
+  expect(s.state.hasStatus(s.state.get('sima_yi'),'rally')).toBe(true);expect(s.phase).toContain('증원 중지');
+  expect(s.state.telegraphs.some(t=>t.label==='불길 예고'&&t.ratio===0)).toBe(true);expect(s.state.outcome).toBe('ongoing');
+  const waves=s.state.log.filter(e=>e.t==='event'&&e.id==='coup/reinforce').length;
+  for(let i=0;i<5000&&s.state.turn<3&&s.state.outcome==='ongoing';i++){const yi=s.state.get('sima_yi');yi.hp=yi.stats.maxHp;if(CONTROLLABLE.has(s.state.currentSide))s.act({kind:'endPhase'});else s.tick();}
+  expect(s.state.log.filter(e=>e.t==='event'&&e.id==='coup/reinforce').length).toBe(waves);
+  expect(s.state.map.tileAt({x:11,y:5}).hazard).toBe('fire');
+  expect(stageRules['S3-06']!.seals!({state:s.state,difficulty:'normal',journalLength:0})).toContain(2);
+ });
+ it('does not win by walking into Yongning before the armory is taken',()=>{
+  const s=open('S3-06');s.state.get('sima_yi').pos={x:11,y:2};s.act({kind:'wait',unit:'sima_yi'});expect(s.state.outcome).toBe('ongoing');
+ });
+});

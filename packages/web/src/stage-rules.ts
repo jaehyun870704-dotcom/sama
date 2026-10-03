@@ -42,6 +42,27 @@ export interface StageRules {
 const HILL=['ma_su','hill_spear','hill_bow','hill_foot_a','hill_foot_b','hill_xbow'];
 
 export const stageRules:Record<string,StageRules>={
+  'S3-06':{
+    sealNames:['영녕궁 진입','두 아들 생존','신속한 무기고 장악'],
+    weather:'정월 · 맑고 찬 하늘',
+    labels:[{region:'palace_label',text:'영녕궁'},{region:'armory_label',text:'무기고'}],
+    zones:[{region:'armory',color:0xffd27a}],
+    tough:[{unit:'sima_shi',hpScale:1.5,defense:3},{unit:'sima_zhao',hpScale:1.5,defense:3},{unit:'sima_yi',hpScale:1.3,defense:2}],
+    tick:({state})=>{
+      // While the armory is theirs, every guardsman stands firm (견고).
+      if(!state.firedEvents.has('coup/armory'))for(const u of state.living('enemy'))if(!state.hasStatus(u,'guard'))state.applyStatus(u,{kind:'guard',turns:2,magnitude:1});
+      if(!state.firedEvents.has('coup/armory')){
+        state.survivalClocks.set('waves',state.log.filter(e=>e.t==='event'&&e.id==='coup/reinforce').length);
+        if(['sima_shi','sima_zhao'].some(id=>state.find(id)?.alive===false))state.firedEvents.add('coup/heir-lost');
+      }
+      return undefined;
+    },
+    phase:({state})=>{
+      if(!state.firedEvents.has('coup/armory'))return `두 전선 · 무기고 장악 전 — 적 견고, 2턴마다 증원 (증원 ${state.survivalClocks.get('waves')??0}회)`;
+      return '영녕궁 진입 · 무기고 장악: 적 견고 해제 · 증원 중지 · 아군 사기 상승 · 두 아들 성문 임무로 이탈';
+    },
+    seals:({state})=>[1,...(state.firedEvents.has('coup/armory')&&!state.firedEvents.has('coup/heir-lost')?[2]:[]),...((state.survivalClocks.get('waves')??99)<=2?[3]:[])],
+  },
   'S3-05':{
     sealNames:['조상 호송','부대 보존','신속한 회군'],
     somber:true,
