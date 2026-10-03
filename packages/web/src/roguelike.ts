@@ -1,7 +1,9 @@
 /**
  * 천명의 원정 — 로그라이크 모드의 순수 규칙.
  *
- * 한 번의 원정은 12층(하북 · 한중 · 강동, 4층마다 우두머리). 층마다 갈림길 세 곳 중 하나를 고른다.
+ * 게임의 중심. 한 번의 원정은 상편·중편·하편 3편 18층(6층마다 우두머리). 층마다 갈림길 중 하나를 고른다.
+ * 연의 32전장은 원정 안의 '연의 전장' 갈림길로 나온다. 한 번 이긴 연의 전장은 영구 기록(천명 기록)에 남아
+ * 다음 원정은 그다음 이야기로 이어진다. 원정이 끝나면 천명을 얻어 영구 해금에 쓴다(meta.ts).
  * 전장은 원정 씨앗과 층으로 결정론적으로 생성되고, 쓰러진 부대는 원정에서 영원히 빠진다.
  * 경험치로 레벨이 오르면 병종이 진화한다(classes.ts의 계통).
  * 화면과 저장은 main.ts가 맡는다. 이 모듈은 상태를 바꾸는 순수 함수만 둔다.
@@ -10,13 +12,14 @@ import {Rng,VARIANTS,evolvedClass,nextEvolution,profileOf,evolveUnit,familyOf,ty
 import {classNames,troopStrategies} from './troops.ts';
 import {availableStrategies,allStrategies} from './officers.ts';
 
-export const RUN_FLOORS=12;
+export const FLOORS_PER_ACT=6;
+export const RUN_FLOORS=18;
 export const PARTY_LIMIT=6;
 export const XP_PER_LEVEL=100;
 
 export interface RunUnit {id:string;name:string;unitClass:UnitClass;level:number;xp:number;/** 체력 비율 0~1 */hp:number;hero?:true}
-export type NodeKind='battle'|'elite'|'boss'|'recruit'|'rest'|'treasure'|'training';
-export interface RunNode {kind:NodeKind;label:string;detail:string}
+export type NodeKind='battle'|'elite'|'boss'|'recruit'|'rest'|'treasure'|'training'|'story';
+export interface RunNode {kind:NodeKind;label:string;detail:string;/** 연의 전장의 스테이지 id */stage?:string}
 export interface Relic {id:string;name:string;effect:string}
 export interface Run {
   version:1;seed:number;floor:number;party:RunUnit[];relics:string[];fallen:string[];
@@ -27,6 +30,20 @@ export interface Run {
   offer?:RewardOption[];
   /** 마지막으로 일어난 일 (진화·레벨업 등), 화면에 한 번 보여 준다 */
   news:string[];
+  /** 지금 치르는 연의 전장 */
+  activeStage?:string;
+  /** 지금까지 이긴 연의 전장(원정 시작 때 천명 기록을 이어받는다) */
+  chronicle?:string[];
+  /** 이번 원정에서 이긴 연의 전장 */
+  storyDone?:string[];
+  /** 이번 원정에서 꺾은 우두머리 수 */
+  bosses?:number;
+  /** 원정 시작 때 적용된 영구 해금 */
+  unlocks?:string[];
+  /** 천명의 가호: 한 번 패배해도 원정이 끝나지 않는다 */
+  secondChance?:boolean;
+  /** 원정 종료 보상(천명)을 이미 받았는지 */
+  mandateGranted?:boolean;
 }
 export type RewardOption={kind:'recruit';unitClass:UnitClass;level:number}|{kind:'heal';amount:number}|{kind:'relic';relic:string}|{kind:'xp';amount:number};
 
@@ -41,13 +58,27 @@ export const RELICS:Relic[]=[
   {id:'quiver',name:'화살통',effect:'궁·노 계열 공격 +5'},
 ];
 
+/** 세 편: 상편(관중) · 중편(기산) · 하편(요동). 편마다 지형·적 구성·우두머리가 다르다. */
 export const REGIONS=[
-  {name:'하북 평원',boss:{name:'안량',unitClass:'cavalry' as UnitClass},pool:['infantry','spearman','cavalry','archer','crossbow','slinger'] as UnitClass[]},
-  {name:'한중 산악',boss:{name:'마초',unitClass:'cavalry' as UnitClass},pool:['infantry','spearman','bandit','assassin','archer','horseArcher','strategist','heavyCav'] as UnitClass[]},
-  {name:'강동 수향',boss:{name:'육손',unitClass:'strategist' as UnitClass},pool:['infantry','spearman','rattan','crossbow','taoist','shaman','elephant','cavalry'] as UnitClass[]},
+  {name:'관중 평원',arc:'상편',boss:{name:'마초',unitClass:'cavalry' as UnitClass},pool:['infantry','spearman','cavalry','archer','crossbow','slinger','horseArcher'] as UnitClass[]},
+  {name:'기산 산악',arc:'중편',boss:{name:'제갈량',unitClass:'strategist' as UnitClass},pool:['infantry','spearman','bandit','assassin','archer','crossbow','taoist','strategist','heavyCav'] as UnitClass[]},
+  {name:'요동 요수',arc:'하편',boss:{name:'공손연',unitClass:'infantry' as UnitClass},pool:['infantry','spearman','cavalry','horseArcher','crossbow','archer','heavyCav','bandit','rattan'] as UnitClass[]},
 ];
-export const regionOf=(floor:number)=>REGIONS[Math.min(2,Math.floor((floor-1)/4))]!;
-export const isBossFloor=(floor:number)=>floor%4===0;
+export const actOf=(floor:number)=>Math.min(3,Math.max(1,Math.ceil(floor/FLOORS_PER_ACT)));
+export const regionOf=(floor:number)=>REGIONS[actOf(floor)-1]!;
+export const isBossFloor=(floor:number)=>floor%FLOORS_PER_ACT===0;
+
+/** 편마다 연의 전장 순서(연의의 시간 순). */
+export const STORY_ORDER:Record<1|2|3,string[]>={
+  1:Array.from({length:11},(_,i)=>`S1-${String(i+1).padStart(2,'0')}`),
+  2:Array.from({length:14},(_,i)=>`S2-${String(i+1).padStart(2,'0')}`),
+  3:Array.from({length:7},(_,i)=>`S3-${String(i+1).padStart(2,'0')}`),
+};
+/** 이 층에서 나올 연의 전장: 아직 이기지 못한 다음 이야기, 다 이겼으면 이번 원정에서 안 치른 것. */
+export function nextStory(run:Run):string|undefined{
+  const list=STORY_ORDER[actOf(run.floor) as 1|2|3],known=new Set(run.chronicle??[]),done=new Set(run.storyDone??[]);
+  return list.find(id=>!known.has(id))??list.find(id=>!done.has(id));
+}
 
 /** 영입 가능한 기본 병종 */
 export const RECRUITS:UnitClass[]=['infantry','spearman','cavalry','archer','crossbow','fengshui','horseArcher','slinger','assassin','rattan','elephant','monk','taoist','physician','bandit','heavyCav'];
@@ -66,17 +97,23 @@ function uniqueName(run:Run,cls:UnitClass,self?:RunUnit){
   return base;
 }
 
-export function newRun(seed:number,start:UnitClass[]):Run{
-  const run:Run={version:1,seed,floor:1,party:[],relics:[],fallen:[],status:'map',nextId:1,news:[]};
-  run.party.push({id:'sima_yi',name:'사마의',unitClass:'strategist',level:4,xp:0,hp:1,hero:true});
-  for(const cls of start)recruit(run,cls,4);
+export interface RunOptions {chronicle?:string[];unlocks?:string[];relic?:string}
+export const has=(run:Run,unlock:string)=>!!run.unlocks?.includes(unlock);
+export function newRun(seed:number,start:UnitClass[],opts:RunOptions={}):Run{
+  const run:Run={version:1,seed,floor:1,party:[],relics:[],fallen:[],status:'map',nextId:1,news:[],chronicle:[...(opts.chronicle??[])],storyDone:[],bosses:0,unlocks:[...(opts.unlocks??[])]};
+  const level=has(run,'veteran_start')?6:4;
+  run.party.push({id:'sima_yi',name:'사마의',unitClass:evolvedClass('strategist',level),level,xp:0,hp:1,hero:true});
+  for(const cls of start)recruit(run,cls,level);
+  if(opts.relic&&RELICS.some(r=>r.id===opts.relic))run.relics.push(opts.relic);
+  if(has(run,'second_chance'))run.secondChance=true;
   return run;
 }
 
 /** 출발 부대 후보 세 묶음(병종 3개씩). */
-export function startingOffers(seed:number):UnitClass[][]{
-  const r=new Rng(seed>>>0||1),pick=()=>RECRUITS[r.int(0,RECRUITS.length-1)]!;
-  return [['infantry','archer','cavalry'],[pick(),pick(),pick()],[pick(),pick(),pick()]];
+export function startingOffers(seed:number,unlocks:string[]=[]):UnitClass[][]{
+  const r=new Rng(seed>>>0||1),pick=()=>RECRUITS[r.int(0,RECRUITS.length-1)]!,wide=unlocks.includes('wide_network');
+  const size=wide?4:3,group=()=>Array.from({length:size},pick);
+  return [['infantry','archer','cavalry',...(wide?['fengshui' as UnitClass]:[])],group(),group(),...(wide?[group()]:[])];
 }
 
 export function recruit(run:Run,cls:UnitClass,level:number){
@@ -89,11 +126,14 @@ export function recruit(run:Run,cls:UnitClass,level:number){
 /** 이 층의 갈림길 세 곳. 같은 원정·같은 층이면 언제나 같다. */
 export function floorChoices(run:Run):RunNode[]{
   const f=run.floor;
-  if(isBossFloor(f)){const b=regionOf(f).boss;return [{kind:'boss',label:`우두머리 · ${b.name}`,detail:`${regionOf(f).name}의 주인. 격퇴하면 체력이 모두 회복된다.`}];}
-  const r=rngFor(run,f),kinds:NodeKind[]=['battle'];
+  if(isBossFloor(f)){const b=regionOf(f).boss;return [{kind:'boss',label:`우두머리 · ${b.name}`,detail:`${regionOf(f).arc}의 끝, ${regionOf(f).name}의 주인. 격퇴하면 체력이 모두 회복된다.`}];}
+  const r=rngFor(run,f),kinds:NodeKind[]=['battle'],size=has(run,'scout_map')?4:3;
+  // 각 편의 첫 층을 뺀 모든 층에 연의 전장이 하나 나온다(남아 있다면).
+  const story=f%FLOORS_PER_ACT!==1?nextStory(run):undefined;
+  if(story)kinds.push('story');
   const extra:NodeKind[]=f>=2?['battle','elite','recruit','rest','treasure','training']:['battle','recruit','training'];
-  while(kinds.length<3){const k=extra[r.int(0,extra.length-1)]!;if(k!=='battle'&&kinds.includes(k))continue;kinds.push(k);}
-  return kinds.map(kind=>describeNode(kind));
+  while(kinds.length<size){const k=extra[r.int(0,extra.length-1)]!;if(k!=='battle'&&kinds.includes(k))continue;kinds.push(k);}
+  return kinds.map(kind=>kind==='story'?{...describeNode(kind),stage:story!}:describeNode(kind));
 }
 function describeNode(kind:NodeKind):RunNode{
   switch(kind){
@@ -104,18 +144,20 @@ function describeNode(kind:NodeKind):RunNode{
     case 'rest':return {kind,label:'의원',detail:'모든 부대의 체력을 60% 회복한다.'};
     case 'treasure':return {kind,label:'보물고',detail:'원정 내내 효과가 이어지는 보물 하나를 고른다.'};
     case 'training':return {kind,label:'수련장',detail:'모든 부대가 경험치 100을 얻는다.'};
+    case 'story':return {kind,label:'연의 전장',detail:'연의 이야기 속 전투. 사마의 본대가 출진한다. 이기면 경험치 150과 보물, 영구 기록. 지면 원정이 끝난다.'};
   }
 }
 
 const avgLevel=(run:Run)=>Math.round(run.party.reduce((n,u)=>n+u.level,0)/Math.max(1,run.party.length));
+const recruitLevel=(run:Run)=>Math.max(1,avgLevel(run)-1+(has(run,'elite_recruits')?3:0));
 
 /** 비전투 갈림길을 고르면 곧장 결과가 정해진다(모병·보물은 보상 화면으로). */
 export function visitNode(run:Run,node:RunNode){
   run.news=[];
-  if(node.kind==='rest'){for(const u of run.party)u.hp=Math.min(1,u.hp+.6);run.news.push('의원에서 모든 부대의 체력을 회복했다.');advance(run);return;}
+  if(node.kind==='rest'){for(const u of run.party)u.hp=Math.min(1,u.hp+(has(run,'field_medic')?1:.6));run.news.push('의원에서 모든 부대의 체력을 회복했다.');advance(run);return;}
   if(node.kind==='training'){grantXp(run,100);advance(run);return;}
   const r=rngFor(run,run.floor*31+7);
-  if(node.kind==='recruit'){run.offer=pickDistinct(r,RECRUITS,3).map(unitClass=>({kind:'recruit' as const,unitClass,level:Math.max(1,avgLevel(run)-1)}));run.status='reward';return;}
+  if(node.kind==='recruit'){run.offer=pickDistinct(r,RECRUITS,3).map(unitClass=>({kind:'recruit' as const,unitClass,level:recruitLevel(run)}));run.status='reward';return;}
   if(node.kind==='treasure'){run.offer=relicOffer(run,r);run.status='reward';}
 }
 
@@ -141,18 +183,48 @@ export function finishBattle(run:Run,node:RunNode,victory:boolean,survivors:Reco
   run.news=[];delete run.active;
   const lost=run.party.filter(u=>survivors[u.id]===undefined);
   for(const u of lost)run.fallen.push(`${u.hero?'사마의':u.name} Lv.${u.level} · ${run.floor}층`);
-  if(!victory||!survivors.sima_yi){run.news.push(survivors.sima_yi?`${run.floor}층 전투에서 패했다. 원정은 여기서 끝난다.`:`사마의가 ${run.floor}층에서 쓰러졌다. 원정은 여기서 끝난다.`);run.status='lost';run.party=run.party.filter(u=>survivors[u.id]!==undefined);return;}
+  if(!victory||!survivors.sima_yi){
+    run.party=run.party.filter(u=>survivors[u.id]!==undefined||u.hero);
+    if(spendSecondChance(run))return;
+    run.news.push(survivors.sima_yi?`${run.floor}층 전투에서 패했다. 원정은 여기서 끝난다.`:`사마의가 ${run.floor}층에서 쓰러졌다. 원정은 여기서 끝난다.`);run.status='lost';run.party=run.party.filter(u=>survivors[u.id]!==undefined);return;}
   run.party=run.party.filter(u=>survivors[u.id]!==undefined);
   for(const u of run.party)u.hp=Math.max(.05,survivors[u.id]!);
   if(lost.length)run.news.push(`잃은 부대: ${lost.map(u=>u.name).join(', ')}`);
   if(run.relics.includes('herbs'))for(const u of run.party)u.hp=Math.min(1,u.hp+.2);
-  if(node.kind==='boss')for(const u of run.party)u.hp=1;
+  if(node.kind==='boss'){for(const u of run.party)u.hp=1;run.bosses=(run.bosses??0)+1;}
   grantXp(run,node.kind==='boss'?200:node.kind==='elite'?180:120);
   if(node.kind==='boss'&&run.floor>=RUN_FLOORS){run.status='won';return;}
   const r=rngFor(run,run.floor*53+11);
   if(node.kind==='elite'||node.kind==='boss'){run.offer=relicOffer(run,r);if(!run.offer.length)run.offer=[{kind:'xp',amount:80}];}
-  else run.offer=[{kind:'recruit',unitClass:RECRUITS[r.int(0,RECRUITS.length-1)]!,level:Math.max(1,avgLevel(run)-1)},{kind:'heal',amount:.4},relicOffer(run,r)[0]??{kind:'xp',amount:80}];
+  else run.offer=[{kind:'recruit',unitClass:RECRUITS[r.int(0,RECRUITS.length-1)]!,level:recruitLevel(run)},{kind:'heal',amount:.4},relicOffer(run,r)[0]??{kind:'xp',amount:80}];
   run.status='reward';
+}
+
+/** 천명의 가호: 한 번 패배를 견딘다. 사마의는 체력 30%로 살아남고 다음 층으로 물러난다(보상 없음). */
+function spendSecondChance(run:Run){
+  if(!run.secondChance)return false;
+  run.secondChance=false;const hero=run.party.find(u=>u.hero);if(hero)hero.hp=.3;
+  run.news.push(`천명의 가호 — ${run.floor}층에서 패했지만 사마의가 살아남아 물러났다. (가호는 원정마다 한 번)`);
+  advance(run);return true;
+}
+
+/** 연의 전장의 결과. heroHp: 살아남은 사마의의 체력 비율. 본대만 싸우고 부대는 진영을 지킨다. */
+export function finishStory(run:Run,stage:string,victory:boolean,heroHp:number,title=stage){
+  run.news=[];delete run.active;delete run.activeStage;
+  if(!victory){if(spendSecondChance(run))return;run.news.push(`연의 전장 「${title}」에서 패했다. 원정은 여기서 끝난다.`);run.status='lost';return;}
+  const hero=run.party.find(u=>u.hero);if(hero)hero.hp=Math.max(.05,Math.min(1,heroHp));
+  run.chronicle=[...new Set([...(run.chronicle??[]),stage])];run.storyDone=[...new Set([...(run.storyDone??[]),stage])];
+  run.news.push(`연의 전장 「${title}」을 이겨 천명 기록에 남겼다.`);
+  if(run.relics.includes('herbs'))for(const u of run.party)u.hp=Math.min(1,u.hp+.2);
+  grantXp(run,150);
+  const r=rngFor(run,run.floor*71+3);run.offer=relicOffer(run,r);if(!run.offer.length)run.offer=[{kind:'xp',amount:100}];
+  run.status='reward';
+}
+
+/** 원정이 끝났을 때 얻는 천명: 오른 층 + 우두머리 3 + 연의 전장 2 + 완주 10. */
+export function mandateEarned(run:Run){
+  const floors=run.status==='won'?RUN_FLOORS:Math.max(0,run.floor-1);
+  return floors+3*(run.bosses??0)+2*(run.storyDone?.length??0)+(run.status==='won'?10:0);
 }
 
 export function takeReward(run:Run,i:number){
@@ -181,7 +253,7 @@ export function nextEvolutionText(cls:UnitClass){const n=nextEvolution(cls);retu
 const W=16,H=12;
 /** 원정 전장: 지역마다 다른 지형, 좌측 출진 칸과 우측 적진. 모든 칸에 보병이 닿도록 보장한다. */
 export function runMap(run:{seed:number},floor:number,kind:NodeKind):MapFile{
-  const r=rngFor(run,floor*977+kind.length),region=Math.min(2,Math.floor((floor-1)/4));
+  const r=rngFor(run,floor*977+kind.length),region=actOf(floor)-1;
   const g=Array.from({length:H},()=>Array<string>(W).fill('.'));
   const blob=(ch:string,n:number,size:number,x0=3,x1=W-4)=>{for(let k=0;k<n;k++){const cx=r.int(x0,x1),cy=r.int(1,H-2);for(let i=0;i<size;i++){const x=cx+r.int(-1,1),y=cy+r.int(-1,1);if(x>=2&&x<W-2&&y>=0&&y<H)g[y]![x]=ch;}}};
   blob('f',region===0?4:3,5);blob('h',region===1?4:2,4);
@@ -199,8 +271,8 @@ export function runMap(run:{seed:number},floor:number,kind:NodeKind):MapFile{
 /** 원정 전투의 스테이지. 적은 층·지역·종류로 정해지고, 레벨이 높으면 그들도 진화해 있다. */
 export function runStage(run:Run,kind:NodeKind,map:MapFile):StageDef{
   const f=run.floor,r=rngFor(run,f*613+kind.length),region=regionOf(f);
-  const base=2+Math.round(f*1.1)+(f>=9?2:0)+(kind==='battle'?0:1);
-  const count=Math.min(8,3+Math.floor(f/3)+(kind==='elite'?1:kind==='boss'?-1:0));
+  const base=2+Math.round(f*1.05)+(f>FLOORS_PER_ACT*2?2:0)+(kind==='battle'?0:1);
+  const count=Math.min(8,3+Math.floor(f/4.5)+(kind==='elite'?1:kind==='boss'?-1:0));
   const camp=(map.regions!.enemy_camp as Array<{x:number;y:number}>).slice();
   const enemies:UnitSpawnSpec[]=[];
   for(let i=0;i<count&&camp.length;i++){
@@ -255,9 +327,13 @@ export function prepareRunBattle(state:BattleState,ref:RunBattleRef){
   }
   // 진화 책사·적 술사가 쓰는 책략을 전장 책략표에 올린다.
   for(const u of state.living())for(const id of u.strategies){const d=allStrategies.find(x=>x.id===id);if(d&&!state.strategies.has(id))state.strategies.set(id,d);}
-  const mine=[...state.living('player')];
-  const has=(id:string)=>ref.relics.includes(id);
-  for(const u of mine){
+  applyRelics(state,ref.relics);
+}
+
+/** 보물 효과를 아군 전원에 입힌다(원정 전투·연의 전장 공통). */
+export function applyRelics(state:BattleState,relics:string[]){
+  const has=(id:string)=>relics.includes(id);
+  for(const u of [...state.living('player')]){
     const fam=familyOf(u.unitClass);
     if(has('whetstone'))u.stats.attack+=3;
     if(has('lamellar'))u.stats.defense+=3;
@@ -268,6 +344,9 @@ export function prepareRunBattle(state:BattleState,ref:RunBattleRef){
     if(has('banner'))state.applyStatus(u,{kind:'rally',turns:2,magnitude:1});
   }
 }
+
+/** 연의 전장의 원본: 세션이 저장하고 불러올 때 쓴다. */
+export interface RunStoryRef {seed:number;floor:number;stage:string;heroLevel:number;heroHp:number;relics:string[]}
 
 /** 전투가 끝난 뒤 원정에 넘길 생존자 체력 비율. */
 export function survivorsOf(state:BattleState,ref:RunBattleRef){
