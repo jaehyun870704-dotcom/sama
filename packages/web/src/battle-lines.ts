@@ -15,6 +15,12 @@ export type LineWhen=
 export interface BattleLine {id:string;when:LineWhen;speaker:string;text:string}
 
 export const battleLines:Record<string,BattleLine[]>={
+  'S3-04':[
+    {id:'open-1',when:{turn:1},speaker:'사마의',text:'공병은 가교 터로. 방패 호위병은 상하좌우로 붙어라. 대각선은 지키지 못한다.'},
+    {id:'open-2',when:{turn:1},speaker:'사마소',text:'건너편 노병의 관통 사격은 방패를 무시합니다. 먼저 쏘아 떨어뜨려야 합니다.'},
+    {id:'boat',when:{turn:3},speaker:'사마사',text:'강 동쪽에서 오군 기습선이 옵니다!'},
+    {id:'bridge',when:{lockedBy:'huancheng/bridge'},speaker:'공병',text:'다리가 놓였습니다! 건너십시오!'},
+  ],
   'S3-03':[
     {id:'open-1',when:{turn:1},speaker:'사마의',text:'들판은 빠르고 숲길은 안전하다. 내 곁을 떠나지 말라, 곁에 있으면 사기가 오른다.'},
     {id:'open-2',when:{turn:2},speaker:'주연',text:'사마의가 왔다고? 성이 떨어지기 전에 밀어붙여라!'},
