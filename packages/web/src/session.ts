@@ -38,6 +38,8 @@ import guanglingStage from '../../data/stages/S2-03.json';
 import guanglingMap from '../../data/maps/guangling-camp.json';
 import xiangyangStage from '../../data/stages/S2-04.json';
 import xiangyangMap from '../../data/maps/xiangyang-walls.json';
+import xinchengStage from '../../data/stages/S2-05.json';
+import xinchengMap from '../../data/maps/xincheng-fort.json';
 import legacyFortMap from './legacy/hanzhong-map-v2.json';
 import legacyFortStage from './legacy/hanzhong-stage-v2.json';
 import { makeUnit, awardedSeals } from '../../core/src/index.ts';
@@ -58,9 +60,10 @@ export const chapters = [
   {stage:dongkouStage as StageDef,map:dongkouMap as MapFile,year:'황초 삼년 · 222년',label:'폭풍 속 철수',quote:'하늘의 칼은 피할 수 있다. 미리 보았다면.'},
   {stage:guanglingStage as StageDef,map:guanglingMap as MapFile,year:'황초 육년 · 225년',label:'야습과 황제 탈출',quote:'곁에 없다 해도, 길러 둔 손발이 대신 싸운다.'},
   {stage:xiangyangStage as StageDef,map:xiangyangMap as MapFile,year:'황초 칠년 · 226년',label:'세 길목 방어',quote:'모든 문을 같은 칼로 지킬 수는 없다.'},
+  {stage:xinchengStage as StageDef,map:xinchengMap as MapFile,year:'태화 이년 · 228년',label:'강행군과 공성',quote:'여드레에 천이백 리. 적이 준비를 마치기 전에 성 아래에 선다.'},
 ];
 // Stable indices preserve the existing v2 command saves.
-export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14];
+export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15];
 export type Preparation='survival'|'strategy'|'command';
 export const strategies: StrategyDef[] = [
   {id:'windDragon',name:'풍룡',element:'wind',shape:'spread',range:4,radius:1,mpCost:18,power:130,targetSides:['enemy']},
@@ -271,6 +274,7 @@ export class Session {
     if(this.revision===4)for(const gate of s.units.values())if(structureKind(gate.id)==='gate'&&!gate.alive&&!this.breached.has(gate.id)){this.breached.add(gate.id);breachRally(s,gate);}
     const rules=stageRules[s.stage.id],view={state:s,difficulty:this.difficulty,journalLength:this.journal.length};
     if(rules){
+      if(rules.deadline&&s.outcome==='ongoing'&&s.turn>rules.deadline){this.failure=`${rules.deadline}턴 안에 작전을 마치지 못했습니다.`;s.outcome='defeat';s.push({t:'outcome',outcome:'defeat'});}
       this.phase=rules.phase?.(view)??s.scenarioPhase??this.phase;
       if(s.outcome==='defeat'&&!this.failure)this.failure=rules.failure?.(view)??'';
     }else if(this.chapter===10){

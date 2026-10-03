@@ -35,3 +35,21 @@ describe('중편 · 양양 전투',()=>{
   for(const u of s.state.living('player'))expect(s.state.map.tileAt(u.pos).terrain).not.toBe('wall');
  });
 });
+import {subject} from '../src/stage-rules.ts';
+describe('중편 · 맹달 차단전',()=>{
+ it('trades fatigue against relief armies at the march choice',()=>{
+  const forced=open('S2-05');expect(forced.state.activeDialogue).toBe('march');
+  const hero=forced.state.get('sima_yi'),full=hero.hp;forced.act({kind:'choose',nodeId:'march',optionId:'forced'});
+  expect(hero.hp).toBeLessThan(full);expect(forced.state.find('shu_relief')).toBeUndefined();
+  const steady=open('S2-05');steady.act({kind:'choose',nodeId:'march',optionId:'steady'});
+  expect(steady.state.get('sima_yi').hp).toBe(steady.state.get('sima_yi').stats.maxHp);expect(steady.state.get('shu_relief').alive).toBe(true);
+ });
+ it('walls Xincheng with a breakable gate, towers and a ram for the sons',()=>{
+  const s=open('S2-05'),units=[...s.state.units.values()];
+  expect(units.some(u=>u.id.startsWith('gate_'))).toBe(true);expect(units.some(u=>u.id.startsWith('tower_'))).toBe(true);expect(units.some(u=>u.unitClass==='ram')).toBe(true);
+  expect(s.state.get('sima_shi').side).toBe('ally');
+ });
+ it('fails after the fourteenth turn and names the fallen with the right particle',()=>{
+  expect(subject('사마소')).toBe('사마소가');expect(subject('맹달')).toBe('맹달이');
+ });
+});
