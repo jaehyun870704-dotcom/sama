@@ -47,7 +47,8 @@ export class Stage {
   constructor(host:HTMLElement,art:number,place:string,cast:CastMember[]){
     host.innerHTML=`<div class="ss-stage" style="${storyBackdrop(art)}"><div class="ss-shade"></div><span class="ss-place">${esc(place)}</span><div class="ss-caption" hidden></div><div class="ss-talk-slot"></div></div><div class="ss-choices"></div>`;
     this.el=host.querySelector<HTMLElement>('.ss-stage')!;this.talk=host.querySelector<HTMLElement>('.ss-talk-slot')!;this.caption=host.querySelector<HTMLElement>('.ss-caption')!;this.choices=host.querySelector<HTMLElement>('.ss-choices')!;
-    this.el.addEventListener('click',e=>{if((e.target as HTMLElement).closest('.ss-actor.clickable'))return;this.next();});
+    // 대사·해설을 기다리는 중이면 어디를 눌러도(인물·대화창 위라도) 넘어간다. 기다리는 게 없을 때만 인물 누르기가 말 걸기다.
+    this.el.addEventListener('click',e=>{if(!this.advance&&(e.target as HTMLElement).closest('.ss-actor.clickable'))return;this.next();});
     for(const m of cast)this.addActor(m);
   }
   next(){this.advance?.();}

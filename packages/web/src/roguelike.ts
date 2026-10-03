@@ -365,7 +365,8 @@ export function runStage(run:Run,kind:NodeKind,map:MapFile,taleId?:string,opts:{
   const f=run.floor,r=rngFor(run,f*613+kind.length),region=regionFor(run,f),tale=kind==='tale'?taleById(taleId):undefined,mods=opts.mods??{};
   const base=opts.enemyBase??2+Math.round(f*1.05)+(f>FLOORS_PER_ACT*2?1:0)+(kind==='battle'||kind==='tale'?0:1);
   // 넓은 전장에는 적도 조금 더 많다. 우두머리 전은 호위를 예전 수준으로(우두머리 자체가 강하다).
-  const count=Math.max(1,Math.min(12,(kind==='boss'?2+Math.floor(f/4.5):4+Math.floor(f/4)+(kind==='elite'?1:kind==='tale'?-1:0))+(mods.bold?1:0)-(mods.scout?1:0)));
+  // 동료를 잃어 넷 이하로 나선 부대에는 적도 한 부대 적게.
+  const count=Math.max(1,Math.min(12,(kind==='boss'?2+Math.floor(f/4.5):4+Math.floor(f/4)+(kind==='elite'?1:kind==='tale'?-1:0))+(mods.bold?1:0)-(mods.scout?1:0)-(run.party.length<=4?1:0)));
   const camp=(map.regions!.enemy_camp as Array<{x:number;y:number}>).slice();
   const enemies:UnitSpawnSpec[]=[];
   for(let i=0;i<count&&camp.length;i++){

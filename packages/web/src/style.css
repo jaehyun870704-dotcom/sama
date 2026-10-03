@@ -252,7 +252,7 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
 .ss-frame{position:relative}
 .ss-stage{max-height:62dvh}
 .ss-talk-slot{position:absolute;inset:0;z-index:220;pointer-events:none}
-.ss-talk{position:absolute;left:2.5%;right:2.5%;display:flex;align-items:flex-end;gap:16px;min-height:104px;padding:16px 30px 16px 0;animation:ss-talk-in .18s ease-out}
+.ss-talk{position:absolute;left:2.5%;right:2.5%;pointer-events:auto;cursor:pointer;display:flex;align-items:flex-end;gap:16px;min-height:104px;padding:16px 30px 16px 0;animation:ss-talk-in .18s ease-out}
 .ss-talk.bottom{bottom:3%}.ss-talk.top{top:3%;align-items:flex-start}
 .ss-talk::before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#141210f2,#050505f5);
   clip-path:polygon(0.6% 9%,4% 2%,12% 4%,24% 0.5%,38% 3%,55% 0%,71% 3.5%,86% 1%,97% 4%,99.6% 14%,98.8% 38%,100% 62%,98.6% 88%,95% 98%,80% 96%,63% 100%,44% 97%,27% 99.5%,10% 96.5%,1.6% 99%,0% 80%,1.2% 52%,0% 30%);
