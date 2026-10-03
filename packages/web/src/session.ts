@@ -50,6 +50,8 @@ import chengguStage from '../../data/stages/S2-09.json';
 import chengguMap from '../../data/maps/chenggu-river.json';
 import shangguiStage from '../../data/stages/S2-10.json';
 import shangguiMap from '../../data/maps/shanggui-fields.json';
+import mumenStage from '../../data/stages/S2-11.json';
+import mumenMap from '../../data/maps/mumen-gorge.json';
 import legacyFortMap from './legacy/hanzhong-map-v2.json';
 import legacyFortStage from './legacy/hanzhong-stage-v2.json';
 import { makeUnit, awardedSeals } from '../../core/src/index.ts';
@@ -76,9 +78,10 @@ export const chapters = [
   {stage:shitingStage as StageDef,map:shitingMap as MapFile,year:'태화 이년 · 228년',label:'협석 돌파',quote:'아버지는 능선에 서고, 아들들은 골짜기를 달린다.'},
   {stage:chengguStage as StageDef,map:chengguMap as MapFile,year:'태화 오년 · 231년',label:'고착 전선과 성채',quote:'막힌 곳을 두드리지 말고, 열린 길로 돌아 들어가라.'},
   {stage:shangguiStage as StageDef,map:shangguiMap as MapFile,year:'태화 오년 · 231년',label:'불길과 함정의 추격',quote:'불이 길을 막으면, 불이 꺼질 때까지 기다릴 수 없는 쪽이 진다.'},
+  {stage:mumenStage as StageDef,map:mumenMap as MapFile,year:'태화 오년 · 231년',label:'선봉과 본대',quote:'쫓으라 한 것도 나였고, 멈추라 하지 못한 것도 나였다.'},
 ];
 // Stable indices preserve the existing v2 command saves.
-export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15,16,17,18,19,20];
+export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15,16,17,18,19,20,21];
 export type Preparation='survival'|'strategy'|'command';
 export const strategies: StrategyDef[] = [
   {id:'windDragon',name:'풍룡',element:'wind',shape:'spread',range:4,radius:1,mpCost:18,power:130,targetSides:['enemy']},
@@ -361,6 +364,7 @@ export class Session {
   }
   /** The turn by which the stage must be won, when its rules set one. */
   get deadline(){return stageRules[this.state.stage.id]?.deadline;}
+  get somber(){return stageRules[this.state.stage.id]?.somber===true;}
   get weather(){return this.chapter===4?'☾ 흉몽 · 짙은 안개':stageRules[this.state.stage.id]?.weather??'☀ 맑음 · 바람 약함';}
   get sealNames(){const named=stageRules[this.state.stage.id]?.sealNames;if(named)return named;return this.chapter===10?['맹약 성사','실언 없는 설득','손권을 단번에']:this.chapter===9?['조조 탈출','조운 봉쇄','신속한 철수']:this.chapter===8?['야곡 출구 도착','손실 최소화','신속한 철수']:this.chapter===7?['전초 수비망 격파','전 부대 생환','신속한 진격']:this.chapter===6?['관문 돌파','호위 부대 보존','신속한 제압']:this.chapter===5?['수송대 탈출','수송대 두 부대 생존','신속한 철수']:this.chapter===4?['흉몽 돌파','사마의 생존','빠른 각성']:this.chapter===0?['탈출 성공','무발각 잠입','형제 체력 50%']:this.chapter===2?['가문 수호','민중·부대 전원 생존','신속한 방어']:this.chapter===3?['산길 탈출','형제 생존','추격 따돌리기']:['성채 점령','신속한 결단','병력 보존'];}
   restorePhase(){if(this.phaseCheckpoint===null)return false;this.journal=this.journal.slice(0,this.phaseCheckpoint);this.checkpoints=this.checkpoints.filter(n=>n<this.journal.length);this.replay();return true;}

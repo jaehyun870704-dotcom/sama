@@ -132,3 +132,20 @@ describe('중편 · 상규 전투',()=>{
   expect(s.state.outcome).toBe('defeat');expect(s.failure).toContain('서쪽 골짜기');
  });
 });
+describe('중편 · 목둔 골짜기 전투',()=>{
+ it('fails if the vanguard falls before the main body joins',()=>{
+  const s=open('S2-11');expect(s.phase).toContain('장합과 본대 사이');
+  s.state.retreat(s.state.get('zhang_he'));s.act({kind:'endPhase'});
+  expect(s.state.outcome).toBe('defeat');expect(s.failure).toContain('고립');
+ });
+ it('lets Zhang He fall as a story event, not a loss, then turns the army home',()=>{
+  const s=open('S2-11');s.state.get('zhang_he').pos={x:7,y:7};s.act({kind:'endPhase'});toPlayer(s);
+  expect(s.state.scenarioPhase).toBe('본대 합류');
+  s.state.get('sima_yi').pos={x:10,y:7};s.act({kind:'endPhase'});expect(s.state.scenarioPhase).toBe('목문도');
+  for(let i=0;i<3000&&!s.state.activeDialogue&&s.state.outcome==='ongoing';i++){if(CONTROLLABLE.has(s.state.currentSide))s.act({kind:'endPhase'});else s.tick();}
+  expect(s.state.activeDialogue).toBe('mumen_turn');expect(s.state.find('zhang_he')).toBeUndefined();
+  expect(s.state.losses.ally+s.state.losses.player+s.state.losses.allyAi).toBe(0);
+  s.act({kind:'choose',nodeId:'mumen_turn',optionId:'withdraw'});expect(s.state.outcome).toBe('ongoing');
+  expect(s.state.victory).toEqual([{type:'reach',unit:'sima_yi',target:'retreat_exit'}]);
+ });
+});

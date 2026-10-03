@@ -15,6 +15,13 @@ export type LineWhen=
 export interface BattleLine {id:string;when:LineWhen;speaker:string;text:string}
 
 export const battleLines:Record<string,BattleLine[]>={
+  'S2-11':[
+    {id:'open-1',when:{turn:1},speaker:'장합',text:'선봉은 내가 맡겠소. 본대는 너무 떨어지지 마시오.'},
+    {id:'open-2',when:{turn:2},speaker:'사마의',text:'장 장군과 떨어지면 고립된다. 본대도 서둘러라.'},
+    {id:'halt',when:{lockedBy:'mumen/vanguard-halts'},speaker:'장합',text:'골짜기 어귀다. 여기서 본대를 기다리겠소. 이 골짜기, 너무 조용하오.'},
+    {id:'nests',when:{lockedBy:'mumen/joined'},speaker:'곽회',text:'벼랑 위에 쇠뇌수가 있습니다! 장 장군, 피하십시오!'},
+    {id:'fall',when:{lockedBy:'mumen/fall'},speaker:'사마의',text:'장합… 군을 돌려라. 동쪽으로 회군한다. 남은 병사를 지켜라.'},
+  ],
   'S2-10':[
     {id:'open-1',when:{turn:1},speaker:'사마의',text:'밭이 타고 있다. 불길을 뚫을지, 돌아갈지 정하라. 남쪽 골짜기는 먼저 살펴라.'},
     {id:'open-2',when:{turn:2},speaker:'고상',text:'수레를 서쪽으로! 불이 꺼지기 전에 골짜기를 빠져나간다!'},
