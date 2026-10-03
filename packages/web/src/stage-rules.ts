@@ -42,6 +42,21 @@ export interface StageRules {
 const HILL=['ma_su','hill_spear','hill_bow','hill_foot_a','hill_foot_b','hill_xbow'];
 
 export const stageRules:Record<string,StageRules>={
+  'S3-03':{
+    sealNames:['번성 구원','부대 보존','신속한 구원'],
+    weather:'맑음 · 한수의 바람',
+    labels:[{region:'keep',text:'번성 본채'},{region:'open_ground',text:'들판 · 빠르지만 포차 사정권'},{region:'forest_road',text:'숲길 · 멀지만 안전'}],
+    tough:[{unit:'fan_guard_0',hpScale:2.4,defense:6},{unit:'fan_guard_1',hpScale:2.4,defense:6}],
+    tick:({state})=>{
+      // 지휘: once a player turn, units within two tiles of Sima Yi are rallied.
+      const yi=state.find('sima_yi');
+      if(yi?.alive&&state.currentSide==='player'&&(state.survivalClocks.get('command')??0)<state.turn){state.survivalClocks.set('command',state.turn);
+        for(const u of [...state.living('player'),...state.living('ally')])if(u.id!=='sima_yi'&&Math.abs(u.pos.x-yi.pos.x)+Math.abs(u.pos.y-yi.pos.y)<=2)state.applyStatus(u,{kind:'rally',turns:1,magnitude:1});}
+      return undefined;
+    },
+    phase:({state})=>{const g=state.living('allyAi').filter(u=>u.id.startsWith('fan_guard')).length;return `번성 구원 · 수비대 ${g}/2 · 격퇴 ${state.losses.enemy}/7`;},
+    failure:({state})=>state.captured.get('keep')==='enemy'?'오군이 번성 본채를 차지했습니다.':undefined,
+  },
   'S3-02':{
     sealNames:['공손연 포획','신속한 보급 차단','미끼에 속지 않음'],
     weather:'장마 뒤 · 젖은 성벽',

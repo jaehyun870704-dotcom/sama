@@ -2,7 +2,7 @@ import {makeUnit,isHostile} from '../../core/src/index.ts';
 import type {BattleState,StageDef} from '../../core/src/index.ts';
 
 // Fixed encounter bands: enemies never level up in response to equipment or replay.
-export const encounterLevels:Record<string,number>={'S1-01':1,'S1-02':2,'S1-03':3,'S1-04':4,'S1-05':5,'S1-06':6,'S1-07':6,'S1-08':7,'S1-09':7,'S1-10':8,'S1-11':9,'S2-01':8,'S2-02':8,'S2-03':9,'S2-04':9,'S2-05':9,'S2-06':10,'S2-07':11,'S2-08':11,'S2-09':12,'S2-10':12,'S2-11':13,'S2-12':14,'S2-13':15,'S2-14':15,'S3-01':16,'S3-02':16};
+export const encounterLevels:Record<string,number>={'S1-01':1,'S1-02':2,'S1-03':3,'S1-04':4,'S1-05':5,'S1-06':6,'S1-07':6,'S1-08':7,'S1-09':7,'S1-10':8,'S1-11':9,'S2-01':8,'S2-02':8,'S2-03':9,'S2-04':9,'S2-05':9,'S2-06':10,'S2-07':11,'S2-08':11,'S2-09':12,'S2-10':12,'S2-11':13,'S2-12':14,'S2-13':15,'S2-14':15,'S3-01':16,'S3-02':16,'S3-03':17};
 export function campaignStage(source:StageDef):StageDef{
   const s=structuredClone(source),base=encounterLevels[s.id]??1,old=s.difficulty.normal.recommendedLevel;
   const adjust=(n:number|undefined)=>Math.max(1,base+Math.max(-1,Math.min(1,(n??old)-old)));
