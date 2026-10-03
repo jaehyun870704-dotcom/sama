@@ -2,7 +2,7 @@ import {makeUnit,isHostile} from '../../core/src/index.ts';
 import type {BattleState,StageDef} from '../../core/src/index.ts';
 
 // Fixed encounter bands: enemies never level up in response to equipment or replay.
-export const encounterLevels:Record<string,number>={'S1-01':1,'S1-02':2,'S1-03':3,'S1-04':4,'S1-05':5,'S1-06':6,'S1-07':6,'S1-08':7,'S1-09':7,'S1-10':8,'S1-11':9,'S2-01':8,'S2-02':8,'S2-03':9,'S2-04':9};
+export const encounterLevels:Record<string,number>={'S1-01':1,'S1-02':2,'S1-03':3,'S1-04':4,'S1-05':5,'S1-06':6,'S1-07':6,'S1-08':7,'S1-09':7,'S1-10':8,'S1-11':9,'S2-01':8,'S2-02':8,'S2-03':9,'S2-04':9,'S2-05':9};
 export function campaignStage(source:StageDef):StageDef{
   const s=structuredClone(source),base=encounterLevels[s.id]??1,old=s.difficulty.normal.recommendedLevel;
   const adjust=(n:number|undefined)=>Math.max(1,base+Math.max(-1,Math.min(1,(n??old)-old)));
@@ -22,8 +22,9 @@ export function structureKind(id:string){return /^gate_\d+_\d+$/.test(id)?'gate'
 /** Frame in the 4×2 scenery sheet: gate, watchtower, and the wall segment reused as a barricade. */
 export function structureFrame(kind:'gate'|'tower'|'barricade'){return kind==='gate'?2:kind==='tower'?3:7;}
 export function addFortifications(state:BattleState){
-  if(!['S1-08','S1-06'].includes(state.stage.id))return;
-  const level=(state.stage.id==='S1-06'?6:5)+(state.difficulty==='extreme'?2:0);
+  // Castle stages: the two original sieges, plus any later stage whose map marks watchtowers.
+  if(!['S1-08','S1-06'].includes(state.stage.id)&&!(state.stage.order>11&&state.map.regions.has('watchtowers')))return;
+  const level=(state.stage.id==='S1-06'?6:state.stage.id==='S1-08'?5:encounterLevels[state.stage.id]??5)+(state.difficulty==='extreme'?2:0);
   for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){
     if(state.map.tileAt({x,y}).terrain!=='gate')continue;
     const guard=state.unitAt({x,y});if(guard){const candidates=[{x:x+1,y},{x:x-1,y},{x,y:y+1},{x,y:y-1}];const free=candidates.find(p=>state.map.inBounds(p)&&!state.unitAt(p)&&!['wall','gate','water','mountain'].includes(state.map.tileAt(p).terrain));if(!free)throw new Error('성문 수비대 배치 공간이 없습니다.');guard.pos=free;}

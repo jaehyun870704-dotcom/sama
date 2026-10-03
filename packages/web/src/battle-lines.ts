@@ -15,6 +15,13 @@ export type LineWhen=
 export interface BattleLine {id:string;when:LineWhen;speaker:string;text:string}
 
 export const battleLines:Record<string,BattleLine[]>={
+  'S2-05':[
+    {id:'open-1',when:{turn:1},speaker:'사마의',text:'성문을 부숴야 맹달에게 닿는다. 충차를 앞세우고, 성벽 위 감시탑을 조심하라.'},
+    {id:'open-2',when:{turn:2},speaker:'맹달',text:'사마의가 벌써 왔다고? 표가 낙양에 닿기도 전에?'},
+    {id:'relief',when:{turn:4},speaker:'사마소',text:'아버님, 서쪽에서 깃발이 보입니다! 촉의 원군입니다!'},
+    {id:'gate',when:{enemiesBelow:4},speaker:'사마사',text:'성 안으로 들어갑니다! 맹달을 놓치지 마십시오!'},
+    {id:'meng-down',when:{retreat:'meng_da'},speaker:'사마의',text:'맹달이 꺾였다. 이제 조정에 표를 올려라.'},
+  ],
   'S2-04':[
     {id:'open-1',when:{turn:1},speaker:'사마의',text:'성문 앞 두 칸을 내주면 끝입니다. 여덟 턴만 버티십시오.'},
     {id:'open-2',when:{turn:1},speaker:'조진',text:'강변 상륙대는 책략을 잘 견딘다! 창과 활로 상대하라.'},
