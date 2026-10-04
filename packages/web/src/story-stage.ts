@@ -74,8 +74,9 @@ export class Stage {
   private talk:HTMLElement;private caption:HTMLElement;private choices:HTMLElement;
   private advance:(()=>void)|undefined;
   skipping=false;
-  constructor(host:HTMLElement,art:number,place:string,cast:CastMember[]){
-    this.scene=isoScene(art,place);
+  constructor(host:HTMLElement,art:number,place:string,cast:CastMember[],spots:readonly At[]=[]){
+    // 사람이 설 자리(처음 자리·걸어갈 자리)에는 소품을 놓지 않는다
+    this.scene=isoScene(art,place,[...cast.flatMap(m=>m.at?[m.at]:[]),...spots]);
     host.innerHTML=`<div class="ss-stage iso"><div class="ss-shade"></div><span class="ss-place">${esc(place)}</span><div class="ss-caption" hidden></div><div class="ss-talk-slot"></div></div><div class="ss-choices"></div>`;
     this.el=host.querySelector<HTMLElement>('.ss-stage')!;this.el.style.backgroundImage=`url(${this.scene.url})`;
     // 흩날리는 것들(꽃잎·불티·비·눈·반딧불·낙엽·먼지·물안개)
@@ -298,7 +299,8 @@ export async function playScenes(root:HTMLElement,scenes:Scene[],hooks:StageHook
     const scene=scenes[si]!;
     root.innerHTML=`<div class="ss-root"><div class="ss-head"><span class="eyebrow">${esc(hooks.heading)} · 장면 ${si+1}/${scenes.length}</span></div><div class="ss-frame"></div>
       <div class="ss-controls"><button type="button" class="ss-skip">장면 건너뛰기 ⏭</button><button type="button" class="primary ss-next">다음 ▶</button></div></div>`;
-    const stage=new Stage(root.querySelector<HTMLElement>('.ss-frame')!,scene.art,scene.place,scene.cast);stage.skipping=skipping;
+    const spots=scene.steps.flatMap(st=>'move' in st?[st.to]:'enter' in st?[st.at]:[]);
+    const stage=new Stage(root.querySelector<HTMLElement>('.ss-frame')!,scene.art,scene.place,scene.cast,spots);stage.skipping=skipping;
     root.querySelector<HTMLButtonElement>('.ss-skip')!.onclick=()=>{skipping=true;stage.skipping=true;stage.next();};
     root.querySelector<HTMLButtonElement>('.ss-next')!.onclick=()=>stage.next();
     await stage.run(scene.steps,hooks);skipping=stage.skipping;
