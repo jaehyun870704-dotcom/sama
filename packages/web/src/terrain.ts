@@ -37,6 +37,7 @@ function paintBase(state:BattleState,biome:Biome){
   const col=[0,0,0],acc=[0,0,0];
   // 풀밭 무게(그린 풀밭 그림을 얹을 자리): 풀·언덕은 온전히, 숲 바닥은 반쯤, 길은 옅게
   const mc=document.createElement('canvas');mc.width=w;mc.height=h;const mg=mc.getContext('2d')!,mimg=mg.createImageData(w,h),md=mimg.data;
+  const dc=document.createElement('canvas');dc.width=w;dc.height=h;const dg=dc.getContext('2d')!,dimg=dg.createImageData(w,h),dd=dimg.data;
   const GR=idx('grass'),HL=idx('hill'),FR=idx('forest'),DI=idx('dirt'),YA=idx('yard');
   for(let py=0;py<h;py++)for(let px=0;px<w;px++){
     const i=py*w+px,cN=sample(n.coarse,px*1.2*Q,py*1.2*Q),f=sample(n.fine,px*.9*Q,py*.9*Q);
@@ -51,9 +52,10 @@ function paintBase(state:BattleState,biome:Biome){
       else rampAt(biome.ramps[name],base,col);
       acc[0]+=col[0]!*k;acc[1]+=col[1]!*k;acc[2]+=col[2]!*k;}
     d[i*4]=acc[0]!;d[i*4+1]=acc[1]!;d[i*4+2]=acc[2]!;d[i*4+3]=255;
-    const gw=wgts[i*M+GR]!+wgts[i*M+HL]!+wgts[i*M+FR]!*.55+wgts[i*M+DI]!*.22+wgts[i*M+YA]!*.1;md[i*4+3]=Math.round(Math.min(1,gw)*255);
+    const gw=wgts[i*M+GR]!+wgts[i*M+HL]!+wgts[i*M+FR]!*.55+wgts[i*M+DI]!*.1+wgts[i*M+YA]!*.06;md[i*4+3]=Math.round(Math.min(1,gw)*255);
+    dd[i*4+3]=Math.round(Math.min(1,wgts[i*M+DI]!+wgts[i*M+YA]!*.6)*255);
   }
-  g.putImageData(img,0,0);mg.putImageData(mimg,0,0);return {base:c,grassMask:mc};
+  g.putImageData(img,0,0);mg.putImageData(mimg,0,0);dg.putImageData(dimg,0,0);return {base:c,grassMask:mc,dirtMask:dc};
 }
 /** 그린 풀밭 그림(AI 채색): 있으면 풀·언덕 위에 깐다. 이음매가 보이지 않게 뒤집어 이어 붙인 판을 만든다. */
 let meadow:HTMLCanvasElement|undefined;
@@ -72,6 +74,27 @@ function overlayMeadow(ctx:CanvasRenderingContext2D,mask:HTMLCanvasElement,w:num
   g.fillStyle=pat;g.fillRect(0,0,w,h);
   g.globalCompositeOperation='destination-in';g.imageSmoothingQuality='high';g.drawImage(mask,0,0,w,h);
   ctx.drawImage(t,0,0);
+}
+/**
+ * 흙길·마당 채색: 풀밭 그림의 명암만 빌려 흙 위에 겹쳐(overlay) 울퉁불퉁한 흙결을 살리고,
+ * 그 위에 따뜻한 밝은 붓질과 어두운 패인 자국을 흙 무게만큼 얹는다.
+ */
+function paintDirt(ctx:CanvasRenderingContext2D,mask:HTMLCanvasElement,w:number,h:number,seed:number){
+  const t=document.createElement('canvas');t.width=w;t.height=h;const g=t.getContext('2d')!;
+  if(meadow){const pat=g.createPattern(meadow,'repeat')!,sc=.9,ox=(seed*53)%meadow.width;pat.setTransform(new DOMMatrix([sc,0,0,sc,-ox*sc,-ox*.4*sc]));
+    g.filter='grayscale(1) blur(2.5px) contrast(.9)';g.fillStyle=pat;g.fillRect(0,0,w,h);g.filter='none';}
+  else{g.fillStyle='rgb(128,128,128)';g.fillRect(0,0,w,h);}
+  // 마른 흙의 밝은 붓질(가늘고 길게), 드물게 짙은 패인 자국
+  g.lineCap='round';
+  for(let i=0;i<w*h/420;i++){const x=hash(i,11,seed)*w,y=hash(i,12,seed)*h,l=10+hash(i,13,seed)*22,a=(hash(i,14,seed)-.5)*.5,k=hash(i,15,seed);
+    g.strokeStyle=k<.7?'rgba(255,248,226,.35)':'rgba(70,50,28,.28)';g.lineWidth=2+hash(i,16,seed)*3;
+    g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+l/2,y+Math.sin(a)*l*.5-2,x+l,y+Math.sin(a)*l);g.stroke();}
+  // 자갈: 아래 그늘, 위 밝은 면
+  for(let i=0;i<w*h/1500;i++){const x=hash(i,21,seed)*w,y=hash(i,22,seed)*h,r=1.5+hash(i,23,seed)*2.6;
+    g.fillStyle='rgba(30,22,12,.6)';g.beginPath();g.ellipse(x+.8,y+1.2,r*1.1,r*.75,0,0,7);g.fill();
+    g.fillStyle='rgba(235,226,206,.9)';g.beginPath();g.ellipse(x,y,r,r*.68,hash(i,24,seed),0,7);g.fill();}
+  g.globalCompositeOperation='destination-in';g.drawImage(mask,0,0,w,h);
+  ctx.save();ctx.globalCompositeOperation='overlay';ctx.globalAlpha=.7;ctx.drawImage(t,0,0);ctx.restore();
 }
 /** 고운 붓결(화면 전체에 옅게 깔리는 질감). */
 function brushGrain(ctx:CanvasRenderingContext2D,w:number,h:number){
@@ -229,14 +252,29 @@ function paintCliffFaces(ctx:CanvasRenderingContext2D,state:BattleState,biome:Bi
     for(let k=2;k<T;k+=7+hash(x,k,3)*4)stroke(ctx,css(r[3]!,.5),1.2,[[px+k,py+1],[px+k-2,py+14]]);ctx.fillStyle='rgba(10,10,8,.4)';ctx.fillRect(px,py+16,T,5);
   }
 }
-/** 나무·바위·산(scenery-v3), 뒤에서 앞으로. 그늘을 먼저 깔고 그림을 얹는다. */
-function paintScenery(ctx:CanvasRenderingContext2D,state:BattleState,atlas:Texture){
-  const props:Array<{frame:number;x:number;y:number;w:number;h:number;flip:boolean;dark?:boolean}>=[];
+/**
+ * 나무·바위·산(scenery-v3), 뒤에서 앞으로. 숲은 칸마다 짙은 우듬지 그늘을 이웃과 이어 깔고,
+ * 큰 참나무·소나무를 서너 그루씩 칸 밖으로 넘치게 겹쳐 세워 한 덩어리 숲으로 읽히게 한다.
+ */
+function paintScenery(ctx:CanvasRenderingContext2D,state:BattleState,atlas:Texture,biome:Biome){
+  const props:Array<{frame:number;x:number;y:number;w:number;h:number;flip:boolean;dark?:boolean;tree?:boolean}>=[];
+  const forest=(x:number,y:number)=>terrainAt(state,x,y)==='forest';
+  const [c0,c1]=biome.canopy;
+  for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){
+    if(!forest(x,y))continue;const cx=x*T+T/2,cy=y*T+T/2,r=T*(.78+hash(x,y,30)*.12);
+    const gr=ctx.createRadialGradient(cx,cy,r*.2,cx,cy,r);gr.addColorStop(0,css(c0!,.82));gr.addColorStop(.6,css(c0!,.6));gr.addColorStop(1,css(c0!,0));
+    ctx.fillStyle=gr;ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.fill();
+    for(let i=0;i<5;i++){ctx.fillStyle=css(c1!,.55);ctx.beginPath();ctx.ellipse(x*T+hash(x,y,i+31)*T,y*T+hash(x,y,i+36)*T,u(3)+hash(x,y,i+41)*u(3),u(2)+hash(x,y,i+46)*u(2),0,0,7);ctx.fill();}
+  }
   for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){
     const t=terrainAt(state,x,y),px=x*T,py=y*T;
     if(t==='forest'){
-      const count=2+(hash(x,y,1)>.55?1:0);
-      for(let i=0;i<count;i++){const h=u(13)+hash(x,y,i+2)*u(6),w=h*.82;props.push({frame:hash(x,y,i+7)>.62?1:0,x:px+u(1)+hash(x,y,i+3)*(T-w+u(6))-u(2),y:py+u(5)+hash(x,y,i+4)*u(10),w,h,flip:hash(x,y,i+5)>.5});}
+      const edges=[forest(x-1,y),forest(x+1,y),forest(x,y-1),forest(x,y+1)].filter(Boolean).length,count=edges>=3?4:3;
+      for(let i=0;i<count;i++){
+        const gx=(i%2)*.5+.25+(hash(x,y,i+3)-.5)*.42,gy=(i<2?.3:.78)+(hash(x,y,i+4)-.5)*.3+(count===3&&i===2?-.2:0);
+        const h=u(17)+hash(x,y,i+2)*u(8),w=h*.86,gxx=count===3&&i===2?.5+(hash(x,y,i+3)-.5)*.4:gx;
+        props.push({frame:hash(x,y,i+7)>.6?1:0,x:px+gxx*T-w/2,y:py+gy*T+u(3),w,h,flip:hash(x,y,i+5)>.5,tree:true});
+      }
     }
     if(t==='mountain'){
       const inner=terrainAt(state,x-1,y)==='mountain'&&terrainAt(state,x+1,y)==='mountain'&&terrainAt(state,x,y-1)==='mountain'&&terrainAt(state,x,y+1)==='mountain';
@@ -247,7 +285,7 @@ function paintScenery(ctx:CanvasRenderingContext2D,state:BattleState,atlas:Textu
   }
   props.sort((a,b)=>a.y-b.y);
   for(const p of props){
-    ctx.fillStyle='rgba(10,20,10,.32)';ctx.beginPath();ctx.ellipse(p.x+p.w/2+4,p.y-2,p.w*.42,p.w*.14,0,0,7);ctx.fill();
+    ctx.fillStyle=p.tree?'rgba(8,16,8,.38)':'rgba(10,20,10,.32)';ctx.beginPath();ctx.ellipse(p.x+p.w/2+5,p.y-3,p.w*.46,p.w*.17,0,0,7);ctx.fill();
     ctx.drawImage(sceneryThumb(atlas,p.frame,p.w,p.h,p.flip,p.dark),Math.round(p.x),Math.round(p.y-p.h));
   }
 }
@@ -263,6 +301,7 @@ export function terrainLayer(state:BattleState,atlas:Texture){
   const ctx=canvas.getContext('2d')!;ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
   const base=paintBase(state,biome);ctx.drawImage(base.base,0,0,canvas.width,canvas.height);
   overlayMeadow(ctx,base.grassMask,canvas.width,canvas.height,state.stage.id.length*7+map.width);
+  paintDirt(ctx,base.dirtMask,canvas.width,canvas.height,map.width*3+map.height);
   if(!meadow)brushGrain(ctx,canvas.width,canvas.height);
   paintFields(ctx,state);
   paintRoads(ctx,state);
@@ -273,7 +312,7 @@ export function terrainLayer(state:BattleState,atlas:Texture){
   paintPlanks(ctx,state);
   paintWalls(ctx,state);
   paintCliffFaces(ctx,state,biome);
-  paintScenery(ctx,state,atlas);
+  paintScenery(ctx,state,atlas,biome);
   tint(ctx,canvas.width,canvas.height,biome);
   const texture=new Texture({source:new CanvasSource({resource:canvas,autoGenerateMipmaps:true,scaleMode:'linear'})});const ground=new Sprite(texture);ground.scale.set(S/T);layer.addChild(ground);
   const frames=Array.from({length:8},(_,i)=>new Texture({source:atlas.source,frame:new Rectangle((i%4)*atlas.width/4,Math.floor(i/4)*atlas.height/2,atlas.width/4,atlas.height/2)}));
