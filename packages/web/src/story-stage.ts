@@ -5,7 +5,7 @@
  *
  * Stage 하나가 무대 하나를 맡는다(이야기 장면, 출진 전 진영이 함께 쓴다). DOM과 CSS 전환만 쓴다.
  */
-import type {Scene,ScriptStep,ChoiceOption,Look,At,CastMember} from './scenario-types.ts';
+import type {Scene,ScriptStep,ChoiceOption,ChoiceEffect,Look,At,CastMember} from './scenario-types.ts';
 import {speak,stopVoice,voiceOn,voiceSupported,setVoice} from './voice.ts';
 import {isoScene,stepsBetween,offscreenCell,type Cell,type IsoScene} from './story-iso.ts';
 import {officerPortrait,officerLook} from './officer-art.ts';
@@ -63,6 +63,8 @@ export function talkBox(speaker:string,line:string,place:'top'|'bottom',stageLoo
 
 export interface StageHooks {
   onChoice?(option:ChoiceOption,step:Extract<ScriptStep,{choice:string}>):void;
+  /** 선택지의 일기토·설전 효과를 겨루게 하고 결과를 돌려준다. */
+  onContest?(effect:Extract<ChoiceEffect,{kind:'duel'|'debate'}>):Promise<'win'|'lose'|'draw'>;
   /** 표식(when/unless 판정) — 선택으로 늘어날 수 있어 매번 읽는다. */
   flags():readonly string[];
 }
@@ -345,6 +347,10 @@ export class Stage {
         hooks.onChoice?.(picked,st);
         if(picked.reply)await this.say(st.choice,picked.reply);
         if(picked.answer){this.bubble(picked.answer.speaker,'!','emote');this.react(picked.answer.speaker,'jolt');await this.say(picked.answer.speaker,picked.answer.line);}
+        for(const e of picked.effects??[])if((e.kind==='duel'||e.kind==='debate')&&hooks.onContest){
+          const r=await hooks.onContest(e),who=e.by??st.choice;
+          if(this.actors.has(e.foe))this.react(e.foe,r==='win'?'shake':'jolt');
+          await this.narrate(`${e.kind==='duel'?'일기토':'설전'} — ${r==='win'?`${who}이(가) ${e.foe}을(를) 꺾었다. 군의 사기가 오른다.`:r==='lose'?`${e.foe}에게 밀렸다. 분한 마음을 삼킨다.`:'승부가 나지 않았다.'}`);}
       }
     }
   }

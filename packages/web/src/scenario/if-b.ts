@@ -1695,6 +1695,7 @@ const pack:ScenarioPack={chapters:[
       {say:'강유',line:'천수의 강백약이오. 위에서 의심받아 성문 밖에 버려졌소. 진창의 학소는 내가 잘 아오.'},
       {emote:'제갈량',text:'!'},
       {choice:'사마의',options:[
+        {id:'debate_haozhao',text:'성 아래로 나가 학소에게 설전을 건다',reply:'스무 날을 버틴 사람의 고집은 칼로 꺾이지 않는다. 말로 그 고집의 이유를 묻겠다.',note:'설전(사마의 대 학소) · 이기면 사기 상승·책략 MP +15',effects:[{kind:'debate',foe:'학소',line:'진창은 내가 지킨다. 그대의 말로 성벽이 낮아지지는 않소.'}]},
         {id:'jiang_wei',text:'강유를 받아들여 진창 공략에 앞세운다.',reply:'버려진 인재를 줍는 것도 군략이다.',answer:{speaker:'제갈량',line:'중달, 내 뒤를 이을 사람을 그대가 찾아 주었구려.'},note:'강유 영입(기병) · 처음 2턴 사기 상승',
           effects:[{kind:'recruit',name:'강유',unitClass:'cavalry'},{kind:'rally'},{kind:'flag',flag:'sn_jiangwei'}]},
         {id:'ziwu',text:'진창을 넘으면 위연의 자오곡 계책을 쓴다.',reply:'승상이 걸지 못한 판을, 이번에는 내가 걸어 보겠소.',answer:{speaker:'위연',line:'하하! 위에서 온 사람이 촉 사람보다 배짱이 크구려!'},note:'다음 전장이 「자오곡」으로 바뀐다 · 위연이 함께 싸운다',

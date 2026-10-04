@@ -8,7 +8,7 @@ import {growthMilestones} from './growth-milestones.ts';
 import {trialStory,trialTactics,layoutName} from './expedition-scenes.ts';
 import {expeditions,expeditionReward,canExpedition,storyWins,trainingXp,growthAdvice} from './expeditions.ts';
 import {campMarkup} from './camp.ts';
-import {officerFeatures,talentTree,strategyHint,martialPower,STATUS_NAMES} from './officers.ts';
+import {officerFeatures,talentTree,strategyHint,martialPower,debatePower,STATUS_NAMES} from './officers.ts';
 import {deploymentPerks} from './officer-perks.ts';
 import {actionNames,duelActionNames,duelLine,temperNames,type DuelAction} from './duel.ts';
 import {spriteAtlas} from './sprite-atlas.ts';
@@ -63,7 +63,7 @@ const sideNames={player:'아군',ally:'편입 아군',enemy:'적군',allyAi:'우
 
 $('#app').innerHTML=`<header class="topbar"><button id="brand" class="brand" aria-label="본영"><span class="seal-logo">사</span><span>사마의전<small>사마의 연대기</small></span></button><div class="chapter-breadcrumb" id="arc-crumb">상편 <span>/</span> 살아남는 자</div><nav><button id="sound-toggle" title="전체 소리 켜기/끄기">♪ <span>소리 켜짐</span></button><button id="help">도움말 <kbd>?</kbd></button><button id="settings" aria-label="설정">⚙</button><button id="menu">본영</button></nav></header>
 <main class="layout"><aside class="left-panel" id="left-panel"><button id="left-close" class="left-close" aria-label="전황 닫기">닫기 ✕</button><div class="eyebrow" id="arc-eyebrow">제1편 <span>상편</span></div><h1 id="stage-title"></h1><p id="stage-subtitle" class="muted"></p><div class="rule"></div><section class="mission"><div class="section-label">전투 목표 <span>목표</span></div><div id="objectives"></div></section><section class="turn-card"><div class="turn-number"><span>차례</span><strong id="turn">01</strong><span id="turn-limit">/ 60</span></div><div id="phase" class="phase"></div><div class="phase-track"><i></i><i></i><i></i><i></i></div></section><section><div class="section-label">현재 차례 부대 <span id="unit-count"></span></div><div id="roster" class="roster"></div></section><p class="roster-note">파랑 · 아군(편입 아군 포함)<br>초록 · NPC 우군 &nbsp; 빨강 · 적군</p><div class="left-bottom"><span class="small-seal">인</span><p>칼을 거두고,<br>때를 기다린다.</p></div></aside>
-<section class="battle-panel"><div class="battle-heading"><div><span class="eyebrow" id="year"></span><h2 id="map-name"></h2></div><span class="weather">☀ &nbsp; 맑음 <span>·</span> 바람 약함</span></div><p id="compact-objective"></p><div id="map" class="map"><div class="map-vignette"></div><button id="left-toggle" class="left-toggle" aria-expanded="false" aria-controls="left-panel">☰ 전황</button><div class="compass"><span>북</span><b>✧</b></div><div class="map-controls"><button id="zoom-out" aria-label="축소">−</button><button id="zoom-reset" aria-label="고른 장수에게로">⌖</button><button id="zoom-in" aria-label="확대">＋</button></div><div class="map-legend"><i class="dot teal"></i> 이동 가능 <i class="dot red"></i> 적 시야 / 사거리 <i class="dot gold"></i> 목표</div><div id="unit-hud" class="unit-hud"></div><div id="action-dock" class="action-dock" hidden></div><div id="tile-info">장수를 선택해 첫 수를 두세요.</div><div id="phase-banner" aria-live="polite"></div><div id="battle-line" class="battle-line" aria-live="polite" hidden></div><div id="battle-relics" class="battle-relics" hidden></div><div id="coach" class="coach" role="status" hidden><p></p><button id="coach-close" aria-label="안내 닫기">닫기</button></div></div><div class="battle-toolbar"><button id="undo">↶ <span>무르기</span> <kbd>Z</kbd></button><button id="threat" aria-pressed="false">◎ <span>위험 범위</span></button><button id="speed">▷ <span>1× 속도</span></button><span id="save-status" role="status">자동 저장 준비</span><button id="end-phase" class="primary">아군 턴 종료 <span>→</span></button></div><div class="dispatch"><span>군보</span><p id="latest-log" aria-live="polite">전장을 살피고 명령을 내려 주십시오.</p><button id="log-button">전투 기록 ↗</button></div></section>
+<section class="battle-panel"><div class="battle-heading"><div><span class="eyebrow" id="year"></span><h2 id="map-name"></h2></div><span class="weather">☀ &nbsp; 맑음 <span>·</span> 바람 약함</span></div><p id="compact-objective"></p><div id="map" class="map"><div class="map-vignette"></div><button id="left-toggle" class="left-toggle" aria-expanded="false" aria-controls="left-panel">☰ 전황</button><div class="compass"><span>북</span><b>✧</b></div><div class="map-controls"><button id="zoom-out" aria-label="축소">−</button><button id="zoom-reset" aria-label="고른 장수에게로">⌖</button><button id="zoom-in" aria-label="확대">＋</button></div><div class="map-legend"><i class="dot teal"></i> 이동 가능 <i class="dot red"></i> 적 시야 / 사거리 <i class="dot gold"></i> 목표</div><div id="unit-hud" class="unit-hud"></div><div id="action-dock" class="action-dock" hidden></div><div id="tile-info">장수를 선택해 첫 수를 두세요.</div><div id="phase-banner" aria-live="polite"></div><div id="battle-line" class="battle-line" aria-live="polite" hidden></div><div id="battle-relics" class="battle-relics" hidden></div><div id="encounter" class="encounter" role="dialog" hidden></div><div id="coach" class="coach" role="status" hidden><p></p><button id="coach-close" aria-label="안내 닫기">닫기</button></div></div><div class="battle-toolbar"><button id="undo">↶ <span>무르기</span> <kbd>Z</kbd></button><button id="threat" aria-pressed="false">◎ <span>위험 범위</span></button><button id="speed">▷ <span>1× 속도</span></button><span id="save-status" role="status">자동 저장 준비</span><button id="end-phase" class="primary">아군 턴 종료 <span>→</span></button></div><div class="dispatch"><span>군보</span><p id="latest-log" aria-live="polite">전장을 살피고 명령을 내려 주십시오.</p><button id="log-button">전투 기록 ↗</button></div></section>
 <aside class="right-panel"><div class="section-label">장수 정보 <span>장수</span></div><div id="unit-detail"></div><div class="section-label command-label">전술 명령 <span>명령</span></div><div id="commands" class="commands"></div><p id="command-hint" class="command-hint"></p><div class="tactic-note"><span>책</span><div><strong>전장을 읽는 법</strong><p id="tactical-tip"></p></div></div></aside></main><footer><span>삼국지 · 사마의전</span><span>상편·중편·하편 · 플레이 가능 전장 ${chapters.length}개</span><span>선택 → 이동 → 행동 → 턴 종료</span></footer>
 <dialog id="modal"><div id="modal-content"></div></dialog><div id="toast" role="status"></div>`;
 
@@ -307,7 +307,7 @@ function hudFight(logs:readonly LogEntry[]){
   hudLock=true;
 }
 function render(){
-  queueMicrotask(()=>hudHover(hudAt));
+  queueMicrotask(()=>hudHover(hudAt));queueMicrotask(encounterCheck);
   // 지금 실려 있는 회차 보물: 얻자마자 전장에서도 보인다.
   {const d=session.deployment,ids=d?.run?.relics??d?.runStory?.relics??d?.scenario?.relics??[],el=$('#battle-relics');el.innerHTML=ids.map(id=>RELICS.find(r=>r.id===id)).filter(Boolean).map(r=>`<span title="${r!.effect}">◈ ${r!.name}</span>`).join('');el.hidden=!ids.length;}
   {const [no,arc,name]=session.deployment?.run?['∞','원정','천명의 길']:ARCS[(session.state.stage as {arc?:string}).arc??'upper']??ARCS.upper!;$('#arc-crumb').innerHTML=`${arc} <span>/</span> ${name}`;$('#arc-eyebrow').innerHTML=`제${({'Ⅰ':1,'Ⅱ':2,'Ⅲ':3} as Record<string,number>)[no]??''}편 <span>${arc}</span>`;}
@@ -435,6 +435,29 @@ function showRefusal(){
   <p class="refusal-effect">${unitName(me)}의 기세가 오른다(2턴 사기 상승) · ${unitName(who)}의 사기가 꺾였다(사기 −10).</p>
   <div class="modal-actions"><button class="primary" id="refusal-ok">전장으로</button></div></div>`,false);
   $('#refusal-ok').onclick=()=>{$<HTMLDialogElement>('#modal').close();persist();render();pump();};
+}
+/**
+ * 전투 중 조우: 이름 있는 우리 장수가 이름난 적장과 3칸 안에서 처음 마주치면(내 차례) 일기토·설전을 제안한다.
+ * 일기토는 붙어 있어야(1칸), 설전은 3칸 안. 한 쌍에 한 번만 묻는다.
+ */
+let met=new Set<string>(),metFor:object|undefined;
+function encounterCheck(){
+  const el=$('#encounter');if(metFor!==session){metFor=session;met=new Set();el.hidden=true;}
+  if(!el.hidden||menuOpen||field.busy||$<HTMLDialogElement>('#modal').open||session.activeDuel||session.revision!==4)return;
+  const s=session.state;if(s.outcome!=='ongoing'||!CONTROLLABLE.has(s.currentSide))return;
+  const fighter=(u:Unit)=>!['civilian','ram','catapult'].includes(familyOf(u.unitClass))&&!/^(gate|tower)_/.test(u.id);
+  for(const u of s.living(s.currentSide)){if(u.hasActed||!CONTROLLABLE.has(u.side)||!fighter(u)||!(romanceOf(u)||u.id==='sima_yi'))continue;
+    for(const e of s.living('enemy')){if(!fighter(e)||!romanceOf(e))continue;const d=manhattan(u.pos,e.pos),k=u.id+':'+e.id;if(d>3||met.has(k))continue;
+      met.add(k);showEncounter(u,e,d);return;}}
+}
+function showEncounter(u:Unit,e:Unit,d:number){
+  const el=$('#encounter'),s=session.state;
+  el.innerHTML=`<div class="enc-faces"><span>${portraitFor(u)}</span><b>VS</b><span>${portraitFor(e)}</span></div><p><b>${unitName(e)}</b>와(과) 마주쳤다!<small>${unitName(u)} · 무력 ${martialPower(u)} 지력 ${debatePower(u)} ↔ ${unitName(e)} · 무력 ${martialPower(e)} 지력 ${debatePower(e)}</small></p>
+    <div class="enc-acts"><button data-enc="duel" ${d>1?'disabled title="붙어 서야 일기토를 청할 수 있다"':''}>⚔ 일기토${d>1?' (붙어서)':''}</button><button data-enc="debate">✒ 설전</button><button data-enc="pass">지나간다</button></div>`;
+  el.hidden=false;sound.event({kind:'duel',critical:false});
+  el.querySelectorAll<HTMLButtonElement>('[data-enc]').forEach(b=>b.onclick=()=>{el.hidden=true;const k=b.dataset.enc!;if(k==='pass'){render();return;}
+    selected=u.id;act({kind:'item',unit:u.id,item:k,target:e.id});});
+  void s;
 }
 let duelSplashSeen:object|undefined;
 function showDuel(){
