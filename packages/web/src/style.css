@@ -418,6 +418,17 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
 .ss-stage.iso .ss-actor.px.speaking .ss-body{animation:px-talk .3s steps(1) infinite}
 @keyframes px-talk{0%{translate:0 0}50%{translate:0 -3.125%}}
 .ss-stage.iso .ss-actor.px.walking .ss-body{animation:none}
+/* 기존 그림 인물: 숨쉬기는 발을 땅에 붙인 채 몸만 부드럽게, 말할 땐 고개를 끄덕이듯, 걸을 땐 걸음마다 한 번 들썩 */
+.ss-stage.iso .ss-actor.px.fig .ss-body{transform-origin:50% 97%;animation:fig-breathe 2.6s ease-in-out infinite;animation-delay:var(--d,0s)}
+@keyframes fig-breathe{0%,100%{scale:1 1}50%{scale:1.006 1.018}}
+.ss-stage.iso .ss-actor.px.fig.speaking .ss-body{animation:fig-talk .62s ease-in-out infinite}
+@keyframes fig-talk{0%,100%{scale:1 1;rotate:0deg}35%{scale:1.008 1.022;rotate:-.6deg}70%{scale:1 .996;rotate:.3deg}}
+.ss-stage.iso .ss-actor.px.fig.walking .ss-body{animation:fig-step var(--step,300ms) ease-in-out infinite}
+@keyframes fig-step{0%,100%{translate:0 0;rotate:0deg}25%{translate:0 -2.6%;rotate:-1deg}50%{translate:0 0;rotate:0deg}75%{translate:0 -2.6%;rotate:1deg}}
+.ss-stage.iso .ss-actor.px.fig.walking .ss-shadow{animation:fig-shadow var(--step,300ms) ease-in-out infinite}
+@keyframes fig-shadow{0%,50%,100%{scale:1}25%,75%{scale:.9}}
+.ss-stage.iso .ss-actor.px.fig .ss-sprite.top{transition:none}
+@media (prefers-reduced-motion:reduce){.ss-stage.iso .ss-actor.px.fig .ss-body,.ss-stage.iso .ss-actor.px.fig .ss-shadow{animation:none!important}}
 .ss-stage.iso .ss-actor.px .ss-shadow{bottom:3%;width:70%;height:10%;background:rgba(0,0,0,.35);border-radius:50%;filter:none}
 .ss-stage.iso .ss-actor.px .ss-name{top:100%;font:700 11px/1.3 'Malgun Gothic',sans-serif;background:rgba(10,8,6,.7);border:1px solid rgba(220,190,120,.5);border-radius:0;padding:0 4px}
 .ss-stage.iso .ss-fx i{border-radius:0!important}
