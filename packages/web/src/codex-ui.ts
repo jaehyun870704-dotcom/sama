@@ -97,6 +97,7 @@ export function codexClasses():UnitClass[]{
   for(const c of ['ram','catapult','engineer','navy'] as UnitClass[])if(!seen.has(c)){seen.add(c);out.push(c);}
   return out;
 }
+export function classSprite(c:UnitClass){return sprite(c);}
 function sprite(c:UnitClass){
   const base=artClass(c),fam=familyOf(base),art=troopArt[base]??troopArt[fam],react=basicReactionArt[base]??basicReactionArt[fam],tint=troopRoles[c]?.tint;
   const hex=tint!==undefined?'#'+tint.toString(16).padStart(6,'0'):'',glow=hex?`;--cx-tint:${hex}`:'';

@@ -4,7 +4,7 @@
  * 오른쪽에는 지금 걸려 있는 연구 효과 합계와, 천명을 얻는 법(이번 회차 예상 천명 포함)을 보여 준다.
  */
 import {loadMeta,saveMeta,type MetaState} from './meta.ts';
-import {RESEARCH,RESEARCH_TABS,nodeById,nodeState,rankOf,buyResearch,gateOpen,researchProgress,mandateBonus,type ResearchTab,type ResearchNode,type Gate} from './research.ts';
+import {RESEARCH,RESEARCH_TABS,nodeById,nodeState,rankOf,buyResearch,gateOpen,researchProgress,mandateBonus,rankGate,rankBand,type ResearchTab,type ResearchNode,type Gate} from './research.ts';
 import {researchIcon,TAB_ICONS} from './research-icons.ts';
 import {loadScenario,runMandate} from './scenario.ts';
 import {PERK_TEXT} from './perks.ts';
@@ -12,7 +12,7 @@ import {PERK_TEXT} from './perks.ts';
 export interface ResearchHost {modal(html:string,closable?:boolean):void;toast(text:string):void;back():void;codex?():void}
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const CELL_W=112,CELL_H=104;
-const pips=(r:number,max:number)=>`<span class="rs-pips">${Array.from({length:max},(_,i)=>`<i class="${i<r?'on':''}"></i>`).join('')}</span>`;
+const pips=(r:number,max:number)=>max>5?`<span class="rs-pips bar"><i style="width:${r/max*100}%"></i><b>${r}/${max}</b></span>`:`<span class="rs-pips">${Array.from({length:max},(_,i)=>`<i class="${i<r?'on':''}"></i>`).join('')}</span>`;
 
 /** 조건 하나하나를 진행 막대로. */
 function gateRows(m:MetaState,g:Gate){
@@ -22,12 +22,13 @@ function gateRows(m:MetaState,g:Gate){
   if(g.endings)rows.push(['본 결말',m.endings.length,g.endings]);if(g.wins)rows.push(['끝까지 완주',m.wins,g.wins]);if(g.officerLv)rows.push(['장수 최고 레벨',best,g.officerLv]);
   return rows.map(([k,v,need])=>`<div class="rs-gate ${v>=need?'ok':''}"><span>${k}</span><i><i style="width:${Math.min(100,v/need*100)}%"></i></i><b>${Math.min(v,need)}/${need}</b></div>`).join('');
 }
+const gateLabel=(g:Gate)=>[g.runs?`천명의 길 ${g.runs}회차`:'',g.chronicle?`연의 전장 ${g.chronicle}승`:'',g.endings?`결말 ${g.endings}개`:'',g.wins?`완주 ${g.wins}번`:'',g.officerLv?`장수 Lv.${g.officerLv}`:''].filter(Boolean).join(' · ');
 /** 걸려 있는 연구 효과를 특성별로 합친다. */
 function activeEffects(m:MetaState){
   const sum=new Map<string,number>(),other:string[]=[];
   for(const n of RESEARCH){const r=rankOf(m,n.id);if(!r)continue;
-    if(n.perk){const k=n.perk.trait+(n.perk.hero?'@hero':'');sum.set(k,(sum.get(k)??0)+n.perk.per*r);}else other.push(n.effect(r));}
-  const lines=[...sum].map(([k,v])=>{const [trait,hero]=k.split('@');const t=PERK_TEXT[trait!];return (hero?'사마의 · ':'')+(t?t.text(v):`${trait} ${v}`);});
+    if(n.perk&&!n.perk.families){const k=n.perk.trait+(n.perk.hero?'@hero':'');sum.set(k,(sum.get(k)??0)+n.perk.per*r);}else other.push(n.effect(r));}
+  const lines=[...sum].map(([k,v])=>{const [trait,hero]=k.split('@');const t=PERK_TEXT[trait!],n=Math.round(v*10)/10;return (hero?'사마의 · ':'')+(t?t.text(n):`${trait} ${n}`);});
   return [...lines,...other];
 }
 /** 천명 얻는 법 + 이번 회차 예상. */
@@ -58,20 +59,22 @@ export function showResearch(host:ResearchHost,tab:ResearchTab='battle',pick?:st
   const st=nodeState(meta,sel),r=rankOf(meta,sel.id),cost=r<sel.max?sel.cost(r):0;
   const reqs=(sel.requires??[]).map(([id,k])=>{const x=nodeById(id)!;const ok=rankOf(meta,id)>=k;return `<button data-rs-jump="${x.id}" data-rs-tabof="${x.tab}" class="rs-reqchip ${ok?'ok':'no'}"><span>${researchIcon(x.id)}</span>${esc(x.name)} ${k}단계 ${ok?'✓':''}</button>`;}).join('');
   const unlocks=RESEARCH.filter(n=>(n.requires??[]).some(([id])=>id===sel.id));
-  const levels=Array.from({length:sel.max},(_,i)=>`<li class="${i<r?'done':i===r?'next':''}"><span>${i+1}단계</span>${esc(sel.effect(i+1))}${i===r?` <em>천명 ${sel.cost(i)}</em>`:''}</li>`).join('');
+  const levels=Array.from({length:sel.max},(_,i)=>{const band=rankBand(sel,i+1),g=rankGate(sel,i),newBand=band&&band!==rankBand(sel,i);return `${newBand&&i>0&&g?`<li class="rs-band">${band} 구간 — 조건: ${esc(gateLabel(g))}</li>`:''}<li class="${i<r?'done':i===r?'next':''} ${band?'b-'+(band==='극의'?3:band==='숙련'?2:1):''}"><span>${i+1}단계</span>${esc(sel.effect(i+1))}${i===r?` <em>천명 ${sel.cost(i)}</em>`:''}</li>`;}).join('');
+  const rg=r<sel.max?rankGate(sel,r):undefined;
   const detail=`<div class="rs-detail"><div class="rs-detail-head"><span class="rs-icon big ${st}">${researchIcon(sel.id)}</span><div class="rs-dtitle"><h3>${esc(sel.name)}</h3>${pips(r,sel.max)}
       <p>${r?`지금 <b>${esc(sel.effect(r))}</b>`:'아직 배우지 않았다.'}</p></div>
-      ${r<sel.max?`<button id="rs-buy" class="primary" ${st==='open'&&meta.mandate>=cost?'':'disabled'}>${st==='locked'?'잠김':meta.mandate>=cost?'연구한다':'천명 부족'}<small>천명 ${cost}</small></button>`:'<span class="rs-max">완성</span>'}</div>
+      ${r<sel.max?`<button id="rs-buy" class="primary" ${st==='open'&&meta.mandate>=cost?'':'disabled'}>${st==='locked'?(rg&&!gateOpen(meta,rg)?'강화 조건':'잠김'):meta.mandate>=cost?(rankBand(sel,r+1)&&rankBand(sel,r+1)!==rankBand(sel,r)?'강화한다':'연구한다'):'천명 부족'}<small>천명 ${cost}</small></button>`:'<span class="rs-max">완성</span>'}</div>
     <div class="rs-dgrid"><ol class="rs-levels">${levels}</ol><div>
       ${reqs?`<div class="rs-sub">먼저 배울 것</div><div class="rs-reqs">${reqs}</div>`:''}
       ${sel.gate?`<div class="rs-sub">열리는 조건 ${gateOpen(meta,sel.gate)?'<b class="ok">충족</b>':''}</div>${gateRows(meta,sel.gate)}`:''}
+      ${rg?`<div class="rs-sub">${rankBand(sel,r+1)} 구간 강화 조건 ${gateOpen(meta,rg)?'<b class="ok">충족</b>':''}</div>${gateRows(meta,rg)}`:''}
       ${unlocks.length?`<div class="rs-sub">배우면 열리는 칸</div><div class="rs-reqs">${unlocks.map(x=>`<button data-rs-jump="${x.id}" data-rs-tabof="${x.tab}" class="rs-reqchip"><span>${researchIcon(x.id)}</span>${esc(x.name)}</button>`).join('')}</div>`:''}
     </div></div></div>`;
   const effects=activeEffects(meta);
   host.modal(`<div class="briefing research-screen"><div class="eyebrow">연구 · 회차를 넘어 남는 힘</div><h2>연구</h2>
     <div class="rs-tabs">${RESEARCH_TABS.map(x=>{const pg=researchProgress(meta,x.id);return `<button data-rs-tab="${x.id}" class="rs-tab-${x.id} ${x.id===tab?'active':''}"><span class="rs-tabicon">${TAB_ICONS[x.id]}</span>${x.name}<small>${pg.done}/${pg.total}</small></button>`;}).join('')}
       <span class="rs-mandate"><span class="rs-tabicon">${researchIcon('unify')}</span>천명 <b>${meta.mandate}</b></span></div>
-    <div class="rs-body"><aside class="rs-banner rs-tab-${tab}"><div class="rs-bhead"><div class="rs-emblem">${TAB_ICONS[tab]}</div><div><h3>${t.name}</h3><div class="rs-ring" style="--p:${prog.total?prog.done/prog.total*100:0}"><b>${prog.done}</b><small>/${prog.total}</small></div></div></div><p>${esc(t.blurb)}</p><small>전체 연구 ${all.done}/${all.total}</small>
+    <div class="rs-body${cols>5?' wide':''}"><aside class="rs-banner rs-tab-${tab}"><div class="rs-bhead"><div class="rs-emblem">${TAB_ICONS[tab]}</div><div><h3>${t.name}</h3><div class="rs-ring" style="--p:${prog.total?prog.done/prog.total*100:0}"><b>${prog.done}</b><small>/${prog.total}</small></div></div></div><p>${esc(t.blurb)}</p><small>전체 연구 ${all.done}/${all.total}</small>
       <section class="rs-effects"><h4>지금 걸린 효과</h4>${effects.length?`<ul>${effects.map(e=>`<li>${esc(e)}</li>`).join('')}</ul>`:'<p>아직 연구한 것이 없다.</p>'}</section></aside>
     <div class="rs-tree-wrap"><div class="rs-tree" style="width:${W}px;height:${H}px"><svg width="${W}" height="${H}" aria-hidden="true"><defs><marker id="rs-arrow" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z"/></marker></defs>${arrows}</svg>${tiles}</div>
       <div class="rs-legend"><span><i class="lg done"></i>완성</span><span><i class="lg open"></i>배울 수 있음</span><span><i class="lg afford"></i>천명 충분 ▲</span><span><i class="lg locked"></i>잠김</span></div></div>

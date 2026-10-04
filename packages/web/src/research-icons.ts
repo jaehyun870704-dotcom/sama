@@ -60,6 +60,43 @@ export const RESEARCH_ICONS:Record<string,string>={
   unify:svg(`<path d="M14 18 H34 V30 H14Z" fill="#7ac0a0" ${O}/><path d="M16 20 H32 V28 H16Z" fill="#a8e0c8"/><path d="M12 30 H36 V40 H12Z" fill="#5aa080" ${O}/><path d="M18 18 C18 8 30 8 30 18" fill="none" stroke="#3a7a5a" stroke-width="3"/><path d="M20 12 C22 8 26 8 28 12" stroke="#c0342a" stroke-width="2" fill="none"/><path d="M19 34 H29 M24 31 V38" stroke="#1c4a34" stroke-width="2"/>${star(40,8,4.4)}`),
 };
 // 철벽은 위에서 방패를 겹치려다 지웠다 — 성벽만 그린다(가독성)
-export const researchIcon=(id:string)=>RESEARCH_ICONS[id]??svg(scroll());
+// ── v42 잘게 쪼갠 연구: 계열 문장 + 갈래 표식(조련=붉은 칼, 갑주=푸른 방패, 특기=금별)
+const EMBLEM:Record<string,string>={
+  inf:`<path d="M8 12 L22 16 V28 C22 34 16 38 8 40 Z" fill="#3a6ab0" ${O}/>${blade(26,34,38,8,3.6)}`,
+  spr:`<path d="M24 44 V12" stroke="#7a4a1e" stroke-width="3.4"/>${blade(24,14,24,3,4.4)}<path d="M20 15 Q24 20 28 15" fill="#c0342a" ${O}/>`,
+  cav:`<path d="M10 38 C10 24 16 12 28 10 L34 6 L33 12 C40 16 40 24 36 26 L30 24 C28 30 24 34 22 40Z" fill="#a8683a" ${O}/><circle cx="31" cy="15" r="1.6" fill="#1c1208"/><path d="M18 14 C14 18 12 24 12 30" stroke="#3a2414" stroke-width="3" fill="none"/>`,
+  hcv:`<path d="M10 38 C10 24 16 12 28 10 L34 6 L33 12 C40 16 40 24 36 26 L30 24 C28 30 24 34 22 40Z" fill="#8a929c" ${O}/>${[16,22,28].map(y=>`<path d="M14 ${y} H30" stroke="#d8a838" stroke-width="1.6"/>`).join('')}<circle cx="31" cy="15" r="1.6" fill="#1c1208"/>`,
+  ban:`${blade(14,36,34,8,4)}<path d="M10 34 L18 40" stroke="#6a3a1a" stroke-width="4" stroke-linecap="round"/><path d="M26 30 C32 30 38 34 40 40" stroke="#c0342a" stroke-width="3" fill="none"/>`,
+  mnk:`<path d="M14 42 L30 6" stroke="#8a5a2a" stroke-width="3.4"/><circle cx="31" cy="27" r="9" fill="none" stroke="#5a3a1a" stroke-width="3" stroke-dasharray="2.4 1.8"/>`,
+  arc:`<path d="M14 6 C34 12 34 36 14 42" fill="none" stroke="#8a5a2a" stroke-width="3.6"/><path d="M14 6 V42" stroke="#efe6cc" stroke-width="1.2"/>${blade(10,24,38,24,2.6)}`,
+  xbw:`<path d="M8 16 C18 10 30 10 40 16" fill="none" stroke="#6a4a2a" stroke-width="3.6"/><path d="M24 12 V40" stroke="#5a3a1a" stroke-width="4"/><path d="M8 16 L24 22 L40 16" stroke="#efe6cc" stroke-width="1.2" fill="none"/>${blade(24,26,24,6,2.6)}`,
+  hra:`<path d="M6 40 C8 30 14 26 22 26 L28 22 L28 28 C32 30 32 36 28 38Z" fill="#a8683a" ${O}/><path d="M24 4 C38 8 38 24 24 28" fill="none" stroke="#8a5a2a" stroke-width="3"/>`,
+  sge:`<circle cx="16" cy="34" r="7" fill="#7a5a30" ${O}/><circle cx="34" cy="34" r="7" fill="#7a5a30" ${O}/><path d="M10 26 H40 V30 H10Z" fill="#9a7a4a" ${O}/><path d="M18 26 L32 8" stroke="#6a4a2a" stroke-width="3.4"/><circle cx="32" cy="8" r="4" fill="#8a8478" ${O}/>`,
+  stg:`<path d="M24 40 L10 14 C16 6 32 6 38 14Z" fill="#efe6cc" ${O}/>${[14,19,24,29,34].map(x=>`<path d="M24 38 L${x} 11" stroke="#b8ac8c" stroke-width="1"/>`).join('')}<path d="M21 38 H27 V44 H21Z" fill="#6a3a1a" ${O}/>`,
+  fsh:`<circle cx="24" cy="24" r="15" fill="#e8dcc0" ${O}/><path d="M24 9 A7.5 7.5 0 0 1 24 24 A7.5 7.5 0 0 0 24 39 A15 15 0 0 1 24 9Z" fill="#1c2a28"/><circle cx="24" cy="16.5" r="2.4" fill="#e8dcc0"/><circle cx="24" cy="31.5" r="2.4" fill="#1c2a28"/>`,
+  cst:`<rect x="14" y="6" width="20" height="36" fill="#f0dc58" ${O}/><path d="M19 12 H29 M24 10 V36 M19 22 C24 26 29 22 29 30 M19 32 H29" stroke="#b8241a" stroke-width="2" fill="none"/>`,
+};
+const BADGE:Record<string,string>={
+  atk:`<circle cx="39" cy="39" r="8" fill="#8a1a14" ${O}/><path d="M35 43 L43 35 M41 35 H43 V37" stroke="#fff0e0" stroke-width="2" fill="none"/>`,
+  def:`<circle cx="39" cy="39" r="8" fill="#1c3a7a" ${O}/><path d="M39 33 L44 35 V39 C44 42 41 44 39 45 C37 44 34 42 34 39 V35Z" fill="#dce8ff"/>`,
+  sp:`<circle cx="39" cy="39" r="8" fill="#6a4a10" ${O}/>${star(39,39.5,5.4,'#ffd860')}`,
+};
+const STAT_ICONS:Record<string,string>={
+  s_hp:`<path d="M24 41 C10 31 6 22 10 15 C14 9 21 10 24 16 C27 10 34 9 38 15 C42 22 38 31 24 41Z" fill="#d8402a" ${O}/><path d="M14 17 C15 14 18 13 20 14" stroke="#ffd0c0" stroke-width="2" fill="none"/>`,
+  s_atk:`<path d="M12 22 C12 14 34 14 34 22 V34 C34 40 12 40 12 34Z" fill="#e8b888" ${O}/>${[17,23,29].map(x=>`<path d="M${x} 16 V24" stroke="#8a5a3a" stroke-width="1.6"/>`).join('')}<path d="M34 26 C40 26 40 34 34 34" fill="#e8b888" ${O}/>`,
+  s_def:shield('#5a6a7a','#e0e8f0'),
+  s_agi:`<path d="M10 30 C18 30 22 22 34 14 C30 24 24 34 10 36Z" fill="#cfe8ff" ${O}/><path d="M14 22 C22 22 26 14 38 8 C34 16 28 24 16 28" fill="#9ad0f0" ${O}/>`,
+  s_int:book('#2a4a7a'),
+  s_spi:`<path d="M24 38 C12 34 10 24 16 14 C18 22 22 22 22 16 C22 10 26 6 30 4 C30 12 38 16 36 26 C34 34 30 38 24 38Z" fill="#8a7ae0" ${O}/><path d="M24 34 C19 32 18 27 21 22 C22 26 25 26 25 22 C28 26 29 31 24 34Z" fill="#e8e0ff"/>`,
+  s_mp:`<circle cx="24" cy="24" r="15" fill="#2a6ad8" ${O}/><circle cx="19" cy="19" r="5" fill="#b8e0ff" opacity=".8"/><path d="M14 30 C20 34 28 34 34 30" stroke="#9ad4ff" stroke-width="2" fill="none"/>`,
+  s_mastery:`${scroll()}${star(24,24,7,'#c0342a')}`,
+  s_thrift:`<circle cx="24" cy="24" r="15" fill="#d8a838" ${O}/><rect x="20" y="20" width="8" height="8" fill="#7a5a10" ${O}/><path d="M12 40 H36" stroke="#2a8a3a" stroke-width="4" stroke-linecap="round"/>`,
+};
+export const researchIcon=(id:string)=>{
+  const hit=RESEARCH_ICONS[id];if(hit)return hit;
+  if(STAT_ICONS[id])return svg(STAT_ICONS[id]!);
+  const m=/^c_([a-z]+)_(atk|def|sp)$/.exec(id);if(m&&EMBLEM[m[1]!])return svg(`<g transform="translate(2 1) scale(.86)">${EMBLEM[m[1]!]}</g>${BADGE[m[2]!]}`);
+  return svg(scroll());
+};
 /** 갈래 깃발 그림 */
-export const TAB_ICONS:Record<string,string>={battle:svg(`${sword(-35,true)}${sword(35,true)}`),domestic:RESEARCH_ICONS.granary!,formation:RESEARCH_ICONS.elite!,legend:RESEARCH_ICONS.hongmenLore!};
+export const TAB_ICONS:Record<string,string>={battle:svg(`${sword(-35,true)}${sword(35,true)}`),domestic:RESEARCH_ICONS.granary!,formation:RESEARCH_ICONS.elite!,legend:RESEARCH_ICONS.hongmenLore!,drill:svg(STAT_ICONS.s_hp!),corps:svg(EMBLEM.inf!),arms:svg(EMBLEM.arc!),mind:svg(EMBLEM.stg!)};

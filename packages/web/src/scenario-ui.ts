@@ -31,6 +31,8 @@ import type {ChapterScript,ChoiceEffect,Look,Scene,Camp} from './scenario-types.
 
 export interface ScenarioHost {
   modal(html:string,closable?:boolean):void;
+  /** 저장 칸(통째 저장·불러오기) */
+  showSlots?():void;
   showMenu():void;
   toast(text:string):void;
   /** 연의 장의 출진 전 정비(장비·준비·난이도) → 전투 */
@@ -130,13 +132,14 @@ export function showScenario(host:ScenarioHost,selected?:string){
     <section class="sc-detail"><div class="sc-banner" style="${isoBackdrop(firstArt(sel))}"><span class="sc-kind kind-${sel.kind}">${kindTag[sel.kind]}</span><div class="sc-banner-title"><small>${esc(stepYear(sel,state))}</small><h3>${esc(stepTitle(sel,state))}</h3></div></div>
       <p class="sc-synopsis">${esc(stepSynopsis(sel,state))}</p>${detailRows(sel,state,hero.level)}
       <div class="sc-actions">${isCur&&march?`<button class="primary" id="sc-march">행군로 ▶</button><span class="muted">다음 장 앞의 길목에서 세 갈래 중 하나를 고른다</span>`:isCur?`<button class="primary" id="sc-enter">${sel.kind==='fate'?'갈림길로 ▶':sel.kind==='ending'?'결말 보기 ▶':'이야기 시작 ▶'}</button>`:isDone?`<button id="sc-replay">이야기 다시 보기</button>`:'<button disabled>앞 장을 마치면 열린다</button>'}</div></section></div>
-    <div class="sc-foot"><button id="sc-back">← 본영</button><button id="sc-reset" class="${state.done.length?'':'hidden'}">이번 회차를 끝낸다</button></div></div>`,false);
+    <div class="sc-foot"><button id="sc-back">← 본영</button>${host.showSlots?'<button id="sc-save">💾 저장 · 불러오기</button>':''}<button id="sc-reset" class="${state.done.length?'':'hidden'}">이번 회차를 끝낸다</button></div></div>`,false);
   document.querySelectorAll<HTMLButtonElement>('[data-step]').forEach(b=>b.onclick=()=>showScenario(host,b.dataset.step));
   document.getElementById('sc-enter')?.addEventListener('click',()=>void enter(host,sel));
   document.getElementById('sc-march')?.addEventListener('click',()=>showMarch(host));
   void run;
   document.getElementById('sc-replay')?.addEventListener('click',()=>void replay(host,sel));
   document.getElementById('sc-back')!.onclick=host.showMenu;
+  document.getElementById('sc-save')?.addEventListener('click',()=>host.showSlots!());
   const reset=document.getElementById('sc-reset')!;reset.onclick=()=>{if(reset.dataset.armed!=='1'){reset.dataset.armed='1';reset.textContent='정말 끝낼까? (천명을 정산하고 연의 첫 장부터 새 회차)';reset.classList.add('danger');return;}const st=loadScenario();st.run!.status='over';saveScenario(st);showRunOver(host);};
   document.querySelector('.sc-card[aria-pressed="true"]')?.scrollIntoView({block:'nearest'});
 }
@@ -265,13 +268,14 @@ export function showIfPrep(host:ScenarioHost,state:ScenarioState,step:ScenarioSt
     ${r?`<div class="romance-stats prep-stats">${([['무력',r.war],['지력',r.int],['통솔',r.lead],['정치',r.pol],['매력',r.cha]] as const).map(([k,v])=>`<span><small>${k}</small><b>${v}</b><i style="width:${v}%"></i></span>`).join('')}</div>`:''}
     ${temper?`<p>성격 <b>${temperNames[temper]}</b> — 일기토·설전에 응하는 방식</p>`:''}${r?.skill?`<p><b>${esc(r.skill.name)}</b> ${esc(r.skill.description)}</p>`:''}
     ${t.map(x=>`<p><b class="tactic-name">전법 「${esc(x.name)}」</b> ${esc(x.description)}</p>`).join('')}<p class="muted">${esc(nextEvolutionText(c))}</p></div></div>
-  <div class="run-actions"><button class="primary" id="prep-go">출진 ▶</button><button id="prep-camp">← 진영으로</button><button id="prep-back">장 목록</button></div></div>`,false);
+  <div class="run-actions"><button class="primary" id="prep-go">출진 ▶</button>${host.showSlots?'<button id="prep-save">💾 저장</button>':''}<button id="prep-camp">← 진영으로</button><button id="prep-back">장 목록</button></div></div>`,false);
   const get=()=>[...document.querySelectorAll<HTMLInputElement>('[data-sortie]')].filter(x=>x.checked).map(x=>x.dataset.sortie!);
   document.querySelectorAll<HTMLButtonElement>('[data-officer]').forEach(b=>b.onclick=e=>{if((e.target as HTMLElement).closest('.prep-toggle'))return;showIfPrep(host,state,step,get(),b.dataset.officer!,difficulty);});
   document.querySelectorAll<HTMLInputElement>('[data-sortie]').forEach(x=>x.onchange=()=>{const now=get();if(now.length>limit){x.checked=false;host.toast(`이 장에는 필수 장수 밖으로 ${limit}명까지 데려갈 수 있습니다(${difficulty==='extreme'?'극한':'일반'}).`);return;}showIfPrep(host,state,step,now,f,difficulty);});
   document.querySelectorAll<HTMLInputElement>('[name=if-diff]').forEach(x=>x.onchange=()=>showIfPrep(host,state,step,get(),f,x.value==='extreme'?'extreme':'normal'));
   document.querySelectorAll<HTMLButtonElement>('[data-contest]').forEach(b=>b.onclick=async()=>{const kind=b.dataset.contest as 'duel'|'debate';await runContest(host,state,step,kind,foe.name,b.dataset.by);showIfPrep(host,loadScenario(),step,get(),f,difficulty);});
   document.getElementById('prep-back')!.onclick=()=>showScenario(host,step.id);
+  document.getElementById('prep-save')?.addEventListener('click',()=>host.showSlots!());
   document.getElementById('prep-camp')!.onclick=()=>showCampFor(host,step);
   document.getElementById('prep-go')!.onclick=()=>launch(host,state,step,[...required,...get()],difficulty);
 }

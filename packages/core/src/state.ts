@@ -46,9 +46,14 @@ export class BattleState {
   /** 사용 가능한 책략 정의. Battle 생성 시 주입된다. */
   strategies: Map<string, StrategyDef> = new Map();
   /** 시전자 레벨로 진화한 책략 정의 */
-  strategyFor(unit: { level: number }, id: string): StrategyDef | undefined {
+  strategyFor(unit: { level: number; traitParams?: Record<string, number> }, id: string): StrategyDef | undefined {
     const d = this.strategies.get(id);
-    return d && evolveStrategy(d, unit.level);
+    if (!d) return undefined;
+    // 연구: 책략 숙달(진화 레벨을 앞당김) · 책략 절약(소모 MP %)
+    const p = unit.traitParams ?? {};
+    const e = evolveStrategy(d, unit.level + (p.strategyMastery ?? 0));
+    const thrift = Math.min(50, p.mpThrift ?? 0);
+    return thrift > 0 ? { ...e, mpCost: Math.max(1, Math.round(e.mpCost * (1 - thrift / 100))) } : e;
   }
 
   units: Map<string, Unit> = new Map();
