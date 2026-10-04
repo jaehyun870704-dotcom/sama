@@ -156,7 +156,7 @@ export class Battle {
     if (c.side !== this.state.currentSide) return fail("현재 페이즈의 유닛이 아님");
     if (c.hasActed) return fail("이미 행동함");
 
-    const def = this.state.strategies.get(strategyId);
+    const def = this.state.strategyFor(c, strategyId);
     if (!def) return fail(`정의되지 않은 책략: ${strategyId}`);
     if (!c.strategies.includes(strategyId)) return fail("보유하지 않은 책략");
     if (c.mp < def.mpCost) return fail(`MP 부족 (필요 ${def.mpCost}, 보유 ${c.mp})`);

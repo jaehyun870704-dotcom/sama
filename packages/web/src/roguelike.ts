@@ -8,7 +8,7 @@
  * 경험치로 레벨이 오르면 병종이 진화한다(classes.ts의 계통).
  * 화면과 저장은 main.ts가 맡는다. 이 모듈은 상태를 바꾸는 순수 함수만 둔다.
  */
-import {Rng,VARIANTS,evolvedClass,nextEvolution,profileOf,evolveUnit,familyOf,statsFor,type UnitClass,type StageDef,type MapFile,type UnitSpawnSpec,type BattleState,type LogEntry,type Unit} from '../../core/src/index.ts';
+import {Rng,VARIANTS,makeUnit,evolvedClass,nextEvolution,profileOf,evolveUnit,familyOf,statsFor,type UnitClass,type StageDef,type MapFile,type UnitSpawnSpec,type BattleState,type LogEntry,type Unit} from '../../core/src/index.ts';
 import {classNames,troopStrategies} from './troops.ts';
 import {availableStrategies,allStrategies} from './officers.ts';
 import {ROUTES,routeById,routesFor,fatePoint,type Tale} from './fate.ts';
@@ -437,7 +437,7 @@ export function prepareRunBattle(state:BattleState,ref:RunBattleRef){
     if(u.unitClass!==ru.unitClass)evolveUnit(u,ru.unitClass);
     if(ru.hero){(u as {name:string}).name='사마의';}
     u.hp=Math.max(1,Math.round(u.stats.maxHp*ru.hp));
-    if(casts(u.unitClass))u.strategies=troopStrategies(u.unitClass,u.level)??availableStrategies(u.level,true);
+    if(casts(u.unitClass))u.strategies=troopStrategies(u.unitClass,u.level)??availableStrategies(u.level,true,ru.hero?undefined:familyOf(u.unitClass));
     u.canUseItems=true;
   }
   // 진화 책사·적 술사가 쓰는 책략을 전장 책략표에 올린다.
@@ -452,6 +452,18 @@ export function applyBattleMods(state:BattleState,m:BattleMods){
   if(m.ambush)for(const e of state.living('enemy'))e.hp=Math.max(1,Math.round(e.stats.maxHp*.8));
 }
 
+/** 연의 전장에 회차에서 영입한 장수를 사마의 곁 빈 칸에 세운다(연의 장수록 능력은 이름으로 따라온다). */
+export function addRecruits(state:BattleState,recruits:RunUnit[]){
+  const hero=state.find('sima_yi');if(!hero)return;
+  const open=['plain','road','fort','forest','hill','grass','bridge'];
+  const cells:Array<{x:number;y:number}>=[];for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++)cells.push({x,y});
+  const free=cells.filter(p=>!state.unitAt(p)&&open.includes(state.map.tileAt(p).terrain)).sort((a,b)=>(Math.abs(a.x-hero.pos.x)+Math.abs(a.y-hero.pos.y))-(Math.abs(b.x-hero.pos.x)+Math.abs(b.y-hero.pos.y)));
+  recruits.forEach((r,i)=>{const pos=free[i];if(!pos||state.find(r.id))return;
+    const u=makeUnit({id:r.id,name:r.name,side:'player',unitClass:landClass(r.unitClass),level:r.level,pos});u.hp=Math.max(1,Math.round(u.stats.maxHp*r.hp));u.canUseItems=true;
+    if(casts(u.unitClass))u.strategies=troopStrategies(u.unitClass,u.level)??availableStrategies(u.level,true,familyOf(u.unitClass));
+    for(const id of u.strategies){const d=allStrategies.find(x=>x.id===id);if(d&&!state.strategies.has(id))state.strategies.set(id,d);}
+    state.add(u);});
+}
 /** 보물 효과를 아군 전원에 입힌다(원정 전투·연의 전장 공통). */
 export function applyRelics(state:BattleState,relics:string[]){
   const has=(id:string)=>relics.includes(id);

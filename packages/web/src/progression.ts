@@ -7,7 +7,7 @@ export const OFFICERS=['sima_yi','sima_lang','sima_fang','cao_zhen'] as const;
 export interface Campaign {version:1; xp:Record<string,number>; rewards:string[]; treasures:string[]; equipped:Record<string,string>;loadouts?:Record<string,Partial<Record<GearSlot,string>>>;completedRuns?:string[];trainingWins?:number;quests?:string[]}
 export interface Growth {storyWins:number;trainingWins:number;questWins:number}
 /** 시나리오 모드의 장: 장 id와 대사 선택이 남긴 전투 효과. */
-export interface ScenarioDeployment {chapter:string;mods?:import('./roguelike.ts').BattleMods;/** 가상 전장을 극한으로 */difficulty?:'extreme';/** 로그라이크 회차: 연의 장에 들고 가는 보물과 사마의의 남은 체력 */relics?:string[];heroHp?:number}
+export interface ScenarioDeployment {chapter:string;mods?:import('./roguelike.ts').BattleMods;/** 가상 전장을 극한으로 */difficulty?:'extreme';/** 로그라이크 회차: 연의 장에 들고 가는 보물과 사마의의 남은 체력 */relics?:string[];heroHp?:number;/** 회차에서 영입한 장수(연의 장에 함께 나선다, 최대 3) */recruits?:import('./roguelike.ts').RunUnit[]}
 export interface Deployment {scenario?:ScenarioDeployment;/** 연구·장수 효과(출진 순간의 값) */perks?:import('./perks.ts').PerkGrants;/** 연의 장에 더 데려가는 장수(필수 장수 밖) */extraOfficers?:string[];treasureRules?:1;/** 천명의 원정 전투 (로그라이크) */run?:RunBattleRef;/** 원정 안의 연의 전장 */runStory?:RunStoryRef;levels:Record<string,number>;equipped:Record<string,string>;loadouts?:Record<string,Partial<Record<GearSlot,string>>>;growth?:Growth;mission?:{id:string;runId:string;version?:2|3|4;balance?:1;supportClasses?:UnitClass[]}}
 export type GearSlot="weapon"|"armor"|"accessory";
 export interface Treasure {id:string;name:string;stage:string;glyph:string;effect:string;description:string;bonus:Partial<Unit['stats']>;slot?:GearSlot;grade?:number;icon?:number;quest?:string}

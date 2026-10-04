@@ -232,7 +232,7 @@ function bestAction(
   const [minR, maxR] = unit.range;
   const positions: Coord[] = [unit.pos, ...decodeAll(reach)];
   const usable = unit.strategies
-    .map((id) => state.strategies.get(id))
+    .map((id) => state.strategyFor(unit, id))
     .filter((d): d is NonNullable<typeof d> => d !== undefined && d.mpCost <= unit.mp);
 
   let best: ActionPlan | null = null;
