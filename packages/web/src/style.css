@@ -1296,3 +1296,6 @@ body.left-open .left-close{display:block;position:absolute;right:8px;top:8px;z-i
 .save-help{margin:0 0 12px;padding-left:18px;font-size:13px;line-height:1.7;color:#d8ccb0}.save-help b{color:#ffd77a}.save-help em{color:#ffe9b0;font-style:normal;font-weight:700}
 .save-screen .slot-row>div:first-child{display:flex;flex-direction:column;gap:2px}.save-screen .slot-row small{color:#a9a58f}
 #topbar-save{border-color:#c9a35a;color:#ffe6a8}
+.tt-special{font-style:normal;font-size:10px;color:#9fd4ff;display:block;text-align:center}
+.treasure-special{border-left:3px solid #6a92e8;padding:4px 8px;background:#1c2a4a55;font-size:13px}.treasure-special b{color:#bfe0ff}
+.battle-relics span.trial{color:#ffb0a0;border-color:#c0342a}

@@ -4,6 +4,7 @@ import {refBattle,prepareRunBattle,applyBattleMods,applyRelics,addRecruits,taleB
 import {validRoute} from './fate.ts';
 import {applyPerkGrants,validGrants} from './perks.ts';
 import {stretchMap,stretchStage,canStretch,wideCoord} from './stretch.ts';
+import {applyTreasureSpecial} from './treasure-specials.ts';
 import './scenario.ts';
 import {pickExtras} from './sortie.ts';
 import {applyRomance,temperOf} from './romance.ts';
@@ -129,6 +130,8 @@ export interface Save {version:2; revision?:2|3|4; deployment?:Deployment; chapt
 
 /** Persist commands, not mutable engine internals. Replay also restores terrain,
  * counter budgets, patrol progress and RNG when undoing across a phase boundary. */
+/** 천명의 시련 배율 */
+export const TRIAL={hp:1.2,attack:1.12,defense:1.1};
 export class Session {
   battle: Battle;
   journal: Intent[] = [];
@@ -237,6 +240,8 @@ export class Session {
         const officer=(OFFICERS as readonly string[]).includes(u.id)&&u.side==='player',specialty=officer?undefined:troopStrategies(u.unitClass,u.level);if(specialty)u.strategies=specialty;else if(['strategist','fengshui'].includes(familyOf(u.unitClass)))u.strategies=availableStrategies(u.level,!!this.deployment?.growth,officer?undefined:familyOf(u.unitClass));
       }
       addSiegeCompany(state);
+      // 보물 특기: 병서·도술서는 책략을 부여하고, 명검·명마·갑주는 전투 특성을 더한다.
+      if(this.deployment&&!this.deployment.run)for(const u of state.living('player'))for(const item of equippedItems(this.deployment,u.id))applyTreasureSpecial(state,u,item);
     }
     // 원정 부대의 병종·체력·책략·보물은 기본 정비가 끝난 뒤 덮어쓴다.
     if(this.deployment?.run)prepareRunBattle(state,this.deployment.run);
@@ -247,6 +252,9 @@ export class Session {
     // 원정의 연의 전장: 사마의는 원정에서 남은 체력으로 나서고, 원정 보물이 본대에 실린다.
     if(this.deployment?.runStory){const r=this.deployment.runStory,h=state.find('sima_yi');if(h)h.hp=Math.max(1,Math.round(h.stats.maxHp*r.heroHp));applyRelics(state,r.relics);}
     // 연구·장수 효과: 출진할 때 적어 둔 값 그대로(저장 재생도 같게).
+    // 천명의 시련: 로그라이크(천명의 길·원정) 전투의 적은 처음부터 단단하다. 연구가 쌓일수록 상대적으로 쉬워진다.
+    if(this.deployment?.trial)for(const e of state.living('enemy')){if(/^(gate|tower)_/.test(e.id)||e.stats.movement===0)continue;
+      e.stats.maxHp=Math.round(e.stats.maxHp*TRIAL.hp);e.hp=e.stats.maxHp;e.stats.attack=Math.round(e.stats.attack*TRIAL.attack);e.stats.defense=Math.round(e.stats.defense*TRIAL.defense);}
     if(this.deployment?.perks)applyPerkGrants(state,this.deployment.perks);
     this.applyRomanceToNew(state);
     return battle;

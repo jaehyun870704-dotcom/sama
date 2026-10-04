@@ -16,3 +16,15 @@ describe('회차에서 얻은 장수·보물은 연의 전장에 곧바로 실�
   const again=Session.load(s.save());expect(again.state.find('rc_of1')?.name).toBe('학소');
  });
 });
+
+describe('보물 특기',()=>{
+ it('lets a 둔갑천서 bearer cast its strategies with extra MP, and a 청강검 bearer pierce harder',()=>{
+  const d={levels:{sima_yi:6,sima_lang:4,sima_fang:1,cao_zhen:4},equipped:{},loadouts:{sima_lang:{accessory:'dunjia',weapon:'qinggang'}}};
+  const plain=new Session(2,'normal',215,'survival',4,{levels:d.levels,equipped:{}}),s=new Session(2,'normal',215,'survival',4,d as never);
+  const a=plain.state.get('sima_lang'),b=s.state.get('sima_lang');
+  expect(b.strategies).toEqual(expect.arrayContaining(['gust','windDragon','feint']));
+  expect(s.state.strategies.has('feint')).toBe(true);
+  expect(b.stats.maxMp).toBeGreaterThan(a.stats.maxMp+19);
+  expect(b.traitParams.penetrate??0).toBeGreaterThan(a.traitParams.penetrate??0);
+ });
+});

@@ -199,7 +199,7 @@ function briefing(chapter:number,expeditionId?:string,scenario?:ScenarioDeployme
   let supports=[...supportOptions.slice(0,2)];
   const recommendation=expedition?recommendExpeditionSupport(expedition.id):undefined;
   let extras:string[]=[];
-  const dispatch=(preview=false)=>{const d=deployment(campaign,true);if(!expedition)d.wide=1;if(scenario)d.scenario=structuredClone(scenario);
+  const dispatch=(preview=false)=>{const d=deployment(campaign,true);if(!expedition)d.wide=1;if(scenario)d.trial=1;if(scenario)d.scenario=structuredClone(scenario);
     // 연구(로그라이크의 영구 강화)는 연의·회상·수련 어디서든 함께 간다.
     if(!preview){const m=loadMeta(),p=deploymentPerks(m,['사마의',...Object.keys(m.officerPerks??{})]);if(p)d.perks=p;}if(!expedition&&extras.length)d.extraOfficers=pickExtras(c.stage,c.map,extras,difficulty);if(expedition)d.mission={id:expedition.id,runId:preview?'preview':crypto.randomUUID(),version:4,balance:1,supportClasses:[...supports]};return d;};
   const mission=chapter===7?'사마의와 조진을 생존시키고 양앙을 포함한 전초 수비대 7부대를 모두 격퇴하십시오. 수비대장만 쓰러뜨려서는 끝나지 않습니다.':chapter===6?'조조를 보호하며 마초를 격퇴한 뒤, 사마의 또는 조진으로 관문 안 금빛 구역을 점령하십시오. 조조·사마의·조진 퇴각 시 패배합니다.':chapter===5?'수송대 두 부대 중 최소 한 부대를 선택한 동쪽 출구로 호위하십시오. 두 수송대가 모두 소실되거나 사마의·조진이 퇴각하면 실패합니다.':chapter===4?'진궁·여포·주유를 차례로 격파한 다음, 전차의 방해를 뚫고 황제 옆 금빛 칸에 도달하십시오.':chapter===3?'길잡이와 대화해 탈출로를 정하고, 추격 압박이 한계에 닿기 전에 형제 모두 선택한 출구에 도착하십시오.':intro?'사마의로 창고에 도달한 뒤 민중에게 인접해 무장시키고 습격대를 격퇴하십시오.':escape?'두 형제 모두 남문에 도착하고 통행료 1,000전을 지불하십시오.':'수비대장을 격퇴한 뒤 본대로 중앙 성채를 점령하십시오. 경쟁 우군 선점 시 패배합니다.';
@@ -340,7 +340,7 @@ function hudFight(logs:readonly LogEntry[]){
 function render(){
   queueMicrotask(()=>hudHover(hudAt));queueMicrotask(encounterCheck);
   // 지금 실려 있는 회차 보물: 얻자마자 전장에서도 보인다.
-  {const d=session.deployment,ids=d?.run?.relics??d?.runStory?.relics??d?.scenario?.relics??[],el=$('#battle-relics');el.innerHTML=ids.map(id=>RELICS.find(r=>r.id===id)).filter(Boolean).map(r=>`<span title="${r!.effect}">◈ ${r!.name}</span>`).join('');el.hidden=!ids.length;}
+  {const d=session.deployment,ids=d?.run?.relics??d?.runStory?.relics??d?.scenario?.relics??[],el=$('#battle-relics');el.innerHTML=(d?.trial?'<span class="trial" title="로그라이크 난이도: 적 체력 +20% · 공격 +12% · 방어 +10%. 연구로 이겨낸다.">⚠ 천명의 시련</span>':'')+ids.map(id=>RELICS.find(r=>r.id===id)).filter(Boolean).map(r=>`<span title="${r!.effect}">◈ ${r!.name}</span>`).join('');el.hidden=!ids.length&&!d?.trial;}
   {const [no,arc,name]=session.deployment?.run?['∞','원정','천명의 길']:ARCS[(session.state.stage as {arc?:string}).arc??'upper']??ARCS.upper!;$('#arc-crumb').innerHTML=`${arc} <span>/</span> ${name}`;$('#arc-eyebrow').innerHTML=`제${({'Ⅰ':1,'Ⅱ':2,'Ⅲ':3} as Record<string,number>)[no]??''}편 <span>${arc}</span>`;}
   const s=session.state,c=session.deployment?.run?{...chapters[session.chapter]!,stage:s.stage,year:session.deployment.scenario?`시나리오 · ${scenarioYear(session.deployment.scenario.chapter)}`:`천명의 원정 · ${session.deployment.run.floor}층`}:session.deployment?.mission?{...chapters[session.chapter]!,stage:s.stage,year:'외전 · 수련과 인연'}:chapters[session.chapter]!;
   $('#stage-title').textContent=c.stage.title;$('#stage-subtitle').textContent=session.deployment?.scenario?(session.deployment.run?'시나리오 · 가상 전장':`시나리오 · 연의 · ${s.difficulty==='normal'?'일반':'극한'}`):session.deployment?.run?`천명의 원정 · ${session.deployment.run.floor}/${RUN_FLOORS}층`:session.deployment?.runStory?`천명의 원정 · ${session.deployment.runStory.floor}/${RUN_FLOORS}층 · 연의 전장`:`제 ${c.stage.order}장 · ${s.difficulty==='normal'?'일반':'극한'}`;
@@ -533,11 +533,14 @@ function checkModal(){
     if(reward?.xp)saveCampaign();
     if(win)try{const p=progress(),k=s.stage.id+':'+s.difficulty;p[k]=[...new Set([...(p[k]??[]),...seals])];localStorage.setItem(PROGRESS_KEY,JSON.stringify(p));}catch{/* optional persistence */}
     // 이긴 연의 전장은 어느 길에서 이겼든 기록한다(다음 장 해금 · 연구의 '이긴 연의 전장' 조건).
-    if(win&&chapters.some(c=>c.stage.id===s.stage.id)){const m=loadMeta();if(!m.chronicle.includes(s.stage.id)){recordStory(m,s.stage.id);saveMeta(m);}}
+    let mandateGain=0;
+    if(win&&chapters.some(c=>c.stage.id===s.stage.id)){const m=loadMeta();if(!m.chronicle.includes(s.stage.id))recordStory(m,s.stage.id);
+      // 연의 회상·수련 전투(천명의 길 밖)도 천명을 조금 준다: 연구가 로그라이크의 성장이다.
+      if(!session.deployment?.scenario&&!session.deployment?.mission){mandateGain=s.difficulty==='extreme'?2:1;m.mandate+=mandateGain;m.earned+=mandateGain;}saveMeta(m);}
     sound.sfx(win?(session.somber?'somber':'victory'):'defeat');
     if(session.deployment?.scenario){
       // 시나리오 모드의 연의 장: 보상은 같고, 전투 뒤 장면과 다음 장은 시나리오 흐름이 맡는다.
-      const news=[...(reward?.xp?[`경험치 +${reward.xp}`]:[]),...(reward?.treasure?[`보물 「${reward.treasure.name}」을 얻었다`]:[]),...growthMilestones(before,campaign).filter(x=>x.to>x.from||x.evolution).map(x=>`${officerNames[x.id]} Lv.${x.from} → ${x.to}${x.evolution?` · 병종 진화 ${x.evolution.from} → ${x.evolution.to}`:''}`)];
+      const news=[...(mandateGain?[`천명 +${mandateGain} (연구에 쓴다)`]:[]),...(reward?.xp?[`경험치 +${reward.xp}`]:[]),...(reward?.treasure?[`보물 「${reward.treasure.name}」을 얻었다`]:[]),...growthMilestones(before,campaign).filter(x=>x.to>x.from||x.evolution).map(x=>`${officerNames[x.id]} Lv.${x.from} → ${x.to}${x.evolution?` · 병종 진화 ${x.evolution.from} → ${x.evolution.to}`:''}`)];
       const chapterId=session.deployment.scenario.chapter,hero=s.find('sima_yi'),heroHp=hero?.alive?Math.max(.05,hero.hp/hero.stats.maxHp):undefined;const rc=session.deployment.scenario.recruits,xp={...session.xpEarned};setTimeout(()=>{menuOpen=true;void finishStoryBattle(scenarioHost,chapterId,win,news,heroHp,s,rc,xp);},900);return;
     }
     const after=win?storyAftermath[s.stage.id]:undefined;
