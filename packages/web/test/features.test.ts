@@ -65,3 +65,9 @@ describe('duel damage is stat-centric',()=>{
   expect(hit(96,70,'debate').dealt).toBeGreaterThan(hit(70,96,'debate').dealt*1.8);
  });
 });
+describe('사마의 starts as a strategist',()=>{
+ it('is a 책사 in chapter 2 with a basic attack and level-1 strategy',()=>{
+  const s=new Session(2,'normal',11,'survival',4),u=s.state.get('sima_yi');
+  expect(u.unitClass).not.toBe('civilian');expect(u.range[1]).toBeGreaterThanOrEqual(1);expect(u.strategies).toContain('fire');
+ });
+});
