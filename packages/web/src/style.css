@@ -604,3 +604,23 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
 .cx-tiers{display:inline-flex;flex-wrap:wrap;gap:3px 8px;font-size:11px;color:#a9a58f}.cx-tiers i{font-style:normal;opacity:.65}.cx-tiers i.now{opacity:1;color:#ffd77a;font-weight:700}
 .cx-evo{font-size:12px;margin:4px 0 8px;color:#d6cdb0}.cx-evo b{color:#ffd77a;letter-spacing:2px}.cx-evo small{color:#a9a58f}
 .talk-bust.image{-webkit-mask-image:radial-gradient(ellipse 54% 60% at 50% 42%,#000 62%,transparent 100%);mask-image:radial-gradient(ellipse 54% 60% at 50% 42%,#000 62%,transparent 100%);background-position:50% 18%}
+/* ── 이야기 무대 v2: 채색 배경 + 카메라 + 부드러운 인물(도트 확대 없음) ── */
+.ss-stage.iso{image-rendering:auto;background-image:none}
+.ss-cam{position:absolute;inset:0;overflow:hidden;border-radius:inherit}
+.ss-world{position:absolute;inset:0;background-size:100% 100%;background-repeat:no-repeat;transform-origin:0 0;will-change:transform}
+.ss-stage.iso .ss-actor{transition:none}
+.ss-stage.iso .ss-actor.px.fig{width:6.4%}
+.ss-stage.iso .ss-actor.px .ss-sprite.top{image-rendering:auto}
+.ss-stage.iso .ss-actor.px.fig .ss-shadow{bottom:1.5%;width:44%;height:9%;background:radial-gradient(ellipse at center,rgba(0,0,0,.55),rgba(0,0,0,.25) 45%,rgba(0,0,0,0) 72%);border-radius:50%}
+.ss-stage.iso .ss-actor.px .ss-name{font-size:10px;padding:0 3px}
+/* 걸음: 걸은 거리에 맞춘 박자(--step)로 몸이 살짝 오르내린다 */
+.ss-stage.iso .ss-actor.px.fig.walking .ss-body{animation:fig-step2 var(--step,340ms) ease-in-out infinite}
+@keyframes fig-step2{0%,50%,100%{translate:0 0}25%,75%{translate:0 -1.8%}}
+/* 장면의 빛을 인물에도: 밤은 어둡고 푸르게, 저녁은 붉게, 실내는 등불빛으로 */
+.ss-stage.light-night .ss-actor .ss-body{filter:brightness(.6) saturate(.7) contrast(1.05)}
+.ss-stage.light-dusk .ss-actor .ss-body{filter:sepia(.22) saturate(1.1) brightness(.93)}
+.ss-stage.light-dawn .ss-actor .ss-body{filter:brightness(.9) saturate(.88)}
+.ss-stage.indoor.light-day .ss-actor .ss-body{filter:sepia(.1) brightness(.97)}
+.ss-narr{image-rendering:auto}
+@media(max-width:580px){.ss-stage.iso .ss-actor.px.fig{width:7.4%}.ss-stage.iso .ss-actor.px .ss-name{font-size:8px}}
+@media (prefers-reduced-motion:reduce){.ss-world{transition:none!important}}

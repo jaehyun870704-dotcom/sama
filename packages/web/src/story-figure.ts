@@ -17,9 +17,11 @@ import {romanceByName} from './romance.ts';
 import {spriteAtlas,SPRITE_CELL} from './sprite-atlas.ts';
 import {PX_COLS,PX_ROWS,PX_POSE,type PxPose} from './story-pixel.ts';
 
-export const FIG_W=64,FIG_H=64;
-/** 칸 안에서 인물의 키(발끝은 칸 바닥에서 2px 위). */
-const BODY_H=60;
+export const FIG_W=160,FIG_H=160;
+/** 칸 안에서 인물의 키(발끝은 칸 바닥에서 FOOT px 위). 그림을 크게 만들어 화면에서 줄여 쓴다(확대하면 계단이 진다). */
+const BODY_H=150,FOOT=4;
+/** 64px 칸 기준으로 잡았던 자세 이동량을 이 칸 크기로. */
+const U=FIG_H/64;
 
 type Sheet={url:string;rows:number;row:number;walk?:{url:string;rows:number}|undefined};
 const S=(url:string,rows:number,row:number,walk?:string):Sheet=>({url,rows,row,walk:walk?{url,rows}:undefined});
@@ -115,21 +117,26 @@ function standFrom(src:HTMLCanvasElement,col:number,row:number,slot:number|undef
     const hx=bx+cx-cx*HEAD_UP;
     g.drawImage(src,box.x,box.y,box.w,neck+1,hx,0,headW,headH+Math.round(HEAD_UP));
   }else{big=canvas(w,h);big.getContext('2d')!.drawImage(src,box.x,box.y,box.w,box.h,0,0,w,h);}
-  // 2) 무대 칸 크기로 줄이고 가장자리를 또렷하게(배경 도트와 어울리게)
-  const k=Math.min(BODY_H/h,(FIG_W-2)/w),out=canvas(FIG_W,FIG_H),g=out.getContext('2d',{willReadFrequently:true})!;
+  // 2) 무대 칸 크기로 줄인다. 가장자리는 부드럽게 두고(투명도를 자르지 않는다), 옅은 먹선 테두리만 두른다.
+  const k=Math.min(BODY_H/h,(FIG_W-4)/w),out=canvas(FIG_W,FIG_H),g=out.getContext('2d',{willReadFrequently:true})!;
   g.imageSmoothingQuality='high';const dw=Math.round(w*k),dh=Math.round(h*k);
-  g.drawImage(big,0,0,w,h,Math.round((FIG_W-dw)/2),FIG_H-2-dh,dw,dh);
+  g.drawImage(big,0,0,w,h,Math.round((FIG_W-dw)/2),FIG_H-FOOT-dh,dw,dh);
   hueRotate(g,FIG_W,FIG_H,tint,slot===undefined);
   const img=g.getImageData(0,0,FIG_W,FIG_H),d=img.data;
-  for(let i=3;i<d.length;i+=4)d[i]=d[i]!>100?255:0;
-  // 1px 어두운 테두리
-  const out2=new Uint8ClampedArray(d),at=(x:number,y:number)=>x>=0&&y>=0&&x<FIG_W&&y<FIG_H&&d[(y*FIG_W+x)*4+3]!>0;
-  for(let y=0;y<FIG_H;y++)for(let x=0;x<FIG_W;x++){if(at(x,y))continue;if(at(x-1,y)||at(x+1,y)||at(x,y-1)||at(x,y+1)){const i=(y*FIG_W+x)*4;out2[i]=28;out2[i+1]=20;out2[i+2]=16;out2[i+3]=230;}}
+  // 거의 투명한 얼룩은 지우고, 안쪽의 반투명은 채워 몸이 비치지 않게
+  for(let i=3;i<d.length;i+=4)d[i]=d[i]!<24?0:d[i]!>200?255:d[i]!;
+  const out2=new Uint8ClampedArray(d),al=(x:number,y:number)=>x>=0&&y>=0&&x<FIG_W&&y<FIG_H?d[(y*FIG_W+x)*4+3]!:0;
+  for(let y=0;y<FIG_H;y++)for(let x=0;x<FIG_W;x++){const a=al(x,y);if(a>140)continue;
+    const n=Math.max(al(x-1,y),al(x+1,y),al(x,y-1),al(x,y+1));if(n<160)continue;
+    const i=(y*FIG_W+x)*4,e=Math.round(n*0.55*(1-a/255));if(e<=0)continue;
+    // 테두리 색을 바깥에 덧칠(이미 있는 색과 섞는다)
+    const ta=a+e*(1-a/255),mix=(c:number,o:number)=>Math.round((c*a+o*e*(1-a/255))/Math.max(1,ta));
+    out2[i]=mix(d[i]!,30);out2[i+1]=mix(d[i+1]!,22);out2[i+2]=mix(d[i+2]!,16);out2[i+3]=Math.min(255,Math.round(ta));}
   img.data.set(out2);g.putImageData(img,0,0);return out;
 }
 /** 그림의 위·아래 끝(불투명한 줄). */
 function rows(c:HTMLCanvasElement){const d=c.getContext('2d',{willReadFrequently:true})!.getImageData(0,0,FIG_W,FIG_H).data;let t=FIG_H,b=0;
-  for(let y=0;y<FIG_H;y++)for(let x=0;x<FIG_W;x++)if(d[(y*FIG_W+x)*4+3]){if(y<t)t=y;b=y;break;}return {t,b};}
+  for(let y=0;y<FIG_H;y++)for(let x=0;x<FIG_W;x++)if(d[(y*FIG_W+x)*4+3]!>60){if(y<t)t=y;b=y;break;}return {t,b};}
 
 /**
  * 서 있는 그림 하나로 자세를 만든다. 윗몸(허리 위)과 아랫몸(옷자락·다리)을 나눠
@@ -139,19 +146,19 @@ function poseFrom(stand:HTMLCanvasElement,pose:PxPose,alt?:HTMLCanvasElement):HT
   if(pose==='stand')return stand;
   if((pose==='walkA'||pose==='walkB'||pose==='point')&&alt)return alt;
   const {t,b}=rows(stand),hip=Math.round(t+(b-t)*0.62),cx=FIG_W/2;
-  const out=canvas(FIG_W,FIG_H),g=out.getContext('2d')!;g.imageSmoothingEnabled=false;
-  const top=(dy:number,rot=0,dx=0)=>{g.save();g.translate(cx+dx,hip+dy);g.rotate(rot);g.beginPath();g.rect(-cx-8,-hip-8,FIG_W+16,hip+8);g.clip();g.drawImage(stand,-cx,-hip);g.restore();};
+  const out=canvas(FIG_W,FIG_H),g=out.getContext('2d')!;g.imageSmoothingQuality='high';
+  const top=(dy:number,rot=0,dx=0)=>{g.save();g.translate(cx+dx,hip+dy);g.rotate(rot);g.beginPath();g.rect(-cx-8*U,-hip-8*U,FIG_W+16*U,hip+8*U);g.clip();g.drawImage(stand,-cx,-hip);g.restore();};
   const legs=(shear:number,squash=1,dy=0)=>{g.save();g.beginPath();g.rect(0,hip,FIG_W,FIG_H-hip);g.clip();
     g.setTransform(1,0,shear,squash,-shear*hip,hip*(1-squash)+dy);g.drawImage(stand,0,0);g.restore();};
   switch(pose){
-    case 'walkA':case 'walkB':{const k=pose==='walkA'?0.2:-0.2;legs(k);top(-1,k*0.08);break;}
+    case 'walkA':case 'walkB':{const k=pose==='walkA'?0.2:-0.2;legs(k);top(-U,k*0.08);break;}
     case 'talk':legs(0);top(0,0.05,0);break;
-    case 'point':legs(0);top(-1,-0.06,-1);break;
-    case 'bow':legs(0);top(2,0.32,2);break;
+    case 'point':legs(0);top(-U,-0.06,-U);break;
+    case 'bow':legs(0);top(2*U,0.32,2*U);break;
     case 'kneel':{const sq=0.55,drop=Math.round((b-hip)*(1-sq));
       g.save();g.beginPath();g.rect(0,hip+drop,FIG_W,FIG_H);g.clip();g.setTransform(1.12,0,0,sq,-cx*0.12,b-b*sq);g.drawImage(stand,0,0);g.restore();
-      top(drop,0.12,1);break;}
-    case 'surprise':g.setTransform(0.97,0,0,1.03,cx*0.03,-(FIG_H-2)*0.03-2);g.drawImage(stand,0,0);break;
+      top(drop,0.12,U);break;}
+    case 'surprise':g.setTransform(0.97,0,0,1.03,cx*0.03,-(FIG_H-FOOT)*0.03-2*U);g.drawImage(stand,0,0);break;
   }
   return out;
 }
@@ -185,6 +192,6 @@ function figFrames(art:FigArt,tint:number){
 /** 배경에 그려 넣는 인물(전장의 병사 대열·알현실의 백관 등). x·y는 발 디딤 자리, h는 키(px). 그림이 없으면 false. */
 export function drawFigure(g:CanvasRenderingContext2D,x:number,y:number,name:string,look:Look,pose:PxPose,h:number,flip=false){
   const art=figArtFor(name,look),f=figFrames(art,art.kind==='sheet'?sideTint(name):0);if(!f)return false;
-  const k=h/BODY_H;g.save();g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(x,y,15*k,4.5*k,0,0,7);g.fill();
-  g.translate(Math.round(x),Math.round(y-(FIG_H-2)*k));if(flip)g.scale(-1,1);g.imageSmoothingEnabled=false;g.drawImage(f[pose],-FIG_W/2*k,0,FIG_W*k,FIG_H*k);g.restore();return true;
+  const k=h/BODY_H;g.save();g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(x,y,15*U*k,4.5*U*k,0,0,7);g.fill();
+  g.translate(x,y-(FIG_H-FOOT)*k);if(flip)g.scale(-1,1);g.imageSmoothingQuality='high';g.drawImage(f[pose],-FIG_W/2*k,0,FIG_W*k,FIG_H*k);g.restore();return true;
 }
