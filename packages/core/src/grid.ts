@@ -216,6 +216,7 @@ export function effectiveMovement(unit: Unit): number {
   let mv = unit.stats.movement;
   for (const s of unit.statuses) {
     if (s.kind === "haste") mv += s.magnitude;
+    if (s.kind === "slow") mv -= 2 * s.magnitude;
     if (s.kind === "immobile" || s.kind === "bound") return 0;
   }
   return Math.max(0, mv);

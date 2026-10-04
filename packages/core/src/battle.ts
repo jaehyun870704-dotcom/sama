@@ -164,7 +164,7 @@ export class Battle {
     if (manhattan(c.pos, at) > def.range) return fail("시전 사거리 밖");
 
     c.mp -= def.mpCost;
-    const area = strategyArea(def, at);
+    const area = strategyArea(def, at, c.pos);
     const targets: string[] = [];
     const damages: number[] = [];
 
@@ -448,12 +448,19 @@ export class Battle {
   }
 }
 
-function strategyArea(def: StrategyDef, at: Coord): Coord[] {
+/**
+ * 책략이 닿는 칸. single=한 칸, cross=십자(팔 길이 radius, 최소 1), spread=마름모(반경 radius),
+ * line=시전자에게서 멀어지는 방향으로 radius+1칸 직선, global=찍은 칸(전 맵은 호출자가 열거).
+ */
+export function strategyArea(def: Pick<StrategyDef, "shape" | "radius">, at: Coord, from?: Coord): Coord[] {
   switch (def.shape) {
     case "single":
       return [at];
-    case "cross":
-      return [at, ...adjacent(at)];
+    case "cross": {
+      const out: Coord[] = [at], r = Math.max(1, def.radius);
+      for (let i = 1; i <= r; i++) out.push({ x: at.x + i, y: at.y }, { x: at.x - i, y: at.y }, { x: at.x, y: at.y + i }, { x: at.x, y: at.y - i });
+      return out;
+    }
     case "spread": {
       const out: Coord[] = [];
       for (let dy = -def.radius; dy <= def.radius; dy++) {
@@ -464,8 +471,10 @@ function strategyArea(def: StrategyDef, at: Coord): Coord[] {
       return out;
     }
     case "line": {
+      const dx = from ? at.x - from.x : 1, dy = from ? at.y - from.y : 0;
+      const [sx, sy] = Math.abs(dx) >= Math.abs(dy) ? [Math.sign(dx) || 1, 0] : [0, Math.sign(dy)];
       const out: Coord[] = [];
-      for (let i = 0; i <= def.radius; i++) out.push({ x: at.x + i, y: at.y });
+      for (let i = 0; i <= def.radius; i++) out.push({ x: at.x + sx * i, y: at.y + sy * i });
       return out;
     }
     case "global":

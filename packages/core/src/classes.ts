@@ -139,6 +139,43 @@ export const VARIANTS: Partial<Record<UnitClass, ClassVariant>> = {
     bloom: { name: "표창 투척", description: "사거리 1~2 · 적 방어 10% 무시 · 반격 위력 10% 증가" } },
   flyingSpear: { family: "spearman", tier: 3, profile: p(1.2, 0.46, 1.24, 1.12, 0.68, 0.96, 1.08, 5, [1, 3]), traits: { penetrate: 20, counterBoost: 15, critical: 10 },
     bloom: { name: "비창 폭우", description: "사거리 1~3 · 적 방어 20% 무시 · 반격 위력 15% 증가 · 회심 10%" } },
+  // ── 명부대(이름난 부대) 계통: 정사·연의에 이름이 남은 부대를 병종으로 ──
+  // 도부수 → 대도병 → 함진영(고순): 방어를 버리고 베는 보병
+  axeman: { family: "infantry", tier: 1, profile: p(1.0, 0.4, 1.18, 0.85, 0.55, 0.8, 1.0, 5, [1, 1]), traits: { critical: 10 } },
+  greatBlade: { family: "infantry", tier: 2, profile: p(1.1, 0.43, 1.34, 0.92, 0.58, 0.85, 1.05, 5, [1, 1]), traits: { critical: 15, penetrate: 10 },
+    bloom: { name: "대도 참격", description: "회심 15% · 적 방어 10% 무시" } },
+  xianzhen: { family: "infantry", tier: 3, profile: p(1.22, 0.46, 1.5, 1.0, 0.62, 0.9, 1.11, 5, [1, 1]), traits: { critical: 20, penetrate: 25, lastStand: 15 },
+    bloom: { name: "함진영", description: "고순의 칠백 · 회심 20% · 적 방어 25% 무시 · 체력이 낮을수록 공격력 상승(최대 15%)" } },
+  // 산악병 → 무당비군(왕평): 산을 평지처럼 달리는 촉의 산병
+  mountaineer: { family: "bandit", tier: 1, profile: p(0.95, 0.4, 1.02, 0.88, 0.6, 0.85, 1.2, 5, [1, 2]), traits: { roughTerrainMove: 0 } },
+  wudang: { family: "bandit", tier: 2, profile: p(1.08, 0.43, 1.18, 0.95, 0.64, 0.9, 1.32, 6, [1, 2]), traits: { roughTerrainMove: 0, critical: 15, strategyDamageReduction: 10 },
+    bloom: { name: "무당비군", description: "왕평의 산병 · 험지 이동 · 회심 15% · 책략 피해 10% 감소" } },
+  // 서량기병 → 비웅군(동탁): 거친 서쪽 기병
+  xiliang: { family: "cavalry", tier: 1, profile: p(1.05, 0.4, 1.15, 0.9, 0.55, 0.8, 1.2, 7, [1, 1]), traits: { attackBoost: 3 } },
+  feixiong: { family: "cavalry", tier: 2, profile: p(1.2, 0.43, 1.35, 1.0, 0.58, 0.85, 1.26, 7, [1, 1]), traits: { attackBoost: 5, lifesteal: 10, lastStand: 15 },
+    bloom: { name: "비웅군", description: "동탁의 서량 정예 · 공격력 +5 · 입힌 피해의 10% 회복 · 체력이 낮을수록 공격력 상승" } },
+  // 청주병 → 단양병 → 백이병(진도): 버티는 정규 보병
+  qingzhou: { family: "infantry", tier: 1, profile: p(1.15, 0.4, 0.98, 1.08, 0.55, 0.85, 0.92, 5, [1, 1]), traits: { veteran: 10 } },
+  danyang: { family: "infantry", tier: 2, profile: p(1.28, 0.43, 1.1, 1.22, 0.6, 0.9, 0.98, 5, [1, 1]), traits: { veteran: 15, counterBoost: 15 },
+    bloom: { name: "단양 정병", description: "체력 절반 이하에서 받는 피해 15% 감소 · 반격 위력 15% 증가" } },
+  baier: { family: "infantry", tier: 3, profile: p(1.4, 0.46, 1.22, 1.38, 0.64, 1.0, 1.04, 5, [1, 1]), traits: { veteran: 20, counterBoost: 20, guardian: 0 },
+    bloom: { name: "백이병", description: "진도의 흰 깃털 친위대 · 곁의 아군 피해를 대신 받음 · 반격 위력 20% · 위기 피해 20% 감소" } },
+  // 극사 → 대극사(원소): 긴 극으로 두 칸 앞까지 찌른다
+  jishi: { family: "spearman", tier: 1, profile: p(1.05, 0.4, 1.08, 1.0, 0.55, 0.85, 0.92, 5, [1, 2]), traits: { counterBoost: 10 } },
+  daji: { family: "spearman", tier: 2, profile: p(1.18, 0.43, 1.28, 1.12, 0.6, 0.9, 0.98, 5, [1, 2]), traits: { counterBoost: 20, penetrate: 15 },
+    bloom: { name: "대극사", description: "원소의 극 부대 · 사거리 1~2 · 반격 위력 20% · 적 방어 15% 무시" } },
+  // 방패노병 → 선등사(국의): 방패 뒤에서 쏘는 노병
+  shieldBow: { family: "crossbow", tier: 1, profile: p(1.05, 0.45, 1.0, 1.05, 0.7, 0.9, 0.9, 4, [2, 2]), traits: { physicalDamageReduction: 10 } },
+  xiandeng: { family: "crossbow", tier: 2, profile: p(1.15, 0.48, 1.22, 1.15, 0.75, 0.95, 0.95, 4, [1, 3]), traits: { physicalDamageReduction: 15, critical: 10, unlimitedCounter: 0 },
+    bloom: { name: "선등사", description: "국의의 결사대 · 사거리 1~3 · 물리 피해 15% 감소 · 회심 10% · 반격 제한 없음" } },
+  // 고취수 → 군악대: 북과 피리로 부대를 움직이는 지원 병종
+  drummer: { family: "fengshui", tier: 1, profile: p(0.95, 1.2, 0.7, 0.85, 0.9, 1.2, 1.05, 5, [1, 1], true) },
+  warDrummer: { family: "fengshui", tier: 2, profile: p(1.05, 1.4, 0.79, 0.9, 1.0, 1.35, 1.11, 5, [1, 1], true), traits: { strategyDamageReduction: 10, defenseBoost: 5 },
+    bloom: { name: "군악대", description: "진군의 북 · 받는 피해 5% 감소 · 책략 피해 10% 감소 · 고무·강행·견고를 넓게 건다" } },
+  // 기마책사 → 질풍군사: 말 위에서 책략을 쓰는 기동 책사
+  riderSage: { family: "cavalry", tier: 1, profile: p(0.9, 1.15, 0.8, 0.8, 1.15, 1.05, 1.2, 6, [1, 1], true) },
+  swiftSage: { family: "cavalry", tier: 2, profile: p(0.98, 1.35, 0.86, 0.86, 1.3, 1.15, 1.28, 7, [1, 1], true), traits: { strategyPower: 10, strategyEvasion: 10 },
+    bloom: { name: "질풍군사", description: "이동 7의 기마 책사 · 책략 피해 10% 증가 · 적의 책략을 10% 확률로 흘린다" } },
 };
 
 /** 진화 계통: 병종 → [다음 병종, 진화 레벨] */
@@ -163,6 +200,11 @@ export const EVOLUTION: Partial<Record<UnitClass, readonly [UnitClass, number]>>
   monk: ["warriorMonk", 10], warriorMonk: ["arhat", 18],
   bandit: ["outlaw", 10], outlaw: ["greenwoodKing", 18],
   javelin: ["eliteJavelin", 10], eliteJavelin: ["flyingSpear", 18],
+  axeman: ["greatBlade", 10], greatBlade: ["xianzhen", 18],
+  mountaineer: ["wudang", 12], xiliang: ["feixiong", 12],
+  qingzhou: ["danyang", 10], danyang: ["baier", 18],
+  jishi: ["daji", 12], shieldBow: ["xiandeng", 12],
+  drummer: ["warDrummer", 12], riderSage: ["swiftSage", 14],
 };
 
 /** 이동·상성·그림의 기준이 되는 병종. 기존 병종은 자기 자신. */

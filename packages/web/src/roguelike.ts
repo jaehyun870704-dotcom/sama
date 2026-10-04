@@ -144,6 +144,9 @@ export const OFFICER_RECRUITS:OfficerSpec[]=[
   {name:'사마사',unitClass:'heavyCav'},{name:'사마소',unitClass:'crossbow'},{name:'등애',unitClass:'infantry'},{name:'진태',unitClass:'spearman'},
   {name:'종회',unitClass:'fengshui'},{name:'손례',unitClass:'cavalry'},{name:'왕기',unitClass:'archer'},{name:'조휴',unitClass:'horseArcher'},
   {name:'왕릉',unitClass:'infantry'},{name:'문흠',unitClass:'bandit'},{name:'가규',unitClass:'slinger'},{name:'호준',unitClass:'monk'},
+  // 명부대를 이끄는 장수들
+  {name:'학소',unitClass:'shieldBow'},{name:'만총',unitClass:'qingzhou'},{name:'서황',unitClass:'axeman'},{name:'우금',unitClass:'jishi'},
+  {name:'가후',unitClass:'riderSage'},{name:'양준',unitClass:'drummer'},{name:'견초',unitClass:'xiliang'},{name:'전주',unitClass:'mountaineer'},
 ];
 const fallenName=(entry:string)=>entry.split(' Lv.')[0];
 /** 지금 영입할 수 있는 장수: 부대에 없고, 이번 원정에서 쓰러지지 않은 사람. */

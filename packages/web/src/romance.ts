@@ -163,6 +163,8 @@ export function romanceOf(u:{id:string;name:string}):RomanceOfficer|undefined{
 export function romanceStats(name:string){const r=byName[name];return r?`무력 ${r.war} · 지력 ${r.int} · 통솔 ${r.lead}`:'';}
 /** 이름으로 찾는 연의 능력(장수 카드용). */
 export const romanceByName=(name:string)=>byName[name];
+/** 연의 장수록에 오른 모든 이름(신장수 포함). */
+export const allRomanceNames=()=>Object.keys(byName);
 
 const scale=(r:number,span:number)=>1+(r-50)/50*span;
 /**

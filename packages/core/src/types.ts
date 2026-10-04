@@ -68,7 +68,11 @@ export type UnitClass =
   | "nomad" | "whiteHorse" | "slinger" | "hurler" | "assassin" | "phantom" | "rattan" | "rattanElite"
   | "elephant" | "warElephant"
   | "ironPagoda" | "elephantKing" | "boulderCorps" | "wraith" | "wuguoRattan" | "greenwoodKing" | "arhat"
-  | "demonKing" | "celestial" | "thunderGod" | "medicineSaint" | "javelin" | "eliteJavelin" | "flyingSpear";
+  | "demonKing" | "celestial" | "thunderGod" | "medicineSaint" | "javelin" | "eliteJavelin" | "flyingSpear"
+  // 명부대(이름난 부대) 계통
+  | "axeman" | "greatBlade" | "xianzhen" | "mountaineer" | "wudang" | "xiliang" | "feixiong"
+  | "qingzhou" | "danyang" | "baier" | "jishi" | "daji" | "shieldBow" | "xiandeng"
+  | "drummer" | "warDrummer" | "riderSage" | "swiftSage";
 
 // ─────────────────────────────────────────────────────────── 진영
 
@@ -117,7 +121,10 @@ export type StatusKind =
   | "seal"        // 책략 봉인
   | "guard"       // 견고 (방어 상승)
   | "haste"       // 강행 (이동력 상승)
-  | "rally";      // 사기 상승
+  | "rally"       // 사기 상승
+  | "weaken"      // 쇠약 (공격 피해 15% 감소)
+  | "breach"      // 파갑 (받는 피해 15% 증가)
+  | "slow";       // 둔화 (이동력 감소)
 
 export interface Status {
   readonly kind: StatusKind;

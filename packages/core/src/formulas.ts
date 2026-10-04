@@ -72,8 +72,9 @@ export function createDamageContext(
     defender,
     kind,
     distance: manhattan(attacker.pos, defender.pos),
-    attackMul: attacker.statuses.some(s=>s.kind==='rally')?1.12:1,
-    reduction: defender.statuses.some(s=>s.kind==='guard')?.15:0,
+    attackMul: attacker.statuses.some(s=>s.kind==='weaken')?(attacker.statuses.some(s=>s.kind==='rally')?1.12:1)*.85:attacker.statuses.some(s=>s.kind==='rally')?1.12:1,
+    // 파갑은 받는 피해를 15% 늘린다(감소율을 음수 쪽으로 민다). 파갑이 없으면 예전 값 그대로(저장 재생이 달라지지 않게).
+    reduction: defender.statuses.some(s=>s.kind==='breach')?1-(1-(defender.statuses.some(s=>s.kind==='guard')?.15:0))*1.15:defender.statuses.some(s=>s.kind==='guard')?.15:0,
     accuracyMod: 0,
     defenseIgnore: 0,
     criticalChance: 0,
