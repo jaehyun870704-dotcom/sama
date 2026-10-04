@@ -9,6 +9,7 @@
 import type {At,Look} from './scenario-types.ts';
 import {drawPxFigure,type PxDir,type PxPose} from './story-pixel.ts';
 import {drawFigure} from './story-figure.ts';
+import {paintGround,loadGroundArt,GW,GH,C as GC,type GroundKind} from './story-ground.ts';
 /** 배경 속 인물(병사 대열·백관): 무대 인물과 같은 기존 그림, 아직 못 읽었으면 도트 인물. */
 const person=(g:CanvasRenderingContext2D,x:number,y:number,name:string,look:Look,dir:PxDir,pose:PxPose,flip:boolean)=>{if(!drawFigure(g,x,y,name,look,pose,88,flip))drawPxFigure(g,x,y,name,look,dir,pose,PIXEL,flip);};
 
@@ -1090,6 +1091,7 @@ const PAINTED:Painted[]=[
 const paintedImg=new Map<string,HTMLImageElement>();
 export async function loadPaintedScenes(){
   if(typeof document==='undefined')return;
+  await loadGroundArt();
   await Promise.all(PAINTED.map(async p=>{if(paintedImg.has(p.url))return;try{const img=new Image();img.src=new URL(p.url,document.baseURI).href;await img.decode();paintedImg.set(p.url,img);}catch{/* 없으면 그려서 쓴다 */}}));
   cache.clear();
 }
@@ -1122,9 +1124,25 @@ function buildPainted(p:Painted,kind:Kind,place:string):IsoScene{
   return {url:canvas.toDataURL('image/jpeg',0.9),toCell,toPct,standable,passable:(c:Cell)=>passable(c)||!onScreen(c),indoor:INDOOR.has(kind),fx:mood.fx,light:mood.light,figScale:p.figScale,...(p.sx!==undefined?{maxZoom:1.18}:{})};
 }
 
+// ─────────────────────────────────────────────── 위에서 본 야외(채색 지도)
+const OUTDOOR=new Set<Kind>(['field','hill','valley','forest','river','bank','deck','camp','battlefield','town','fire','gatehouse','wall','fort','court']);
+function groundScene(kind:Kind,seed:number,place:string,clearPct:readonly At[]):IsoScene|undefined{
+  const mood=moodOf(place,kind);
+  const cellOf=([px,py]:At):[number,number]=>[Math.max(0,Math.min(GW-1,Math.floor(px/100*GW))),Math.max(0,Math.min(GH-1,Math.floor(py/100*GH-.3)))];
+  const ground=paintGround(kind as GroundKind,seed,mood.light==='night'?'night':mood.light==='dawn'?'dawn':mood.light==='dusk'?'dusk':'day',clearPct.map(cellOf));
+  if(!ground)return undefined;
+  const standable=([x,y]:Cell)=>ground.standable(x,y);
+  const toPct=([x,y]:Cell):At=>[(x+.5)/GW*100,(y+.8)/GH*100];
+  const toCell=(at:At):Cell=>{const want=cellOf(at);if(standable(want))return want;let best:Cell=want,bd=Infinity;
+    for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){if(!standable([x,y]))continue;const d=(x-want[0])**2+((y-want[1])*1.5)**2;if(d<bd){bd=d;best=[x,y];}}return best;};
+  void GC;
+  return {url:ground.canvas.toDataURL('image/jpeg',0.9),toCell,toPct,standable,passable:(c:Cell)=>{const [x,y]=c;return x<0||y<0||x>=GW||y>=GH||standable(c);},indoor:false,fx:mood.fx,light:mood.light,figScale:.85,maxZoom:1};
+}
+
 // ─────────────────────────────────────────────── 장면 조립
 function build(kind:Kind,seed:number,place='',clear:Set<string>=new Set(),artNo=-1):IsoScene{
   // 알현(옥좌) 장면은 자리 배치가 따로 있어 그린 배경을 쓴다.
+  if(OUTDOOR.has(kind)){const t=groundScene(kind,seed,place,[...clear].map(k=>{const [c,r]=k.split(',').map(Number);return [((c!-r!)*TW/2+OX)/W*100,(OY+(c!+r!)*TH/2)/H*100] as At;}));if(t)return t;}
   if(kind!=='throne'){const p=paintedFor(kind,artNo);if(p)return buildPainted(p,kind,place);}
   const R=rng(seed),indoor=INDOOR.has(kind),mood=moodOf(place,kind);
   LIGHTS=[];SHAFTS=[];

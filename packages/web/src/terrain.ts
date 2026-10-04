@@ -106,6 +106,7 @@ function brushGrain(ctx:CanvasRenderingContext2D,w:number,h:number){
 }
 /** Scenery-v3 그림(참나무·소나무·바위…)을 크기에 맞춰 줄인다. 가장자리는 부드럽게 두되 옅은 번짐은 잘라 낸다. */
 const thumbs=new Map<string,HTMLCanvasElement>();
+export {sceneryThumb};
 const boxes=new Map<number,{x:number;y:number;w:number;h:number}>();
 function sceneryThumb(atlas:Texture,frame:number,w:number,h:number,flip=false,dark=false){
   w=Math.max(1,Math.round(w));h=Math.max(1,Math.round(h));
