@@ -19,7 +19,7 @@ import {romanceByName,romanceStats,temperOf} from './romance.ts';
 import {temperNames} from './duel.ts';
 import {taleSortieLimit} from './sortie.ts';
 import {classNames} from './troops.ts';
-import {nextEvolutionText,XP_PER_LEVEL,RELICS,survivorsOf,type BattleMods,type RunBattleRef} from './roguelike.ts';
+import {nextEvolutionText,XP_PER_LEVEL,RELICS,survivorsOf,type BattleMods,type RunBattleRef,type RunUnit} from './roguelike.ts';
 import {loadMeta,saveMeta,recordStory,buyUnlock,UNLOCKS,recordOfficerLevels} from './meta.ts';
 import {xpMult,restMult,mandateBonus,recruitBonus,heroLevelBonus} from './research.ts';
 import {deploymentPerks} from './officer-perks.ts';
@@ -189,7 +189,7 @@ async function replay(host:ScenarioHost,step:ScenarioStep){
 /** 출진 전 정비: 이야기가 끝나면 반드시 거친다. */
 export function prepare(host:ScenarioHost,step:ScenarioStep){
   const state=loadScenario();
-  if(step.kind==='story'){const run=state.run,hp=run?.hp['사마의'];host.storyBriefing(chapterIndex(step.stage!),{chapter:step.id,mods:modsOf(state,step),...(run?.relics.length?{relics:[...run.relics]}:{}),...(hp!==undefined?{heroHp:hp}:{})});return;}
+  if(step.kind==='story'){const run=state.run,hp=run?.hp['사마의'],h=host.hero(),recruits=scenarioParty(state,h.level,h.xp).filter(u=>!u.hero).sort((a,b)=>b.level-a.level).slice(0,3).map(u=>({...u,id:'rc_'+u.id}));host.storyBriefing(chapterIndex(step.stage!),{chapter:step.id,mods:modsOf(state,step),...(run?.relics.length?{relics:[...run.relics]}:{}),...(hp!==undefined?{heroHp:hp}:{}),...(recruits.length?{recruits}:{})});return;}
   showIfPrep(host,state,step);
 }
 /** 대본에 갈림길 선택이 없을 때의 대비: 길 목록에서 고른다. */
@@ -240,6 +240,7 @@ export function showIfPrep(host:ScenarioHost,state:ScenarioState,step:ScenarioSt
   <p class="camp-mission">승리: ${esc(foe.name)} 격퇴 · 패배: 사마의 퇴각. 지역 ${esc(route.region.name)} · 적 수준 Lv.${base} 안팎.</p>
   <div class="prep-rules"><span>필수 ${1+required.length}명(사마의${required.length?' · '+esc(required.join(' · ')):''})</span><span>선택 ${sel.length}/${limit}명</span>
   <span class="prep-diff"><label><input type="radio" name="if-diff" value="normal" ${difficulty==='normal'?'checked':''}> 일반</label><label><input type="radio" name="if-diff" value="extreme" ${difficulty==='extreme'?'checked':''}> 극한 · 적 +2레벨 · 동행 −1 · 경험치 ×1.3</label></span></div>
+  ${state.run?.relics.length?`<div class="run-relic-strip"><b class="muted">회차 보물 · 전원 적용</b>${state.run.relics.map(id=>RELICS.find(r=>r.id===id)).filter(Boolean).map(r=>`<span class="run-relic-card"><b>${esc(r!.name)}</b><small>${esc(r!.effect)}</small></span>`).join('')}</div>`:''}
   ${modsText(mods).length?`<p class="prep-mods"><b>대사 선택의 효과</b> ${esc(modsText(mods).join(' · '))}</p>`:''}
   <div class="prep-body"><div class="prep-list">${card('사마의')}${required.map(card).join('')}${optional.map(card).join('')}</div>
   <div class="prep-detail"><div class="prep-portrait"><span class="prep-sprite big" style="${spriteStyle(lookOf(c),2)}"></span><div><h3>${esc(f)}</h3><p>${esc(classNames[c]??c)} · Lv.${u.level} · 경험치 ${u.xp}/${XP_PER_LEVEL}</p>${r?`<p class="muted">${esc(r.epithet)}</p>`:''}</div></div>
@@ -261,7 +262,7 @@ function perksFor(party:ReadonlyArray<{name:string;unitClass:UnitClass}>){const 
 function noteLevels(party:ReadonlyArray<{name:string;level:number}>){const m=loadMeta();recordOfficerLevels(m,party);saveMeta(m);}
 function launch(host:ScenarioHost,state:ScenarioState,step:ScenarioStep,picked:string[],difficulty:'normal'|'extreme'){
   const hero=host.hero(),party=scenarioParty(state,hero.level,hero.xp,picked),mods=modsOf(state,step);
-  const ref:RunBattleRef={seed:runSeed(state,step.id),floor:floorFor(step,state),kind:step.kind==='boss'?'boss':'tale',party,relics:[],route:{...state.route},
+  const ref:RunBattleRef={seed:runSeed(state,step.id),floor:floorFor(step,state),kind:step.kind==='boss'?'boss':'tale',party,relics:[...(state.run?.relics??[])],route:{...state.route},
     ...(step.kind==='tale'?{tale:step.id}:{}),...(Object.keys(mods).length?{mods}:{}),enemyBase:enemyBase(state,hero.level,step),scenario:step.id};
   const loadout=host.heroLoadout()?.sima_yi;
   const deployment:Deployment={levels:{sima_yi:hero.level,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},...(loadout?{loadouts:{sima_yi:loadout}}:{}),run:ref,...perksFor(party),scenario:{chapter:step.id,...(difficulty==='extreme'?{difficulty:'extreme' as const}:{})}};
@@ -298,11 +299,15 @@ export async function finishIfBattle(host:ScenarioHost,state:BattleState,deploym
   await afterVictory(host,sc,step,news);
 }
 /** 연의 장 전투가 끝났을 때(main.ts가 보상 처리 뒤에 부른다). */
-export async function finishStoryBattle(host:ScenarioHost,chapterId:string,victory:boolean,news:string[],heroHp?:number){
+export async function finishStoryBattle(host:ScenarioHost,chapterId:string,victory:boolean,news:string[],heroHp?:number,battle?:BattleState,recruits?:RunUnit[],earned:Record<string,number>={}){
   const sc=loadScenario(),step=scenarioPath(sc).find(s=>s.id===chapterId);
   if(!step)return showScenario(host);
   if(!victory)return defeat(host,sc,step);
   if(sc.run&&heroHp!==undefined){if(heroHp>=0.999)delete sc.run.hp['사마의'];else sc.run.hp['사마의']=Math.max(.05,heroHp);}
+  // 함께 나선 영입 장수: 체력(쓰러졌으면 중상)과 경험치를 회차에 남긴다.
+  if(battle&&recruits?.length){const surv:Record<string,number>={};for(const r of recruits){const u=battle.find(r.id);if(u?.alive)surv[r.name]=Math.max(.05,u.hp/u.stats.maxHp);}
+    const lost=afterFight(sc,recruits,surv,stepTitle(step,sc));news.push(...rewardOfficers(sc,recruits.filter(r=>surv[r.name]!==undefined),earned,50,xpMult(loadMeta())));
+    if(lost.length)news.push(`중상: ${lost.join(' · ')} — 다음 싸움엔 체력 25%로 나선다.`);}
   finishStep(sc,step.id);saveScenario(sc);
   await afterVictory(host,sc,step,news);
 }

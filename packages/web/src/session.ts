@@ -1,6 +1,6 @@
 import {repairError,repairAmount,fortifyError,parseCell,buildBarricade,placeBarricade,breachRally,BARRICADES_PER_ENGINEER} from './siege.ts';
 import {troopStrategies,supportOptions} from './troops.ts';
-import {refBattle,prepareRunBattle,applyBattleMods,applyRelics,taleById,xpFromLog,levelUpInBattle,RUN_FLOORS,PARTY_LIMIT,XP_PER_LEVEL,type XpGain} from './roguelike.ts';
+import {refBattle,prepareRunBattle,applyBattleMods,applyRelics,addRecruits,taleById,xpFromLog,levelUpInBattle,RUN_FLOORS,PARTY_LIMIT,XP_PER_LEVEL,type XpGain} from './roguelike.ts';
 import {validRoute} from './fate.ts';
 import {applyPerkGrants,validGrants} from './perks.ts';
 import './scenario.ts';
@@ -18,7 +18,7 @@ import retreatMap from '../../data/maps/yangtze-retreat.json';
 import {stageRules,foeEdges} from './stage-rules.ts';
 import {campaignStage,addFortifications,addSiegeCompany,structureKind,encircled,encounterLevels} from './campaign-rules.ts';
 import {applyTreasure,equippedItems,treasureInfo,type Deployment,OFFICERS,treasures} from './progression.ts';
-import { assemble, Battle, CONTROLLABLE, isHostile, key, manhattan, statsFor, familyOf, evolvedClass, evolveUnit, healAmount, strategyArea } from '../../core/src/index.ts';
+import { assemble, Battle, CONTROLLABLE, isHostile, key, manhattan, statsFor, familyOf, evolvedClass, evolveUnit, healAmount, strategyArea, evolveStrategy } from '../../core/src/index.ts';
 import type { BattleState, Command, Difficulty, MapFile, StageDef, StrategyDef, LogEntry, Unit } from '../../core/src/index.ts';
 import escapeStage from '../../data/stages/S1-02.json';
 import fortStage from '../../data/stages/S1-08.json';
@@ -226,7 +226,7 @@ export class Session {
       applyOfficerFeatures(state.living(),this.deployment?.growth);
       for(const u of state.living()){
         if(u.unitClass==='ram'){for(const trait of ['siegeRam','noCounterAttack'])if(!u.traits.includes(trait))u.traits.push(trait);}
-        const officer=(OFFICERS as readonly string[]).includes(u.id)&&u.side==='player',specialty=officer?undefined:troopStrategies(u.unitClass,u.level);if(specialty)u.strategies=specialty;else if(['strategist','fengshui'].includes(familyOf(u.unitClass)))u.strategies=availableStrategies(u.level,!!this.deployment?.growth);
+        const officer=(OFFICERS as readonly string[]).includes(u.id)&&u.side==='player',specialty=officer?undefined:troopStrategies(u.unitClass,u.level);if(specialty)u.strategies=specialty;else if(['strategist','fengshui'].includes(familyOf(u.unitClass)))u.strategies=availableStrategies(u.level,!!this.deployment?.growth,officer?undefined:familyOf(u.unitClass));
       }
       addSiegeCompany(state);
     }
@@ -235,7 +235,7 @@ export class Session {
     // 시나리오 모드의 연의 장: 대사 선택의 효과(사기·방어 태세·책략 MP).
     if(this.deployment?.scenario?.mods&&!this.deployment.run)applyBattleMods(state,this.deployment.scenario.mods);
     // 로그라이크 회차의 연의 장: 회차 보물이 본대에 실리고, 사마의는 남은 체력으로 나선다.
-    if(this.deployment?.scenario&&!this.deployment.run){const sc=this.deployment.scenario;if(sc.relics?.length)applyRelics(state,sc.relics);const h=state.find('sima_yi');if(h&&sc.heroHp!==undefined)h.hp=Math.max(1,Math.round(h.stats.maxHp*sc.heroHp));}
+    if(this.deployment?.scenario&&!this.deployment.run){const sc=this.deployment.scenario;if(sc.recruits?.length)addRecruits(state,sc.recruits);if(sc.relics?.length)applyRelics(state,sc.relics);const h=state.find('sima_yi');if(h&&sc.heroHp!==undefined)h.hp=Math.max(1,Math.round(h.stats.maxHp*sc.heroHp));}
     // 원정의 연의 전장: 사마의는 원정에서 남은 체력으로 나서고, 원정 보물이 본대에 실린다.
     if(this.deployment?.runStory){const r=this.deployment.runStory,h=state.find('sima_yi');if(h)h.hp=Math.max(1,Math.round(h.stats.maxHp*r.heroHp));applyRelics(state,r.relics);}
     // 연구·장수 효과: 출진할 때 적어 둔 값 그대로(저장 재생도 같게).
@@ -258,7 +258,7 @@ export class Session {
       }
       if(cmd.kind==='move' && key(cmd.to)===key(u.pos)) return {ok:false,error:'다른 칸을 선택해 주세요.'};
       if(cmd.kind==='strategy'){
-        const def=s.strategies.get(cmd.strategy);
+        const cu=s.find(cmd.unit),def=cu?s.strategyFor(cu,cmd.strategy):s.strategies.get(cmd.strategy);
         if(!s.map.inBounds(cmd.at) || !def || !(()=>{const area=strategyArea(def,cmd.at,s.find(cmd.unit)?.pos);return s.living().some(e=>def.targetSides.includes(e.side)&&area.some(c=>c.x===e.pos.x&&c.y===e.pos.y));})()) return {ok:false,error:'책략 범위 안에 적이 있어야 합니다.'};
       }
     }
@@ -278,7 +278,7 @@ export class Session {
     const s=this.state;
     if(this.state.outcome!=='ongoing')return {ok:false,error:'이미 종료된 전투입니다.'};
     if(cmd.kind==='strategy'&&(this.deployment?.growth||this.deployment?.run)){
-      const def=allStrategies.find(x=>x.id===cmd.strategy),u=s.find(cmd.unit);
+      const base=allStrategies.find(x=>x.id===cmd.strategy),u=s.find(cmd.unit),def=base&&u?evolveStrategy(base,u.level):base;
       if(def?.support){
         if(!u?.alive||!u.strategies.includes(def.id)||u.mp<def.mpCost||s.hasStatus(u,'seal')||manhattan(u.pos,cmd.at)>def.range)return {ok:false,error:'지원 책략의 습득·MP·사거리를 확인하세요.'};
         const area=strategyArea(def,cmd.at,u.pos),targets=s.living().filter(t=>t.side!=='enemy'&&area.some(c=>c.x===t.pos.x&&c.y===t.pos.y));
@@ -404,7 +404,7 @@ export class Session {
       const up=to>from&&!!u?.alive&&u.level===from;let learned:string[]=[];
       if(up){levelUpInBattle(u!,to);
         // 책사 계열은 레벨이 오를 때마다 그 레벨의 책략을 새로 익힌다(이미 아는 것은 그대로).
-        if(['strategist','fengshui'].includes(familyOf(u!.unitClass))){const now=availableStrategies(to,!!this.deployment?.growth),fresh=now.filter(id=>!u!.strategies.includes(id));
+        if(['strategist','fengshui'].includes(familyOf(u!.unitClass))){const now=availableStrategies(to,!!this.deployment?.growth,(OFFICERS as readonly string[]).includes(u!.id)&&u!.side==='player'?undefined:familyOf(u!.unitClass)),fresh=now.filter(id=>!u!.strategies.includes(id));
           u!.strategies=[...u!.strategies,...fresh];learned=fresh.map(id=>allStrategies.find(x=>x.id===id)?.name??id);}}
       this.xpGains.set(entry,{...gain,...(up?{level:to}:{}),...(learned.length?{learned}:{})});
     }
@@ -533,6 +533,8 @@ export class Session {
         if((m.reinforce!==undefined&&(!Array.isArray(m.reinforce)||m.reinforce.length>4||m.reinforce.some(x=>typeof x?.name!=='string'||!['npc','ally'].includes(x.side))))||Object.entries(m).some(([k,v])=>k!=='reinforce'&&typeof v!=='boolean'))throw new Error('잘못된 시나리오 기록');
         for(const x of m.reinforce??[])statsFor(x.unitClass,1);}
       if(sc&&(typeof sc.chapter!=='string'||sc.chapter.length>40))throw new Error('잘못된 시나리오 기록');
+      if(sc&&sc.recruits!==undefined&&(!Array.isArray(sc.recruits)||sc.recruits.length>3||sc.recruits.some(x=>typeof x?.name!=='string'||typeof x.id!=='string'||!(x.level>=1&&x.level<=99)||!(x.hp>0&&x.hp<=1))))throw new Error('잘못된 시나리오 기록');
+      for(const x of sc?.recruits??[])statsFor(x.unitClass,1);
       if(sc&&((sc.relics!==undefined&&(!Array.isArray(sc.relics)||sc.relics.length>12||sc.relics.some(x=>typeof x!=='string')))||(sc.heroHp!==undefined&&!(sc.heroHp>0&&sc.heroHp<=1))))throw new Error('잘못된 시나리오 기록');
       if(data.deployment.run&&data.deployment.run.enemyBase!==undefined&&(!Number.isInteger(data.deployment.run.enemyBase)||data.deployment.run.enemyBase<1||data.deployment.run.enemyBase>60))throw new Error('잘못된 시나리오 기록');}
     if(data.deployment?.runStory){const r=data.deployment.runStory;

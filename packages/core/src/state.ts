@@ -1,6 +1,7 @@
 import type { Unit, Side, Coord, BattleOutcome, Status, StatusKind, StrategyDef, TerrainKind } from "./types.ts";
 import { BattleMap, key, isHostile } from "./grid.ts";
 import { Rng, type RngSnapshot } from "./rng.ts";
+import { evolveStrategy } from "./strategy-tiers.ts";
 import type { StageDef, VictoryCondition, Difficulty } from "./stage.ts";
 
 export type LogEntry =
@@ -44,6 +45,11 @@ export class BattleState {
   readonly enemyLevelShift: number;
   /** 사용 가능한 책략 정의. Battle 생성 시 주입된다. */
   strategies: Map<string, StrategyDef> = new Map();
+  /** 시전자 레벨로 진화한 책략 정의 */
+  strategyFor(unit: { level: number }, id: string): StrategyDef | undefined {
+    const d = this.strategies.get(id);
+    return d && evolveStrategy(d, unit.level);
+  }
 
   units: Map<string, Unit> = new Map();
   turn = 1;

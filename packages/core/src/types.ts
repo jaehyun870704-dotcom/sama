@@ -109,6 +109,10 @@ export interface StrategyDef {
   /** 지형 변화 (예: 화계 → fire) */
   readonly leavesHazard?: HazardKind;
   readonly targetSides: readonly Side[];
+  /** 배우는 레벨. 있으면 시전자 레벨에 따라 3단 진화한다(strategy-tiers.ts). */
+  readonly learnLevel?: number;
+  /** 진화 단계(진화된 정의에만 붙는다) */
+  readonly tier?: 1 | 2 | 3;
 }
 
 // ─────────────────────────────────────────────────────────── 상태이상

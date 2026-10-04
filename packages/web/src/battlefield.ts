@@ -181,7 +181,7 @@ export class Battlefield {
   }
   private setHover(c:Coord|undefined){
     this.hover=c;this.cursor.clear();if(c){
-      const u=this.state?.find(this.selected),def=this.state?.strategies.get(this.mode);
+      const u=this.state?.find(this.selected),def=u?this.state?.strategyFor(u,this.mode):undefined;
       if(u&&def&&manhattan(u.pos,c)<=def.range)for(const at of strategyArea(def,c,u.pos)){
         if(!this.state!.map.inBounds(at))continue;
         const p=iso(at);diamond(this.cursor,p.x,p.y,0xf5d395,.34).stroke({color:0xffe1a8,width:1.4});
@@ -307,7 +307,7 @@ export class Battlefield {
       if(mode==='heal'&&familyOf(u.unitClass)==='fengshui')for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){if(manhattan(u.pos,{x,y})<=3){const p=iso({x,y});diamond(this.ranges,p.x,p.y,0x83e8b2,.22);}}
       if(mode==='move'&&!u.hasMoved){const reach=state.map.reachable(u,state.occupancy(),ignoresRough(u));for(const k of reach.keys()){const [x,y]=k.split(',').map(Number);const p=iso({x:x!,y:y!});tileMark(this.ranges,p.x,p.y,0x2f86d8,0x9fd4ff);}}
       else if(mode==='attack'||mode==='duel'||mode==='debate'||state.strategies.has(mode)){
-        const def=state.strategies.get(mode);for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){const d=manhattan(u.pos,{x,y});if(d<=(def?.range??(mode==='debate'?3:mode==='duel'?1:u.range[1]))&&d>=(def?0:u.range[0])){const p=iso({x,y});tileMark(this.ranges,p.x,p.y,def?0xc89a3a:0xd0442e,def?0xffe3a0:0xffa088,.36);}}
+        const def=state.strategyFor(u,mode);for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){const d=manhattan(u.pos,{x,y});if(d<=(def?.range??(mode==='debate'?3:mode==='duel'?1:u.range[1]))&&d>=(def?0:u.range[0])){const p=iso({x,y});tileMark(this.ranges,p.x,p.y,def?0xc89a3a:0xd0442e,def?0xffe3a0:0xffa088,.36);}}
       }
     }
     if(!this.busy){

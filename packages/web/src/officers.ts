@@ -61,9 +61,24 @@ const legends:LearnedStrategy[]=[
  {id:'tenAmbush',name:'십면매복',level:32,element:'earth',shape:'spread',range:4,radius:2,mpCost:30,power:120,inflicts:['bound'],targetSides:['enemy']},
 ];
 export const allStrategies:LearnedStrategy[]=[...learnedStrategies,...more,...wider,...legends].sort((a,b)=>a.level-b.level);
+for(const s of allStrategies)(s as {learnLevel?:number}).learnLevel=s.level;
 export function strategyHint(id:string){const s=allStrategies.find(x=>x.id===id);if(!s)return '';const effect=s.support?({heal:'아군 체력 회복',cleanse:'해로운 상태이상 제거',guard:'받는 피해 15% 감소',haste:'이동력 +1',rally:'공격 피해 12% 증가',mana:`MP ${s.power} 회복`,valor:'공격 피해 12% 증가 · 받는 피해 15% 감소'}[s.support]):`위력 ${s.power}${s.inflicts?.length?' · '+s.inflicts.map(x=>STATUS_NAMES[x]??x).join(' · '):''}`;return `${effect} · 사거리 ${s.range} · ${SHAPE_TEXT(s)}`;}
 /** 상태이상 이름. */
 export const STATUS_NAMES:Record<string,string>={burn:'화상',bleed:'출혈',seal:'책략 봉인',confusion:'혼란',immobile:'이동 불가',bound:'포박',shock:'감전',guard:'견고',haste:'강행',rally:'사기',weaken:'쇠약',breach:'파갑',slow:'둔화'};
 /** 범위 모양을 말로. */
 export const SHAPE_TEXT=(s:Pick<LearnedStrategy,'shape'|'radius'>)=>s.shape==='line'?`직선 ${s.radius+1}칸`:s.shape==='cross'?`십자 ${Math.max(1,s.radius)}칸`:s.radius?`주변 ${s.radius}칸`:'한 부대';
-export function availableStrategies(level:number,expanded=false){return (expanded?allStrategies:learnedStrategies).filter(s=>s.level<=level).map(s=>s.id);}
+/** 책략 갈래: 공격(오행) · 술법(적 약화) · 회복 · 고무(아군 강화) */
+export type StrategySchool='attack'|'mind'|'heal'|'buff';
+export const SCHOOL_NAMES:Record<StrategySchool,string>={attack:'공격 책략',mind:'술법',heal:'회복',buff:'고무·지원'};
+export function schoolOf(s:LearnedStrategy):StrategySchool{return s.support?(s.support==='heal'||s.support==='cleanse'||s.support==='mana'?'heal':'buff'):s.element==='support'?'mind':'attack';}
+const LEGEND_IDS=new Set(legends.map(s=>s.id));
+/**
+ * 계통이 쓰는 책략. 책사 계열(책사·군사·신산)은 공격 책략과 술법, 풍수사 계열(풍수사·선도·선인·고취수)은
+ * 회복·고무에 땅과 물의 책략. 초한 고사 책략과 명상(MP 회복)은 둘 다 쓴다. 그 밖의 계통은 제한 없음(병종 목록은 troops.ts).
+ */
+export function familyAllows(family:string|undefined,s:LearnedStrategy){
+  if(LEGEND_IDS.has(s.id)||s.support==='mana')return true;const k=schoolOf(s);
+  if(family==='strategist')return k==='attack'||k==='mind';
+  if(family==='fengshui')return k==='heal'||k==='buff'||s.element==='earth'||s.element==='water';
+  return true;}
+export function availableStrategies(level:number,expanded=false,family?:string){return (expanded?allStrategies:learnedStrategies).filter(s=>s.level<=level&&familyAllows(family,s)).map(s=>s.id);}

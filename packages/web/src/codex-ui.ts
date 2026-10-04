@@ -6,8 +6,9 @@
  * 병종: 모든 병종의 그림·능력 계수·사거리·전법·개화 스킬·진화 계통·쓰는 책략.
  * 책략: 아이콘 목록과 속성·소모 MP·습득 레벨·시전 범위·효과 범위 격자·설명.
  */
-import type {UnitClass} from '../../core/src/index.ts';
-import {VARIANTS,tierOf,familyOf,profileOf,classTactics,strategyArea} from '../../core/src/index.ts';
+import type {UnitClass,StrategyTier} from '../../core/src/index.ts';
+import {VARIANTS,tierOf,familyOf,profileOf,classTactics,strategyArea,tieredStrategy,strategyTierLevel,STRATEGY_TIER_NAMES} from '../../core/src/index.ts';
+import {strategyIconUrl} from './strategy-icons.ts';
 import {allRomanceNames,romanceByName,temperOf} from './romance.ts';
 import {temperNames} from './duel.ts';
 import {customNames,customList} from './custom.ts';
@@ -17,7 +18,7 @@ import {isUploaded,setPortraitImage,removePortraitImage,importPortraitFiles} fro
 import {bioOf} from './officer-bios.ts';
 import {classNames,troopRoles,troopArt,basicReactionArt,artClass,recruitPool,evolutionLines} from './troops.ts';
 import {adviceFor} from './troop-tactics.ts';
-import {allStrategies,strategyHint,STATUS_NAMES,SHAPE_TEXT,type LearnedStrategy} from './officers.ts';
+import {allStrategies,STATUS_NAMES,SHAPE_TEXT,familyAllows,schoolOf,SCHOOL_NAMES,type LearnedStrategy} from './officers.ts';
 import {officerFeatures} from './officers.ts';
 import {loadMeta,saveMeta} from './meta.ts';
 import {perksFor,perkState,bestLevel,learnPerk,togglePerk,officerClass,perkAt,officerTier,PERK_TIERS} from './officer-perks.ts';
@@ -106,7 +107,7 @@ function sprite(c:UnitClass){
 const PROFILE_ROWS:Array<[keyof ReturnType<typeof profileOf>,string]>=[['hp','체력'],['attack','공격'],['defense','방어'],['intellect','지력'],['spirit','정신'],['agility','순발'],['mp','책략']];
 function classesTab(pick:string){
   const all=codexClasses(),c=(all.includes(pick as UnitClass)?pick:all[0]!) as UnitClass,p=profileOf(c),v=VARIANTS[c],line=evolutionLines().find(l=>l.some(([x])=>x===c));
-  const spells=troopRoles[c]?.spells??(['strategist','fengshui'].includes(familyOf(c))?['(레벨에 따라 모든 책략)']:[]);
+  const spells=troopRoles[c]?.spells??(p.canUseStrategy&&['strategist','fengshui'].includes(familyOf(c))?allStrategies.filter(s=>familyAllows(familyOf(c),s)).map(s=>s.id):[]);
   const grid=`<div class="cx-classes">${all.map(k=>`<button data-cx-class="${k}" class="cx-class tier-${tierOf(k)} ${k===c?'chosen':''}">${sprite(k)}<b>${esc(classNames[k]??k)}</b><small>${'◆'.repeat(tierOf(k))}</small></button>`).join('')}</div>`;
   const detail=`<div class="cx-detail"><div class="cx-head">${sprite(c)}<div><small>${'◆'.repeat(tierOf(c))} ${tierOf(c)===1?'기본':tierOf(c)===2?'정예':'최정예'} · ${esc(classNames[familyOf(c)]??familyOf(c))} 계열</small><h3>${esc(classNames[c]??c)}</h3><p>${esc(troopRoles[c]?.role??adviceFor(c))}</p></div></div>
     <div class="cx-stats">${PROFILE_ROWS.map(([k,label])=>{const n=p[k] as number;return `<div class="cx-stat"><span>${label}</span><i><i style="width:${Math.min(100,n/2.2*100)}%" class="${n>=1.3?'hi':n<0.7?'lo':''}"></i></i><b>${n.toFixed(2)}</b></div>`;}).join('')}</div>
@@ -114,15 +115,13 @@ function classesTab(pick:string){
     ${v?.bloom?`<p class="cx-unique"><b>개화 「${esc(v.bloom.name)}」</b> ${esc(v.bloom.description)}</p>`:''}
     ${classTactics(c).map(t=>`<p class="cx-unique"><b>전법 「${esc(t.name)}」</b> ${esc(t.description)}</p>`).join('')}
     ${line?`<div class="cx-line">${line.map(([k,lv],i)=>`${i?`<span class="evo-arrow">Lv.${lv} →</span>`:''}<button data-cx-class="${k}" class="evo-node ${k===c?'chosen':''}"><b>${'◆'.repeat(tierOf(k))}</b>${esc(classNames[k]??k)}</button>`).join('')}</div>`:''}
-    ${spells.length?`<p class="cx-spells"><b>쓰는 책략</b> ${spells.map(id=>{const s=allStrategies.find(x=>x.id===id);return s?`<button data-cx-spell="${s.id}">${esc(s.name)}</button>`:esc(id);}).join(' ')}</p>`:''}</div>`;
+    ${spells.length?`<div class="cx-spells"><b>쓰는 책략 ${spells.length}</b><div>${spells.map(id=>{const s=allStrategies.find(x=>x.id===id);return s?`<button data-cx-spell="${s.id}" title="${esc(s.name)} · Lv.${s.level}"><img src="${strategyIcon(s.id)}" alt=""><small>${esc(s.name)}</small></button>`:'';}).join('')}</div></div>`:''}</div>`;
   return `<div class="cx-split"><div class="cx-list">${grid}</div>${detail}</div>`;
 }
 
 // ─────────────────────────────────────────────── 책략
 
 const ELEMENT_NAMES:Record<string,string>={fire:'화',wind:'풍',water:'수',thunder:'뇌',earth:'지',support:'술'};
-/** 책략 그림 가운데 글자: 책략 이름의 첫 글자(한글). */
-const glyphOf=(name:string)=>[...name][0]??'책';
 /** 책략마다 한 줄 풀이(무엇을 하는 계책인가). */
 export const STRATEGY_TEXT:Record<string,string>={
   fire:'적 한 부대에 불을 놓아 태운다. 숲에서 더 거세다.',embers:'작은 불씨를 던져 적을 그을린다. 적은 MP로 쓰는 첫 화계.',inferno:'넓은 땅을 업화로 덮는다. 맞은 적은 화상을 입는다.',fireWall:'불의 진을 쳐 둘레의 적을 태운다.',
@@ -141,26 +140,8 @@ export const STRATEGY_TEXT:Record<string,string>={
   fourSongs:'사면초가 — 사방에서 고향 노래가 들려 넓은 땅의 적이 혼란에 빠지고 힘이 빠진다.',weiRiver:'유수 수공 — 상류의 모래주머니를 터뜨려 한 줄의 적을 끊고 쓸어 간다.',tenAmbush:'십면매복 — 열 겹의 복병이 넓은 땅의 적을 덮쳐 포박한다.',
   inspire:'북을 울려 둘레 아군의 사기를 올린다.',warCry:'함성으로 둘레 아군의 공격 피해를 늘린다.',grandDrum:'큰 북소리로 넓은 땅의 아군을 고무한다.',valor:'결사의 각오 — 한 부대가 더 세게 치고 덜 다친다.',
 };
-const PALETTE:Record<string,[string,string,string]>={fire:['#ffcf7a','#d4421a','#3b0a02'],wind:['#c8f7dc','#2f9e6e','#0b2e22'],water:['#b8e0ff','#2563eb','#0a1a3d'],thunder:['#f1e4ff','#8b5cf6','#1e0b3d'],earth:['#ecdcae','#8a6a2a','#2a1c08'],curse:['#f2c8ff','#9d3fbf','#2a0a33'],heal:['#d2ffdc','#22a05a','#06301a'],buff:['#fff2c0','#d4a017','#3a2a04']};
-const iconCache=new Map<string,string>();
-function paletteOf(s:LearnedStrategy){if(s.support)return s.support==='heal'||s.support==='cleanse'||s.support==='mana'?PALETTE.heal!:PALETTE.buff!;return s.element==='support'?PALETTE.curse!:PALETTE[s.element]??PALETTE.buff!;}
-/** 책략 아이콘(빛살 위에 한 글자). 캔버스가 없으면 빈 문자열. */
-export function strategyIcon(id:string){
-  const hit=iconCache.get(id);if(hit!==undefined)return hit;
-  const s=allStrategies.find(x=>x.id===id);if(!s||typeof document==='undefined')return '';
-  const c=document.createElement('canvas');c.width=c.height=96;const g=c.getContext('2d')!,[l,m,d]=paletteOf(s);
-  const bg=g.createRadialGradient(48,70,4,48,56,80);bg.addColorStop(0,l);bg.addColorStop(.45,m);bg.addColorStop(1,d);g.fillStyle=bg;g.fillRect(0,0,96,96);
-  // 아래에서 솟는 빛살
-  g.save();g.globalCompositeOperation='lighter';const n=s.shape==='line'?7:s.shape==='cross'?4:13;
-  for(let i=0;i<n;i++){const a=s.shape==='cross'?i*Math.PI/2:-Math.PI*(.12+.76*i/Math.max(1,n-1)),len=s.shape==='cross'?50:60+((i*37)%25);
-    const gr=g.createLinearGradient(48,s.shape==='cross'?48:84,48+Math.cos(a)*len,(s.shape==='cross'?48:84)+Math.sin(a)*len);gr.addColorStop(0,'rgba(255,255,255,.85)');gr.addColorStop(1,'rgba(255,255,255,0)');
-    g.strokeStyle=gr;g.lineWidth=s.shape==='cross'?10:3+((i*13)%4);g.beginPath();g.moveTo(48,s.shape==='cross'?48:84);g.lineTo(48+Math.cos(a)*len,(s.shape==='cross'?48:84)+Math.sin(a)*len);g.stroke();}
-  g.restore();
-  g.fillStyle='rgba(0,0,0,.35)';g.font='bold 46px "Noto Serif KR","Nanum Myeongjo",serif';g.textAlign='center';g.textBaseline='middle';g.fillText(glyphOf(s.name),50,52);
-  g.fillStyle='#fffaf0';g.fillText(glyphOf(s.name),48,49);
-  g.strokeStyle='rgba(255,236,190,.55)';g.lineWidth=3;g.strokeRect(1.5,1.5,93,93);
-  const url=c.toDataURL('image/png');iconCache.set(id,url);return url;
-}
+/** 책략 그림 아이콘(진화 단계별). */
+export const strategyIcon=(id:string,tier:StrategyTier=1)=>strategyIconUrl(id,tier);
 /** 9×9 격자: 가운데가 시전자(또는 찍은 칸). */
 export function rangeGrid(cells:Array<{x:number;y:number}>,kind:'cast'|'effect'|'help',center='self'){
   const set=new Set(cells.map(c=>`${c.x},${c.y}`));let out='';
@@ -168,27 +149,42 @@ export function rangeGrid(cells:Array<{x:number;y:number}>,kind:'cast'|'effect'|
   return `<div class="cx-grid">${out}</div>`;
 }
 export function castCells(range:number){const out:Array<{x:number;y:number}>=[];for(let y=-4;y<=4;y++)for(let x=-4;x<=4;x++)if(Math.abs(x)+Math.abs(y)<=range)out.push({x,y});return out;}
-function strategiesTab(pick:string){
+/** 책략을 쓰는 병종: 병종 목록(troops.ts)에 든 병종 + 계통 규칙(책사·풍수사 계열)에 맞는 병종. */
+export function strategyUsers(s:LearnedStrategy):UnitClass[]{
+  const named=Object.entries(troopRoles).filter(([,r])=>r?.spells.includes(s.id)).map(([k])=>k as UnitClass);
+  const fam=(['strategist','fengshui'] as UnitClass[]).flatMap(f=>[f,...(Object.keys(VARIANTS) as UnitClass[]).filter(k=>VARIANTS[k]!.family===f&&VARIANTS[k]!.profile.canUseStrategy)]).filter(k=>!troopRoles[k]&&familyAllows(familyOf(k),s));
+  return [...new Set([...fam,...named])];
+}
+const GROUPS:Array<{key:string;name:string;test:(s:LearnedStrategy)=>boolean}>=[
+  {key:'fire',name:'불',test:s=>schoolOf(s)==='attack'&&s.element==='fire'},{key:'wind',name:'바람',test:s=>schoolOf(s)==='attack'&&s.element==='wind'},
+  {key:'water',name:'물',test:s=>schoolOf(s)==='attack'&&s.element==='water'},{key:'thunder',name:'번개',test:s=>schoolOf(s)==='attack'&&s.element==='thunder'},
+  {key:'earth',name:'땅',test:s=>schoolOf(s)==='attack'&&s.element==='earth'},{key:'curse',name:'술법',test:s=>schoolOf(s)==='mind'},
+  {key:'heal',name:'회복',test:s=>schoolOf(s)==='heal'},{key:'buff',name:'고무·지원',test:s=>schoolOf(s)==='buff'}];
+function strategiesTab(pick:string,tierPick:StrategyTier=1){
   const list=[...allStrategies].sort((a,b)=>a.level-b.level||a.id.localeCompare(b.id)),s=list.find(x=>x.id===pick)??list[0]!;
-  const users=Object.entries(troopRoles).filter(([,r])=>r?.spells.includes(s.id)).map(([k])=>classNames[k]??k);
-  const effect=strategyArea(s,{x:0,y:0},{x:-1,y:0});
-  const grid=`<div class="cx-spell-grid">${list.map(x=>`<button data-cx-spell="${x.id}" class="cx-spell ${x.id===s.id?'chosen':''}" title="${esc(x.name)}"><img src="${strategyIcon(x.id)}" alt=""><small>${esc(x.name)}</small></button>`).join('')}</div>`;
-  const detail=`<div class="cx-detail cx-spell-detail"><div class="cx-head"><img class="cx-spell-big" src="${strategyIcon(s.id)}" alt=""><div><h3>${esc(s.name)}</h3>
-    <p class="cx-tags"><span>속성 ${s.support?'지원':ELEMENT_NAMES[s.element]}</span><span>소모 MP ${s.mpCost}</span><span>습득 Lv.${s.level}</span>${s.support?'':`<span>위력 ${s.power}</span>`}</p></div></div>
-    <div class="cx-ranges"><figure><figcaption>시전 범위 · ${s.range}칸</figcaption>${rangeGrid(castCells(s.range),'cast')}</figure><figure><figcaption>효과 범위 · ${SHAPE_TEXT(s)}</figcaption>${rangeGrid(effect,s.support?'help':'effect','target')}</figure></div>
-    <div class="cx-bio"><h4>설명</h4><p>${esc(STRATEGY_TEXT[s.id]??'')}</p><p class="muted">${esc(strategyHint(s.id))}${s.inflicts?.length?` · 상태: ${s.inflicts.map(x=>STATUS_NAMES[x]??x).join('·')}`:''}${s.shape==='line'?' · 시전자에게서 멀어지는 방향으로 뻗는다':''}</p></div>
-    <p class="cx-spells"><b>쓰는 병종</b> ${[...users.map(esc),'책사·풍수사 계열(레벨에 따라)'].join(' · ')}</p></div>`;
+  const d=tieredStrategy(s,tierPick),users=strategyUsers(s);
+  const effect=strategyArea(d,{x:0,y:0},{x:-1,y:0});
+  const grid=`<div class="cx-spell-groups">${GROUPS.map(g=>{const xs=list.filter(g.test);return xs.length?`<section class="cx-sg cx-sg-${g.key}"><h5>${g.name} <small>${xs.length}</small></h5><div class="cx-spell-grid">${xs.map(x=>`<button data-cx-spell="${x.id}" class="cx-spell ${x.id===s.id?'chosen':''}" title="${esc(x.name)} · Lv.${x.level}"><img src="${strategyIcon(x.id)}" alt=""><small>${esc(x.name)}</small></button>`).join('')}</div></section>`:'';}).join('')}</div>`;
+  const tiers=([1,2,3] as StrategyTier[]).map(t=>({t,d:tieredStrategy(s,t),lv:strategyTierLevel(s,t)}));
+  const row=(label:string,f:(x:typeof tiers[number])=>string)=>`<tr><th>${label}</th>${tiers.map(x=>`<td class="${x.t===tierPick?'on':''}">${f(x)}</td>`).join('')}</tr>`;
+  const table=`<table class="cx-tiers"><thead><tr><th></th>${tiers.map(x=>`<th class="${x.t===tierPick?'on':''}"><button data-cx-tier="${x.t}"><img src="${strategyIcon(s.id,x.t)}" alt=""><b>${STRATEGY_TIER_NAMES[x.t]}</b><small>Lv.${x.lv}</small></button></th>`).join('')}</tr></thead><tbody>
+    ${s.support&&s.support!=='heal'&&s.support!=='mana'?'':row(s.support?'회복량':'위력',x=>String(x.d.power))}${row('소모 MP',x=>String(x.d.mpCost))}${row('사거리',x=>x.d.range+'칸')}${row('범위',x=>SHAPE_TEXT(x.d))}</tbody></table>`;
+  const detail=`<div class="cx-detail cx-spell-detail"><div class="cx-head"><img class="cx-spell-big" src="${strategyIcon(s.id,tierPick)}" alt=""><div><small>${SCHOOL_NAMES[schoolOf(s)]} · ${s.support?'지원':ELEMENT_NAMES[s.element]} 속성 · 습득 Lv.${s.level}</small><h3>${esc(s.name)} <em class="cx-tiername t${tierPick}">${STRATEGY_TIER_NAMES[tierPick]}</em></h3><p>${esc(STRATEGY_TEXT[s.id]??'')}</p></div></div>
+    <div class="cx-evo"><div class="cx-sub">진화 — 쓰는 장수의 레벨이 오르면 저절로 강해진다(위력·MP 상승, 극의는 범위나 사거리 +1)</div>${table}</div>
+    <div class="cx-ranges"><figure><figcaption>시전 범위 · ${d.range}칸</figcaption>${rangeGrid(castCells(d.range),'cast')}</figure><figure><figcaption>효과 범위 · ${SHAPE_TEXT(d)}</figcaption>${rangeGrid(effect,s.support?'help':'effect','target')}</figure>
+    <div class="cx-users"><div class="cx-sub">쓰는 병종 <small>(장수는 갈래 없이 레벨에 따라 배운다)</small></div>${users.length?users.map(k=>`<button data-cx-class="${k}" class="cx-user">${sprite(k)}<b>${esc(classNames[k]??k)}</b></button>`).join(''):'<p class="muted">장수 전용</p>'}
+    <p class="muted">${s.inflicts?.length?`상태: ${s.inflicts.map(x=>STATUS_NAMES[x]??x).join('·')}`:''}${s.shape==='line'?' · 시전자에게서 멀어지는 방향으로 뻗는다':''}</p></div></div></div>`;
   return `<div class="cx-split"><div class="cx-list">${grid}</div>${detail}</div>`;
 }
 
 // ─────────────────────────────────────────────── 화면
 
 export type CodexTab='people'|'classes'|'strategies';
-export interface CodexView {tab:CodexTab;person?:string;side?:Side|'all';cls?:string;spell?:string}
+export interface CodexView {tab:CodexTab;person?:string;side?:Side|'all';cls?:string;spell?:string;tier?:StrategyTier}
 export function showCodex(host:CodexHost,view:CodexView={tab:'people'}){
   const v:CodexView={side:'all',...view};
   const people=v.tab==='people'?peopleTab(v.person??'사마의',v.side??'all'):undefined;
-  const body=people?people.html:v.tab==='classes'?classesTab(v.cls??'infantry'):strategiesTab(v.spell??'fire');
+  const body=people?people.html:v.tab==='classes'?classesTab(v.cls??'infantry'):strategiesTab(v.spell??'fire',v.tier??1);
   host.modal(`<div class="briefing codex-screen"><div class="eyebrow">삼국지 인물열전 · 사람과 병종과 책략</div><h2>${v.tab==='people'?'난세를 살아간 사람들':v.tab==='classes'?'병종 — 전장을 채운 부대들':'책략 목록'}</h2>
     <div class="cx-tabs">${([['people','인물 열전'],['classes','병종'],['strategies','책략']] as const).map(([id,label])=>`<button data-cx-tab="${id}" class="${v.tab===id?'active':''}">${label}</button>`).join('')}${host.research?'<button id="cx-research" class="cx-research">연구 ▸</button>':''}</div>
     ${body}<div class="run-actions"><button id="cx-back">← 본영</button></div></div>`,false);
@@ -197,7 +193,8 @@ export function showCodex(host:CodexHost,view:CodexView={tab:'people'}){
   all('[data-cx-side]').forEach(b=>b.onclick=()=>showCodex(host,{...v,side:b.dataset.cxSide as Side|'all',person:''}));
   all('[data-cx-person]').forEach(b=>b.onclick=()=>showCodex(host,{...v,person:b.dataset.cxPerson!}));
   all('[data-cx-class]').forEach(b=>b.onclick=()=>showCodex(host,{...v,tab:'classes',cls:b.dataset.cxClass!}));
-  all('[data-cx-spell]').forEach(b=>b.onclick=()=>showCodex(host,{...v,tab:'strategies',spell:b.dataset.cxSpell!}));
+  all('[data-cx-spell]').forEach(b=>b.onclick=()=>showCodex(host,{...v,tab:'strategies',spell:b.dataset.cxSpell!,tier:1}));
+  all('[data-cx-tier]').forEach(b=>b.onclick=()=>showCodex(host,{...v,tier:Number(b.dataset.cxTier) as StrategyTier}));
   const who=people?.name??'';
   all('[data-cx-learn]').forEach(b=>b.onclick=()=>{const m=loadMeta();if(learnPerk(m,who,b.dataset.cxLearn!)){saveMeta(m);host.toast('장수 효과를 익혔다.');}showCodex(host,{...v,person:who});});
   all('[data-cx-toggle]').forEach(b=>b.onclick=()=>{const m=loadMeta();if(togglePerk(m,who,b.dataset.cxToggle!))saveMeta(m);else host.toast('장착 칸이 가득 찼다. 연구 「장수 효과 칸」으로 늘릴 수 있다.');showCodex(host,{...v,person:who});});
