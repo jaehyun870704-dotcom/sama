@@ -22,7 +22,7 @@ const ramp=(...c:string[])=>c.map(hex);
 const springRamps:Record<Material,RGB[]>={
   grass:ramp('#3d5a2b','#4b6c32','#5a7e3a','#6e9145','#86a553'),
   forest:ramp('#22361f','#2b4426','#35532c','#406232'),
-  dirt:ramp('#6f5838','#8a6f47','#a48656','#b99b67','#cbb07c'),
+  dirt:ramp('#8a7656','#a08a66','#b6a07a','#c9b48e','#d8c6a2'),
   water:ramp('#1c3f52','#22506a','#2b6178','#377487','#4b8b98'),
   rock:ramp('#3e3b35','#55514a','#6d685d','#878173','#a29c8c'),
   hill:ramp('#4d6a31','#5e7d3a','#729244','#89a650','#a3ba63'),

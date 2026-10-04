@@ -7,7 +7,7 @@ import type {SoundEvent} from './sound-events.ts';
 import {navalAtlas,navalCrewRow,NAVAL_WATERLINE} from './naval-art.ts';
 import {structureKind,structureFrame} from './campaign-rules.ts';
 import { Application, CanvasSource, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
-import {terrainLayer} from './terrain.ts';
+import {terrainLayer,loadBattleTextures} from './terrain.ts';
 import {stageRules} from './stage-rules.ts';
 import {factionOf,officerLook} from './officer-art.ts';
 import {romanceOf} from './romance.ts';
@@ -30,6 +30,8 @@ function iso(c:Coord){return {x:c.x*W+W/2,y:c.y*H+H/2};}
 /** A named officer on the field: a victory/defeat target or someone with a known allegiance. */
 function isCommander(state:BattleState,u:Unit){return [...state.victory,...state.defeat].some(c=>c.type==='retreat'&&c.unit===u.id)||factionOf(u.name)!==undefined;}
 function diamond(g:Graphics,x:number,y:number,color:number,alpha=1){return g.rect(x-W/2,y-H/2,W,H).fill({color,alpha});}
+/** 참고 화면식 칸 표시: 칸 사이를 띄운 둥근 판(이동은 푸르게, 공격은 붉게). */
+function tileMark(g:Graphics,x:number,y:number,color:number,edge:number,alpha=.42){const m=3,r=6;return g.roundRect(x-W/2+m,y-H/2+m,W-2*m,H-2*m,r).fill({color,alpha}).stroke({color:edge,width:1.6,alpha:.85});}
 function clear(c:Container){for(const child of c.removeChildren())child.destroy({children:true});}
 /** 병종마다 다른 타격감: 맞는 모양(베기·찌르기·돌격·화살…), 화면 흔들림, 히트스톱, 밀려나는 거리, 내지르는 거리. */
 interface HitStyle {kind:'slash'|'pierce'|'charge'|'arrow'|'bolt'|'blunt'|'spell'|'fire'|'heal';shake:number;stop:number;knock:number;reach:number}
@@ -104,7 +106,7 @@ export class Battlefield {
     // every stroke instead of dropping random pixels, and the dark rim keeps the dot look.
     const smooth=(canvas:HTMLCanvasElement,rim=true)=>new Texture({source:new CanvasSource({resource:rim?outlinedCanvas(canvas):canvas,autoGenerateMipmaps:true,scaleMode:'linear'})});
     // Every sheet is requested at once so the worker pool cuts them in parallel.
-    const [troops,ram,naval,convoys,extra,atlas,scenery]=await Promise.all([Promise.all(troopSheets.map(sheet=>spriteAtlas(sheet.url,sheet.rows))),spriteAtlas('ram-v1.png',2,2),navalAtlas(),imageCanvas('convoys-v1.png'),spriteAtlas('units-extra-v1.png',4),spriteAtlas('units-v3.png',6),imageCanvas('scenery-v3.png')]);
+    const [troops,ram,naval,convoys,extra,atlas,scenery]=await Promise.all([loadBattleTextures().then(()=>Promise.all(troopSheets.map(sheet=>spriteAtlas(sheet.url,sheet.rows)))),spriteAtlas('ram-v1.png',2,2),navalAtlas(),imageCanvas('convoys-v1.png'),spriteAtlas('units-extra-v1.png',4),spriteAtlas('units-v3.png',6),imageCanvas('scenery-v3.png')]);
     troopSheets.forEach((sheet,i)=>this.troopTextures.set(sheet.id,smooth(troops[i]!)));
     this.ram=smooth(ram);this.naval=smooth(naval);this.convoys=smooth(convoys);this.extra=smooth(extra);this.atlas=smooth(atlas);this.scenery=smooth(scenery,false);
     privateHost.appendChild(this.app.canvas);
@@ -299,9 +301,9 @@ export class Battlefield {
     if(u?.alive&&u.side===state.currentSide&&!u.hasActed){
       if((mode==='repair'||mode==='fortify')&&u.unitClass==='engineer')for(const d of [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}]){const at={x:u.pos.x+d.x,y:u.pos.y+d.y};if(!state.map.inBounds(at))continue;const occupant=state.unitAt(at),ok=mode==='repair'?!!occupant&&occupant.side!=='enemy':!occupant;if(ok){const p=iso(at);diamond(this.ranges,p.x,p.y,mode==='repair'?0x9fe0a8:0xe0c27a,.28).stroke({color:mode==='repair'?0xb9f2c0:0xf2d79a,width:1.4});}}
       if(mode==='heal'&&familyOf(u.unitClass)==='fengshui')for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){if(manhattan(u.pos,{x,y})<=3){const p=iso({x,y});diamond(this.ranges,p.x,p.y,0x83e8b2,.22);}}
-      if(mode==='move'&&!u.hasMoved){const reach=state.map.reachable(u,state.occupancy(),ignoresRough(u));for(const k of reach.keys()){const [x,y]=k.split(',').map(Number);const p=iso({x:x!,y:y!});diamond(this.ranges,p.x,p.y,0x62ddd0,.24).stroke({color:0x8de2cb,width:.7,alpha:.55});}}
+      if(mode==='move'&&!u.hasMoved){const reach=state.map.reachable(u,state.occupancy(),ignoresRough(u));for(const k of reach.keys()){const [x,y]=k.split(',').map(Number);const p=iso({x:x!,y:y!});tileMark(this.ranges,p.x,p.y,0x2f86d8,0x9fd4ff);}}
       else if(mode==='attack'||mode==='duel'||mode==='debate'||state.strategies.has(mode)){
-        const def=state.strategies.get(mode);for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){const d=manhattan(u.pos,{x,y});if(d<=(def?.range??(mode==='debate'?3:mode==='duel'?1:u.range[1]))&&d>=(def?0:u.range[0])){const p=iso({x,y});diamond(this.ranges,p.x,p.y,def?0xd3b878:0xe58e78,.22).stroke({color:def?0xe5c88b:0xf0a091,width:.8,alpha:.5});}}
+        const def=state.strategies.get(mode);for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){const d=manhattan(u.pos,{x,y});if(d<=(def?.range??(mode==='debate'?3:mode==='duel'?1:u.range[1]))&&d>=(def?0:u.range[0])){const p=iso({x,y});tileMark(this.ranges,p.x,p.y,def?0xc89a3a:0xd0442e,def?0xffe3a0:0xffa088,.36);}}
       }
     }
     if(!this.busy){

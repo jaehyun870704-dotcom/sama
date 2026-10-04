@@ -11,6 +11,7 @@ import {officerPortrait,officerLook} from './officer-art.ts';
 import {bustFace,displayName} from './faces.ts';
 import {pxStyle,type PxDir,type PxPose} from './story-pixel.ts';
 import {figSheet,figArtFor,loadFigures,type FigArt} from './story-figure.ts';
+import {inkChoice} from './ink-choice.ts';
 
 /** 겉모습 → 병사 그림(시트·줄). 시트는 main.ts가 CSS 변수(--이름-atlas)로 올려 둔다. */
 const SPRITES:Record<Look,{sheet:string;rows:number;row:number;walk?:string}>={
@@ -85,13 +86,15 @@ export class Stage {
   private talk:HTMLElement;private caption:HTMLElement;private choices:HTMLElement;
   private advance:(()=>void)|undefined;
   skipping=false;
+  /** 마지막 대사(선택지의 물음으로 다시 띄운다). */
+  private lastLine:{speaker:string;line:string}|undefined;
   /** 대화 상자: 먹(이야기 장면) · 양피지(진영) */
   skin:'ink'|'paper'='ink';
   constructor(host:HTMLElement,art:number,place:string,cast:CastMember[],spots:readonly At[]=[]){
     // 사람이 설 자리(처음 자리·걸어갈 자리)에는 소품을 놓지 않는다
     this.scene=isoScene(art,place,[...cast.flatMap(m=>m.at?[m.at]:[]),...spots]);
     host.innerHTML=`<div class="ss-stage iso light-${this.scene.light}${this.scene.indoor?' indoor':''}"><div class="ss-cam"><div class="ss-world"></div></div><div class="ss-shade"></div><span class="ss-place">${esc(place)}</span><div class="ss-caption" hidden></div><div class="ss-talk-slot"></div></div><div class="ss-choices"></div>`;
-    this.el=host.querySelector<HTMLElement>('.ss-stage')!;this.world=host.querySelector<HTMLElement>('.ss-world')!;this.world.style.backgroundImage=`url(${this.scene.url})`;
+    this.el=host.querySelector<HTMLElement>('.ss-stage')!;if(this.scene.figScale)this.el.style.setProperty('--fig-scale',String(this.scene.figScale));this.world=host.querySelector<HTMLElement>('.ss-world')!;this.world.style.backgroundImage=`url(${this.scene.url})`;
     // 흩날리는 것들(꽃잎·불티·비·눈·반딧불·낙엽·먼지·물안개)
     if(this.scene.fx){const fx=document.createElement('div');fx.className=`ss-fx fx-${this.scene.fx}`;const n=this.scene.fx==='rain'?70:this.scene.fx==='mist'?6:26;
       for(let i=0;i<n;i++){const p=document.createElement('i');p.style.cssText=`--x:${(Math.random()*110-5).toFixed(1)}%;--y:${(Math.random()*100).toFixed(1)}%;--d:${(-Math.random()*12).toFixed(2)}s;--s:${(0.6+Math.random()*0.8).toFixed(2)};--t:${(0.8+Math.random()*0.6).toFixed(2)}`;fx.appendChild(p);}
@@ -172,6 +175,7 @@ export class Stage {
   bubble(name:string,text:string,kind:'emote'|'talk'){const a=this.actors.get(name);if(a)bubble(a.el,text,kind);}
   /** 화자가 말한다: 화자 쪽 반대편(위/아래)에 대화창. */
   async say(speaker:string,line:string,to?:string){
+    this.lastLine={speaker,line};
     const a=this.actors.get(speaker);for(const o of this.actors.values())o.el.classList.remove('speaking');
     if(a){
       a.el.classList.add('speaking');if(to)this.faceTo(speaker,to);
@@ -321,9 +325,9 @@ export class Stage {
       if('choice' in st){
         this.skipping=false;this.el.classList.add('choosing');
         const hero=this.actors.get(st.choice);if(hero){hero.el.classList.add('speaking');bubble(hero.el,'?','emote');}
-        this.talk.innerHTML=talkBox(st.choice,'…어떻게 할 것인가.',hero&&this.scene.toPct(hero.cell)[1]>58?'top':'bottom',hero?.look,this.skin);
-        const picked=await new Promise<ChoiceOption>(r=>{this.choices.innerHTML=st.options.map((o,k)=>`<button type="button" data-k="${k}"><span class="ss-choice-no">${k+1}</span><strong>${esc(o.text)}</strong>${o.note?`<small>${esc(o.note)}</small>`:''}</button>`).join('');
-          this.choices.querySelectorAll<HTMLButtonElement>('[data-k]').forEach(b=>b.onclick=()=>r(st.options[Number(b.dataset.k)]!));});
+        const q=this.lastLine,ask=q?.line??'…어떻게 할 것인가.';
+        this.talk.innerHTML=`<div class="ss-ink">${inkChoice(st.choice,ask,st.options.map(o=>({text:o.text,...(o.note?{note:o.note}:{})})),q?{asker:q.speaker}:{})}</div>`;
+        const picked=await new Promise<ChoiceOption>(r=>{this.talk.querySelectorAll<HTMLButtonElement>('.ink-option').forEach(b=>b.onclick=e=>{e.stopPropagation();r(st.options[Number(b.dataset.k)]!);});});
         this.choices.innerHTML='';this.talk.innerHTML='';this.el.classList.remove('choosing');hero?.el.classList.remove('speaking');
         hooks.onChoice?.(picked,st);
         if(picked.reply)await this.say(st.choice,picked.reply);

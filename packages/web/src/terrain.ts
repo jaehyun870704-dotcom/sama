@@ -35,6 +35,9 @@ function paintBase(state:BattleState,biome:Biome){
     elev[i]=raw[HI]!*.9+raw[R]!*1.3+raw[CL]!*1.8+raw[F]!*.15-raw[WA]!*.3;
   }
   const col=[0,0,0],acc=[0,0,0];
+  // 풀밭 무게(그린 풀밭 그림을 얹을 자리): 풀·언덕은 온전히, 숲 바닥은 반쯤, 길은 옅게
+  const mc=document.createElement('canvas');mc.width=w;mc.height=h;const mg=mc.getContext('2d')!,mimg=mg.createImageData(w,h),md=mimg.data;
+  const GR=idx('grass'),HL=idx('hill'),FR=idx('forest'),DI=idx('dirt'),YA=idx('yard');
   for(let py=0;py<h;py++)for(let px=0;px<w;px++){
     const i=py*w+px,cN=sample(n.coarse,px*1.2*Q,py*1.2*Q),f=sample(n.fine,px*.9*Q,py*.9*Q);
     const e0=elev[Math.max(0,py-1)*w+Math.max(0,px-1)]!,e1=elev[Math.min(h-1,py+1)*w+Math.min(w-1,px+1)]!,light=(e0-e1)*1.4/Q;
@@ -48,8 +51,27 @@ function paintBase(state:BattleState,biome:Biome){
       else rampAt(biome.ramps[name],base,col);
       acc[0]+=col[0]!*k;acc[1]+=col[1]!*k;acc[2]+=col[2]!*k;}
     d[i*4]=acc[0]!;d[i*4+1]=acc[1]!;d[i*4+2]=acc[2]!;d[i*4+3]=255;
+    const gw=wgts[i*M+GR]!+wgts[i*M+HL]!+wgts[i*M+FR]!*.55+wgts[i*M+DI]!*.22+wgts[i*M+YA]!*.1;md[i*4+3]=Math.round(Math.min(1,gw)*255);
   }
-  g.putImageData(img,0,0);return c;
+  g.putImageData(img,0,0);mg.putImageData(mimg,0,0);return {base:c,grassMask:mc};
+}
+/** 그린 풀밭 그림(AI 채색): 있으면 풀·언덕 위에 깐다. 이음매가 보이지 않게 뒤집어 이어 붙인 판을 만든다. */
+let meadow:HTMLCanvasElement|undefined;
+export async function loadBattleTextures(){
+  if(meadow||typeof document==='undefined')return;
+  try{const img=new Image();img.src=new URL('textures/meadow.webp',document.baseURI).href;await img.decode();
+    const w=img.naturalWidth,h=img.naturalHeight,c=document.createElement('canvas');c.width=w*2;c.height=h*2;const g=c.getContext('2d')!;
+    for(const [fx,fy] of [[0,0],[1,0],[0,1],[1,1]] as const){g.save();g.translate(fx?w*2:0,fy?h*2:0);g.scale(fx?-1:1,fy?-1:1);g.drawImage(img,fx?0:0,0);g.restore();}
+    meadow=c;}catch{/* 없으면 칠해서 쓴다 */}
+}
+/** 풀밭 그림을 무게(마스크)만큼 덮는다. 배율은 바위가 반 칸쯤 되게. */
+function overlayMeadow(ctx:CanvasRenderingContext2D,mask:HTMLCanvasElement,w:number,h:number,seed:number){
+  if(!meadow)return;
+  const t=document.createElement('canvas');t.width=w;t.height=h;const g=t.getContext('2d')!;
+  const pat=g.createPattern(meadow,'repeat')!;const sc=.46,ox=(seed*97)%meadow.width;pat.setTransform(new DOMMatrix([sc,0,0,sc,-ox*sc,0]));
+  g.fillStyle=pat;g.fillRect(0,0,w,h);
+  g.globalCompositeOperation='destination-in';g.imageSmoothingQuality='high';g.drawImage(mask,0,0,w,h);
+  ctx.drawImage(t,0,0);
 }
 /** 고운 붓결(화면 전체에 옅게 깔리는 질감). */
 function brushGrain(ctx:CanvasRenderingContext2D,w:number,h:number){
@@ -113,7 +135,7 @@ function paintRoads(ctx:CanvasRenderingContext2D,state:BattleState){
   const road=(x:number,y:number)=>{const t=terrainAt(state,x,y);return t==='road'||t==='bridge'||t==='gate';};
   for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){
     if(terrainAt(state,x,y)!=='road')continue;const px=x*T,py=y*T,h=road(x-1,y)||road(x+1,y),v=road(x,y-1)||road(x,y+1);
-    for(const off of [.36,.64]){if(h)stroke(ctx,'rgba(70,52,30,.22)',2,[[px,py+T*off],[px+T,py+T*off]]);if(v)stroke(ctx,'rgba(70,52,30,.22)',2,[[px+T*off,py],[px+T*off,py+T]]);}
+    void h;void v;
     for(let i=0;i<5;i++){const sx=px+hash(x,y,i+50)*T,sy=py+hash(x,y,i+51)*T;ctx.fillStyle=hash(x,y,i+52)<.5?'rgba(60,44,26,.45)':'rgba(236,222,190,.45)';ctx.beginPath();ctx.ellipse(sx,sy,1.6+hash(x,y,i+53)*1.5,1.2,0,0,7);ctx.fill();}
   }
 }
@@ -239,13 +261,14 @@ export function terrainLayer(state:BattleState,atlas:Texture){
   const map=state.map,layer=new Container(),biome=biomeFor(state.stage.id);
   const canvas=document.createElement('canvas');canvas.width=map.width*T;canvas.height=map.height*T;
   const ctx=canvas.getContext('2d')!;ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
-  ctx.drawImage(paintBase(state,biome),0,0,canvas.width,canvas.height);
-  brushGrain(ctx,canvas.width,canvas.height);
+  const base=paintBase(state,biome);ctx.drawImage(base.base,0,0,canvas.width,canvas.height);
+  overlayMeadow(ctx,base.grassMask,canvas.width,canvas.height,state.stage.id.length*7+map.width);
+  if(!meadow)brushGrain(ctx,canvas.width,canvas.height);
   paintFields(ctx,state);
   paintRoads(ctx,state);
   paintWaterDetail(ctx,state,biome);
   paintMarsh(ctx,state,biome);
-  paintGrass(ctx,state,biome);
+  if(!meadow)paintGrass(ctx,state,biome);
   paintBridges(ctx,state,at=>state.stage.id==='S1-08'&&at.y<20);
   paintPlanks(ctx,state);
   paintWalls(ctx,state);
