@@ -36,6 +36,8 @@ export interface IsoScene {
   /** 지나갈 수 있는 칸인가(화면 밖 포함, 소품 제외). */
   passable(cell:Cell):boolean;
   indoor:boolean;
+  /** 카메라가 다가갈 수 있는 최대 배율(작은 원화를 너무 키우면 흐려진다). */
+  maxZoom?:number;
   /** 알현 장면의 자리: 옥좌(황제), 통로 앞(아뢰는 사람), 양옆 줄(신하). */
   layout?:{seat:Cell;front:Cell;rows:Cell[]};
   /** 무대 위에 흩날리는 것(꽃잎·불티·비·눈·반딧불·낙엽·먼지). */
@@ -110,7 +112,7 @@ export function isoScene(art:number,place:string,clear:readonly At[]=[]):IsoScen
   const kind=kindFor(art,place);OY=originFor(kind);
   const cells=[...new Set(clear.map(a=>pctCell(a).join(',')))].sort(),key=`${kind}:${place}:${cells.join(';')}:${FLAG.emblem}${FLAG.color}`;
   const hit=cache.get(key);if(hit)return hit;
-  const scene=build(kind,hash(place)+art*7919,place,new Set(cells));cache.set(key,scene);return scene;
+  const scene=build(kind,hash(place)+art*7919,place,new Set(cells),art);cache.set(key,scene);return scene;
 }
 /** 화면 %에 가장 가까운 칸(소품을 따지지 않고). */
 function pctCell([px,py]:At):Cell{const sx=px/100*W,sy=py/100*H,u=(sx-OX)/(TW/2),v=(sy-OY)/(TH/2);return [Math.round((u+v)/2-0.5),Math.round((v-u)/2-0.5)];}
@@ -1053,15 +1055,37 @@ const CASTLE_H=230;
  * 원화는 가로 1280에 맞춰 줄이고 cropTop만큼 위를 잘라 무대(2:1)에 깐다.
  */
 interface Painted {url:string;w:number;h:number;cropTop:number;kinds:Kind[];
+  /** 여러 장이 모인 판에서 이 그림의 자리(없으면 그림 전체). arts: 이 그림을 먼저 고를 이야기 배경 번호. */
+  sx?:number;sy?:number;arts?:number[];
+  /** 그림 자체에 빛(밤·노을)이 들어 있어 따로 색을 입히지 않는다. */
+  lit?:boolean;
   /** 바닥 뒤 모서리와 오른쪽 모서리(원화 좌표): 격자 원점과 칸 크기를 맞춘다. */
   back:[number,number];right:[number,number];
   floor:Array<[number,number]>;blocks:Array<Array<[number,number]>>;
   /** 이 원화에서 인물 크기 배율. */
   figScale:number}
+/**
+ * 옆에서 본 채색 원화(story-backgrounds-1·2, 3×3 판 두 장)를 이야기 무대에 깐다. 무대는 2:1이라 그림의 아래쪽
+ * (바닥이 있는 쪽)을 보여 주고, 바닥이 시작되는 높이(yTop)부터 아래를 사람이 설 수 있는 바닥으로 삼는다.
+ * 바닥 격자는 얕게 눕힌 마름모(멀고 가까움이 작은 옆모습)로 맞춘다.
+ */
+function sidePanel(idx:number,kinds:Kind[],yTop:number,o:{blocks?:Array<Array<[number,number]>>;inset?:[number,number];fig?:number}={}):Painted{
+  const edges=idx<9?[0,340,681,1024]:[0,340,665,1024],row=Math.floor(idx%9/3),w=508,h=edges[row+1]!-edges[row]!-4,cropTop=Math.max(0,Math.min(h-254,yTop-150));// 바닥 위 경치(지붕·성루)를 150px쯤 남기고, 남는 만큼 아래 빈 바닥을 덜어 낸다
+  const [l,r]=o.inset??[6,6];
+  return {url:`story-backgrounds-${idx<9?1:2}.png`,sx:idx%3*512+2,sy:edges[row]!+2,w,h,cropTop,kinds,arts:[idx],lit:true,
+    back:[w/2,yTop+2],right:[w+40,yTop+(h-yTop)*.55],figScale:o.fig??1.4,
+    floor:[[l,yTop],[w-r,yTop],[w,h],[0,h]],blocks:o.blocks??[]};
+}
 const PAINTED:Painted[]=[
   {url:'scenes/study.webp',w:1800,h:1004,cropTop:56,kinds:['study','home','hall'],back:[905,300],right:[1745,690],figScale:1.35,
     floor:[[905,330],[1700,690],[905,1100],[110,690]],
     blocks:[[[50,560],[490,450],[590,530],[150,740]],[[470,400],[770,370],[780,470],[560,560]],[[850,300],[960,300],[960,380],[850,380]],[[920,370],[1320,430],[1330,620],[1170,640],[910,480]],[[1330,540],[1760,600],[1760,720],[1500,800],[1330,650]]]},
+  sidePanel(0,['court'],238),sidePanel(10,['court','town'],252),sidePanel(1,['fire'],220,{inset:[60,60]}),sidePanel(2,['gatehouse'],228),
+  sidePanel(3,['hill','field'],252),sidePanel(4,['valley'],255),sidePanel(5,['palace'],212,{inset:[40,40]}),
+  sidePanel(6,['camp','battlefield'],192),sidePanel(16,['camp','battlefield'],210),sidePanel(7,['river','deck'],210),
+  sidePanel(8,['wall','fort'],246),sidePanel(17,['fort','wall'],272),
+  sidePanel(9,['store'],238,{blocks:[[[0,200],[125,200],[125,290],[0,290]],[[425,205],[508,205],[508,290],[425,290]]]}),
+  sidePanel(11,['forest'],246,{inset:[30,30]}),sidePanel(13,['corridor'],196,{inset:[90,90]}),sidePanel(14,['tent'],222,{inset:[30,30]}),sidePanel(15,['bank'],278),
 ];
 const paintedImg=new Map<string,HTMLImageElement>();
 export async function loadPaintedScenes(){
@@ -1070,15 +1094,16 @@ export async function loadPaintedScenes(){
   cache.clear();
 }
 const inPoly=(x:number,y:number,poly:ReadonlyArray<readonly [number,number]>)=>{let inside=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const [xi,yi]=poly[i]!,[xj,yj]=poly[j]!;if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)inside=!inside;}return inside;};
-function paintedFor(kind:Kind){return PAINTED.find(p=>p.kinds.includes(kind)&&paintedImg.has(p.url));}
+function paintedFor(kind:Kind,art=-1){const ok=PAINTED.filter(p=>p.kinds.includes(kind)&&paintedImg.has(p.url));return ok.find(p=>p.arts?.includes(art))??ok[0];}
 function buildPainted(p:Painted,kind:Kind,place:string):IsoScene{
   const img=paintedImg.get(p.url)!,mood=moodOf(place,kind),k=W/p.w;
   const canvas=document.createElement('canvas');canvas.width=W*SS;canvas.height=H*SS;const g=canvas.getContext('2d')!;g.scale(SS,SS);g.imageSmoothingQuality='high';
-  g.fillStyle='#120c08';g.fillRect(0,0,W,H);g.drawImage(img,0,-p.cropTop*k,W,p.h*k);
+  g.fillStyle='#120c08';g.fillRect(0,0,W,H);
+  if(p.sx!==undefined)g.drawImage(img,p.sx,p.sy!+p.cropTop,p.w,H/k,0,0,W,H);else g.drawImage(img,0,-p.cropTop*k,W,p.h*k);
   const grade=(color:string,op:GlobalCompositeOperation)=>{g.save();g.globalCompositeOperation=op;g.fillStyle=color;g.fillRect(0,0,W,H);g.restore();};
-  if(mood.light==='night'){grade('rgba(40,60,120,.58)','multiply');grade('rgba(255,190,110,.10)','screen');}
-  if(mood.light==='dawn')grade('rgba(170,180,230,.3)','multiply');
-  if(mood.light==='dusk')grade('rgba(255,150,80,.28)','multiply');
+  if(!p.lit&&mood.light==='night'){grade('rgba(40,60,120,.58)','multiply');grade('rgba(255,190,110,.10)','screen');}
+  if(!p.lit&&mood.light==='dawn')grade('rgba(170,180,230,.3)','multiply');
+  if(!p.lit&&mood.light==='dusk')grade('rgba(255,150,80,.28)','multiply');
   // 원화 좌표 ↔ 무대 좌표
   const toWorld=([x,y]:[number,number]):[number,number]=>[x*k,(y-p.cropTop)*k];
   const B=toWorld(p.back),Rr=toWorld(p.right),n=(Rr[0]-B[0])/(TW/2),half=(Rr[1]-B[1])/n;
@@ -1091,13 +1116,16 @@ function buildPainted(p:Painted,kind:Kind,place:string):IsoScene{
   const standable=(c:Cell)=>passable(c)&&onScreen(c);
   const toPct=([c,r]:Cell):At=>{const [x,y]=ptP(c+0.5,r+0.5);return [x/W*100,y/H*100];};
   const toCell=([px,py]:At):Cell=>{const sx=px/100*W,sy=py/100*H,u=(sx-ox)/(TW/2),v=(sy-oy)/(th/2);const want:Cell=[Math.round((u+v)/2-0.5),Math.round((v-u)/2-0.5)];
-    if(standable(want))return want;let best=want,bd=Infinity;for(let c=want[0]-10;c<=want[0]+10;c++)for(let r=want[1]-10;r<=want[1]+10;r++){if(!standable([c,r]))continue;const [x,y]=ptP(c+0.5,r+0.5),d=(x-sx)**2+(y-sy)**2*2;if(d<bd){bd=d;best=[c,r];}}return best;};
-  return {url:canvas.toDataURL('image/jpeg',0.9),toCell,toPct,standable,passable:(c:Cell)=>passable(c)||!onScreen(c),indoor:INDOOR.has(kind),fx:mood.fx,light:mood.light,figScale:p.figScale};
+    if(standable(want))return want;let best=want,bd=Infinity;
+    // 대본 자리가 그림 위쪽(바닥 밖) 멀리 있으면 가까운 칸이 없을 수 있어 넓혀 찾는다
+    for(const reach of [10,40])if(bd===Infinity)for(let c=want[0]-reach;c<=want[0]+reach;c++)for(let r=want[1]-reach;r<=want[1]+reach;r++){if(!standable([c,r]))continue;const [x,y]=ptP(c+0.5,r+0.5),d=(x-sx)**2+(y-sy)**2*2;if(d<bd){bd=d;best=[c,r];}}return best;};
+  return {url:canvas.toDataURL('image/jpeg',0.9),toCell,toPct,standable,passable:(c:Cell)=>passable(c)||!onScreen(c),indoor:INDOOR.has(kind),fx:mood.fx,light:mood.light,figScale:p.figScale,...(p.sx!==undefined?{maxZoom:1.18}:{})};
 }
 
 // ─────────────────────────────────────────────── 장면 조립
-function build(kind:Kind,seed:number,place='',clear:Set<string>=new Set()):IsoScene{
-  {const p=paintedFor(kind);if(p)return buildPainted(p,kind,place);}
+function build(kind:Kind,seed:number,place='',clear:Set<string>=new Set(),artNo=-1):IsoScene{
+  // 알현(옥좌) 장면은 자리 배치가 따로 있어 그린 배경을 쓴다.
+  if(kind!=='throne'){const p=paintedFor(kind,artNo);if(p)return buildPainted(p,kind,place);}
   const R=rng(seed),indoor=INDOOR.has(kind),mood=moodOf(place,kind);
   LIGHTS=[];SHAFTS=[];
   // 두 배 크기로 그린다(화면에서 다가가 보아도 또렷하게). 그리는 좌표는 그대로 W×H.

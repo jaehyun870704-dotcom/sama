@@ -223,7 +223,7 @@ export class Stage {
     const grow=(lo:number,hi:number,min:number):[number,number]=>hi-lo>=min?[lo,hi]:[(lo+hi)/2-min/2,(lo+hi)/2+min/2];
     [x0,x1]=grow(x0,x1,60);[y0,y1]=grow(y0,y1,58);
     // 좁은 화면(휴대폰)에서는 무대가 작아 인물이 콩알만 해지므로 더 당겨서 본다
-    const narrow=(this.el.clientWidth||window.innerWidth)<600,zMin=narrow?1.15:1,zMax=narrow?2:1.65;
+    const narrow=(this.el.clientWidth||window.innerWidth)<600,cap=this.scene.maxZoom??9,zMax=Math.min(narrow?2:1.65,cap),zMin=Math.min(narrow?1.15:1,zMax);
     const z=Math.max(zMin,Math.min(zMax,100/(x1-x0),100/(y1-y0))),cx=(x0+x1)/2,cy=(y0+y1)/2;
     const clamp=(v:number)=>Math.max(100-100*z,Math.min(0,v));
     const tx=clamp(50-z*cx),ty=clamp(46-z*cy);
