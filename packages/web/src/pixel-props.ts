@@ -265,8 +265,11 @@ export function pond(f:Field,cellPx:number,isPool:(cx:number,cy:number)=>boolean
   const dist=(x:number,y:number)=>{for(let r=1;r<9;r++)for(const [dx,dy] of [[r,0],[-r,0],[0,r],[0,-r],[r,r],[-r,r],[r,-r],[-r,-r]] as const)if(!at(x+dx,y+dy))return r;return 9;};
   const WATER=['#123040','#183a4c','#1f4a5a','#2a5e68','#3a7476','#518a84','#6aa094'];
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){
-    if(at(x,y)){const d=dist(x,y),depth=Math.min(1,(d-1)/6),lum=1-depth+(n2(x,y)-.5)*.25+dither(x,y)*.18+(y%7===0?.05:0);dots.set(x,y,WATER[Math.max(0,Math.min(6,Math.round(lum*6)))]!);
-      if(d===1)dots.set(x,y,at(x,y-1)?'#7fb0a0':'#9cc4b2');}
+    if(at(x,y)){const d=dist(x,y),depth=Math.min(1,(d-1)/7);let up=0;for(let k=1;k<=8;k++)if(!at(x,y-k)){up=k;break;}
+      // 북쪽 둑 그늘(물에 비친 둑) → 가운데 깊은 물 → 하늘이 비치는 밝은 물결 띠
+      const bank=up?(1-up/8)*.55:0,sky=Math.max(0,Math.sin((y*.13+n2(x,y)*2.4))*.5-.1)*.35;
+      const lum=1.05-depth*.75-bank+sky+(n2(x,y)-.5)*.18+dither(x,y)*.12;dots.set(x,y,WATER[Math.max(0,Math.min(6,Math.round(lum*6)))]!);
+      if(d===1)dots.set(x,y,at(x,y-1)?'#7fb0a0':'#a8ccbc');else if(d===2&&!at(x,y+2))dots.set(x,y,'#5e9a8c');}
     else{let near=9;for(let r=1;r<4&&near===9;r++)for(const [dx,dy] of [[r,0],[-r,0],[0,r],[0,-r]] as const)if(at(x+dx,y+dy)){near=r;break;}
       if(near<=2){dots.set(x,y,near===1?(at(x,y-1)?'#3e3222':'#5a4a30'):'#6e6040',near===1?255:150);}}}
   // 물결 반짝임
@@ -280,20 +283,24 @@ export function pond(f:Field,cellPx:number,isPool:(cx:number,cy:number)=>boolean
  * 논밭: 들쭉날쭉한 두렁, 이랑마다 줄지은 포기(세 가지 초록·익은 금빛), 반은 물 댄 논(포기 사이 물빛).
  */
 export function crops(f:Field,cellPx:number,isCrop:(cx:number,cy:number)=>boolean,R:R){
-  const {p,dots}=f,cs=Math.round(cellPx/PX),n=valueNoise(p.w,p.h,11,R),n2=valueNoise(p.w,p.h,4,R);
+  const {p,dots}=f,cs=Math.round(cellPx/PX),n=valueNoise(p.w,p.h,13,R),n2=valueNoise(p.w,p.h,5,R);
   const seen=new Set<string>();const plots:Array<{x0:number;y0:number;x1:number;y1:number}>=[];
   for(let cy=0;cy<Math.ceil(p.h/cs);cy++)for(let cx=0;cx<Math.ceil(p.w/cs);cx++){if(!isCrop(cx,cy)||seen.has(cx+','+cy))continue;let x1=cx;while(isCrop(x1+1,cy))x1++;let y1=cy;while([...Array(x1-cx+1).keys()].every(k=>isCrop(cx+k,y1+1)))y1++;for(let y=cy;y<=y1;y++)for(let x=cx;x<=x1;x++)seen.add(x+','+y);plots.push({x0:cx*cs,y0:cy*cs,x1:(x1+1)*cs,y1:(y1+1)*cs});}
-  const SOIL=['#3e2a18','#4e3620','#5e4428','#6e5232'],GREEN=['#2e5a1e','#3e7026','#52882e','#6ea23c','#8cbc50'],GOLD=['#7a5a1e','#a07a2a','#c89c3a','#e2bc54','#f2d880'];
-  plots.forEach((pl,pi)=>{const ripe=pi%2===0,P=ripe?GOLD:GREEN,wob=(y:number)=>Math.round((n(pl.x0+7,y)-.5)*4);
-    // 바깥 경계: 둥근 모서리 + 잡음
-    const inside=(x:number,y:number)=>{const ex=Math.min(x-pl.x0,pl.x1-1-x),ey=Math.min(y-pl.y0,pl.y1-1-y),j=(n2(x,y)-.5)*3;if(ex<2+j||ey<2+j)return false;if(ex<6&&ey<6&&(6-ex)**2+(6-ey)**2>30)return false;return true;};
-    for(let y=pl.y0;y<pl.y1;y++)for(let x=pl.x0;x<pl.x1;x++){if(!inside(x,y)){const ex=Math.min(x-pl.x0,pl.x1-1-x),ey=Math.min(y-pl.y0,pl.y1-1-y);if(ex>=0&&ey>=0&&Math.min(ex,ey)<4)dots.set(x,y,(x*3+y*5)%7===0?'#6a8a3a':'#a8925e',200);continue;}
-      const soil=SOIL[Math.max(0,Math.min(3,Math.floor(n2(x,y)*3.2+((y-pl.y0)%5===4?-1:0))))]!;dots.set(x,y,soil);}
-    // 포기: 이랑(5도트 간격)마다 살짝 굽은 줄을 따라, 포기마다 크기·빛이 다르게
-    for(let ry=pl.y0+4;ry<pl.y1-3;ry+=5)for(let x=pl.x0+3;x<pl.x1-3;x+=2+Math.floor(R()*2)){const y=ry+wob(x);if(!inside(x,y))continue;if(R()<.08)continue;
-      const lush=n(x,ry+pi*50),h=2+Math.floor(lush*3+R()*1.5),lean=R()<.5?-1:1;
-      for(let k=0;k<h;k++){const c=P[Math.min(4,1+Math.floor((k/h)*3+lush))]!;dots.set(x,y-k,c);if(k===h-1&&R()<.6)dots.set(x+lean,y-k,P[3]!);}
-      dots.set(x-1,y,P[0]!);dots.set(x+1,y,P[1]!);if(ripe&&R()<.5)dots.set(x+lean,y-h,P[4]!);}
+  const GREEN=['#234a18','#2f5e1e','#3e7626','#548e30','#6ea840','#8cc054'],GOLD=['#6a4a14','#8e6820','#b48a2e','#d2aa42','#e8c860','#f4dc8a'];
+  const MUD=['#4a3a26','#57452e','#645238'],WATERP=['#3e5a58','#4a6a66','#5e807a','#86a8a0'];
+  plots.forEach((pl,pi)=>{const ripe=pi%3===1,paddy=pi%3===0,P=ripe?GOLD:GREEN;
+    const inside=(x:number,y:number)=>{const ex=Math.min(x-pl.x0,pl.x1-1-x),ey=Math.min(y-pl.y0,pl.y1-1-y),j=(n2(x,y)-.5)*2.5;return ex>=3+j&&ey>=3+j&&!(ex<7&&ey<7&&(7-ex)**2+(7-ey)**2>36);};
+    // 두렁(풀 덮인 흙둑) + 바닥(논은 물, 밭은 흙 이랑)
+    for(let y=pl.y0;y<pl.y1;y++)for(let x=pl.x0;x<pl.x1;x++){
+      if(!inside(x,y)){const ex=Math.min(x-pl.x0,pl.x1-1-x),ey=Math.min(y-pl.y0,pl.y1-1-y);if(Math.min(ex,ey)>=0&&Math.min(ex,ey)<5){const k=n2(x*3,y*3);dots.set(x,y,k>.62?'#6e8e3c':k>.4?'#8a9a50':'#a89466');if(!inside(x,y+1)&&inside(x,y+2))dots.set(x,y,'#5a4a30');}continue;}
+      if(paddy){const v=n2(x,y)+dither(x,y)*.4+((y-pl.y0)%6===0?.25:0);dots.set(x,y,WATERP[Math.max(0,Math.min(3,Math.floor(v*3.2)))]!);}
+      else{const row=(y-pl.y0)%6;dots.set(x,y,row===5?MUD[0]!:row===0?MUD[2]!:MUD[1]!);}}
+    // 포기: 6도트 이랑마다 4~5도트 간격, 포기마다 V자 잎 3~5줄과 발치 그늘
+    for(let ry=pl.y0+5;ry<pl.y1-3;ry+=6)for(let x=pl.x0+4+((ry/6|0)%2)*2;x<pl.x1-4;x+=4+(R()<.25?1:0)){
+      if(!inside(x,ry)||!inside(x,ry-4))continue;const lush=n(x+pi*31,ry),h=3+Math.round(lush*3+R()),wide=lush>.5?2:1;
+      dots.set(x,ry+1,paddy?'#2e4a46':MUD[0]!);dots.set(x+1,ry+1,paddy?'#2e4a46':MUD[0]!);
+      for(let b=-wide;b<=wide;b++)for(let k=0;k<h-Math.abs(b);k++){const xx=x+b*(k>h*.45?1:0)+(b<0&&k>h*.8?-1:0)+(b>0&&k>h*.8?1:0),c=P[Math.min(5,1+Math.floor((k/h)*3.2)+(b<0?1:0)+(lush>.65?1:0))]!;dots.set(xx,ry-k,c);}
+      if(ripe&&R()<.7){dots.set(x,ry-h,P[5]!);dots.set(x+1,ry-h+1,P[4]!);}}
   });
 }
 /** 바위 비탈: 회갈색 자갈땅에 도트 자갈(빛·그늘)과 풀 포기. */
@@ -311,4 +318,39 @@ export function scree(f:Field,cellPx:number,isScree:(cx:number,cy:number)=>boole
   for(let i=0;i<W*H*.012;i++){const x=Math.floor(R()*W),y=Math.floor(R()*H);if(!at(x,y)||!at(x+4,y+2))continue;const w=2+Math.floor(R()*4),h=1+Math.floor(R()*2);
     for(let dx=0;dx<w;dx++){dots.set(x+dx,y+h,STONE[1]!);for(let dy=0;dy<h;dy++)dots.set(x+dx,y+dy,dy===0?STONE[5]!:STONE[3]!);}dots.set(x,y,STONE[4]!);dots.set(x+w-1,y,STONE[4]!);}
   for(let i=0;i<W*H*.003;i++){const x=Math.floor(R()*W),y=Math.floor(R()*H);if(!at(x,y))continue;for(const [dx,dy,c] of [[0,0,'#3e5a22'],[1,-1,'#5e7a2e'],[-1,-1,'#4e6a28'],[0,-2,'#7e9a40'],[2,-2,'#6e8a36']] as const)dots.set(x+dx,y+dy,c);}
+}
+
+/**
+ * 돌판 마당(도트): 크기가 다른 판석을 엇갈려 깔고, 판석마다 왼쪽 위 밝은 모서리·오른쪽 아래 그늘·짙은 줄눈,
+ * 색은 원화 성벽 돌빛 7단, 군데군데 금·이끼·닳은 자국, 바깥 가장자리는 풀이 파고든 듯 들쭉날쭉.
+ */
+export function paving(f:Field,cellPx:number,isStone:(cx:number,cy:number)=>boolean,R:R){
+  const {p,dots}=f,cs=cellPx/PX,n=valueNoise(p.w,p.h,9,R),W=p.w,H=p.h;
+  const S=['#3a3630','#57524a','#6e685e','#857e72','#9b9486','#b0a999','#c4beae'];
+  const inside=(x:number,y:number)=>{const cx=Math.floor(x/cs),cy=Math.floor(y/cs);if(!isStone(cx,cy))return false;
+    const ex=x-cx*cs,ey=y-cy*cs,j=(n(x*2,y*2)-.5)*5;if(!isStone(cx-1,cy)&&ex<2+j)return false;if(!isStone(cx+1,cy)&&cs-ex<2+j)return false;if(!isStone(cx,cy-1)&&ey<2+j)return false;if(!isStone(cx,cy+1)&&cs-ey<2+j)return false;return true;};
+  // 판석 줄: 줄마다 높이 10~14, 판석 너비 14~26(넓적한 마당 돌), 줄눈은 1도트, 명암은 은은하게
+  const T=['#5e594f','#7c766a','#8d877a','#9b9486','#a8a192','#b7b09f'];
+  let y=0;while(y<H){const rh=10+Math.floor(R()*5);let x=-Math.floor(R()*14);
+    while(x<W){const bw=14+Math.floor(R()*13),tone=2+Math.round((R()-.5)*1.6+(n(x*.5,y*.5)-.5)*2);
+      for(let yy=y;yy<y+rh;yy++)for(let xx=x;xx<x+bw;xx++){if(!inside(xx,yy))continue;const lx=xx-x,ly=yy-y;
+        let c=T[Math.max(1,Math.min(5,tone))]!;if(lx===bw-1||ly===rh-1)c=T[0]!;else if(ly===0||lx===0)c=T[Math.min(5,tone+1)]!;else if(ly===rh-2)c=T[Math.max(1,tone-1)]!;
+        else if(((xx*13+yy*7)%23===0))c=T[Math.max(1,tone-1)]!;
+        dots.set(xx,yy,c);}
+      if(R()<.08){let cx=x+3+Math.floor(R()*(bw-6)),cy=y+1;for(let k=0;k<rh-3;k++){if(inside(cx,cy))dots.set(cx,cy,T[0]!);cx+=R()<.4?(R()<.5?1:-1):0;cy++;}}
+      if(R()<.14){const mx=x+bw-1,my=y+Math.floor(R()*rh);if(inside(mx,my)){dots.set(mx,my,'#4e6a2a');dots.set(mx,my-1,'#6e8a36');dots.set(mx-1,my,'#5a7a30');}}
+      x+=bw;}
+    y+=rh;}
+  // 넓은 얼룩(닳은 자리·그늘) — 마당이 한 장의 판처럼 보이지 않게
+  for(let i=0;i<W*H/900;i++){const cx=R()*W,cy=R()*H,r=6+R()*16,dark=R()<.5;for(let yy=cy-r;yy<cy+r;yy++)for(let xx=cx-r;xx<cx+r;xx++){if(!inside(xx|0,yy|0))continue;const d=((xx-cx)**2+(yy-cy)**2)/(r*r);if(d<1&&dither(xx|0,yy|0)+.5>d)dots.set(xx,yy,dark?[60,54,46]:[230,224,210],dark?28:22);}}
+  // 가장자리 풀포기
+  for(let i=0;i<W*H*.006;i++){const x=Math.floor(R()*W),y2=Math.floor(R()*H);if(!inside(x,y2)||inside(x,y2+3))continue;for(const [dx,dy,c] of [[0,0,'#3e5a22'],[1,-1,'#5a7a2e'],[-1,-1,'#4e6a28'],[0,-2,'#7e9a40']] as const)dots.set(x+dx,y2+dy,c);}
+}
+/** 연못을 건너는 돌다리(도트): 두꺼운 판석을 이어 놓고 옆면 그늘·물에 비친 그림자. */
+export function stoneBridge(f:Field,cellPx:number,isBridge:(cx:number,cy:number)=>boolean){
+  const {dots}=f,cs=Math.round(cellPx/PX),S=['#2e2a26','#57524a','#857e72','#a29a8a','#bdb6a4','#d2cbb8'];
+  for(let cy=0;cy<40;cy++)for(let cx=0;cx<40;cx++){if(!isBridge(cx,cy))continue;const x0=cx*cs+8,x1=(cx+1)*cs-8,y0=cy*cs,y1=(cy+1)*cs;
+    for(let y=y0;y<y1;y++){const slab=Math.floor((y-y0)/10),ly=(y-y0)%10;
+      for(let x=x0-2;x<x1+3;x++){if(x>=x1){dots.set(x,y+2,'#0e2630',160);continue;}const lx=x-x0;
+        let c=ly===9?S[0]!:ly===0?S[5]!:lx===0?S[4]!:lx===x1-x0-1?S[1]!:ly>=7?S[2]!:S[(slab+lx/7|0)%2?3:4]!;if(x<x0)c=S[1]!;dots.set(x,y,c);}}}
 }

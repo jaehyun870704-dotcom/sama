@@ -7,6 +7,7 @@
 import type {Texture} from 'pixi.js';
 import {sceneryThumb} from './terrain.ts';
 import * as PP from './pixel-props.ts';
+import * as KIT from './atlas-kit.ts';
 import {noiseField,sample} from './terrain-paint.ts';
 
 export const GW=20,GH=10,C=128,PW=GW*C,PH=GH*C;
@@ -26,7 +27,7 @@ export async function loadGroundArt(){
     const [m,s]=await Promise.all(['textures/meadow.webp','scenery-v3.png'].map(async u=>{const img=new Image();img.src=new URL(u,document.baseURI).href;await img.decode();return img;}));
     const w=m!.naturalWidth,h=m!.naturalHeight,c=document.createElement('canvas');c.width=w*2;c.height=h*2;const g=c.getContext('2d')!;
     for(const [fx,fy] of [[0,0],[1,0],[0,1],[1,1]] as const){g.save();g.translate(fx?w*2:0,fy?h*2:0);g.scale(fx?-1:1,fy?-1:1);g.drawImage(m!,0,0);g.restore();}
-    meadow=c;atlas={source:{resource:s},width:s!.naturalWidth,height:s!.naturalHeight} as unknown as Texture;
+    meadow=c;atlas={source:{resource:s},width:s!.naturalWidth,height:s!.naturalHeight} as unknown as Texture;KIT.setKitImage(s!);
   }catch{/* 재료가 없으면 그린 배경을 쓴다 */}
 }
 export const groundReady=()=>!!(meadow&&atlas);
@@ -108,7 +109,7 @@ function layout(kind:GroundKind,R:()=>number,opts:GroundOpts={}){
       const c=(y:number)=>3.2+y*1.35+Math.sin(y*.9)*1.4;
       for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){const d=Math.abs(x+.5-c(y));if(d>3.1)set(x,y,'scree');}
       road([[c(-.5),-.5],[c(2.5),2.5],[c(5),5],[c(7.5),7.5],[c(GH+.5),GH+.5]]);
-      for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){const d=Math.abs(x+.5-c(y));if(d>3.3&&R()<.33)place({kind:R()<.55?'rock':'pine',x:x+.5,y:y+.9,s:.8+R()*.5,flip:R()<.5});}
+      for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){const d=Math.abs(x+.5-c(y));if(d>3.3&&R()<.42){const k=R();place({kind:k<.6?'rock':'pine',x:x+.5,y:y+.9,s:k<.12?1.25+R()*.3:.7+R()*.5,flip:R()<.5});}}
       for(let i=0;i<6;i++){const y=1+R()*(GH-1.5);props.push({kind:'bush',x:c(y)+(R()<.5?-2.6:2.6),y,s:.7});}
       flowers(3);break;}
     case 'marsh':{
@@ -164,6 +165,11 @@ function layout(kind:GroundKind,R:()=>number,opts:GroundOpts={}){
       for(let i=0;i<10;i++)props.push({kind:'reeds',x:R()*GW,y:3.3+R()*.7,s:.8+R()*.4});
       clump(1.2,7.2,3,1.1);bushes(4);flowers(4);break;}
   }
+  // 연못가: 원화 바위와 떨기나무를 물가에 드문드문(물과 땅의 경계가 그림처럼 보이게)
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++)if(g[y]![x]==='pool'){
+    if(g[y+1]?.[x]==='grass'&&R()<.4)props.push({kind:'rock',x:x+.2+R()*.6,y:y+1.15,s:.42+R()*.25,flip:R()<.5});
+    if(x+1<GW&&g[y]![x+1]==='grass'&&R()<.22)props.push({kind:'bush',x:x+1.15,y:y+.7+R()*.4,s:.6+R()*.3});
+    if(x>0&&g[y]![x-1]==='grass'&&R()<.18)props.push({kind:'rock',x:x-.12,y:y+.75,s:.38+R()*.2,flip:R()<.5});}
   return {g,props,roads};
 }
 
@@ -252,6 +258,13 @@ function paintStone(g:Ctx,cells:Cell[][],R:()=>number){
   g.lineCap='round';const md=mask.getContext('2d')!.getImageData(0,0,PW,PH).data;let n=0;for(let i=0;i<9000&&n<700;i++){const x=R()*PW|0,y=R()*PH|0,a=md[(y*PW+x)*4+3]!;if(a<10||a>200)continue;
     const nb=md[((y+6)*PW+x)*4+3]??0;if(nb>200&&a>10){n++;for(let k=0;k<3;k++){g.strokeStyle=R()<.5?'rgba(90,120,40,.85)':'rgba(170,190,80,.8)';g.lineWidth=2.2;g.beginPath();g.moveTo(x+(k-1)*2,y);g.lineTo(x+(k-1)*6,y-10-R()*14);g.stroke();}}}
 }
+/** 바위 비탈: 풀밭 질감은 그대로 두고 메마른 흙빛으로 눌러 바위가 박힌 비탈처럼(바위는 원화 바위를 따로 놓는다). */
+function screeTint(g:Ctx,cells:Cell[][],R:()=>number){
+  const m=layer(t=>{t.fillStyle='#000';for(let y=0;y<GH;y++)for(let x=0;x<GW;x++)if(cells[y]![x]==='scree'){t.beginPath();t.ellipse((x+.5)*C+(R()-.5)*30,(y+.5)*C+(R()-.5)*30,C*.85,C*.75,R(),0,7);t.fill();}});
+  const soft=layer(t=>{t.filter='blur(26px)';t.drawImage(m,0,0);});
+  g.save();g.globalCompositeOperation='multiply';g.drawImage(layer(t=>{t.drawImage(soft,0,0);t.globalCompositeOperation='source-in';t.fillStyle='rgba(150,132,104,.85)';t.fillRect(0,0,PW,PH);}),0,0);
+  g.globalCompositeOperation='saturation';g.globalAlpha=.55;g.drawImage(layer(t=>{t.drawImage(soft,0,0);t.globalCompositeOperation='source-in';t.fillStyle='#777';t.fillRect(0,0,PW,PH);}),0,0);g.restore();
+}
 /** 연못 위 돌다리(세로). 물은 도트 화가(pixel-props)가 그린다. */
 function poolBridges(g:Ctx,cells:Cell[][],R:()=>number){
   // 돌다리(세로)
@@ -305,9 +318,9 @@ function drawProp(g:Ctx,p:Prop,R:()=>number){
   const x=p.x*C,y=p.y*C,s=p.s;
   switch(p.kind){
     case 'tree':case 'pine':case 'autumn':{const w=300*s,h=(p.kind==='pine'?430:390)*s;shadow(g,x+18,y-6,w*.5,w*.17,.45);sprite(g,p.kind==='pine'?1:0,x,y,w,h,p.flip,p.kind==='autumn'?`hue-rotate(${-38-R()*18|0}deg) saturate(1.3) brightness(1.06)`:'');break;}
-    case 'bush':PP.bush(g,x,y,s,R);break;
-    case 'rock':PP.rock(g,x,y,s,R);break;
-    case 'rockery':{for(let i=0;i<3;i++)PP.rock(g,x+(i-1)*.45*s*C,y-(i===1?.35:0)*s*C,s*(i===1?1.25:.85),R);break;}
+    case 'bush':KIT.drawShrub(g,x,y,s,R()<.5,R);break;
+    case 'rock':if(s>1.2)sprite(g,4,x,y,190*s,220*s,p.flip,`brightness(${(.9+R()*.15).toFixed(2)})`);else KIT.drawBoulder(g,x,y,s,!!p.flip,R);break;
+    case 'rockery':{shadow(g,x+14,y-4,120*s,30*s,.45);sprite(g,4,x,y,210*s,245*s,p.flip);break;}
     case 'house':{const w=460*s,h=400*s;shadow(g,x+30,y-10,w*.5,w*.16,.5);sprite(g,6,x,y,w,h,p.flip);break;}
     case 'hall':{const w=760*s,h=520*s;shadow(g,x+40,y-16,w*.5,w*.14,.5);sprite(g,6,x,y,w,h,p.flip);break;}
     case 'tent':{const w=310*s,h=300*s;shadow(g,x+20,y-6,w*.48,w*.15,.45);sprite(g,5,x,y,w,h,p.flip);break;}
@@ -325,16 +338,16 @@ function drawProp(g:Ctx,p:Prop,R:()=>number){
     case 'reeds':PP.reeds(g,x,y,s,R);break;
     case 'boat':{const w=200*s;g.save();if(p.flip){g.translate(x*2,0);g.scale(-1,1);}g.fillStyle='rgba(5,20,30,.4)';g.beginPath();g.ellipse(x,y+10,w*.55,18,0,0,7);g.fill();g.fillStyle='#5a3a1e';g.beginPath();g.moveTo(x-w/2,y-20);g.quadraticCurveTo(x,y+26,x+w/2,y-20);g.lineTo(x+w*.42,y-40);g.lineTo(x-w*.42,y-40);g.closePath();g.fill();g.fillStyle='#8a6038';g.fillRect(x-w*.4,y-40,w*.8,8);g.fillStyle='#3a2414';g.fillRect(x-3,y-150*s,6,112*s);g.fillStyle='#e8dcc0';g.beginPath();g.moveTo(x+3,y-146*s);g.lineTo(x+70*s,y-100*s);g.lineTo(x+3,y-60*s);g.closePath();g.fill();g.restore();break;}
     case 'willow':{const w=300*s,h=380*s;shadow(g,x+18,y-6,w*.5,w*.17,.42);sprite(g,0,x,y,w,h,p.flip,'hue-rotate(22deg) saturate(.85) brightness(1.12)');break;}
-    case 'pavilion':PP.pavilion(g,x,y,s,R);break;
-    case 'stall':PP.stall(g,x,y,s,R,p.color);break;
-    case 'stepstone':PP.stepstone(g,x,y,s,R);break;
+    case 'pavilion':KIT.drawPavilion(g,x,y,s);break;
+    case 'stall':KIT.drawStall(g,x,y,s,({'#a8322a':150,'#2a5a8a':0,'#b8862a':200,'#3a7a4a':260,'#8a3a6a':90} as Record<string,number>)[p.color??'']??0);break;
+    case 'stepstone':KIT.drawBoulder(g,x,y+12,s*1.05,R()<.5,R,.4);break;
     case 'stump':PP.stump(g,x,y,s,R);break;
     case 'haystack':PP.haystack(g,x,y,s,R);break;
-    case 'ruin':PP.ruinWall(g,x,y,s,R,!!p.flip);break;
+    case 'ruin':KIT.drawRuin(g,x,y,s,Math.floor(R()*4),!!p.flip);break;
     case 'ruintower':{const w=330*s,h=450*s;shadow(g,x+26,y-8,w*.5,w*.15,.5);sprite(g,3,x,y,w,h,p.flip,'grayscale(.65) brightness(.82) sepia(.25)');
       g.save();g.globalCompositeOperation='destination-out';g.beginPath();g.moveTo(x-w*.5,y-h*.98);g.lineTo(x+w*.5,y-h*.98);g.lineTo(x+w*.5,y-h*.66);g.lineTo(x+w*.2,y-h*.78);g.lineTo(x,y-h*.6);g.lineTo(x-w*.25,y-h*.74);g.lineTo(x-w*.5,y-h*.62);g.closePath();g.fill();g.restore();
       for(let i=0;i<10;i++){const rx=x+(R()-.5)*w*.9,ry=y+R()*16,r=8+R()*12;g.fillStyle='#8a8272';g.beginPath();g.ellipse(rx,ry,r,r*.6,R()*3,0,7);g.fill();}break;}
-    case 'deadtree':PP.deadTree(g,x,y,s,R,!!p.flip);break;
+    case 'deadtree':{const w=270*s,h=350*s;shadow(g,x+16,y-6,w*.45,w*.15,.4);sprite(g,0,x,y,w,h,p.flip,'sepia(.75) saturate(.55) hue-rotate(-18deg) brightness(.82) contrast(1.05)');break;}
     case 'crate':PP.crate(g,x,y,s,R);break;
   }
 }
@@ -362,7 +375,8 @@ export function paintGround(kind:GroundKind,seed:number,light:Light,clearCells:R
   let s0=seed>>>0||1;const R=()=>{s0=(s0*1664525+1013904223)>>>0;return s0/4294967296;};
   const {g:cells,props,roads}=layout(kind,R,opts);
   // 대본 자리 둘레의 소품은 치운다(사람이 설 자리)
-  const keep=props.filter(p=>!clearCells.some(([cx,cy])=>Math.abs(p.x-cx-.5)<1.6&&Math.abs(p.y-cy-.8)<1.4)||['flowers','reeds'].includes(p.kind));
+  const wet=(p:{x:number;y:number})=>{const c=cells[Math.floor(p.y)]?.[Math.floor(p.x)];return c==='water'||c==='pool'||c==='bridge';};
+  const keep=props.filter(p=>(!wet(p)||['reeds','boat'].includes(p.kind))&&!clearCells.some(([cx,cy])=>Math.abs(p.x-cx-.5)<1.6&&Math.abs(p.y-cy-.8)<1.4)||['flowers','reeds'].includes(p.kind));
   for(const [cx,cy] of clearCells)for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const x=cx+dx,y=cy+dy;if(x>=0&&y>=0&&x<GW&&y<GH&&(cells[y]![x]==='block'||cells[y]![x]==='crop'||cells[y]![x]==='scree'))cells[y]![x]='grass';}
   const canvas=document.createElement('canvas');canvas.width=PW;canvas.height=PH;const g=canvas.getContext('2d')!;g.imageSmoothingQuality='high';
   const dry=kind==='hill'||kind==='battlefield'||kind==='valley'||kind==='pass'||kind==='ruins';
@@ -370,11 +384,12 @@ export function paintGround(kind:GroundKind,seed:number,light:Light,clearCells:R
   // 진영 마당: 밟혀 다져진 넓은 흙
   const yardMask=kind==='camp'||kind==='battlefield'?layer(m=>{m.fillStyle='#000';m.beginPath();m.ellipse(PW/2,PH/2+40,PW*.34,PH*.3,0,0,7);m.fill();}):undefined;
   paintRoads(g,roads,R,yardMask);
-  paintStone(g,cells,R);
+  {const F=PP.fieldLayer(PW,PH);PP.paving(F,C,(cx,cy)=>cy>=0&&cx>=0&&cy<GH&&cx<GW&&cells[cy]![cx]==='stone',R);PP.fieldBlit(g,F);}
   paintWater(g,cells,R);
   // 연못·논밭·바위 비탈은 도트로(집·나무 그림과 같은 결)
   {const has=(t:Cell)=>cells.some(r=>r.includes(t));if(has('pool')||has('crop')||has('scree')){const F=PP.fieldLayer(PW,PH),at=(t:Cell)=>(cx:number,cy:number)=>cy>=0&&cx>=0&&cy<GH&&cx<GW&&cells[cy]![cx]===t;
-    if(has('scree'))PP.scree(F,C,at('scree'),R);if(has('crop'))PP.crops(F,C,at('crop'),R);if(has('pool'))PP.pond(F,C,at('pool'),R);PP.fieldBlit(g,F);poolBridges(g,cells,R);}}
+    if(has('crop'))PP.crops(F,C,at('crop'),R);if(has('pool'))PP.pond(F,C,at('pool'),R);PP.stoneBridge(F,C,(cx,cy)=>cy>=0&&cx>=0&&cy<GH&&cx<GW&&cells[cy]![cx]==='bridge'&&[[1,0],[-1,0]].some(([a])=>cells[cy]![cx+a!]==='pool'));PP.fieldBlit(g,F);}
+    if(has('scree'))screeTint(g,cells,R);}
   paintWall(g,cells,R);
   if(opts.snow)paintSnow(g,cells,roads,R);
   SNOW=!!opts.snow;
