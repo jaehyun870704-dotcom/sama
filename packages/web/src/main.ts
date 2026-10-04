@@ -14,7 +14,7 @@ import {dueLines} from './battle-lines.ts';
 import {loadSettings,saveSettings} from './settings.ts';
 import {SLOT_COUNT,slotKey,readSlot,slotLabel} from './save-slots.ts';
 import {encounterLevels,structureKind,structureFrame,raceGap} from './campaign-rules.ts';
-import {readCampaign,writeCampaign,deployment,levelInfo,award,equip,equipSlot,treasureInfo,type GearSlot,treasures,OFFICERS} from './progression.ts';
+import {readCampaign,freshCampaign,writeCampaign,deployment,levelInfo,award,equip,equipSlot,treasureInfo,type GearSlot,treasures,OFFICERS} from './progression.ts';
 import {storyBeats,storyLocations,storyBackdrop,storyAftermath,acts,stories,epilogueLines} from './story.ts';
 import {showHub,showQuests,finishRunBattle,finishRunStory,RUN_CHAPTER,type RunHost} from './run-ui.ts';
 import {showScenario,campOf,finishIfBattle,finishStoryBattle,type ScenarioHost} from './scenario-ui.ts';
@@ -109,7 +109,9 @@ const scenarioHost:ScenarioHost={modal:(html,closable)=>{menuOpen=true;clearTime
   startBattle:(dep,seed,difficulty='normal')=>{session=new Session(RUN_CHAPTER,difficulty,seed,'survival',4,dep);activate();persist();},
   hero:()=>{const l=levelInfo(campaign.xp.sima_yi??0);return {level:l.level,xp:l.next?Math.min(99,Math.floor(l.xp/l.next*100)):0};},
   addHeroXp:n=>{const before=levelInfo(campaign.xp.sima_yi??0).level;campaign.xp.sima_yi=(campaign.xp.sima_yi??0)+Math.max(0,n);saveCampaign();const after=levelInfo(campaign.xp.sima_yi).level;return [`사마의 경험치 +${n}`,...(after>before?[`레벨 상승 · 사마의 Lv.${after}`]:[])];},
-  heroLoadout:()=>campaign.loadouts};/** 끝나지 않은 원정 전투: 지금 화면의 것, 없으면 자동 저장된 것. */
+  heroLoadout:()=>campaign.loadouts,
+  // 로그라이크 새 회차: 연의 진행(사마의 레벨·보물·장비)을 처음으로. 해금 '노련한 출발'이면 사마의 Lv.6.
+  resetCampaign:veteran=>{campaign=freshCampaign();if(veteran)while(levelInfo(campaign.xp.sima_yi??0).level<6)campaign.xp.sima_yi=(campaign.xp.sima_yi??0)+10;saveCampaign();}};/** 끝나지 않은 원정 전투: 지금 화면의 것, 없으면 자동 저장된 것. */
 function openRunSession(){
   const inRun=(s:Session)=>!!(s.deployment?.run||s.deployment?.runStory)&&s.state.outcome==='ongoing';
   if(hasStarted&&inRun(session))return session;
@@ -380,7 +382,7 @@ function checkModal(){
     if(session.deployment?.scenario){
       // 시나리오 모드의 연의 장: 보상은 같고, 전투 뒤 장면과 다음 장은 시나리오 흐름이 맡는다.
       const news=[...(reward?.xp?[`경험치 +${reward.xp}`]:[]),...(reward?.treasure?[`보물 「${reward.treasure.name}」을 얻었다`]:[]),...growthMilestones(before,campaign).filter(x=>x.to>x.from||x.evolution).map(x=>`${officerNames[x.id]} Lv.${x.from} → ${x.to}${x.evolution?` · 병종 진화 ${x.evolution.from} → ${x.evolution.to}`:''}`)];
-      const chapterId=session.deployment.scenario.chapter;setTimeout(()=>{menuOpen=true;void finishStoryBattle(scenarioHost,chapterId,win,news);},900);return;
+      const chapterId=session.deployment.scenario.chapter,hero=s.find('sima_yi'),heroHp=hero?.alive?Math.max(.05,hero.hp/hero.stats.maxHp):undefined;setTimeout(()=>{menuOpen=true;void finishStoryBattle(scenarioHost,chapterId,win,news,heroHp);},900);return;
     }
     const after=win?storyAftermath[s.stage.id]:undefined;
     modal(`<div class="result">${after?`<div class="aftermath"><div class="aftermath-stage" style="${storyBackdrop(after.art)}"><span class="story-location">${after.name}</span></div><div id="aftermath-line">${dialogueCaption(after.beats[0]!.speaker,after.beats[0]!.line)}</div>${after.beats.length>1?'<button id="aftermath-next">다음 장면 →</button>':''}</div>`:''}<div class="result-character">${win?'승':'패'}</div><h2>${win?'판을 읽었다.':'아직, 끝이 아니다.'}</h2><p>${s.stage.subtitle} · ${s.turn}턴</p>${reward?.xp?`<p class="growth-summary">경험치 +${reward.xp} · ${growthText()}</p>${treasures.some(t=>t.stage===s.stage.id)?`<p class="treasure-reward">보물: ${treasures.filter(t=>t.stage===s.stage.id).map(t=>t.name).join(' · ')}</p>`:''}`:''}${milestoneMarkup(growthMilestones(before,campaign))}<div class="seals">${session.sealNames.map((name,i)=>`<div class="${seals.includes(i+1)?'earned':''}"><b>◆</b><span>${name}</span></div>`).join('')}</div><p>${win?'전투 기록과 인장이 저장되었습니다.':esc(session.failure)}</p><div class="modal-actions"><button id="result-undo">↶ 마지막 수 무르기</button>${session.phaseCheckpoint!==null?'<button id="phase-restore">목표 전환 직전으로</button>':''}<button id="retry">다시 도전</button><button id="result-menu">연의 회상</button>${win&&session.chapter===campaignOrder.at(-1)?'<button id="epilogue" class="primary">에필로그 →</button>':''}${win&&campaignOrder.indexOf(session.chapter)<campaignOrder.length-1&&replayable(campaignOrder[campaignOrder.indexOf(session.chapter)+1]!)?'<button id="next-chapter" class="primary">다음 전장 →</button>':''}</div></div>`,false);

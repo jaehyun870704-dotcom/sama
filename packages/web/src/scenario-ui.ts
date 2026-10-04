@@ -2,7 +2,8 @@
  * 시나리오 모드 화면: 장 선택 → 이야기 무대(선택) → 출진 전 정비(반드시) → 전투 → 전투 뒤 장면 → 다음 장.
  * 규칙은 scenario.ts, 무대 연출은 story-stage.ts. 연의 장의 정비·전투·보상은 main.ts의 기존 흐름을 쓴다.
  */
-import {loadScenario,saveScenario,freshScenario,scenarioPath,winOver,currentStep,scriptOf,choose,finishStep,fateChoices,floorFor,scenarioParty,rewardOfficers,endingNotes,routeTales,COMPANIONS,type ScenarioState,type ScenarioStep} from './scenario.ts';
+import {loadScenario,saveScenario,scenarioPath,winOver,currentStep,scriptOf,choose,finishStep,fateChoices,floorFor,scenarioParty,rewardOfficers,endingNotes,routeTales,COMPANIONS,
+  ensureRun,newScenarioRun,pendingMarch,marchNodes,recruitOffer,relicOffer,recruitOfficer,healAll,finishMarch,marchFloor,afterFight,loseFight,runMandate,type ScenarioState,type ScenarioStep,type MarchNode} from './scenario.ts';
 import {playScenes,playNarration,spriteStyle} from './story-stage.ts';
 import {openCamp} from './story-camp.ts';
 import {isoBackdrop} from './story-iso.ts';
@@ -14,8 +15,8 @@ import {romanceByName,romanceStats,temperOf} from './romance.ts';
 import {temperNames} from './duel.ts';
 import {taleSortieLimit} from './sortie.ts';
 import {classNames} from './troops.ts';
-import {nextEvolutionText,XP_PER_LEVEL,type BattleMods,type RunBattleRef} from './roguelike.ts';
-import {loadMeta,saveMeta} from './meta.ts';
+import {nextEvolutionText,XP_PER_LEVEL,RELICS,survivorsOf,type BattleMods,type RunBattleRef} from './roguelike.ts';
+import {loadMeta,saveMeta,recordStory,buyUnlock,UNLOCKS} from './meta.ts';
 import {classTactics,evolvedClass,tierOf,familyOf,type BattleState,type UnitClass} from '../../core/src/index.ts';
 import type {ChapterScript,ChoiceEffect,Look,Scene,Camp} from './scenario-types.ts';
 
@@ -33,6 +34,8 @@ export interface ScenarioHost {
   addHeroXp(amount:number):string[];
   /** 사마의의 장비(가상 전장에도 들고 간다) */
   heroLoadout():Deployment['loadouts'];
+  /** 새 회차: 연의 진행(사마의 레벨·보물·장비)을 처음으로 되돌린다. veteran이면 사마의 Lv.6에서. */
+  resetCampaign(veteran:boolean):void;
 }
 
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -83,7 +86,12 @@ export function modsText(m:BattleMods){return [...Object.entries(m).filter(([k,v
 // ─────────────────────────────────────────────── 장 선택
 
 export function showScenario(host:ScenarioHost,selected?:string){
-  const state=loadScenario(),path=scenarioPath(state),cur=currentStep(state),done=new Set(state.done);
+  {let s0=loadScenario();const unlocks=loadMeta().unlocks;
+    // 처음 여는 사람은 새 회차(연의 첫 장부터), 예전 기록은 그 자리에서 첫 회차로 이어 간다.
+    if(!s0.run&&!s0.done.length){s0=newScenarioRun(1,newSeed(),unlocks,host.hero().level);saveScenario(s0);}
+    else if(ensureRun(s0,newSeed(),unlocks,host.hero().level))saveScenario(s0);
+    if(s0.run&&s0.run.status!=='alive')return showRunOver(host);}
+  const state=loadScenario(),path=scenarioPath(state),cur=currentStep(state),done=new Set(state.done),run=state.run!,march=pendingMarch(state);
   const sel=path.find(s=>s.id===selected)??cur??path.at(-1)!;
   const route=(act:1|2|3)=>routeById(state.route[act]);
   const track=[1,2,3].map(a=>{const r=route(a as 1|2|3);return `<span class="${r&&!r.history?'if':''} ${cur&&cur.act===a?'now':''}">${ACT_NAMES[a-1]!.split(' · ')[0]} · ${r?esc(r.name):'갈림길 전'}</span>`;}).join('');
@@ -93,17 +101,19 @@ export function showScenario(host:ScenarioHost,selected?:string){
   const groups=[1,2,3].map(a=>{const items=path.map((s,i)=>({s,i})).filter(x=>x.s.act===a);return items.length?`<h3 class="sc-act">${ACT_NAMES[a-1]}</h3>${items.map(x=>card(x.s,x.i)).join('')}`:'';}).join('');
   const isCur=sel===cur,isDone=done.has(sel.id);
   host.modal(`<div class="scenario-screen"><div class="sc-top"><div><div class="eyebrow">三國志 · 사마의전 · 시나리오</div><h2>천명의 길</h2></div>
-    <div class="sc-route">${track}</div><p class="muted">사마의 Lv.${hero.level} · 함께하는 장수 ${Object.keys(state.officers).length}명 · 마친 장 ${state.done.length}</p></div>
+    <div class="sc-route">${track}</div><p class="muted">사마의 Lv.${hero.level} · 함께하는 장수 ${Object.keys(state.officers).length}명 · 마친 장 ${state.done.length}</p>${runBar(state)}</div>
     <div class="sc-body"><nav class="sc-list" aria-label="장 목록">${groups}</nav>
     <section class="sc-detail"><div class="sc-banner" style="${isoBackdrop(firstArt(sel))}"><span class="sc-kind kind-${sel.kind}">${kindTag[sel.kind]}</span><div class="sc-banner-title"><small>${esc(stepYear(sel,state))}</small><h3>${esc(stepTitle(sel,state))}</h3></div></div>
       <p class="sc-synopsis">${esc(stepSynopsis(sel,state))}</p>${detailRows(sel,state,hero.level)}
-      <div class="sc-actions">${isCur?`<button class="primary" id="sc-enter">${sel.kind==='fate'?'갈림길로 ▶':sel.kind==='ending'?'결말 보기 ▶':'이야기 시작 ▶'}</button>`:isDone?`<button id="sc-replay">이야기 다시 보기</button>`:'<button disabled>앞 장을 마치면 열린다</button>'}</div></section></div>
-    <div class="sc-foot"><button id="sc-back">← 본영</button><button id="sc-reset" class="${state.done.length?'':'hidden'}">처음부터 다시</button></div></div>`,false);
+      <div class="sc-actions">${isCur&&march?`<button class="primary" id="sc-march">행군로 ▶</button><span class="muted">다음 장 앞의 길목에서 세 갈래 중 하나를 고른다</span>`:isCur?`<button class="primary" id="sc-enter">${sel.kind==='fate'?'갈림길로 ▶':sel.kind==='ending'?'결말 보기 ▶':'이야기 시작 ▶'}</button>`:isDone?`<button id="sc-replay">이야기 다시 보기</button>`:'<button disabled>앞 장을 마치면 열린다</button>'}</div></section></div>
+    <div class="sc-foot"><button id="sc-back">← 본영</button><button id="sc-reset" class="${state.done.length?'':'hidden'}">이번 회차를 끝낸다</button></div></div>`,false);
   document.querySelectorAll<HTMLButtonElement>('[data-step]').forEach(b=>b.onclick=()=>showScenario(host,b.dataset.step));
   document.getElementById('sc-enter')?.addEventListener('click',()=>void enter(host,sel));
+  document.getElementById('sc-march')?.addEventListener('click',()=>showMarch(host));
+  void run;
   document.getElementById('sc-replay')?.addEventListener('click',()=>void replay(host,sel));
   document.getElementById('sc-back')!.onclick=host.showMenu;
-  const reset=document.getElementById('sc-reset')!;reset.onclick=()=>{if(reset.dataset.armed!=='1'){reset.dataset.armed='1';reset.textContent='정말 처음부터? (선택·장수 기록이 지워진다)';reset.classList.add('danger');return;}saveScenario(freshScenario());showScenario(host);};
+  const reset=document.getElementById('sc-reset')!;reset.onclick=()=>{if(reset.dataset.armed!=='1'){reset.dataset.armed='1';reset.textContent='정말 끝낼까? (천명을 정산하고 연의 첫 장부터 새 회차)';reset.classList.add('danger');return;}const st=loadScenario();st.run!.status='over';saveScenario(st);showRunOver(host);};
   document.querySelector('.sc-card[aria-pressed="true"]')?.scrollIntoView({block:'nearest'});
 }
 function detailRows(step:ScenarioStep,state:ScenarioState,heroLevel:number){
@@ -169,7 +179,7 @@ async function replay(host:ScenarioHost,step:ScenarioStep){
 /** 출진 전 정비: 이야기가 끝나면 반드시 거친다. */
 export function prepare(host:ScenarioHost,step:ScenarioStep){
   const state=loadScenario();
-  if(step.kind==='story'){host.storyBriefing(chapterIndex(step.stage!),{chapter:step.id,mods:modsOf(state,step)});return;}
+  if(step.kind==='story'){const run=state.run,hp=run?.hp['사마의'];host.storyBriefing(chapterIndex(step.stage!),{chapter:step.id,mods:modsOf(state,step),...(run?.relics.length?{relics:[...run.relics]}:{}),...(hp!==undefined?{heroHp:hp}:{})});return;}
   showIfPrep(host,state,step);
 }
 /** 대본에 갈림길 선택이 없을 때의 대비: 길 목록에서 고른다. */
@@ -187,17 +197,17 @@ function afterFate(host:ScenarioHost,state:ScenarioState,step:ScenarioStep){
   <p class="route-result ${r.history?'history':'what-if'}"><b>${r.history?'정사':'가상'}</b> ${esc(r.name)} — ${esc(r.detail)}</p>
   ${!r.history?`<p class="muted">${r.region.name} · 우두머리 ${esc(r.region.boss.name)} · 가상 전장 ${routeTales(r,state).length}장</p><p>함께하는 장수: ${people.length?esc(people.join(' · ')):'없음'}</p>`:''}
   <div class="run-actions"><button class="primary" id="fate-next">다음 장 ▶</button><button id="fate-list">장 목록</button></div></div>`,false);
-  document.getElementById('fate-next')!.onclick=()=>{const n=currentStep(loadScenario());if(n)void enter(host,n);else showScenario(host);};
+  document.getElementById('fate-next')!.onclick=()=>goNext(host);
   document.getElementById('fate-list')!.onclick=()=>showScenario(host);
 }
 function showEnding(host:ScenarioHost,state:ScenarioState,step:ScenarioStep){
-  finishStep(state,step.id);saveScenario(state);
+  finishStep(state,step.id);if(state.run)state.run.status='complete';const gain=settleRun(state);saveScenario(state);
   const e=endingFor(state.route),notes=endingNotes(state);
   const meta=loadMeta();if(!meta.endings.includes(e.id)){meta.endings.push(e.id);saveMeta(meta);}
   host.modal(`<div class="briefing run-screen"><div class="eyebrow">결말 · ${e.history?'정사':'가상'}</div><div class="ending-card ${e.history?'history':'what-if'}"><h3>${esc(e.title)}</h3>${e.lines.map(l=>`<p>${esc(l)}</p>`).join('')}${notes.map(l=>`<p class="ending-note">${esc(l)}</p>`).join('')}</div>
-  <p class="muted">본 결말 ${meta.endings.length}/15. 처음부터 다시 시작해 다른 갈림길을 고르면 다른 이야기와 결말이 펼쳐진다.</p>
-  <div class="run-actions"><button class="primary" id="end-list">장 목록</button><button id="end-menu">← 본영</button></div></div>`,false);
-  document.getElementById('end-list')!.onclick=()=>showScenario(host);document.getElementById('end-menu')!.onclick=host.showMenu;
+  <p class="muted">본 결말 ${meta.endings.length}/15 · 이번 회차 천명 +${gain}. 새 회차를 시작해 다른 갈림길을 고르면 다른 이야기와 결말이 펼쳐진다.</p>
+  <div class="run-actions"><button class="primary" id="end-list">회차 정산 ▶</button><button id="end-menu">← 본영</button></div></div>`,false);
+  document.getElementById('end-list')!.onclick=()=>showRunOver(host);document.getElementById('end-menu')!.onclick=host.showMenu;
 }
 
 // ─────────────────────────────────────────────── 가상 전장의 출진 전 정비
@@ -237,32 +247,39 @@ export function showIfPrep(host:ScenarioHost,state:ScenarioState,step:ScenarioSt
 }
 function launch(host:ScenarioHost,state:ScenarioState,step:ScenarioStep,picked:string[],difficulty:'normal'|'extreme'){
   const hero=host.hero(),party=scenarioParty(state,hero.level,hero.xp,picked),mods=modsOf(state,step);
-  const ref:RunBattleRef={seed:hashSeed(step.id),floor:floorFor(step,state),kind:step.kind==='boss'?'boss':'tale',party,relics:[],route:{...state.route},
+  const ref:RunBattleRef={seed:runSeed(state,step.id),floor:floorFor(step,state),kind:step.kind==='boss'?'boss':'tale',party,relics:[],route:{...state.route},
     ...(step.kind==='tale'?{tale:step.id}:{}),...(Object.keys(mods).length?{mods}:{}),enemyBase:enemyBase(state,hero.level,step),scenario:step.id};
   const loadout=host.heroLoadout()?.sima_yi;
   const deployment:Deployment={levels:{sima_yi:hero.level,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},...(loadout?{loadouts:{sima_yi:loadout}}:{}),run:ref,scenario:{chapter:step.id,...(difficulty==='extreme'?{difficulty:'extreme' as const}:{})}};
-  host.startBattle(deployment,hashSeed(step.id),difficulty);
+  host.startBattle(deployment,runSeed(state,step.id),difficulty);
 }
 
 // ─────────────────────────────────────────────── 전투가 끝난 뒤
 
 /** 가상 전장 전투가 끝났을 때(main.ts가 부른다). */
 export async function finishIfBattle(host:ScenarioHost,state:BattleState,deployment:Deployment,earned:Record<string,number>){
-  const sc=loadScenario(),step=scenarioPath(sc).find(s=>s.id===deployment.scenario?.chapter);
+  const chapter=deployment.scenario?.chapter??'';
+  if(chapter.startsWith('march:'))return finishMarchBattle(host,state,deployment,earned,chapter.slice(6));
+  const sc=loadScenario(),step=scenarioPath(sc).find(s=>s.id===chapter);
   if(!step)return showScenario(host);
-  if(state.outcome!=='victory')return showDefeat(host,step);
-  const ref=deployment.run!,mult=(ref.mods?.bold?1.5:1)*(deployment.scenario?.difficulty==='extreme'?1.3:1),bonus=step.kind==='boss'?90:70;
-  const news=rewardOfficers(sc,ref.party,earned,bonus,mult);
+  const ref=deployment.run!,surv=survivorsByName(state,ref);
+  if(state.outcome!=='victory')return defeat(host,sc,step);
+  const mult=(ref.mods?.bold?1.5:1)*(deployment.scenario?.difficulty==='extreme'?1.3:1),bonus=step.kind==='boss'?90:70;
+  const lost=afterFight(sc,ref.party.filter(u=>surv[u.name]!==undefined||!u.hero),surv,stepTitle(step,sc));
+  const news=rewardOfficers(sc,ref.party.filter(u=>surv[u.name]!==undefined),earned,bonus,mult);
+  if(lost.length)news.unshift(`쓰러진 장수: ${lost.join(' · ')} — 이번 회차에서 떠났다.`);
+  if(step.kind==='boss')healAll(sc,1);
   news.push(...host.addHeroXp(Math.round((140+(earned.sima_yi??0))*mult)));
   const back=winOver(sc,step,Math.max(1,(ref.party[0]?.level??2)-1));if(back)news.push(`${back} 귀순 — 다시 사마의의 부대에 합류했다.`);
   finishStep(sc,step.id);saveScenario(sc);
   await afterVictory(host,sc,step,news);
 }
 /** 연의 장 전투가 끝났을 때(main.ts가 보상 처리 뒤에 부른다). */
-export async function finishStoryBattle(host:ScenarioHost,chapterId:string,victory:boolean,news:string[]){
+export async function finishStoryBattle(host:ScenarioHost,chapterId:string,victory:boolean,news:string[],heroHp?:number){
   const sc=loadScenario(),step=scenarioPath(sc).find(s=>s.id===chapterId);
   if(!step)return showScenario(host);
-  if(!victory)return showDefeat(host,step);
+  if(!victory)return defeat(host,sc,step);
+  if(sc.run&&heroHp!==undefined){if(heroHp>=0.999)delete sc.run.hp['사마의'];else sc.run.hp['사마의']=Math.max(.05,heroHp);}
   finishStep(sc,step.id);saveScenario(sc);
   await afterVictory(host,sc,step,news);
 }
@@ -273,16 +290,124 @@ async function afterVictory(host:ScenarioHost,sc:ScenarioState,step:ScenarioStep
   host.modal(`<div class="result scenario-result"><div class="result-character">승</div><h2>${esc(stepTitle(step,sc))}</h2><p>${kindTag[step.kind]} · ${esc(stepYear(step,sc))}</p>
   ${news.length?`<div class="run-news">${news.map(n=>`<p${n.startsWith('진화!')?' class="evo"':''}>${esc(n)}</p>`).join('')}</div>`:''}
   ${next?`<p class="muted">다음 장 · ${esc(kindTag[next.kind])} · ${esc(stepTitle(next,loadScenario()))}</p>`:''}
-  <div class="modal-actions"><button id="res-list">장 목록</button>${next?'<button class="primary" id="res-next">다음 장 ▶</button>':''}</div></div>`,false);
+  <div class="modal-actions"><button id="res-list">장 목록</button>${next?`<button class="primary" id="res-next">${pendingMarch(loadScenario())?'행군로 ▶':'다음 장 ▶'}</button>`:''}</div></div>`,false);
   document.getElementById('res-list')!.onclick=()=>showScenario(host,next?.id);
-  document.getElementById('res-next')?.addEventListener('click',()=>{if(next)void enter(host,next);});
+  document.getElementById('res-next')?.addEventListener('click',()=>goNext(host));
 }
 function showDefeat(host:ScenarioHost,step:ScenarioStep){
-  host.modal(`<div class="result scenario-result"><div class="result-character">패</div><h2>아직, 끝이 아니다.</h2><p>${esc(stepTitle(step,loadScenario()))} — 장수들은 무사히 물러났다. 정비를 다시 하고 도전하라.</p>
+  host.modal(`<div class="result scenario-result"><div class="result-character">패</div><h2>천명의 가호</h2><p>${esc(stepTitle(step,loadScenario()))} — 졌지만 하늘이 한 번 사마의를 지켰다. 체력 30%로 물러났다. 가호는 회차마다 한 번뿐이다.</p>
   <div class="modal-actions"><button id="def-list">장 목록</button><button class="primary" id="def-retry">출진 전 정비로</button></div></div>`,false);
   document.getElementById('def-list')!.onclick=()=>showScenario(host,step.id);
   document.getElementById('def-retry')!.onclick=()=>prepare(host,step);
 }
+// ─────────────────────────────────────────────── 로그라이크 회차
+
+const newSeed=()=>Math.floor(Math.random()*2147483646)+1;
+const runSeed=(state:ScenarioState,id:string)=>((state.run?.seed??7)^hashSeed(id))%2147483646+1;
+function survivorsByName(state:BattleState,ref:RunBattleRef){const byId=survivorsOf(state,ref),out:Record<string,number>={};for(const u of ref.party)if(byId[u.id]!==undefined)out[u.name]=byId[u.id]!;return out;}
+/** 회차 정보 한 줄: 회차·보물·쓰러진 장수·가호. */
+function runBar(state:ScenarioState){
+  const run=state.run;if(!run)return '';
+  const relics=run.relics.map(id=>RELICS.find(r=>r.id===id)).filter(Boolean).map(r=>`<span class="run-relic" title="${esc(r!.effect)}">${esc(r!.name)}</span>`).join('');
+  const hurt=Object.entries(run.hp).filter(([,v])=>v<1).map(([k,v])=>`${esc(k)} ${Math.round(v*100)}%`).join(' · ');
+  return `<p class="sc-runbar"><b>천명의 길 제${run.no}회차</b> · 행군 ${run.nodes} · 천명의 가호 ${run.guard?'있음':'없음'}${run.fallen.length?` · 쓰러진 장수 ${run.fallen.length}`:''}${hurt?` · 다친 사람 ${hurt}`:''}</p>${relics?`<p class="run-relics">${relics}</p>`:''}`;
+}
+/** 다음으로: 행군로가 남았으면 행군로, 아니면 다음 장. */
+function goNext(host:ScenarioHost):void{const st=loadScenario();if(pendingMarch(st))return showMarch(host);const n=currentStep(st);if(n)void enter(host,n);else showScenario(host);}
+/** 행군로: 장과 장 사이의 세 갈래. */
+export function showMarch(host:ScenarioHost):void{
+  const state=loadScenario(),after=pendingMarch(state);if(!after)return goNext(host);
+  const run=state.run!,meta=loadMeta(),nodes=marchNodes(state,after,meta.unlocks.includes('scout_map')?4:3),next=currentStep(state)!;
+  if(run.march)return launchMarch(host,state,after,run.march);
+  host.modal(`<div class="briefing run-screen march-screen"><div class="eyebrow">천명의 길 제${run.no}회차 · 행군로</div><h2>다음 장 「${esc(stepTitle(next,state))}」으로 가는 길</h2>
+  <p class="muted">세 갈래 중 하나를 고른다. 같은 회차에서는 같은 길이 나온다.</p>${runBar(state)}
+  <div class="run-choices">${nodes.map((n,i)=>`<button data-march="${i}" class="march-${n.kind}"><strong>${esc(n.label)}</strong><small>${esc(n.detail)}</small></button>`).join('')}</div>
+  <div class="run-actions"><button id="march-list">장 목록</button></div></div>`,false);
+  document.querySelectorAll<HTMLButtonElement>('[data-march]').forEach(b=>b.onclick=()=>pickMarch(host,after,nodes[Number(b.dataset.march)]!));
+  document.getElementById('march-list')!.onclick=()=>showScenario(host);
+}
+function pickMarch(host:ScenarioHost,after:string,node:MarchNode){
+  const state=loadScenario(),run=state.run!,meta=loadMeta(),hero=host.hero();
+  const done=(news:string[])=>{finishMarch(state,after);saveScenario(state);marchResult(host,node.label,news);};
+  if(node.kind==='rest'){healAll(state,meta.unlocks.includes('field_medic')?1:.6);return done(['의원에서 사마의와 장수들이 기운을 되찾았다.']);}
+  if(node.kind==='training'){const party=scenarioParty(state,hero.level,hero.xp),news=rewardOfficers(state,party,{},100);news.push(...host.addHeroXp(80));return done(news);}
+  if(node.kind==='recruit'){const offer=recruitOffer(state,after);if(!offer.length)return done(['맞아들일 사람이 없었다.']);
+    return choiceScreen(host,'모병소 · 누구를 맞아들일까',offer.map(o=>({title:`${o.name} (${classNames[o.unitClass]??o.unitClass})`,detail:romanceStats(o.name)??''})),i=>{const o=offer[i]!;recruitOfficer(state,o.name,hero.level,meta.unlocks.includes('elite_recruits'));done([`${o.name}이(가) 사마의의 부대에 들어왔다.`]);});}
+  if(node.kind==='treasure'){const offer=relicOffer(state,after);if(!offer.length)return done(['보물고는 비어 있었다.']);
+    return choiceScreen(host,'보물고 · 무엇을 들고 갈까',offer.map(r=>({title:r.name,detail:r.effect})),i=>{run.relics.push(offer[i]!.id);done([`보물 「${offer[i]!.name}」을 얻었다.`]);});}
+  run.march=node.kind;saveScenario(state);launchMarch(host,state,after,node.kind);
+}
+function choiceScreen(host:ScenarioHost,title:string,items:Array<{title:string;detail:string}>,pick:(i:number)=>void){
+  host.modal(`<div class="briefing run-screen"><div class="eyebrow">행군로</div><h2>${esc(title)}</h2><div class="run-choices">${items.map((it,i)=>`<button data-pick="${i}"><strong>${esc(it.title)}</strong><small>${esc(it.detail)}</small></button>`).join('')}</div></div>`,false);
+  document.querySelectorAll<HTMLButtonElement>('[data-pick]').forEach(b=>b.onclick=()=>pick(Number(b.dataset.pick)));
+}
+function marchResult(host:ScenarioHost,label:string,news:string[]){
+  const next=currentStep(loadScenario());
+  host.modal(`<div class="result scenario-result"><div class="result-character">行</div><h2>${esc(label)}</h2>${news.length?`<div class="run-news">${news.map(n=>`<p${n.startsWith('진화!')?' class="evo"':''}>${esc(n)}</p>`).join('')}</div>`:''}
+  ${next?`<p class="muted">다음 장 · ${esc(kindTag[next.kind])} · ${esc(stepTitle(next,loadScenario()))}</p>`:''}
+  <div class="modal-actions"><button id="mr-list">장 목록</button><button class="primary" id="mr-next">다음 장 ▶</button></div></div>`,false);
+  document.getElementById('mr-list')!.onclick=()=>showScenario(host);document.getElementById('mr-next')!.onclick=()=>goNext(host);
+}
+function launchMarch(host:ScenarioHost,state:ScenarioState,after:string,kind:'battle'|'elite'|string){
+  const hero=host.hero(),next=currentStep(state)!,party=scenarioParty(state,hero.level,hero.xp);
+  const levels=party.map(u=>u.level),base=Math.max(1,Math.round(levels.reduce((a,b)=>a+b,0)/levels.length)+(kind==='elite'?1:0));
+  const ref:RunBattleRef={seed:runSeed(state,'march:'+after),floor:marchFloor(state,next.act),kind:kind==='elite'?'elite':'battle',party,relics:[...state.run!.relics],route:{...state.route},enemyBase:base,scenario:'march:'+after};
+  const loadout=host.heroLoadout()?.sima_yi;
+  const deployment:Deployment={levels:{sima_yi:hero.level,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},...(loadout?{loadouts:{sima_yi:loadout}}:{}),run:ref,scenario:{chapter:'march:'+after}};
+  host.startBattle(deployment,ref.seed);
+}
+async function finishMarchBattle(host:ScenarioHost,battle:BattleState,deployment:Deployment,earned:Record<string,number>,after:string){
+  const state=loadScenario(),ref=deployment.run!,surv=survivorsByName(battle,ref),kind=ref.kind;
+  if(battle.outcome!=='victory'){
+    if(loseFight(state)){finishMarch(state,after);saveScenario(state);return marchResult(host,'천명의 가호',['길목의 싸움에서 졌지만 하늘이 한 번 사마의를 지켰다. 체력 30%로 물러났다. (가호는 회차마다 한 번)']);}
+    saveScenario(state);return showRunOver(host);}
+  const lost=afterFight(state,ref.party,surv,`행군 · ${kind==='elite'?'정예 전투':'전투'}`);
+  const news=rewardOfficers(state,ref.party.filter(u=>surv[u.name]!==undefined),earned,kind==='elite'?70:50);news.push(...host.addHeroXp(80+(earned.sima_yi??0)));
+  if(lost.length)news.unshift(`쓰러진 장수: ${lost.join(' · ')} — 이번 회차에서 떠났다.`);
+  delete state.run!.march;saveScenario(state);
+  const relics=relicOffer(state,after+'#win',kind==='elite'?3:1),recruits=kind==='elite'?[]:recruitOffer(state,after+'#win',1);
+  const items=[...relics.map(r=>({title:`보물 · ${r.name}`,detail:r.effect,take:()=>{state.run!.relics.push(r.id);return `보물 「${r.name}」을 얻었다.`;}})),
+    ...recruits.map(o=>({title:`장수 영입 · ${o.name} (${classNames[o.unitClass]??o.unitClass})`,detail:romanceStats(o.name)??'',take:()=>{recruitOfficer(state,o.name,host.hero().level,loadMeta().unlocks.includes('elite_recruits'));return `${o.name}이(가) 부대에 들어왔다.`;}})),
+    ...(kind==='elite'?[]:[{title:'휴식',detail:'사마의와 장수들의 체력 40% 회복',take:()=>{healAll(state,.4);return '잠시 쉬며 숨을 골랐다.';}}])];
+  if(!items.length){finishMarch(state,after);saveScenario(state);return marchResult(host,'행군 전투 승리',news);}
+  choiceScreen(host,`행군 전투 승리 · 보상 하나`,items,i=>{news.push(items[i]!.take());finishMarch(state,after);saveScenario(state);marchResult(host,'행군 전투 승리',news);});
+}
+/** 졌다: 가호가 있으면 한 번 견디고, 없으면 회차가 끝난다. */
+function defeat(host:ScenarioHost,state:ScenarioState,step:ScenarioStep){
+  if(loseFight(state)){saveScenario(state);return showDefeat(host,step);}
+  saveScenario(state);showRunOver(host);
+}
+/** 회차 정산: 천명을 한 번만 준다. 이긴 연의 전장·가상 전장은 천명 기록에 남는다. */
+function settleRun(state:ScenarioState){
+  const run=state.run;if(!run||run.settled)return 0;
+  const gain=runMandate(state),meta=loadMeta(),done=new Set(state.done);
+  meta.mandate+=gain;meta.earned+=gain;meta.runs++;if(run.status==='complete')meta.wins++;
+  for(const st of scenarioPath(state))if(done.has(st.id)){if(st.kind==='story'&&st.stage)recordStory(meta,st.stage);}
+  saveMeta(meta);run.settled=true;return gain;
+}
+/** 회차가 끝났다(패배·결말·포기): 정산하고 해금을 사서 새 회차로. */
+export function showRunOver(host:ScenarioHost){
+  const state=loadScenario(),run=state.run!;settleRun(state);saveScenario(state);
+  const meta=loadMeta(),gain=runMandate(state),done=new Set(state.done),cleared=scenarioPath(state).filter(x=>done.has(x.id)&&x.kind!=='fate'&&x.kind!=='ending').length;
+  const won=run.status==='complete';
+  const unlocks=UNLOCKS.map(u=>`<button data-unlock="${u.id}" ${meta.unlocks.includes(u.id)||meta.mandate<u.cost?'disabled':''}><strong>${esc(u.name)} ${meta.unlocks.includes(u.id)?'✓':`· 천명 ${u.cost}`}</strong><small>${esc(u.effect)}</small></button>`).join('');
+  host.modal(`<div class="briefing run-screen"><div class="eyebrow">천명의 길 제${run.no}회차 · ${won?'완주':'끝'}</div><h2>${won?'한 생을 끝까지 걸었다':'천명이 다했다'}</h2>
+  <p>${won?'결말까지 이르렀다.':'사마의는 여기서 쓰러졌다. 그러나 남긴 것은 다음 생으로 이어진다.'} 마친 장 ${cleared} · 행군 ${run.nodes}${run.fallen.length?` · 쓰러진 장수 ${esc(run.fallen.map(f=>f.split(' · ')[0]).join(', '))}`:''}</p>
+  <p class="route-result history"><b>천명 +${gain}</b> 지금 천명 ${meta.mandate} · 누적 ${meta.earned} · 회차 ${meta.runs}</p>
+  <h3>천명 해금 — 다음 회차부터</h3><div class="run-choices unlock-list">${unlocks}</div>
+  <div class="run-actions"><button class="primary" id="run-new">새 회차 · 연의 첫 장부터 ▶</button><button id="run-menu">← 본영</button></div></div>`,false);
+  document.querySelectorAll<HTMLButtonElement>('[data-unlock]').forEach(b=>b.onclick=()=>{const m=loadMeta();if(buyUnlock(m,b.dataset.unlock!)){saveMeta(m);host.toast('해금했다. 다음 회차부터 적용된다.');}showRunOver(host);});
+  document.getElementById('run-new')!.onclick=()=>startNewRun(host,run.no+1);
+  document.getElementById('run-menu')!.onclick=host.showMenu;
+}
+/** 새 회차: 연의 진행을 되돌리고 연의 첫 장부터. */
+export function startNewRun(host:ScenarioHost,no?:number){
+  const meta=loadMeta();host.resetCampaign(meta.unlocks.includes('veteran_start'));
+  talkedIn.clear();
+  const state=newScenarioRun(no??(loadScenario().run?.no??0)+1,newSeed(),meta.unlocks,host.hero().level);saveScenario(state);
+  const first=currentStep(state);if(first)void enter(host,first);else showScenario(host);
+}
+
 /** 본영 카드에 쓰는 요약. */
 export function scenarioSummary(){const s=loadScenario(),cur=currentStep(s);return {state:s,current:cur,title:cur?stepTitle(cur,s):'결말까지 보았다',tag:cur?kindTag[cur.kind]:'완결'};}
 export {COMPANIONS};

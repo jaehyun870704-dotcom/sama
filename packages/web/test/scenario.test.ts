@@ -126,3 +126,32 @@ describe('시나리오의 가상 전장',()=>{
   expect(s.officers['조진']!.level).toBe(8);expect(s.officers['조진']!.unitClass).toBe('lancer');expect(news.join(' ')).toContain('진화');
  });
 });
+
+import {newScenarioRun,ensureRun,pendingMarch,marchNodes,recruitPool,recruitOfficer,afterFight,loseFight,runMandate,finishMarch,healAll,relicOffer} from '../src/scenario.ts';
+describe('본편은 로그라이크: 회차·행군로·영구 이탈·천명',()=>{
+ it('starts every run at the first romance chapter with Sima Lang and Cao Zhen, unlocks adding Sima Shi, a relic and the guard',()=>{
+  const s=newScenarioRun(1,12345,[],1);expect(currentStep(s)!.id).toBe('S1-01');expect(Object.keys(s.officers).sort()).toEqual(['사마랑','조진']);expect(s.run!.guard).toBe(false);
+  const t=newScenarioRun(2,12345,['wide_network','heirloom','second_chance'],6);expect(t.officers['사마사']).toBeDefined();expect(t.run!.relics).toHaveLength(1);expect(t.run!.guard).toBe(true);
+ });
+ it('continues an old save as the first run without wiping progress',()=>{
+  const s=freshScenario();finishStep(s,'S1-01');expect(ensureRun(s,99)).toBe(true);expect(s.done).toEqual(['S1-01']);expect(s.run!.no).toBe(1);expect(ensureRun(s,99)).toBe(false);
+ });
+ it('asks for a march between chapters (never before the first or the ending), seeded and always with a battle',()=>{
+  const s=newScenarioRun(1,777,[],1);expect(pendingMarch(s)).toBeUndefined();
+  finishStep(s,'S1-01');expect(pendingMarch(s)).toBe('S1-01');
+  const a=marchNodes(s,'S1-01'),b=marchNodes(s,'S1-01');expect(a).toEqual(b);expect(a).toHaveLength(3);expect(a.some(n=>n.kind==='battle')).toBe(true);
+  expect(new Set(a.map(n=>n.kind)).size).toBe(3);
+  finishMarch(s,'S1-01');expect(pendingMarch(s)).toBeUndefined();expect(s.run!.nodes).toBe(1);
+ });
+ it('loses fallen officers for the rest of the run and keeps the wounded wounded',()=>{
+  const s=newScenarioRun(1,5,[],3);const party=[{id:'sima_yi',name:'사마의',unitClass:'strategist' as const,level:3,xp:0,hp:1,hero:true as const},{id:'of1',name:'조진',unitClass:'cavalry' as const,level:2,xp:0,hp:1,officer:true as const},{id:'of2',name:'사마랑',unitClass:'physician' as const,level:2,xp:0,hp:1,officer:true as const}];
+  const lost=afterFight(s,party,{사마의:.5,사마랑:1},'시험');expect(lost).toEqual(['조진']);expect(s.officers['조진']).toBeUndefined();expect(s.run!.hp['사마의']).toBe(.5);
+  expect(recruitPool(s).some(o=>o.name==='조진')).toBe(false);expect(recruitOfficer(s,'조진',3)).toBe(false);
+  healAll(s,1);expect(s.run!.hp['사마의']).toBeUndefined();
+ });
+ it('ends the run on defeat unless the guard is left, and pays mandate for chapters, bosses, marches and the ending',()=>{
+  const s=newScenarioRun(1,5,['second_chance'],1);expect(loseFight(s)).toBe(true);expect(s.run!.hp['사마의']).toBe(.3);expect(loseFight(s)).toBe(false);expect(s.run!.status).toBe('over');
+  const t=newScenarioRun(1,5,[],1);for(const id of ['S1-01','S1-02'])finishStep(t,id);finishMarch(t,'S1-01');expect(runMandate(t)).toBe(2*2+1);
+ });
+ it('offers relics not yet carried',()=>{const s=newScenarioRun(1,9,['heirloom'],1);const offer=relicOffer(s,'x');expect(offer.length).toBe(3);for(const r of offer)expect(s.run!.relics).not.toContain(r.id);});
+});

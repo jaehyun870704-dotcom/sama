@@ -10,7 +10,8 @@
  * 이 모듈은 순서·상태·선택 효과의 순수 규칙만 둔다. 화면은 scenario-ui.ts, 무대 연출은 story-stage.ts.
  */
 import {ROUTES,routeById,routesFor,validRoute,type Route,type Tale} from './fate.ts';
-import {STORY_ORDER,RUN_FLOORS,XP_PER_LEVEL,grantXp,registerTales,landClass,type Run,type RunUnit} from './roguelike.ts';
+import {STORY_ORDER,RUN_FLOORS,XP_PER_LEVEL,RELICS,OFFICER_RECRUITS,grantXp,registerTales,landClass,type Run,type RunUnit} from './roguelike.ts';
+import {Rng} from '../../core/src/index.ts';
 import {evolvedClass,type UnitClass} from '../../core/src/index.ts';
 import type {ChapterScript,ChoiceEffect,ExtraTale,ScenarioPack,ScriptStep} from './scenario-types.ts';
 import history1 from './scenario/history-1.ts';
@@ -51,7 +52,39 @@ export interface ScenarioState {
   officers:Record<string,ScenarioOfficer>;
   /** 가상 전장 바꿔치기: 원래 전장 id → 다른 전장 id */
   paths:Record<string,string>;
+  /** 로그라이크 회차(천명의 길 한 번). 없으면 화면이 열 때 만든다. */
+  run?:ScenarioRun;
 }
+
+/**
+ * 본편은 로그라이크다: 한 회차는 언제나 연의 첫 장(S1-01)에서 시작해 결말이나 패배로 끝난다.
+ * 장과 장 사이에는 씨앗으로 정해지는 '행군로' 세 갈래(전투·정예·모병·의원·보물고·수련) 중 하나를 고르고,
+ * 가상 전장·행군 전투에서 쓰러진 장수는 그 회차에서 영원히 빠지며, 체력과 보물은 다음 싸움으로 이어진다.
+ * 지면 회차가 끝나고(천명의 가호가 있으면 한 번 견딘다) 천명을 얻어 다음 회차를 강하게 한다(meta.ts 해금).
+ */
+export interface ScenarioRun {
+  seed:number;
+  /** 몇 번째 회차인가 */
+  no:number;
+  /** 체력 비율(이름 → 0~1, 없으면 1): 가상 전장·행군 전투 사이에 이어진다 */
+  hp:Record<string,number>;
+  relics:string[];
+  /** 쓰러진 장수("이름 Lv.n · 장 제목") */
+  fallen:string[];
+  /** 행군로를 지난 자리(앞 장 id) */
+  marched:string[];
+  /** 지금 치르는 행군 전투의 갈래(끝나기 전에 다른 갈래로 빠질 수 없다) */
+  march?:MarchKind;
+  /** 천명의 가호가 남았나 */
+  guard:boolean;
+  /** 지나온 행군 갈래 수(천명 정산) */
+  nodes:number;
+  status:'alive'|'over'|'complete';
+  /** 천명을 이미 받았나 */
+  settled?:boolean;
+}
+export type MarchKind='battle'|'elite'|'recruit'|'rest'|'treasure'|'training';
+export interface MarchNode {kind:MarchKind;label:string;detail:string}
 export const freshScenario=():ScenarioState=>({version:1,route:{},done:[],flags:[],choices:{},officers:{},paths:{}});
 
 const KEY='sama-scenario-v1';
@@ -63,9 +96,19 @@ export function readScenario(raw:string|null):ScenarioState{
       flags:Array.isArray(s.flags)?s.flags.filter(x=>typeof x==='string'):[],choices:{},officers:{},paths:{}};
     for(const [k,v] of Object.entries(s.choices??{}))if(typeof v==='string')clean.choices[k]=v;
     for(const [k,v] of Object.entries(s.paths??{}))if(typeof v==='string'&&EXTRA_TALES.some(t=>t.id===v&&t.replaces===k))clean.paths[k]=v;
+    const run=readRun(s.run);if(run)clean.run=run;
     for(const [k,o] of Object.entries(s.officers??{}))if(o&&typeof o.unitClass==='string'&&Number.isInteger(o.level)&&o.level>=1&&o.level<=60&&Number.isInteger(o.xp)&&o.xp>=0&&o.xp<XP_PER_LEVEL)clean.officers[k]={name:k,unitClass:o.unitClass as UnitClass,level:o.level,xp:o.xp};
     return clean;
   }catch{return freshScenario();}
+}
+const MARCH_KINDS:MarchKind[]=['battle','elite','recruit','rest','treasure','training'];
+function readRun(r:unknown):ScenarioRun|undefined{
+  if(!r||typeof r!=='object')return undefined;const x=r as Partial<ScenarioRun>;
+  if(!Number.isSafeInteger(x.seed)||!Number.isInteger(x.no)||(x.no??0)<1)return undefined;
+  const strs=(a:unknown)=>Array.isArray(a)?a.filter((v):v is string=>typeof v==='string'):[];
+  const hp:Record<string,number>={};for(const [k,v] of Object.entries(x.hp??{}))if(typeof v==='number'&&v>0&&v<=1)hp[k]=v;
+  return {seed:x.seed!,no:x.no!,hp,relics:strs(x.relics).filter(id=>RELICS.some(q=>q.id===id)),fallen:strs(x.fallen),marched:strs(x.marched),...(x.march&&MARCH_KINDS.includes(x.march)?{march:x.march}:{}),
+    guard:!!x.guard,nodes:Number.isInteger(x.nodes)&&x.nodes!>=0?x.nodes!:0,status:x.status==='over'||x.status==='complete'?x.status:'alive',...(x.settled?{settled:true}:{})};
 }
 export function loadScenario(){try{return readScenario(localStorage.getItem(KEY));}catch{return freshScenario();}}
 export function saveScenario(s:ScenarioState){try{localStorage.setItem(KEY,JSON.stringify(s));}catch{/* storage optional */}}
@@ -165,9 +208,10 @@ export function floorFor(step:ScenarioStep,state:ScenarioState){
 
 /** 가상 전장에 나가는 부대(사마의 + 고른 장수들, 최대 6). heroLevel/heroXp는 연의 진행의 사마의. */
 export function scenarioParty(state:ScenarioState,heroLevel:number,heroXp:number,picked?:string[]):RunUnit[]{
-  const hero:RunUnit={id:'sima_yi',name:'사마의',unitClass:evolvedClass('strategist',heroLevel),level:heroLevel,xp:Math.min(XP_PER_LEVEL-1,heroXp),hp:1,hero:true};
+  const hp=(n:string)=>state.run?.hp[n]??1;
+  const hero:RunUnit={id:'sima_yi',name:'사마의',unitClass:evolvedClass('strategist',heroLevel),level:heroLevel,xp:Math.min(XP_PER_LEVEL-1,heroXp),hp:hp('사마의'),hero:true};
   const names=(picked??Object.keys(state.officers)).filter(n=>state.officers[n]).slice(0,6);
-  return [hero,...names.map((n,i)=>{const o=state.officers[n]!;return {id:'of'+(i+1),name:n,unitClass:evolvedClass(o.unitClass,o.level),level:o.level,xp:o.xp,hp:1,officer:true as const};})];
+  return [hero,...names.map((n,i)=>{const o=state.officers[n]!;return {id:'of'+(i+1),name:n,unitClass:evolvedClass(o.unitClass,o.level),level:o.level,xp:o.xp,hp:hp(n),officer:true as const};})];
 }
 
 /** 전투가 끝나고: 장수들에게 번 경험치 + 승리 보너스를 주고(진화 포함), 소식 문장을 돌려준다. */
@@ -182,3 +226,98 @@ export function rewardOfficers(state:ScenarioState,party:RunUnit[],earned:Record
 
 /** 결말 덧말: 이번 이야기에서 남긴 표식에 따른 한 줄들. */
 export function endingNotes(state:ScenarioState){return ENDING_NOTES.filter(n=>state.flags.includes(n.flag)).map(n=>n.line);}
+
+
+// ─────────────────────────────────────────────── 로그라이크 회차
+
+/** 새 회차: 연의 첫 장부터. 사마랑·조진이 곁에 있고, 해금에 따라 사마사·보물·가호가 더해진다. */
+export function newScenarioRun(no:number,seed:number,unlocks:readonly string[]=[],heroLevel=1):ScenarioState{
+  const s=freshScenario(),lv=Math.max(1,heroLevel-1);
+  s.officers['사마랑']={name:'사마랑',unitClass:'physician',level:lv,xp:0};
+  s.officers['조진']={name:'조진',unitClass:'cavalry',level:lv,xp:0};
+  if(unlocks.includes('wide_network'))s.officers['사마사']={name:'사마사',unitClass:'heavyCav',level:lv,xp:0};
+  const r=new Rng(seed>>>0||1),relics=unlocks.includes('heirloom')?[RELICS[r.int(0,RELICS.length-1)]!.id]:[];
+  s.run={seed,no,hp:{},relics,fallen:[],marched:[],guard:unlocks.includes('second_chance'),nodes:0,status:'alive'};
+  return s;
+}
+/** 회차가 없는 예전 기록은 지금 자리에서 첫 회차로 이어 간다(진행을 지우지 않는다). */
+export function ensureRun(state:ScenarioState,seed:number,unlocks:readonly string[]=[],heroLevel=1){
+  if(state.run)return false;
+  // 곁에 장수가 없으면(연의 길의 예전 기록) 사마랑·조진이 행군에 함께한다(그 길의 적이 아니면).
+  if(!Object.keys(state.officers).length){const foes=new Set((['1','2','3'] as const).flatMap(a=>{const rt=routeById(state.route[Number(a) as 1|2|3]);return rt?foesOf(rt):[];}));
+    for(const [name,unitClass] of [['사마랑','physician'],['조진','cavalry']] as const)if(!foes.has(name))state.officers[name]={name,unitClass,level:Math.max(1,heroLevel-1),xp:0};}
+  state.run={seed,no:1,hp:{},relics:[],fallen:[],marched:[],guard:unlocks.includes('second_chance'),nodes:0,status:'alive'};return true;
+}
+const hashId=(id:string)=>{let h=2166136261;for(const ch of id)h=Math.imul(h^ch.charCodeAt(0),16777619);return h>>>0;};
+/** 장과 장 사이의 행군로: 마친 장 바로 다음 장으로 가기 전에 지나야 하는 자리(앞 장 id). */
+export function pendingMarch(state:ScenarioState):string|undefined{
+  const run=state.run;if(!run||run.status!=='alive')return undefined;
+  const path=scenarioPath(state),done=new Set(state.done),i=path.findIndex(x=>!done.has(x.id));
+  if(i<=0)return undefined;const prev=path[i-1]!,next=path[i]!;
+  if(next.kind==='ending')return undefined;
+  return run.marched.includes(prev.id)?undefined:prev.id;
+}
+const MARCH_TEXT:Record<MarchKind,[string,string]>={
+  battle:['전투','길목의 적을 친다. 장수들이 경험치를 얻고 보상 하나를 고른다. 쓰러진 장수는 이번 회차에서 떠난다.'],
+  elite:['정예 전투','진화한 정예가 섞인 강적. 이기면 보물 하나.'],
+  recruit:['모병소','장수 한 사람을 맞아들인다.'],
+  rest:['의원','모든 장수와 사마의의 체력을 되찾는다.'],
+  treasure:['보물고','이번 회차 내내 효과가 이어지는 보물 하나를 고른다.'],
+  training:['수련장','사마의와 장수들이 경험치를 얻는다.'],
+};
+/** 행군로 세 갈래(같은 회차·같은 자리면 언제나 같다). 전투는 언제나 하나 있다. */
+export function marchNodes(state:ScenarioState,after:string,size=3):MarchNode[]{
+  const run=state.run!,r=new Rng((run.seed^hashId(after))>>>0||1),kinds:MarchKind[]=['battle'];
+  const pool:MarchKind[]=['elite','recruit','rest','treasure','training','battle'].filter(k=>k!=='recruit'||recruitPool(state).length>0) as MarchKind[];
+  while(kinds.length<size&&pool.length){const k=pool.splice(r.int(0,pool.length-1),1)[0]!;if(!kinds.includes(k))kinds.push(k);}
+  return kinds.map(kind=>({kind,label:MARCH_TEXT[kind][0],detail:MARCH_TEXT[kind][1]}));
+}
+/** 맞아들일 수 있는 장수: 곁에 없고, 이번 회차에 쓰러지지 않았고, 고른 길의 적이 아닌 사람. */
+export function recruitPool(state:ScenarioState){
+  const gone=new Set([...Object.keys(state.officers),...(state.run?.fallen??[]).map(f=>f.split(' Lv.')[0]!),...(['1','2','3'] as const).flatMap(a=>{const rt=routeById(state.route[Number(a) as 1|2|3]);return rt?foesOf(rt):[];})]);
+  return [...COMPANIONS,...OFFICER_RECRUITS].filter((o,i,a)=>a.findIndex(x=>x.name===o.name)===i&&!gone.has(o.name));
+}
+/** 모병소·전투 보상에 나오는 장수 둘. */
+export function recruitOffer(state:ScenarioState,after:string,n=2){
+  const r=new Rng((state.run!.seed^hashId(after+'#recruit'))>>>0||1),pool=recruitPool(state),out:typeof pool=[];
+  while(out.length<n&&pool.length)out.push(pool.splice(r.int(0,pool.length-1),1)[0]!);return out;
+}
+/** 보물고·정예 보상에 나오는 보물 셋. */
+export function relicOffer(state:ScenarioState,after:string,n=3){
+  const r=new Rng((state.run!.seed^hashId(after+'#relic'))>>>0||1),pool=RELICS.filter(x=>!state.run!.relics.includes(x.id)),out:typeof pool=[];
+  while(out.length<n&&pool.length)out.push(pool.splice(r.int(0,pool.length-1),1)[0]!);return out;
+}
+export function recruitOfficer(state:ScenarioState,name:string,heroLevel:number,elite=false){
+  const o=recruitPool(state).find(x=>x.name===name);if(!o||Object.keys(state.officers).length>=8)return false;
+  state.officers[name]={name,unitClass:landClass(o.unitClass),level:Math.max(1,heroLevel-1+(elite?3:0)),xp:0};return true;
+}
+export function healAll(state:ScenarioState,amount=1){const run=state.run!;for(const k of Object.keys(run.hp))run.hp[k]=Math.min(1,run.hp[k]!+amount);for(const [k,v] of Object.entries(run.hp))if(v>=1)delete run.hp[k];}
+/** 행군로 한 갈래를 마쳤다. */
+export function finishMarch(state:ScenarioState,after:string){const run=state.run!;if(!run.marched.includes(after))run.marched.push(after);run.nodes++;delete run.march;}
+/** 행군 전투의 층(적 구성·전장 크기 기준): 그 편 안에서 지난 행군 수만큼 깊어진다. */
+export function marchFloor(state:ScenarioState,act:1|2|3){
+  const inAct=scenarioPath(state).filter(x=>x.act===act&&state.run?.marched.includes(x.id)).length;
+  return (act-1)*6+Math.min(5,2+inAct);
+}
+/**
+ * 싸움이 끝난 뒤의 부대: 살아남은 장수의 체력을 남기고, 쓰러진 장수는 이번 회차에서 떠난다.
+ * survivors: 이름 → 체력 비율(살아남은 사람만). 떠난 이름을 돌려준다.
+ */
+export function afterFight(state:ScenarioState,party:RunUnit[],survivors:Record<string,number>,where:string){
+  const run=state.run;if(!run)return [];const lost:string[]=[];
+  for(const u of party){const hp=survivors[u.name];
+    if(hp===undefined){if(u.hero)continue;lost.push(u.name);run.fallen.push(`${u.name} Lv.${u.level} · ${where}`);delete state.officers[u.name];delete run.hp[u.name];continue;}
+    if(hp>=0.999)delete run.hp[u.name];else run.hp[u.name]=Math.max(.05,hp);}
+  return lost;
+}
+/** 졌다: 가호가 있으면 한 번 견디고(사마의 체력 30%) 다시 정비부터, 없으면 회차가 끝난다. 견뎠으면 true. */
+export function loseFight(state:ScenarioState){
+  const run=state.run;if(!run)return true;
+  if(run.guard){run.guard=false;run.hp['사마의']=.3;delete run.march;return true;}
+  run.status='over';delete run.march;return false;
+}
+/** 이번 회차의 천명: 이긴 전투 장 2 · 우두머리 3 · 행군 1 · 결말 10. */
+export function runMandate(state:ScenarioState){
+  const done=new Set(state.done),path=scenarioPath(state).filter(x=>done.has(x.id));
+  return 2*path.filter(x=>x.kind==='story'||x.kind==='tale').length+3*path.filter(x=>x.kind==='boss').length+(state.run?.nodes??0)+(path.some(x=>x.kind==='ending')?10:0);
+}
