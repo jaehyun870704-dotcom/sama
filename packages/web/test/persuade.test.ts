@@ -58,3 +58,18 @@ describe('신장수·신세력',()=>{
   expect(ROUTES.filter(r=>r.custom)).toHaveLength(5);
  });
 });
+
+import {readPortrait,suggestPortrait,PORTRAIT_KEYS,PORTRAIT_PARTS} from '../src/portrait.ts';
+describe('신장수 초상',()=>{
+ it('suggests a fitting portrait from name, class and temper, and keeps it within the parts',()=>{
+  const a=suggestPortrait('한철','cavalry','brave'),b=suggestPortrait('한철','cavalry','brave');expect(a).toEqual(b);
+  expect(a.armor).toBeGreaterThan(0);expect(a.eyes).toBe(2);expect(suggestPortrait('백운','strategist','wise').armor).toBe(0);
+  for(const k of PORTRAIT_KEYS)expect(a[k]).toBeLessThan(PORTRAIT_PARTS[k].length);
+  expect(suggestPortrait('한철','cavalry','brave',1)).not.toEqual(a);
+ });
+ it('reads a saved portrait safely and keeps it with the officer',()=>{
+  expect(readPortrait({face:9,skin:1})).toMatchObject({face:0,skin:1,hat:0});expect(readPortrait('x')).toBeUndefined();
+  const o={name:'강유린',epithet:'',unitClass:'spearman' as const,temper:'proud' as const,war:70,int:70,lead:70,pol:70,cha:70,portrait:suggestPortrait('강유린','spearman','proud')};
+  expect(readCustoms([o])[0]!.portrait).toEqual(o.portrait);
+ });
+});

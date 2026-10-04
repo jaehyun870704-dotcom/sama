@@ -1,6 +1,6 @@
 import {trialGoals,trialGoalText,trialProgress} from './expedition-objectives.ts';
 import {troopAdvice,adviceFor,recommendExpeditionSupport,supportWarnings,physicalMatchup} from './troop-tactics.ts';
-import {officerLooks,officerPortrait,dialogueCaption,splitSpokenLine,storyActorStyle} from './officer-art.ts';
+import {officerLooks,officerPortrait,dialogueCaption,splitSpokenLine,storyActorStyle,customFace} from './officer-art.ts';
 import {troopRoles,supportOptions,visualClass,troopArt,troopSheets,basicReactionArt,evolutionLines} from './troops.ts';
 import {growthMilestones} from './growth-milestones.ts';
 import {trialStory,trialTactics,layoutName} from './expedition-scenes.ts';
@@ -253,6 +253,8 @@ function describe(e:LogEntry){const name=(id:string)=>session.state.find(id)?.na
 }}
 function consumeLog(){const logs=session.state.log.slice(lastLog);lastLog=session.state.log.length;if(logs.some(e=>e.t==='terrain'))field.repaintTerrain();field.play(logs);for(const e of logs){const line=describe(e);if(line)$('#latest-log').textContent=line;if(e.t==='turnStart'){const banner=$('#phase-banner');banner.textContent=`${sideNames[e.side]}의 차례`;banner.classList.add('show');setTimeout(()=>banner.classList.remove('show'),1300);sound.event({kind:'turn',side:e.side});if(e.side!=='player')sound.focus=undefined;}}}
 function portraitFor(u:Unit,reaction=false):string{
+  // 신장수: 직접 만든 초상
+  {const url=customFace(u.name);if(url&&u.side==='player')return `<span class="battle-model custom-portrait" role="img" aria-label="${unitName(u)}" style="background-image:url(${url});background-size:cover"></span>`;}
   const art=troopArt[u.unitClass];if(art)return `<span class="battle-model" role="img" aria-label="${unitName(u)}" style="background-image:var(--${art.sheet}${reaction?'-reaction':''}-atlas);background-size:400% ${art.rows*100}%;background-position:${reaction?33.333333:0}% ${art.row/(art.rows-1)*100}%"></span>`;
   const role=troopRoles[u.unitClass];if(role)return `<span class="troop-portrait" style="filter:sepia(.18)">${portraitFor({...u,unitClass:visualClass(u.unitClass)})}<b style="color:#${role.tint.toString(16)}">${role.name}</b></span>`;
   if(u.unitClass==='ram')return '<span class="battle-model" role="img" aria-label="충차" style="background-image:var(--ram-atlas);background-size:200% 200%;background-position:0 0"></span>';

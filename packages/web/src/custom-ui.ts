@@ -5,11 +5,13 @@
  *   처음부터 함께할 신장수(최대 넷)를 정하고, 첫 갈림길에서 스스로 기치를 드는 길이 열린다.
  */
 import {loadMeta,saveMeta} from './meta.ts';
-import {checkCustom,checkFaction,registerCustoms,statTotal,STAT_KEYS,STAT_NAMES,STAT_MIN,STAT_MAX,STAT_BUDGET,CUSTOM_LIMIT,CUSTOM_CLASSES,TEMPERS,FACTION_COLORS,type CustomOfficer,type Faction} from './custom.ts';
+import {portraitOf,checkCustom,checkFaction,registerCustoms,statTotal,STAT_KEYS,STAT_NAMES,STAT_MIN,STAT_MAX,STAT_BUDGET,CUSTOM_LIMIT,CUSTOM_CLASSES,TEMPERS,FACTION_COLORS,type CustomOfficer,type Faction} from './custom.ts';
 import {temperNames} from './duel.ts';
 import {classNames} from './troops.ts';
 import {spriteStyle} from './story-stage.ts';
 import type {Look} from './scenario-types.ts';
+import {PORTRAIT_PARTS,PORTRAIT_KEYS,portraitURL,suggestPortrait,type PortraitSpec} from './portrait.ts';
+const PART_NAMES:Record<string,string>={face:'얼굴형',skin:'피부',eyes:'눈매',brows:'눈썹',mouth:'입',beard:'수염',hair:'머리색',hat:'머리·관모',robe:'옷 색',armor:'갑옷',item:'소품',bg:'배경'};
 
 export interface CustomHost {modal(html:string,closable?:boolean):void;toast(text:string):void}
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -20,12 +22,15 @@ export function customs(){return loadMeta().customOfficers??[];}
 function saveCustoms(list:CustomOfficer[]){const m=loadMeta();m.customOfficers=list;saveMeta(m);registerCustoms(list);}
 
 /** 신장수 목록과 만들기·고치기·지우기. */
-export function showCustomEditor(host:CustomHost,back:()=>void,editing?:number){
-  const list=customs(),cur:CustomOfficer=editing!==undefined&&list[editing]?{...list[editing]!}:{name:'',epithet:'',unitClass:'cavalry',temper:'brave',war:70,int:70,lead:70,pol:70,cha:70};
-  const cards=list.map((o,i)=>`<button class="prep-officer ${i===editing?'focus':''}" data-edit="${i}"><span class="prep-sprite" style="${spriteStyle(LOOK[o.unitClass]??'infantry')}"></span><span><strong>${esc(o.name)}</strong><small>${esc(classNames[o.unitClass]??o.unitClass)} · ${temperNames[o.temper]} · 합 ${statTotal(o)}</small></span></button>`).join('');
+export function showCustomEditor(host:CustomHost,back:()=>void,editing?:number,draft?:CustomOfficer){
+  const list=customs(),cur:CustomOfficer=draft??(editing!==undefined&&list[editing]?{...list[editing]!}:{name:'',epithet:'',unitClass:'cavalry',temper:'brave',war:70,int:70,lead:70,pol:70,cha:70});
+  const face:PortraitSpec={...portraitOf({...cur,name:cur.name||'신장수'})};
+  const cards=list.map((o,i)=>`<button class="prep-officer ${i===editing?'focus':''}" data-edit="${i}"><span class="prep-sprite cu-thumb" style="background-image:url(${portraitURL(portraitOf(o))})"></span><span><strong>${esc(o.name)}</strong><small>${esc(classNames[o.unitClass]??o.unitClass)} · ${temperNames[o.temper]} · 합 ${statTotal(o)}</small></span></button>`).join('');
   host.modal(`<div class="briefing run-screen custom-screen"><div class="eyebrow">신장수 · 연의 장수록에 오른다</div><h2>신장수 만들기 <small class="muted">${list.length}/${CUSTOM_LIMIT}</small></h2>
   <div class="custom-body"><div class="prep-list">${cards||'<p class="muted">아직 만든 신장수가 없다.</p>'}<button id="cu-new">+ 새 신장수</button></div>
   <form class="custom-form" id="cu-form">
+    <div class="cu-portrait"><div class="cu-face"><img id="cu-face" alt="초상 미리보기" src="${portraitURL(face)}"><button type="button" id="cu-rand">🎲 무작위 초상</button></div>
+      <div class="cu-parts">${PORTRAIT_KEYS.map(k=>`<label>${PART_NAMES[k]} <select data-part="${k}">${PORTRAIT_PARTS[k].map((t,i)=>`<option value="${i}" ${face[k]===i?'selected':''}>${t}</option>`).join('')}</select></label>`).join('')}</div></div>
     <label>이름 <input name="name" maxlength="4" value="${esc(cur.name)}" placeholder="한글 1~4자" required></label>
     <label>별호 <input name="epithet" maxlength="24" value="${esc(cur.epithet)}" placeholder="예: 하내의 젊은 창"></label>
     <label>병종 <select name="unitClass">${CUSTOM_CLASSES.map(c=>`<option value="${c}" ${c===cur.unitClass?'selected':''}>${esc(classNames[c]??c)}</option>`).join('')}</select></label>
@@ -35,8 +40,12 @@ export function showCustomEditor(host:CustomHost,back:()=>void,editing?:number){
     <div class="run-actions"><button class="primary" type="submit">${editing!==undefined?'고쳐 저장':'만든다'}</button>${editing!==undefined?'<button type="button" id="cu-del" class="danger">지운다</button>':''}<button type="button" id="cu-back">← 돌아가기</button></div>
   </form></div></div>`,false);
   const form=document.getElementById('cu-form') as HTMLFormElement,err=document.getElementById('cu-err')!;
+  const readFace=():PortraitSpec=>Object.fromEntries(PORTRAIT_KEYS.map(k=>[k,Number(form.querySelector<HTMLSelectElement>(`[data-part="${k}"]`)!.value)])) as PortraitSpec;
   const read=():CustomOfficer=>{const f=new FormData(form);return {name:String(f.get('name')??'').trim(),epithet:String(f.get('epithet')??'').trim(),unitClass:String(f.get('unitClass')) as CustomOfficer['unitClass'],temper:String(f.get('temper')) as CustomOfficer['temper'],
-    war:Number(f.get('war')),int:Number(f.get('int')),lead:Number(f.get('lead')),pol:Number(f.get('pol')),cha:Number(f.get('cha'))};};
+    war:Number(f.get('war')),int:Number(f.get('int')),lead:Number(f.get('lead')),pol:Number(f.get('pol')),cha:Number(f.get('cha')),portrait:readFace()};};
+  const faceImg=document.getElementById('cu-face') as HTMLImageElement;
+  form.querySelectorAll<HTMLSelectElement>('[data-part]').forEach(x=>x.addEventListener('change',()=>{faceImg.src=portraitURL(readFace());}));
+  let salt=0;document.getElementById('cu-rand')!.onclick=()=>{const o=read(),r=suggestPortrait(o.name||'신장수',o.unitClass,o.temper,++salt);for(const k of PORTRAIT_KEYS)form.querySelector<HTMLSelectElement>(`[data-part="${k}"]`)!.value=String(r[k]);faceImg.src=portraitURL(r);};
   form.addEventListener('input',()=>{const o=read();for(const k of STAT_KEYS)document.querySelector(`[data-v="${k}"]`)!.textContent=String(o[k]);const sum=statTotal(o),el=document.getElementById('cu-sum')!;el.textContent=String(sum);el.classList.toggle('over',sum>STAT_BUDGET);});
   form.addEventListener('submit',e=>{e.preventDefault();const o=read(),others=list.filter((_,i)=>i!==editing).map(x=>x.name);
     if(editing===undefined&&list.length>=CUSTOM_LIMIT){err.textContent=`신장수는 ${CUSTOM_LIMIT}명까지`;return;}
