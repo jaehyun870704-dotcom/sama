@@ -8,6 +8,7 @@
 import type {Scene,ScriptStep,ChoiceOption,Look,At,CastMember} from './scenario-types.ts';
 import {isoScene,stepsBetween,offscreenCell,type Cell,type IsoScene} from './story-iso.ts';
 import {officerPortrait,officerLook} from './officer-art.ts';
+import {romanceByName} from './romance.ts';
 
 /** 겉모습 → 병사 그림(시트·줄). 시트는 main.ts가 CSS 변수(--이름-atlas)로 올려 둔다. */
 const SPRITES:Record<Look,{sheet:string;rows:number;row:number;walk?:string}>={
@@ -25,6 +26,31 @@ export function spriteStyle(look:Look,frame=0,walking=false){
   return `background-image:var(--${sheet}-atlas);background-size:400% ${s.rows*100}%;background-position:${frame/3*100}% ${s.rows>1?s.row/(s.rows-1)*100:0}%`;
 }
 /** 먹 붓 테두리 대화창: 큰 초상과 이름·대사. place: 무대 위('top')·아래('bottom'). */
+/**
+ * 이야기 무대의 인물 그림. 조조전 이벤트처럼 무기를 휘두르는 전투 그림이 아니라 '서 있는 사람'을 쓴다.
+ * - fig: 장수 전신 일러스트(사마의·사마랑·사마방·조진·조조·조비·허저 등). 이름 있는 다른 장수는 문관/무장 일러스트를 옷 색만 바꿔 쓴다.
+ * - sheet: 이름 없는 병사·백성은 병종 그림(말 탄 병종은 무대에서 말에서 내린다).
+ */
+type Art={kind:'fig';slot:number;tint:number}|{kind:'sheet';look:Look};
+const ON_FOOT:Partial<Record<Look,Look>>={cavalry:'infantry',heavy:'infantry',horseArcher:'archer',elephant:'infantry'};
+const ROBE=new Set<Look>(['strategist','civil','sage','physician','taoist']);
+const nameHash=(s:string)=>{let h=0;for(const ch of s)h=(h*31+ch.charCodeAt(0))>>>0;return h;};
+function artFor(name:string,look:Look):Art{
+  const p=officerLook(name);if(p&&p.slot<8)return {kind:'fig',slot:p.slot,tint:0};
+  if(romanceByName(name)&&look!=='lady'&&look!=='shaman'&&look!=='monk'&&look!=='bandit'&&look!=='assassin'){
+    const h=nameHash(name),pool=ROBE.has(look)?[2,3,6]:[4,7];
+    return {kind:'fig',slot:pool[h%pool.length]!,tint:((h>>3)%9-4)*36||40};
+  }
+  return {kind:'sheet',look:ON_FOOT[look]??look};
+}
+function artStyle(art:Art,frame=0,walking=false){
+  if(art.kind==='sheet')return spriteStyle(art.look,frame,walking);
+  return `background-image:var(--officer-story-atlas);background-size:400% 200%;background-position:${art.slot%4/3*100}% ${Math.floor(art.slot/4)*100}%`;
+}
+/** 전신 일러스트의 윗몸(초상이 없는 장수의 대화창 그림). */
+function figFace(art:Extract<Art,{kind:'fig'}>){
+  return `<div class="officer-face sprite-face" role="img" style="background-image:var(--officer-story-atlas);background-size:800% 400%;background-position:${(art.slot%4*2+0.5)/7*100}% ${(Math.floor(art.slot/4)*2+0.08)/3*100}%;filter:hue-rotate(${art.tint}deg)"></div>`;
+}
 /** 그린 초상이 없는 인물은 무대 위 병종 그림의 윗몸을 크게 잘라 초상으로 쓴다. */
 function spriteFace(look:Look){
   const s=SPRITES[look]??SPRITES.infantry,y=s.rows>1?(s.row*2+0.42)/(s.rows*2-1)*100:0;
@@ -32,7 +58,8 @@ function spriteFace(look:Look){
 }
 export function talkBox(speaker:string,line:string,place:'top'|'bottom',stageLook?:Look){
   const look=officerLook(speaker),name=look?.name??speaker;
-  let face=officerPortrait(speaker);if(stageLook&&face.includes('unknown-face'))face=spriteFace(stageLook);
+  let face=officerPortrait(speaker);
+  if(stageLook&&(face.includes('unknown-face')||face.includes('troop-face'))){const art=artFor(speaker,stageLook);face=art.kind==='fig'?figFace(art):face.includes('unknown-face')?spriteFace(art.look):face;}
   return `<div class="ss-talk ${place}"><div class="ss-talk-face">${face}</div><div class="ss-talk-body"><b>${esc(name)}</b><p>${esc(line)}</p></div><span class="ss-talk-next" aria-hidden="true">▼</span></div>`;
 }
 
@@ -41,9 +68,9 @@ export interface StageHooks {
   /** 표식(when/unless 판정) — 선택으로 늘어날 수 있어 매번 읽는다. */
   flags():readonly string[];
 }
-type Actor={el:HTMLElement;cell:Cell;face:'left'|'right';look:Look;on:boolean;tick:number;posedUntil:number};
+type Actor={el:HTMLElement;cell:Cell;face:'left'|'right';look:Look;art:Art;on:boolean;tick:number;posedUntil:number};
 /** 서 있을 때 번갈아 쓰는 그림(숨쉬듯 자세가 바뀐다). 병종 그림의 0번은 기본, 3번은 같은 자세의 다른 그림이다. */
-const IDLE_FRAMES=(look:Look)=>{const s=SPRITES[look];return s.sheet==='base'||s.sheet==='extra'||look==='monk'||look==='horseArcher'?[0,3]:[0];};
+const IDLE_FRAMES=(look:Look,art?:Art)=>{if(art?.kind==='fig')return [0];const s=SPRITES[look];return s.sheet==='base'||s.sheet==='extra'||look==='monk'||look==='horseArcher'?[0,3]:[0];};
 /** 말을 꺼낼 때의 몸짓(책사는 부채로 가리키고, 의원은 약초를 들고, 무장은 자세를 고친다). */
 const TALK_FRAME=(look:Look)=>look==='strategist'||look==='civil'||look==='sage'||look==='shaman'||look==='lady'||look==='taoist'?2:look==='physician'||look==='monk'?3:look==='bandit'||look==='assassin'?1:3;
 /** 성낼 때(무장은 무기를 치켜든다). */
@@ -79,19 +106,20 @@ export class Stage {
     const now=Date.now();
     for(const a of this.actors.values()){
       if(!a.on||a.el.classList.contains('walking')||a.posedUntil>now)continue;
-      a.tick++;const frames=IDLE_FRAMES(a.look);
+      a.tick++;const frames=IDLE_FRAMES(a.look,a.art);
       // 사람마다 박자가 다르게(넷 중 하나는 쉬고)
-      if(frames.length>1&&a.tick%4!==0)a.el.querySelector<HTMLElement>('.ss-sprite')!.setAttribute('style',spriteStyle(a.look,frames[Math.floor(a.tick/2)%frames.length]!));
+      if(frames.length>1&&a.tick%4!==0)this.paint(a,frames[Math.floor(a.tick/2)%frames.length]!);
     }
   }
   /** 잠시 한 자세를 취한다(말하는 몸짓·성냄). */
   gesture(name:string,frame:number,ms=900){
     const a=this.actors.get(name);if(!a||a.el.classList.contains('walking'))return;
-    a.posedUntil=Date.now()+ms;a.el.querySelector<HTMLElement>('.ss-sprite')!.setAttribute('style',spriteStyle(a.look,frame));
-    setTimeout(()=>{if(a.posedUntil<=Date.now()&&!a.el.classList.contains('walking'))a.el.querySelector<HTMLElement>('.ss-sprite')!.setAttribute('style',spriteStyle(a.look));},ms+20);
+    if(a.art.kind==='fig'){this.react([...this.actors].find(([,o])=>o===a)![0],'nod');return;}
+    a.posedUntil=Date.now()+ms;this.paint(a,frame);
+    setTimeout(()=>{if(a.posedUntil<=Date.now()&&!a.el.classList.contains('walking'))this.paint(a);},ms+20);
   }
   /** 몸으로 하는 반응(펄쩍·갸웃·부들부들·축 처짐·들썩). */
-  react(name:string,kind:string){const a=this.actors.get(name);if(!a)return;a.el.classList.remove('jolt','tilt','shake','droop','bounce');void a.el.offsetWidth;a.el.classList.add(kind);setTimeout(()=>a.el.classList.remove(kind),900);}
+  react(name:string,kind:string){const a=this.actors.get(name);if(!a)return;a.el.classList.remove('jolt','tilt','shake','droop','bounce','nod');void a.el.offsetWidth;a.el.classList.add(kind);setTimeout(()=>a.el.classList.remove(kind),900);}
   next(){this.advance?.();}
   /** 이 칸에 다른 사람이 서 있는가. */
   private taken(cell:Cell,except?:string){for(const [n,a] of this.actors)if(n!==except&&a.on&&same(a.cell,cell))return true;return false;}
@@ -102,13 +130,18 @@ export class Stage {
     return cell;
   }
   addActor(m:CastMember){
-    const el=document.createElement('div');el.className='ss-actor';el.dataset.name=m.name;
-    el.innerHTML=`<div class="ss-shadow"></div><div class="ss-sprite" style="${spriteStyle(m.look)}"></div><span class="ss-name">${esc(m.name)}</span><div class="ss-bubble" hidden></div>`;
+    const art=artFor(m.name,m.look),look=art.kind==='sheet'?art.look:m.look;
+    const el=document.createElement('div');el.className=`ss-actor ${art.kind==='fig'?'fig':''}`;el.dataset.name=m.name;
+    if(art.kind==='fig'&&art.tint)el.style.setProperty('--tint',`${art.tint}deg`);
+    // 윗몸과 다리를 나눠 그린다: 걸을 때 다리(옷자락)만 번갈아 흔들려 한 걸음씩 내딛는 것처럼 보인다.
+    el.innerHTML=`<div class="ss-shadow"></div><div class="ss-body"><div class="ss-sprite top"></div><div class="ss-sprite legs"></div></div><span class="ss-name">${esc(m.name)}</span><div class="ss-bubble" hidden></div>`;
     const cell=m.at?this.free(this.scene.toCell(m.at)):this.scene.toCell([-12,60]);
     const face=m.face??(this.scene.toPct(cell)[0]<50?'right':'left');
-    const a:Actor={el,cell,face,look:m.look,on:!!m.at,tick:Math.floor(Math.random()*4),posedUntil:0};this.actors.set(m.name,a);el.style.setProperty('--d',`${-(Math.random()*2.4).toFixed(2)}s`);
-    this.place(a,false);if(!m.at)el.classList.add('off');this.el.appendChild(el);return a;
+    const a:Actor={el,cell,face,look,art,on:!!m.at,tick:Math.floor(Math.random()*4),posedUntil:0};this.actors.set(m.name,a);el.style.setProperty('--d',`${-(Math.random()*2.4).toFixed(2)}s`);
+    this.paint(a);this.place(a,false);if(!m.at)el.classList.add('off');this.el.appendChild(el);return a;
   }
+  /** 인물 그림(윗몸·다리 두 겹에 같은 그림). */
+  private paint(a:Actor,frame=0,walking=false){const st=artStyle(a.art,frame,walking);for(const e of a.el.querySelectorAll<HTMLElement>('.ss-sprite'))e.setAttribute('style',st);}
   /** 화면 위 자리(%). */
   at(name:string):At|undefined{const a=this.actors.get(name);return a?this.scene.toPct(a.cell):undefined;}
   cellOf(name:string){return this.actors.get(name)?.cell;}
@@ -151,18 +184,18 @@ export class Stage {
   private async stepAlong(a:Actor,path:readonly Cell[]){
     if(!path.length)return;
     if(this.skipping){a.cell=path.at(-1)!;this.place(a,false);return;}
-    const sprite=a.el.querySelector<HTMLElement>('.ss-sprite')!,walkSheet=!!SPRITES[a.look].walk;
+    const walkSheet=a.art.kind==='sheet'&&!!SPRITES[a.look].walk;
     a.el.classList.add('walking');a.el.style.transitionDuration=STEP_MS+'ms';
     for(let i=0;i<path.length;i++){
       const next=path[i]!,[x0,y0]=this.scene.toPct(a.cell),[x1,y1]=this.scene.toPct(next);
       if(x1!==x0)a.face=x1>x0?'right':'left';
       // 뒤로(화면 위쪽) 걸으면 뒷모습 그림이 있는 병종은 뒷모습으로
-      const back=y1<y0&&walkSheet;sprite.setAttribute('style',spriteStyle(a.look,(back?2:0)+(i%2),true));
+      if(walkSheet)this.paint(a,(y1<y0?2:0)+(i%2),true);
       a.el.classList.toggle('step-b',i%2===1);
       a.cell=next;this.place(a,true);
       await wait(STEP_MS);
     }
-    a.el.classList.remove('walking','step-b');a.el.style.transitionDuration='';sprite.setAttribute('style',spriteStyle(a.look));
+    a.el.classList.remove('walking','step-b');a.el.style.transitionDuration='';this.paint(a);
   }
   /** 대각으로 한 칸씩(화면 가로로 걸어 들어오고 나갈 때). */
   private stairs(from:Cell,to:Cell){const out:Cell[]=[];let [c,r]=from;let flip=false;
