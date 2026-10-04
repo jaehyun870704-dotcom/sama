@@ -4,6 +4,14 @@
 
 제작 도구: 내장 image_gen (CLI/API 대체 경로 사용 없음).
 
+## 학소 — 완료
+
+파일: `packages/web/public/portraits/hao-zhao.png`. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
+
+### 생성 프롬프트
+
+Historical-scene. ONE square portrait of Hao Zhao (학소), resolute Wei fortress defender of Chencang. East Asian man early fifties, broad flat cheekbones, rectangular weathered face, sun-darkened skin, deep calm eyes, firm mouth, modest straight black mustache and short salt-and-pepper chin beard. Practical low-profile dark iron helmet with plain rectangular brow reinforcement and cloth neck guard, no crest or ornate crown. Worn steel lamellar armor, charcoal linen shoulder mantle, muted rust-red collar. Disciplined, unshakeable defensive commander, not raging. Bust three-quarter turned right, face clear, entire helmet fully inside frame with breathing room, chest filling lower part. Premium semi-realistic digital oil painting for Three Kingdoms strategy game matching polished dark Sima Yi and Sima Fang portraits, exquisite natural face, subtle brushwork and realistic worn material textures. Warm soft side light and restrained cool fill against deep smoky charcoal-gray background, no scenery competing with face. No letters, frame, watermark, extra characters, anime, flat vector, fantasy spikes. One finished square image.
+
 ## 조예 — 완료
 
 파일: `packages/web/public/portraits/cao-rui.png`. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
