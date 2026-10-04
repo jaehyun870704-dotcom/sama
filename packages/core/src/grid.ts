@@ -84,6 +84,8 @@ export class BattleMap {
   private readonly tiles: Tile[];
   /** 이름 붙은 영역 (승리 조건 · 이벤트 트리거 대상) */
   readonly regions: Map<string, Coord[]>;
+  /** 넓힌 전장: 모든 부대의 이동력 보정(거리가 늘어난 만큼) */
+  moveBonus = 0;
 
   constructor(width: number, height: number, tiles: Tile[], regions: Map<string, Coord[]> = new Map()) {
     if (tiles.length !== width * height) {
@@ -176,7 +178,8 @@ export class BattleMap {
    * 적 유닛이 점유한 타일은 통과 불가, 아군 점유 타일은 통과 가능하되 정지 불가.
    */
   reachable(unit: Unit, occupancy: Map<string, Unit>, ignoreRough = false): Map<string, number> {
-    const budget = effectiveMovement(unit);
+    const base = effectiveMovement(unit);
+    const budget = base > 0 ? base + this.moveBonus : 0;
     const dist = new Map<string, number>([[key(unit.pos), 0]]);
     // 소규모 그리드이므로 단순 정렬 큐로 충분 (유닛당 최대 수백 타일)
     const queue: Array<{ c: Coord; d: number }> = [{ c: unit.pos, d: 0 }];

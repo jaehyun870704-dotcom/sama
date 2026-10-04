@@ -39,16 +39,28 @@ export function addFortifications(state:BattleState){
   }
 }
 
-/** Every castle map receives a controllable siege crew in new-rules battles. */
+const BLOCK=new Set(['wall','gate','water','rapids','cliff']);
+/** 공격 공성전인가: 사마의 자리에서 성벽·성문·물·벼랑을 지나지 않고는 닿지 못하는(성 안의) 적이 30% 이상이면 성을 쳐야 하는 싸움이다. */
+export function isAssault(state:BattleState,from:{x:number;y:number}){
+  const seen=new Set<string>([from.x+','+from.y]),q=[from];
+  while(q.length){const c=q.shift()!;for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]] as const){const n={x:c.x+dx,y:c.y+dy},k=n.x+','+n.y;
+    if(seen.has(k)||!state.map.inBounds(n)||BLOCK.has(state.map.tileAt(n).terrain))continue;seen.add(k);q.push(n);}}
+  const foes=state.living('enemy').filter(u=>!/^(gate|tower)_/.test(u.id));if(!foes.length)return false;
+  const near=(u:{pos:{x:number;y:number}})=>[[0,0],[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>seen.has((u.pos.x+dx!)+','+(u.pos.y+dy!)));
+  return foes.length-foes.filter(near).length>=Math.max(1,foes.length*.3);
+}
+/** Castle maps where we assault the walls receive a controllable siege crew in new-rules battles. */
 export function addSiegeCompany(state:BattleState){
   if(state.stage.id==='S1-04')return;
   const cells=[];for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++)cells.push({x,y});
   // Only castles with a gate to breach: a defended citadel (no gate) needs no rams.
   if(!cells.some(p=>state.map.tileAt(p).terrain==='wall')||!cells.some(p=>state.map.tileAt(p).terrain==='gate'))return;
   const hero=state.get('sima_yi');
+  // 우리가 성을 치는 싸움에만 공성병기를 붙인다: 성문·성벽을 넘지 않고 적 대부분에 닿을 수 있으면(야전·수성) 필요 없다.
+  const assault=isAssault(state,hero.pos);
   const free=cells.filter(p=>!state.unitAt(p)&&['plain','road','fort'].includes(state.map.tileAt(p).terrain)).sort((a,b)=>(Math.abs(a.x-hero.pos.x)+Math.abs(a.y-hero.pos.y))-(Math.abs(b.x-hero.pos.x)+Math.abs(b.y-hero.pos.y)));
-  if(!free[0])throw new Error('충차 배치 공간이 없습니다.');
-  state.add(makeUnit({id:'siege_crew',name:'공성대장',side:'ally',unitClass:'ram',level:hero.level,pos:free[0],traits:['siegeRam','noCounterAttack'],canUseItems:false}));
+  if(assault&&!free[0])throw new Error('충차 배치 공간이 없습니다.');
+  if(assault)state.add(makeUnit({id:'siege_crew',name:'공성대장',side:'ally',unitClass:'ram',level:hero.level,pos:free[0]!,traits:['siegeRam','noCounterAttack'],canUseItems:false}));
   if(['S1-06','S1-08'].includes(state.stage.id))return;
   // Estate fortifications defend the family; Luoyang's gate remains a paid exit.
   const side=state.stage.id==='S1-01'?'allyAi':'enemy';
