@@ -6,7 +6,7 @@
  *     아래에는 검붉은 옻칠 판에 합 순서(一~五)와 행동 칸(먹 그림 아이콘)이 놓인다.
  */
 import type {DuelAction,DuelState} from './duel.ts';
-import {duelActionNames,duelLine} from './duel.ts';
+import {duelActionNames,duelLine,newDuel,duelRound,type DuelKind} from './duel.ts';
 import {storyBackdrop} from './story.ts';
 import {bustFace,displayName} from './faces.ts';
 import {officerPortrait} from './officer-art.ts';
@@ -86,4 +86,25 @@ export function duelArena(d:DuelState,o:{models:{player:string;enemy:string};bac
       ${last?`<p class="duel-report" aria-live="polite">${last.round}합 · ${labels[last.action]} 대 ${labels[last.enemyAction]} · 준 피해 ${last.dealt} / 받은 피해 ${last.taken}</p>`:''}
     </div>
   </div>`;
+}
+
+/**
+ * 전투 밖의 대결(이야기 선택지·출진 전 조우): 선포 화면 → 5합 겨루기를 덮개 하나에 띄우고 결과를 돌려준다.
+ * stat은 일기토면 무력, 설전이면 지력(+레벨)을 넣는다.
+ */
+export function playContest(kind:DuelKind,me:{name:string;stat:number},foe:{name:string;stat:number},o:{acceptLine?:string;seed?:string;indoor?:boolean;done?:string}={}):Promise<'win'|'lose'|'draw'>{
+  const d=newDuel(kind,{id:'me',...me},{id:'foe',...foe});
+  const el=document.createElement('div');el.className='contest-overlay';
+  // 열린 dialog(최상위 층) 안에 붙여야 그 위로 보인다.
+  (document.querySelector('dialog[open]')??document.body).appendChild(el);
+  const models={player:`<div class="duel-model face-right">${face(me.name)}</div>`,enemy:`<div class="duel-model face-left">${face(foe.name)}</div>`};
+  return new Promise(resolve=>{
+    const arena=()=>{el.innerHTML=`<div class="contest-box">${duelArena(d,{models,backdrop:duelBackdrop(kind,o.seed??foe.name,o.indoor),...(o.acceptLine?{openingLine:o.acceptLine}:{})}).replace('전장으로 돌아가기',esc(o.done??'이야기로 돌아가기')).replace('전투 체력: 승자 15% · 패자 45% · 무승부 양쪽 25% 피해(최소 1). 패자는 2턴 혼란.',kind==='duel'?'이기면 이번 전투 아군 사기 상승 · 적의 기세가 꺾인다.':'이기면 이번 전투 아군 사기 상승 · 사마의 책략 MP +15.')}</div>`;
+      el.querySelectorAll<HTMLButtonElement>('[data-duel-action]').forEach(b=>b.onclick=()=>{if(duelRound(d,b.dataset.duelAction as DuelAction))arena();});
+      el.querySelector<HTMLButtonElement>('#duel-return')?.addEventListener('click',()=>{el.remove();resolve(d.result??'draw');});};
+    el.innerHTML=`<div class="contest-box">${duelSplash(d,o.acceptLine)}</div>`;
+    el.querySelectorAll<HTMLElement>('[data-vs-model]').forEach(x=>x.innerHTML=x.dataset.vsModel==='enemy'?models.enemy:models.player);
+    let started=false;const go=()=>{if(started)return;started=true;arena();};
+    el.querySelector('.vs-go')?.addEventListener('click',go);setTimeout(go,2600);
+  });
 }

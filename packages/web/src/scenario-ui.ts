@@ -17,6 +17,8 @@ import {encounterLevels} from './campaign-rules.ts';
 import {treasures,type Deployment,type ScenarioDeployment} from './progression.ts';
 import {romanceByName,romanceStats,temperOf} from './romance.ts';
 import {temperNames} from './duel.ts';
+import {playContest} from './duel-ui.ts';
+import {cardFace} from './faces.ts';
 import {taleSortieLimit} from './sortie.ts';
 import {classNames} from './troops.ts';
 import {nextEvolutionText,XP_PER_LEVEL,RELICS,survivorsOf,type BattleMods,type RunBattleRef,type RunUnit} from './roguelike.ts';
@@ -76,9 +78,23 @@ function stepSynopsis(step:ScenarioStep,state:ScenarioState){
 const kindTag:Record<ScenarioStep['kind'],string>={story:'연의',fate:'갈림길',tale:'가상',boss:'가상 · 우두머리',ending:'결말'};
 function firstArt(step:ScenarioStep){return scriptOf(step.id)?.scenes[0]?.art??(step.kind==='fate'?12:step.kind==='ending'?5:14);}
 
+/** 이 장에서 치른 대결(일기토·설전)의 결과. */
+export function contestOf(state:ScenarioState,step:ScenarioStep){const f=state.flags.find(x=>x.startsWith(`contest:${step.id}:`));if(!f)return undefined;const [, , kind,result]=f.split(':');return {kind:kind as 'duel'|'debate',result:result as 'win'|'lose'|'draw'};}
+/** 이야기 선택·출진 전 조우에서 그 자리 대결. 무력(일기토)·지력(설전)에 레벨을 더해 겨룬다. */
+async function runContest(host:ScenarioHost,state:ScenarioState,step:ScenarioStep,kind:'duel'|'debate',foe:string,by='사마의',line?:string){
+  const hero=host.hero(),lvOf=(n:string)=>n==='사마의'?hero.level:state.officers[n]?.level??hero.level;
+  const foeLv=step.kind==='story'?hero.level:enemyBase(state,hero.level,step);
+  const stat=(n:string,lv:number)=>{const r=romanceByName(n);return (kind==='duel'?(r?.war??55):(r?.int??55))+lv;};
+  const r=await playContest(kind,{name:by,stat:stat(by,lvOf(by))},{name:foe,stat:stat(foe,foeLv)},{...(line?{acceptLine:line}:{}),seed:step.id+foe,done:'돌아가기'});
+  state.flags=state.flags.filter(f=>!f.startsWith(`contest:${step.id}:`));state.flags.push(`contest:${step.id}:${kind}:${r}`);
+  if(r==='lose'&&by==='사마의'&&state.run)state.run.hp['사마의']=Math.min(state.run.hp['사마의']??1,.7);
+  saveScenario(state);return r;
+}
 /** 선택으로 고른 효과 → 이번 전투의 효과. */
 export function modsOf(state:ScenarioState,step:ScenarioStep):BattleMods{
   const picked=state.choices[step.id],script=scriptOf(step.id),out:BattleMods={};
+  // 일기토·설전에서 이겼다: 사기 상승 + (일기토) 적의 기세가 꺾인다 / (설전) 책략 MP
+  const c=contestOf(state,step);if(c?.result==='win'){out.rally=true;if(c.kind==='debate')out.insight=true;else if(step.kind==='story')out.guard=true;else out.ambush=true;}
   if(!picked||!script)return out;
   for(const scene of script.scenes)for(const st of scene.steps)if('choice' in st)for(const o of st.options)if(o.id===picked)for(const e of o.effects??[]){
     if(e.kind==='reinforce')(out.reinforce??=[]).push({name:e.name,unitClass:e.unitClass,side:e.side});
@@ -147,7 +163,7 @@ async function stage(host:ScenarioHost,state:ScenarioState,step:ScenarioStep,sce
   const root=document.querySelector<HTMLElement>('.ss-host')!;
   // 장을 여는 해설(역사·시나리오 배경)
   if(narration?.lines.length&&scenes[0])await playNarration(root,{heading,...narration,art:scenes[0].art,place:scenes[0].place});
-  await playScenes(root,scenes,{heading,flags:()=>state.flags,onChoice:(o)=>{if(choosing){choose(state,step,o.id,o.effects??[],host.hero().level);saveScenario(state);}}});
+  await playScenes(root,scenes,{heading,flags:()=>state.flags,onChoice:(o)=>{if(choosing){choose(state,step,o.id,o.effects??[],host.hero().level);saveScenario(state);}},onContest:e=>runContest(host,state,step,e.kind,e.foe,e.by,e.line)});
 }
 /** 지금 장에 들어간다: 이야기 장면부터. */
 export async function enter(host:ScenarioHost,step:ScenarioStep){
@@ -241,6 +257,8 @@ export function showIfPrep(host:ScenarioHost,state:ScenarioState,step:ScenarioSt
   <div class="prep-rules"><span>필수 ${1+required.length}명(사마의${required.length?' · '+esc(required.join(' · ')):''})</span><span>선택 ${sel.length}/${limit}명</span>
   <span class="prep-diff"><label><input type="radio" name="if-diff" value="normal" ${difficulty==='normal'?'checked':''}> 일반</label><label><input type="radio" name="if-diff" value="extreme" ${difficulty==='extreme'?'checked':''}> 극한 · 적 +2레벨 · 동행 −1 · 경험치 ×1.3</label></span></div>
   ${state.run?.relics.length?`<div class="run-relic-strip"><b class="muted">회차 보물 · 전원 적용</b>${state.run.relics.map(id=>RELICS.find(r=>r.id===id)).filter(Boolean).map(r=>`<span class="run-relic-card"><b>${esc(r!.name)}</b><small>${esc(r!.effect)}</small></span>`).join('')}</div>`:''}
+  ${romanceByName(foe.name)?(()=>{const c=contestOf(state,step),team=['사마의',...required,...sel],best=(k:'war'|'int')=>team.slice().sort((a,b)=>(romanceByName(b)?.[k]??0)-(romanceByName(a)?.[k]??0))[0]!;
+    return `<div class="prep-contest"><span class="prep-contest-face">${cardFace(foe.name)}</span><div><b>적장 ${esc(foe.name)}과(와) 마주했다</b><small>${c?`${c.kind==='duel'?'일기토':'설전'} ${c.result==='win'?'승리 — 이번 전투 사기 상승'+(c.kind==='duel'?' · 적 기세 꺾임(체력 80%)':' · 책략 MP +15'):c.result==='lose'?'패배':'무승부'}`:'싸우기 전에 겨뤄 볼 수 있다. 이기면 이번 전투가 유리해진다(한 장에 한 번).'}</small></div>${c?'':`<button data-contest="duel" data-by="${esc(best('war'))}">⚔ 일기토 · ${esc(best('war'))}</button><button data-contest="debate" data-by="${esc(best('int'))}">✒ 설전 · ${esc(best('int'))}</button>`}</div>`;})():''}
   ${modsText(mods).length?`<p class="prep-mods"><b>대사 선택의 효과</b> ${esc(modsText(mods).join(' · '))}</p>`:''}
   <div class="prep-body"><div class="prep-list">${card('사마의')}${required.map(card).join('')}${optional.map(card).join('')}</div>
   <div class="prep-detail"><div class="prep-portrait"><span class="prep-sprite big" style="${spriteStyle(lookOf(c),2)}"></span><div><h3>${esc(f)}</h3><p>${esc(classNames[c]??c)} · Lv.${u.level} · 경험치 ${u.xp}/${XP_PER_LEVEL}</p>${r?`<p class="muted">${esc(r.epithet)}</p>`:''}</div></div>
@@ -252,6 +270,7 @@ export function showIfPrep(host:ScenarioHost,state:ScenarioState,step:ScenarioSt
   document.querySelectorAll<HTMLButtonElement>('[data-officer]').forEach(b=>b.onclick=e=>{if((e.target as HTMLElement).closest('.prep-toggle'))return;showIfPrep(host,state,step,get(),b.dataset.officer!,difficulty);});
   document.querySelectorAll<HTMLInputElement>('[data-sortie]').forEach(x=>x.onchange=()=>{const now=get();if(now.length>limit){x.checked=false;host.toast(`이 장에는 필수 장수 밖으로 ${limit}명까지 데려갈 수 있습니다(${difficulty==='extreme'?'극한':'일반'}).`);return;}showIfPrep(host,state,step,now,f,difficulty);});
   document.querySelectorAll<HTMLInputElement>('[name=if-diff]').forEach(x=>x.onchange=()=>showIfPrep(host,state,step,get(),f,x.value==='extreme'?'extreme':'normal'));
+  document.querySelectorAll<HTMLButtonElement>('[data-contest]').forEach(b=>b.onclick=async()=>{const kind=b.dataset.contest as 'duel'|'debate';await runContest(host,state,step,kind,foe.name,b.dataset.by);showIfPrep(host,loadScenario(),step,get(),f,difficulty);});
   document.getElementById('prep-back')!.onclick=()=>showScenario(host,step.id);
   document.getElementById('prep-camp')!.onclick=()=>showCampFor(host,step);
   document.getElementById('prep-go')!.onclick=()=>launch(host,state,step,[...required,...get()],difficulty);

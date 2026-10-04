@@ -372,6 +372,7 @@ const SERVE:Chapters=[
           {emote:'사마의',text:'…'},
           {move:'사마의',to:[46,62]},
           {choice:'사마의',options:[
+            {id:'duel_yuanshang',text:'조진을 내보내 원상에게 일기토를 청한다',reply:'원상은 자존심이 센 자입니다. 조 장군, 그 자존심을 꺾어 주십시오.',note:'일기토(조진 대 원상) · 이기면 사기 상승·적 기세 꺾임',effects:[{kind:'duel',foe:'원상',by:'조진',line:'원씨의 아들이 물러설 줄 아느냐!'}]},
             {id:'wait',text:'공손강에게 사자를 보내고, 원상의 퇴로가 닫히기를 기다렸다 친다',reply:'공손강이 성문을 닫으면 원상의 기병 절반은 싸우기 전에 흩어집니다. 기다림도 칼입니다.',answer:{speaker:'조조',line:'허허, 역시 그 말이로군. 좋다. 사흘을 주마.'},note:'척후: 적 한 부대가 나오지 않는다',effects:[{kind:'scout'},{kind:'flag',flag:'srv_wait'}]},
             {id:'pincer',text:'곽회에게 동쪽 퇴로를 막게 하고 새벽에 들이친다',reply:'달아날 길이 막힌 기병은 말에서 내리는 법을 모릅니다. 곽회, 동쪽을 맡게.',answer:{speaker:'곽회',line:'동쪽 길목에 쇠뇌를 늘어세우겠습니다. 한 기도 요동에 들이지 않겠습니다.'},note:'기습: 적 전원이 체력 80%로 시작',effects:[{kind:'ambush'}]},
             {id:'charge',text:'원소의 마지막 칼과 정면으로 맞붙는다',reply:'하북 사람들이 보고 있습니다. 원씨가 정면에서 졌다는 것을 그들 눈으로 보게 해야 합니다.',note:'정면 승부: 적 정예 1부대 추가, 경험치 1.5배',effects:[{kind:'bold'}]},

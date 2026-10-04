@@ -121,6 +121,12 @@ describe('시나리오의 가상 전장',()=>{
   const withMods=opt.options.find(o=>o.effects?.some(e=>['reinforce','rally','guard','insight','scout','ambush','bold'].includes(e.kind)))!;
   choose(s,step,withMods.id,withMods.effects??[],8);expect(Object.keys(modsOf(s,step)).length).toBeGreaterThan(0);
  });
+ it('turns a won duel or debate into battle modifiers (once per chapter)',()=>{
+  const s=setup(),step=scenarioPath(s).find(x=>x.id==='IF1-srv-1')!;expect(modsOf(s,step).rally).toBeUndefined();
+  s.flags.push('contest:IF1-srv-1:duel:win');expect(modsOf(s,step)).toMatchObject({rally:true,ambush:true});
+  s.flags=['contest:IF1-srv-1:debate:win'];expect(modsOf(s,step)).toMatchObject({rally:true,insight:true});
+  s.flags=['contest:IF1-srv-1:duel:lose'];expect(modsOf(s,step).rally).toBeUndefined();
+ });
  it('grows officers by what they earned plus the victory bonus, evolving at the threshold',()=>{
   const s=setup();s.officers['조진']!.level=7;s.officers['조진']!.xp=50;
   const party=scenarioParty(s,8,0),zhen=party.find(u=>u.name==='조진')!;

@@ -1233,3 +1233,14 @@ body.left-open .left-close{display:block;position:absolute;right:8px;top:8px;z-i
 @media(max-height:560px){.codex-screen>.eyebrow,.codex-screen>h2{display:none}.cx-tabs{margin-top:0}.cx-list,.cx-detail{max-height:calc(100vh - 120px)}}
 .run-relic-strip{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}.run-relic-card{display:flex;flex-direction:column;padding:5px 10px;border:1px solid #c9a35a;background:linear-gradient(#3a2a12,#20160a);border-radius:6px}.run-relic-card b{color:#ffd77a;font-size:13px}.run-relic-card small{font-size:11px;color:#e8d8b0}
 .battle-relics{position:absolute;left:8px;bottom:8px;z-index:4;display:flex;gap:4px;flex-wrap:wrap;max-width:46%;pointer-events:auto}.battle-relics span{font-size:11px;padding:2px 7px;border:1px solid #c9a35a;border-radius:10px;background:#20160ad8;color:#ffd77a;cursor:help}
+.contest-overlay{position:fixed;inset:0;z-index:80;background:#050807e8;display:grid;place-items:center;overflow:auto;padding:12px}
+.contest-box{width:min(1180px,100%);height:calc(100dvh - 24px);overflow:hidden;background:#0b0807;border:1px solid #c9a35a;border-radius:8px;padding:0}.contest-box>.duel-splash{height:100%}
+.prep-contest{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0;padding:6px 10px;border:1px solid #b04a34;background:linear-gradient(90deg,#3a1410e0,#1a0e0ad0);border-radius:6px}
+.prep-contest>div{flex:1;min-width:160px;display:flex;flex-direction:column}.prep-contest b{color:#ffd0b0}.prep-contest small{font-size:11px;color:#e8d0b8}
+.prep-contest-face{width:44px;height:44px;border-radius:50%;overflow:hidden;border:2px solid #c9a35a;flex:none;display:block}.prep-contest-face>*{width:100%;height:100%}
+.prep-contest button{font-size:12px;padding:6px 10px;border-color:#e0624e}
+.encounter{position:absolute;left:50%;top:64px;transform:translateX(-50%);z-index:7;width:min(440px,calc(100% - 24px));padding:10px 12px;background:linear-gradient(#2a1410f4,#140a08f4);border:2px solid #d8a848;border-radius:10px;box-shadow:0 10px 30px #000c;display:flex;flex-direction:column;gap:6px;animation:line-in .25s ease-out}
+.encounter[hidden]{display:none}
+.enc-faces{display:flex;align-items:center;justify-content:center;gap:12px}.enc-faces span{width:64px;height:64px;border-radius:50%;overflow:hidden;border:2px solid #c9a35a;display:block}.enc-faces span>*{width:100%;height:100%}.enc-faces b{font:700 22px LocalSerif,serif;color:#ffd060;text-shadow:0 0 8px #f80}
+.encounter p{margin:0;text-align:center;color:#ffe8c8;font-size:14px}.encounter p small{display:block;font-size:11px;color:#d8c0a0;margin-top:2px}
+.enc-acts{display:flex;gap:6px;justify-content:center}.enc-acts button{flex:1;font-size:13px;padding:7px 6px}.enc-acts button[data-enc="duel"]{border-color:#e0624e}.enc-acts button[data-enc="debate"]{border-color:#6a92e8}

@@ -50,7 +50,9 @@ export type ChoiceEffect=
   /** 다음 가상 전장을 다른 이야기로 바꾼다(extraTales에 정의한 id). */
   |{kind:'path';tale:string}
   /** 이야기에 남는 표식. 뒤 장면의 when/unless, 결말 덧말이 읽는다. */
-  |{kind:'flag';flag:string};
+  |{kind:'flag';flag:string}
+  /** 그 자리에서 일기토(무력)·설전(지력) 5합. by: 나서는 사람(기본 사마의). 이기면 이번 전투 사기 상승(+가상 전장은 적 기세 꺾임), 설전 승리는 책략 MP도. */
+  |{kind:'duel'|'debate';foe:string;by?:string;line?:string};
 
 export interface ChoiceOption {
   /** 운명의 갈림길(fate:…)에서는 고를 수 있는 루트 id와 같아야 한다. */
@@ -172,7 +174,7 @@ export function checkPack(pack:ScenarioPack,known:{unitClasses:readonly string[]
         if('say' in st&&(!st.line||st.line.length>140))out.push(where(`${st.say}의 대사 길이 ${st.line.length}`));
         if('choice' in st){
           choices++;
-          if(st.options.length<2||st.options.length>3)out.push(where('선택지는 2~3개'));
+          {const contest=st.options.some(o=>o.effects?.some(e=>e.kind==='duel'||e.kind==='debate'));if(st.options.length<2||st.options.length>(contest?4:3))out.push(where(contest?'선택지는 2~4개(대결 포함)':'선택지는 2~3개'));}
           for(const o of st.options)for(const e of o.effects??[]){
             if((e.kind==='reinforce'||e.kind==='recruit')&&!classes.has(e.unitClass))out.push(where(`효과의 모르는 병종 ${e.unitClass}`));
             if(e.kind==='path'&&!extra.has(e.tale))out.push(where(`없는 가상 전장 ${e.tale}`));
