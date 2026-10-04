@@ -148,7 +148,7 @@ export class Session {
   /** 원정 전투에서 부대마다 이번 전투로 번 경험치(전투가 끝나면 원정에 더한다) */
   xpEarned:Record<string,number>={};
   /** 기록 항목 → 그 행동으로 번 경험치(전장 연출이 '경험치 +n'을 띄운다) */
-  xpGains=new WeakMap<LogEntry,XpGain&{level?:number}>();
+  xpGains=new WeakMap<LogEntry,XpGain&{level?:number;learned?:string[]}>();
   private xpCursor=0;
   funds=3000;
   bribes=0;
@@ -187,7 +187,7 @@ export class Session {
       u.level=Math.min(u.level,(this.deployment.levels.sima_yi??1)+1);
       u.stats=makeUnit({id:u.id,unitClass:u.unitClass,level:u.level,side:u.side,pos:u.pos}).stats;u.hp=u.stats.maxHp;u.mp=u.stats.maxMp;
     }
-    if(this.chapter===2){const hero=state.get('sima_yi');hero.unitClass='civilian';hero.strategies=[];hero.range=[0,0];}
+    // 2장(사마가 수비전)도 사마의는 처음부터 책사: 기본 공격(사거리 1)과 레벨에 맞는 책략(Lv1 화계)을 쓴다.
     for(const u of state.living('player')){
       if(this.preparation==='survival'){u.stats.maxHp+=25;u.hp+=25;}
       if(this.preparation==='strategy'){u.stats.maxMp+=18;u.mp+=18;}
@@ -401,8 +401,12 @@ export class Session {
       const b=base[gain.unit]!,before=this.xpEarned[gain.unit]??0,after=before+gain.amount;this.xpEarned[gain.unit]=after;
       const from=b.level+Math.floor((b.xp+before)/XP_PER_LEVEL),to=b.level+Math.floor((b.xp+after)/XP_PER_LEVEL),u=s.find(gain.unit);
       // 연의 전장에서 사마의의 전장 레벨이 원정 레벨과 다르면(연의 진행 레벨) 표시만 하고 능력치는 건드리지 않는다.
-      const up=to>from&&!!u?.alive&&u.level===from;if(up)levelUpInBattle(u!,to);
-      this.xpGains.set(entry,{...gain,...(up?{level:to}:{})});
+      const up=to>from&&!!u?.alive&&u.level===from;let learned:string[]=[];
+      if(up){levelUpInBattle(u!,to);
+        // 책사 계열은 레벨이 오를 때마다 그 레벨의 책략을 새로 익힌다(이미 아는 것은 그대로).
+        if(['strategist','fengshui'].includes(familyOf(u!.unitClass))){const now=availableStrategies(to,!!this.deployment?.growth),fresh=now.filter(id=>!u!.strategies.includes(id));
+          u!.strategies=[...u!.strategies,...fresh];learned=fresh.map(id=>allStrategies.find(x=>x.id===id)?.name??id);}}
+      this.xpGains.set(entry,{...gain,...(up?{level:to}:{}),...(learned.length?{learned}:{})});
     }
   }
   private advanceScenario(){

@@ -84,7 +84,7 @@ export class Battlefield {
   playbackRate=1;
   onSound:(e:SoundEvent)=>void=()=>{};
   /** 기록 항목 하나로 아군이 번 경험치(원정 전투만). main.ts가 세션과 잇는다. */
-  xpFor:(e:LogEntry)=>{amount:number;level?:number}|undefined=()=>undefined;
+  xpFor:(e:LogEntry)=>{amount:number;level?:number;learned?:string[]}|undefined=()=>undefined;
   /** Stereo position of a tile on screen, −0.85 (left) … 0.85 (right). */
   private panOf(at:Coord){const p=this.world.toGlobal({x:(at.x+.5)*W,y:0});return Math.max(-.85,Math.min(.85,p.x/Math.max(1,this.app.screen.width)*2-1));}
   onAnimationEnd:()=>void=()=>{};
@@ -495,7 +495,8 @@ export class Battlefield {
     if(gain&&gain.amount>0&&this.actors.has(actor.unit.id)){this.floatText(actor.unit.pos,`경험치 +${gain.amount}`,0xf3d27a);
       if(gain.level){this.emote(actor.unit.pos,{text:`레벨 업! Lv.${gain.level}`,color:0xd9a43a,shape:'burst'},-34);this.sparks(actor.unit.pos,{count:22,color:0xffe08a,speed:80,life:1000,gravity:-40,size:3});this.flash(actor);
         // 축하가 다음 반격에 묻히지 않게 잠깐 멈춘다.
-        await this.pause(520,epoch);}}
+        await this.pause(520,epoch);
+        if(gain.learned?.length){this.floatText(actor.unit.pos,`책략 습득 · ${gain.learned.join('·')}`,0x9fd3ff);await this.pause(700,epoch);}}}
   }
   /** 이름 있는 장수: 사마의, 원정의 장수, 우두머리·적장, 초상이 있는 인물, 연의 장수록의 인물. */
   private isOfficer(u:Unit){return u.id==='sima_yi'||/^of\d+$/.test(u.id)||u.id==='boss'||u.id==='target'||!!officerLook(u.name)||(!!this.state&&isCommander(this.state,u))||!!romanceOf(u);}

@@ -211,6 +211,17 @@ function scatterGround(g:Ctx,f:Floor,R:()=>number,isWater:(x:number,y:number)=>b
     if(f==='dirt')for(let i=0;i<5;i++){const y=R()*H,x=R()*W;g.strokeStyle='rgba(60,40,20,.22)';g.lineWidth=3;g.beginPath();g.moveTo(x-200,y-100);g.quadraticCurveTo(x,y+20,x+220,y+110);g.stroke();}
   }
 }
+/** 디딤돌 길: 대문에서 대청 앞까지 두 줄로 엇갈려 놓은 넓적한 돌(빛깔·크기 조금씩 다르게, 위 테는 밝게·틈엔 이끼). */
+function flagWalk(g:Ctx,c:number,r0:number,r1:number,R:()=>number){
+  for(let r=r0,k=0;r<r1;r+=0.62,k++)for(const side of k%2?[-0.3,0.34]:[-0.34,0.3]){
+    const j=()=>(R()-0.5)*0.08,cc=c+side,w=0.27+R()*0.05,d=0.24+R()*0.04;
+    const q:Array<[number,number]>=[pt(cc-w+j(),r-d+j()),pt(cc+w+j(),r-d+j()),pt(cc+w+j(),r+d+j()),pt(cc-w+j(),r+d+j())];
+    g.fillStyle='rgba(0,0,0,.25)';g.beginPath();q.forEach(([x,y],i)=>i?g.lineTo(x+2,y+3):g.moveTo(x+2,y+3));g.closePath();g.fill();
+    poly(g,q,shade('#aaa497',0.86+R()*0.22),'rgba(40,36,30,.6)');
+    g.strokeStyle='rgba(255,250,235,.35)';g.lineWidth=1.4;g.beginPath();g.moveTo(...q[3]!);g.lineTo(...q[0]!);g.lineTo(...q[1]!);g.stroke();
+    if(R()<0.35){const [x,y]=q[2]!;g.fillStyle='rgba(92,120,62,.6)';g.beginPath();g.ellipse(x-4,y-2,5,2,0,0,7);g.fill();}
+  }
+}
 /** 고운 입자(화면 전체의 질감). */
 function grain(g:Ctx,R:()=>number,alpha:number){
   const t=document.createElement('canvas');t.width=t.height=128;const tg=t.getContext('2d')!,img=tg.createImageData(128,128);
@@ -1230,6 +1241,7 @@ function build(kind:Kind,seed:number,place='',clear:Set<string>=new Set()):IsoSc
   const cellAt=(x:number,y:number):Cell=>{const u=(x-OX)/(TW/2),v=(y-OY)/(TH/2);return [Math.floor((u+v)/2),Math.floor((v-u)/2)];};
   scatterGround(g,floor,R,(x,y)=>{const [c,r]=cellAt(x,y);return waterCells.has(`${c},${r}`)||(indoor&&(c<0||r<0));});
   if(waterCells.size)smoothWater(g,waterCells,lo,hi,R,kind==='deck');
+  if(kind==='court')flagWalk(g,4.7,4.3,14,R);
   if(kind==='forest'||kind==='battlefield'||kind==='field'||kind==='hill'||kind==='valley'){
     // 흙길: 화면 위에서 아래로 굽은 길
     const o=document.createElement('canvas');o.width=W;o.height=H;const og=o.getContext('2d')!;og.strokeStyle=kind==='battlefield'?'#7a6444':'#9a7a50';og.lineWidth=kind==='battlefield'?150:110;og.lineCap='round';

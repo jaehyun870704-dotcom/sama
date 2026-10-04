@@ -1024,3 +1024,5 @@ dialog:has(.story-scene){max-height:calc(100dvh - 16px)}
 }
 /* 세로로 든 휴대폰: 대화상자(최상위 층)도 숨겨 회전 안내가 맨 위에 보이게. 가로로 돌리면 그대로 다시 보인다 */
 @media (orientation:portrait) and (max-width:820px) and (pointer:coarse){dialog{display:none!important}dialog::backdrop{display:none!important}}
+.treasure-empty{grid-column:1/-1;padding:18px 10px;text-align:center;color:#c9bfa0;font-size:13px;line-height:1.8}
+.treasure-empty small{color:#8f9a8f}
