@@ -48,7 +48,17 @@ const wider:LearnedStrategy[]=[
   ['shatter','괴멸계',29,'earth','spread',4,1,24,110,'breach'],['chaos','대혼란계',33,'support','spread',5,2,32,50,'confusion']] as const).map(([id,name,level,element,shape,range,radius,mpCost,power,status])=>({id,name,level,element,shape,range,radius,mpCost,power,targetSides:['enemy' as const],...(status?{inflicts:[status]}:{})} as LearnedStrategy)),
  ...([['warCry','함성',4,8,1,'rally',0],['focus','명상',9,2,0,'mana',18],['swiftWind','신속',12,12,1,'haste',0],['grandDrum','대고무',14,16,2,'rally',0],['ironWall','철벽',16,16,2,'guard',0],['valor','결사',18,12,0,'valor',0],['sanctuary','성역',24,26,2,'heal',35]] as const).map(([id,name,level,mpCost,radius,support,power])=>({id,name,level,mpCost,radius,support,power,element:'support' as const,range:3,shape:radius?'spread' as const:'single' as const,targetSides:['player','ally','allyAi'] as Array<'player'|'ally'|'allyAi'>})),
 ];
-export const allStrategies:LearnedStrategy[]=[...learnedStrategies,...more,...wider].sort((a,b)=>a.level-b.level);
+/** 초한 고사(故事)의 책략: 사백 년 전 영웅들의 이름난 계책. */
+const legends:LearnedStrategy[]=[
+ {id:'hongmen',name:'홍문연',level:16,element:'support',shape:'single',range:4,radius:0,mpCost:16,power:60,inflicts:['seal','confusion'],targetSides:['enemy']},
+ {id:'secretPath',name:'암도진창',level:20,element:'support',shape:'spread',range:3,radius:2,mpCost:18,power:0,support:'haste',targetSides:['player','ally','allyAi']},
+ {id:'burnBoats',name:'파부침주',level:22,element:'support',shape:'spread',range:3,radius:1,mpCost:20,power:0,support:'valor',targetSides:['player','ally','allyAi']},
+ {id:'backWater',name:'배수진',level:26,element:'support',shape:'spread',range:3,radius:2,mpCost:26,power:0,support:'valor',targetSides:['player','ally','allyAi']},
+ {id:'fourSongs',name:'사면초가',level:28,element:'support',shape:'spread',range:5,radius:2,mpCost:30,power:40,inflicts:['confusion','weaken'],targetSides:['enemy']},
+ {id:'weiRiver',name:'유수 수공',level:30,element:'water',shape:'line',range:3,radius:5,mpCost:26,power:140,inflicts:['immobile'],targetSides:['enemy']},
+ {id:'tenAmbush',name:'십면매복',level:32,element:'earth',shape:'spread',range:4,radius:2,mpCost:30,power:120,inflicts:['bound'],targetSides:['enemy']},
+];
+export const allStrategies:LearnedStrategy[]=[...learnedStrategies,...more,...wider,...legends].sort((a,b)=>a.level-b.level);
 export function strategyHint(id:string){const s=allStrategies.find(x=>x.id===id);if(!s)return '';const effect=s.support?({heal:'아군 체력 회복',cleanse:'해로운 상태이상 제거',guard:'받는 피해 15% 감소',haste:'이동력 +1',rally:'공격 피해 12% 증가',mana:`MP ${s.power} 회복`,valor:'공격 피해 12% 증가 · 받는 피해 15% 감소'}[s.support]):`위력 ${s.power}${s.inflicts?.length?' · '+s.inflicts.map(x=>STATUS_NAMES[x]??x).join(' · '):''}`;return `${effect} · 사거리 ${s.range} · ${SHAPE_TEXT(s)}`;}
 /** 상태이상 이름. */
 export const STATUS_NAMES:Record<string,string>={burn:'화상',bleed:'출혈',seal:'책략 봉인',confusion:'혼란',immobile:'이동 불가',bound:'포박',shock:'감전',guard:'견고',haste:'강행',rally:'사기',weaken:'쇠약',breach:'파갑',slow:'둔화'};

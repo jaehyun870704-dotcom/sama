@@ -20,27 +20,28 @@ import {allStrategies,strategyHint,STATUS_NAMES,SHAPE_TEXT,type LearnedStrategy}
 import {officerFeatures} from './officers.ts';
 import {loadMeta,saveMeta} from './meta.ts';
 import {perksFor,perkLine,perkState,bestLevel,learnPerk,togglePerk,officerClass} from './officer-perks.ts';
-import {perkSlots} from './research.ts';
+import {perkSlots,gateText} from './research.ts';
+import {CHU,HAN,CHUHAN_FACES,isChuHan,legacyOf,legacyState,legacyText,unlockLegacy,chooseHeir} from './chuhan.ts';
 
 export interface CodexHost {modal(html:string,closable?:boolean):void;toast(text:string):void;back():void;research?():void}
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 
 // ─────────────────────────────────────────────── 인물
 
-export type Side='wei'|'shu'|'wu'|'other'|'custom';
-const SIDE_NAMES:Record<Side,string>={wei:'위',shu:'촉',wu:'오',other:'군웅',custom:'신장수'};
+export type Side='wei'|'shu'|'wu'|'other'|'chu'|'han'|'custom';
+const SIDE_NAMES:Record<Side,string>={wei:'위',shu:'촉',wu:'오',other:'군웅',chu:'초(楚)',han:'한(漢)',custom:'신장수'};
 const SHU=new Set('마초 황충 조운 마속 왕평 위연 고상 맹염 강유 제갈량 방통 유비 관우 장비 서서 관평 유봉 마대 관색 황권 하후패 이엄'.split(' '));
 const WU=new Set('주유 손권 장소 제갈근 여몽 여범 손소 육손 주연 제갈각 고수 황개 감녕 노숙 정봉 전종 서성'.split(' '));
 const OTHER=new Set('여포 진궁 양앙 공손연 비연 안량 원담 고람 맹획 축융 올돌골 봉기 원상 심배 고간 답돈 문추 저수 채모 전풍 타사대왕 원희'.split(' '));
-const WOMEN=new Set(['축융']);
-export function sideOf(name:string):Side{if(customNames().includes(name))return 'custom';return SHU.has(name)?'shu':WU.has(name)?'wu':OTHER.has(name)?'other':'wei';}
+const WOMEN=new Set(['축융','우희']);
+export function sideOf(name:string):Side{if(customNames().includes(name))return 'custom';if((CHU as readonly string[]).includes(name))return 'chu';if((HAN as readonly string[]).includes(name))return 'han';return SHU.has(name)?'shu':WU.has(name)?'wu':OTHER.has(name)?'other':'wei';}
 /** 열전에 오르는 모든 장수(위·촉·오·군웅·신장수 순, 같은 세력 안에서는 장수록 순). */
-export function codexNames(){const order:Side[]=['wei','shu','wu','other','custom'];const names=allRomanceNames();return order.flatMap(s=>names.filter(n=>sideOf(n)===s));}
+export function codexNames(){const order:Side[]=['wei','shu','wu','other','chu','han','custom'];const names=allRomanceNames();return order.flatMap(s=>names.filter(n=>sideOf(n)===s));}
 /** 얼굴: 전용 원화 → 신장수 초상 → 초상 생성기로 지은 얼굴. */
 export function codexFace(name:string){
   if(officerLook(name)||customNames().includes(name))return officerPortrait(name);
-  const spec=suggestPortrait(name,officerClass(name),temperOf(name)??'calm');if(WOMEN.has(name)){spec.hat=5;spec.beard=0;}
-  const url=portraitURL(spec);
+  const spec={...suggestPortrait(name,officerClass(name),temperOf(name)??'calm'),...CHUHAN_FACES[name]};if(WOMEN.has(name)){spec.hat=5;spec.beard=0;}
+  const url=portraitURL(spec,name);
   return url?`<div class="officer-face custom-face" role="img" aria-label="${esc(name)} 초상" style="background-image:url(${url});background-size:cover;background-position:center"></div>`:officerPortrait(name);
 }
 /** 열전 본문(신장수는 능력과 성격으로 짓는다). */
@@ -56,7 +57,7 @@ function peopleTab(pick:string,side:Side|'all'){
   const meta=loadMeta(),names=codexNames().filter(n=>side==='all'||sideOf(n)===side),name=names.includes(pick)?pick:names[0]??'';
   const r=romanceByName(name),cls=officerClass(name),temper=temperOf(name),skill=r?.skill??officerFeatures[name];
   const st=perkState(meta,name),best=bestLevel(meta,name),slots=perkSlots(meta),perks=perksFor(name);
-  const list=`<div class="cx-filter">${(['all','wei','shu','wu','other','custom'] as const).map(s=>`<button data-cx-side="${s}" class="${side===s?'active':''}">${s==='all'?'전체':SIDE_NAMES[s]}</button>`).join('')}</div>
+  const list=`<div class="cx-filter">${(['all','wei','shu','wu','other','chu','han','custom'] as const).map(s=>`<button data-cx-side="${s}" class="${side===s?'active':''}">${s==='all'?'전체':SIDE_NAMES[s]}</button>`).join('')}</div>
     <div class="cx-people">${names.map(n=>`<button data-cx-person="${esc(n)}" class="cx-person side-${sideOf(n)} ${n===name?'chosen':''}" aria-label="${esc(n)}"><span class="cx-face">${codexFace(n)}</span><b>${esc(n)}</b></button>`).join('')||'<p class="muted">이 세력에는 아직 장수가 없다.</p>'}</div>`;
   const detail=!name?'':`<div class="cx-detail cx-person-detail">
     <div class="cx-head"><span class="cx-big-face">${codexFace(name)}</span><div><small class="cx-side side-${sideOf(name)}">${SIDE_NAMES[sideOf(name)]}</small><h3>${esc(name)}</h3><p class="cx-epithet">${esc(r?.epithet??'')}</p>
@@ -64,13 +65,24 @@ function peopleTab(pick:string,side:Side|'all'){
     ${r?`<div class="cx-stats">${STAT_ROWS.map(([k,label])=>{const v=r[k] as number;return `<div class="cx-stat"><span>${label}</span><i><i style="width:${v}%" class="${v>=90?'hi':v<40?'lo':''}"></i></i><b>${v}</b></div>`;}).join('')}</div>`:''}
     ${skill?`<p class="cx-unique"><b>고유능력 「${esc(skill.name)}」</b> ${esc(skill.description)}</p>`:''}
     <div class="cx-bio"><h4>열전</h4><p>${esc(biography(name))}</p></div>
-    <div class="cx-perks"><h4>장수 효과 <small>장착 ${st.equipped.length}/${slots} · 천명 ${meta.mandate}</small></h4>
+    ${isChuHan(name)?legacyBlock(meta,name):`    <div class="cx-perks"><h4>장수 효과 <small>장착 ${st.equipped.length}/${slots} · 천명 ${meta.mandate}</small></h4>
       ${perks.map(p=>{const learned=st.learned.includes(p.id),on=st.equipped.includes(p.id),reach=best>=p.level;
         return `<div class="cx-perk ${learned?'learned':''} ${on?'equipped':''} ${!learned&&!reach?'locked':''}"><span class="cx-perk-glyph">${on?'◆':learned?'◇':'🔒'}</span><div><b>${esc(p.name)}</b> <small>${p.source}</small><br><span>${esc(perkLine(p))}</span><br><small>필요 Lv.${p.level} · 천명 ${p.cost}</small></div>
         ${learned?`<button data-cx-toggle="${p.id}">${on?'해제':'장착'}</button>`:`<button data-cx-learn="${p.id}" ${reach&&meta.mandate>=p.cost?'':'disabled'}>${reach?'습득':'Lv.'+p.level+' 필요'}</button>`}</div>`;}).join('')}
-      <p class="muted">필요 레벨은 이 장수가 어느 회차에서든 닿은 가장 높은 레벨입니다. 장착한 효과는 이 장수가 천명의 길에서 출진할 때 적용되고, 교체는 무료입니다.</p></div>
+      <p class="muted">필요 레벨은 이 장수가 어느 회차에서든 닿은 가장 높은 레벨입니다. 장착한 효과는 이 장수가 천명의 길에서 출진할 때 적용되고, 교체는 무료입니다.</p></div>`}
   </div>`;
   return {html:`<div class="cx-split"><div class="cx-list">${list}</div>${detail}</div>`,name};
+}
+
+/** 초한 영웅: 장수 효과 대신 계승(유산을 열고, 회차마다 한 영웅을 골라 그 힘을 빌린다). */
+function legacyBlock(meta:ReturnType<typeof loadMeta>,name:string){
+  const l=legacyOf(name);
+  if(!l)return `<div class="cx-perks"><h4>계승</h4><p class="muted">사백 년 전의 영웅. 이 사람의 유산은 아직 전해지지 않는다.</p></div>`;
+  const st=legacyState(meta,l);
+  const btn=st==='active'?'<button data-cx-heir="'+esc(name)+'">계승 내려놓기</button>':st==='owned'?'<button data-cx-heir="'+esc(name)+'" class="primary">이 영웅을 계승</button>':st==='open'?`<button data-cx-legacy="${esc(name)}" ${meta.mandate>=l.cost?'':'disabled'}>유산 열기 · 천명 ${l.cost}</button>`:`<button disabled>🔒 ${esc(gateText(l.gate!))}</button>`;
+  return `<div class="cx-perks cx-legacy ${st}"><h4>계승 「${esc(l.name)}」 <small>${st==='active'?'계승 중':st==='owned'?'열림':st==='open'?'열 수 있음':'잠김'} · 천명 ${meta.mandate}</small></h4>
+    <p class="cx-unique"><b>${esc(l.story)}</b><br>${esc(legacyText(l))}</p>${btn}
+    <p class="muted">초한의 영웅은 사마의의 부대에 들어오지 않는다. 대신 유산을 열어 두면, 회차마다 한 영웅을 골라 그 힘을 아군 전원이 빌려 싸운다. 회차·연의 전장·결말을 쌓을수록 더 많은 영웅의 유산이 열린다.</p></div>`;
 }
 
 // ─────────────────────────────────────────────── 병종
@@ -111,7 +123,7 @@ function classesTab(pick:string){
 
 const ELEMENT_NAMES:Record<string,string>={fire:'화(火)',wind:'풍(風)',water:'수(水)',thunder:'뇌(雷)',earth:'지(地)',support:'술(術)'};
 const GLYPH:Record<string,string>={fire:'火',windDragon:'龍',bind:'縛',confuse:'亂',flood:'水',thunder:'雷',inferno:'業',embers:'燼',gust:'風',ambush:'伏',poison:'毒',silence:'封',fireWall:'陣',rockfall:'石',waterSurge:'濤',feint:'虛',whirlwind:'旋',lightningNet:'網',encircle:'圍',demoralize:'離',deluge:'洪',tempest:'嵐',thunderbolt:'霆',grandFeint:'空',
-  mend:'癒',purify:'淨',fortify:'固',march:'行',inspire:'鼓',greatMend:'生',weakenCurse:'衰',breakArmor:'破',rumor:'言',mire:'泥',terror:'威',gale:'斬',plague:'疫',tidalLine:'決',chainFire:'連',thunderCross:'擊',skyFire:'天',quake:'震',shatter:'碎',chaos:'混',warCry:'喊',focus:'瞑',swiftWind:'迅',grandDrum:'鳴',ironWall:'鐵',valor:'勇',sanctuary:'聖'};
+  mend:'癒',purify:'淨',fortify:'固',march:'行',inspire:'鼓',greatMend:'生',weakenCurse:'衰',breakArmor:'破',rumor:'言',mire:'泥',terror:'威',gale:'斬',plague:'疫',tidalLine:'決',chainFire:'連',thunderCross:'擊',skyFire:'天',quake:'震',shatter:'碎',chaos:'混',warCry:'喊',focus:'瞑',swiftWind:'迅',grandDrum:'鳴',ironWall:'鐵',valor:'勇',sanctuary:'聖',hongmen:'鴻',secretPath:'倉',burnBoats:'釜',backWater:'背',fourSongs:'楚',weiRiver:'濰',tenAmbush:'伏'};
 /** 책략마다 한 줄 풀이(무엇을 하는 계책인가). */
 export const STRATEGY_TEXT:Record<string,string>={
   fire:'적 한 부대에 불을 놓아 태운다. 숲에서 더 거세다.',embers:'작은 불씨를 던져 적을 그을린다. 적은 MP로 쓰는 첫 화계.',inferno:'넓은 땅을 업화로 덮는다. 맞은 적은 화상을 입는다.',fireWall:'불의 진을 쳐 둘레의 적을 태운다.',
@@ -125,6 +137,9 @@ export const STRATEGY_TEXT:Record<string,string>={
   silence:'적 책사의 입을 막아 책략을 봉인한다.',weakenCurse:'저주로 적의 힘을 빼 공격 피해를 줄인다.',terror:'위세로 둘레의 적을 눌러 공격 피해를 줄인다.',
   mend:'아군 한 부대의 체력을 회복한다.',greatMend:'둘레의 아군을 크게 회복한다.',sanctuary:'성역을 펼쳐 넓은 땅의 아군을 회복한다.',purify:'해로운 상태이상을 씻어 낸다.',focus:'마음을 가다듬어 아군 한 부대의 MP를 되찾게 한다.',
   fortify:'아군 한 부대를 견고하게 해 받는 피해를 줄인다.',ironWall:'둘레의 아군을 철벽처럼 굳힌다.',march:'강행군으로 아군의 이동력을 늘린다.',swiftWind:'둘레의 아군을 빠르게 움직이게 한다.',
+  hongmen:'홍문의 잔치 — 칼춤 속에 적장을 붙잡아 책략을 봉인하고 혼란에 빠뜨린다.',secretPath:'명수잔도 암도진창 — 잔도를 고치는 척하며 샛길로 나아가, 둘레의 아군이 빠르게 움직인다.',
+  burnBoats:'파부침주 — 솥을 깨고 배를 가라앉혀, 둘레의 아군이 더 세게 치고 덜 다친다.',backWater:'배수진 — 강을 등지고 진을 쳐 넓은 땅의 아군이 죽기로 싸운다.',
+  fourSongs:'사면초가 — 사방에서 고향 노래가 들려 넓은 땅의 적이 혼란에 빠지고 힘이 빠진다.',weiRiver:'유수 수공 — 상류의 모래주머니를 터뜨려 한 줄의 적을 끊고 쓸어 간다.',tenAmbush:'십면매복 — 열 겹의 복병이 넓은 땅의 적을 덮쳐 포박한다.',
   inspire:'북을 울려 둘레 아군의 사기를 올린다.',warCry:'함성으로 둘레 아군의 공격 피해를 늘린다.',grandDrum:'큰 북소리로 넓은 땅의 아군을 고무한다.',valor:'결사의 각오 — 한 부대가 더 세게 치고 덜 다친다.',
 };
 const PALETTE:Record<string,[string,string,string]>={fire:['#ffcf7a','#d4421a','#3b0a02'],wind:['#c8f7dc','#2f9e6e','#0b2e22'],water:['#b8e0ff','#2563eb','#0a1a3d'],thunder:['#f1e4ff','#8b5cf6','#1e0b3d'],earth:['#ecdcae','#8a6a2a','#2a1c08'],curse:['#f2c8ff','#9d3fbf','#2a0a33'],heal:['#d2ffdc','#22a05a','#06301a'],buff:['#fff2c0','#d4a017','#3a2a04']};
@@ -187,6 +202,8 @@ export function showCodex(host:CodexHost,view:CodexView={tab:'people'}){
   const who=people?.name??'';
   all('[data-cx-learn]').forEach(b=>b.onclick=()=>{const m=loadMeta();if(learnPerk(m,who,b.dataset.cxLearn!)){saveMeta(m);host.toast('장수 효과를 익혔다.');}showCodex(host,{...v,person:who});});
   all('[data-cx-toggle]').forEach(b=>b.onclick=()=>{const m=loadMeta();if(togglePerk(m,who,b.dataset.cxToggle!))saveMeta(m);else host.toast('장착 칸이 가득 찼다. 연구 「장수 효과 칸」으로 늘릴 수 있다.');showCodex(host,{...v,person:who});});
+  all('[data-cx-legacy]').forEach(b=>b.onclick=()=>{const m=loadMeta();if(unlockLegacy(m,b.dataset.cxLegacy!)){saveMeta(m);host.toast(`「${legacyOf(b.dataset.cxLegacy!)!.name}」의 유산을 열었다.`);}showCodex(host,{...v,person:who});});
+  all('[data-cx-heir]').forEach(b=>b.onclick=()=>{const m=loadMeta();if(chooseHeir(m,b.dataset.cxHeir!))saveMeta(m);showCodex(host,{...v,person:who});});
   document.getElementById('cx-research')?.addEventListener('click',()=>host.research!());
   document.getElementById('cx-back')!.onclick=host.back;
   document.querySelector('.cx-list .chosen')?.scrollIntoView?.({block:'nearest'});

@@ -67,6 +67,11 @@ export const RELICS:Relic[]=[
   {id:'herbs',name:'약초 꾸러미',effect:'전투 뒤 체력 20% 추가 회복'},
   {id:'sunzi',name:'손자병법',effect:'책략 MP +12, 지력 +3'},
   {id:'quiver',name:'화살통',effect:'궁·노 계열 공격 +5'},
+  // 초한 영웅의 유물
+  {id:'bawangJi',name:'패왕의 극',effect:'보병·기병 계열 공격 +5'},
+  {id:'huangshi',name:'황석공 소서',effect:'책략 MP +8, 지력 +5'},
+  {id:'xiaoheLedger',name:'소하의 장부',effect:'모든 부대 최대 체력 +12'},
+  {id:'yuJade',name:'우희의 옥패',effect:'모든 부대 순발 +5'},
 ];
 
 /** 세 편: 상편(관중) · 중편(기산) · 하편(요동). 편마다 지형·적 구성·우두머리가 다르다. */
@@ -459,6 +464,10 @@ export function applyRelics(state:BattleState,relics:string[]){
     if(has('quiver')&&['archer','crossbow','horseArcher'].includes(fam))u.stats.attack+=5;
     if(has('sunzi')){u.stats.maxMp+=12;u.mp+=12;u.stats.intellect+=3;}
     if(has('banner'))state.applyStatus(u,{kind:'rally',turns:2,magnitude:1});
+    if(has('bawangJi')&&['infantry','cavalry','heavyCav','spearman'].includes(fam))u.stats.attack+=5;
+    if(has('huangshi')){u.stats.maxMp+=8;u.mp+=8;u.stats.intellect+=5;}
+    if(has('xiaoheLedger')){u.stats.maxHp+=12;u.hp+=12;}
+    if(has('yuJade'))u.stats.agility+=5;
   }
 }
 

@@ -72,7 +72,9 @@ export type UnitClass =
   // 명부대(이름난 부대) 계통
   | "axeman" | "greatBlade" | "xianzhen" | "mountaineer" | "wudang" | "xiliang" | "feixiong"
   | "qingzhou" | "danyang" | "baier" | "jishi" | "daji" | "shieldBow" | "xiandeng"
-  | "drummer" | "warDrummer" | "riderSage" | "swiftSage";
+  | "drummer" | "warDrummer" | "riderSage" | "swiftSage"
+  // 초한(楚漢)의 이름난 부대
+  | "jiangdong" | "bawang" | "langzhong" | "yulin";
 
 // ─────────────────────────────────────────────────────────── 진영
 

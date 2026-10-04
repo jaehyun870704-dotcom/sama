@@ -13,6 +13,7 @@ import {customList} from './custom.ts';
 import {OFFICER_RECRUITS} from './roguelike.ts';
 import type {MetaState} from './meta.ts';
 import {perkSlots,researchGrants} from './research.ts';
+import {heirGrants} from './chuhan.ts';
 import {perkText,type PerkGrant,type PerkGrants} from './perks.ts';
 
 export interface OfficerPerk {
@@ -100,7 +101,7 @@ export function officerGrants(m:MetaState,names:readonly string[]):Record<string
 }
 /** 출진할 때 배치에 적어 둘 보정: 연구(전원·사마의) + 출진 장수들의 장착 효과. */
 export function deploymentPerks(m:MetaState,names:readonly string[]):PerkGrants|undefined{
-  const r=researchGrants(m),byName:Record<string,PerkGrant[]>={...r.byName};
+  const r=researchGrants(m),byName:Record<string,PerkGrant[]>={...r.byName};r.all=[...r.all,...heirGrants(m)];
   for(const [n,g] of Object.entries(officerGrants(m,names)))byName[n]=[...(byName[n]??[]),...g];
   return r.all.length||Object.keys(byName).length?{all:r.all,byName}:undefined;
 }

@@ -77,6 +77,23 @@ export const romance:Record<string,RomanceOfficer>={
 const byName:Record<string,RomanceOfficer>={
   ...Object.fromEntries(Object.values(romance).map(r=>[r.name,r])),
   안량:o('안량','원소의 하북 명장 · 백마에서 관우에게 베이다',[93,32,80,22,52],{name:'하북 명장',description:'물리 공격 피해 10% 증가',trait:'physicalPower',param:10}),
+  // 초한(楚漢) — 사백 년 전, 진이 무너진 뒤 천하를 다툰 선대 영웅들(인물열전·계승)
+  항우:o('항우','서초패왕 · 역발산 기개세',[100,58,96,36,84],{name:'역발산',description:'물리 공격 피해 20% 증가',trait:'physicalPower',param:20}),
+  유방:o('유방','한 고조 · 패현의 정장',[66,70,80,86,100],{name:'관인대도',description:'받는 물리 피해 10% 감소',trait:'commandDefense'}),
+  장량:o('장량','자방 · 장막 안에서 천 리 밖을 이긴 책사',[32,99,82,88,86],{name:'운주유악',description:'책략 공격 피해 15% 증가',trait:'strategyPower',param:15}),
+  한신:o('한신','국사무쌍 · 배수진의 병선(兵仙)',[80,94,100,62,64],{name:'배수진',description:'체력이 낮을수록 공격력 상승(최대 25%)',trait:'lastStand',param:25}),
+  소하:o('소하','한의 상국 · 관중을 지킨 재상',[24,90,72,99,88],{name:'관중 경영',description:'받는 책략 피해 15% 감소',trait:'strategyDamageReduction',param:15}),
+  범증:o('범증','아부 · 항우의 늙은 책사',[30,95,74,80,58],{name:'옥결',description:'책략 공격 피해 12% 증가',trait:'strategyPower',param:12}),
+  우희:o('우희','우미인 · 패왕과 이별한 여인',[30,64,42,62,96],{name:'검무',description:'적 명중 15%p 감소',trait:'evasionBoost',param:15}),
+  영포:o('영포','경포 · 얼굴에 먹 글씨가 새겨진 맹장',[92,48,82,30,60],{name:'경형의 맹장',description:'물리 공격 피해 12% 증가',trait:'physicalPower',param:12}),
+  팽월:o('팽월','양 땅을 휘저은 유격의 명수',[84,72,80,50,66],{name:'유격',description:'움직인 뒤 물리 공격 피해 15% 증가',trait:'chargePower',param:15}),
+  번쾌:o('번쾌','홍문연에 뛰어든 개백정 용사',[93,40,74,36,74],{name:'홍문의 방패',description:'인접 아군의 피해를 대신 받는다',trait:'guardian'}),
+  진평:o('진평','여섯 번의 기계(奇計)',[40,94,64,86,70],{name:'반간계',description:'적 책략 명중 15%p 감소',trait:'strategyEvasion',param:15}),
+  종리매:o('종리매','항우의 골육 같은 명장',[88,62,82,44,62]),
+  계포:o('계포','계포일낙 · 한 번 한 약속은 천금',[82,56,80,58,82],{name:'일낙천금',description:'체력 절반 이하에서 받는 피해 20% 감소',trait:'veteran',param:20}),
+  용저:o('용저','초의 맹장 · 유수에서 한신에게 지다',[90,40,80,30,52]),
+  조참:o('조참','소규조수 · 소하를 이은 상국',[80,72,84,88,74]),
+  관영:o('관영','낭중기를 이끈 기병장',[86,58,84,52,66],{name:'낭중 돌격',description:'움직인 뒤 물리 공격 피해 12% 증가',trait:'chargePower',param:12}),
   // 가상 시나리오(운명의 갈림길)에만 나오는 장수
   방통:o('방통','봉추 · 연환계의 주인',[34,97,80,85,70],{name:'연환계',description:'책략 공격 피해 10% 증가',trait:'strategyPower',param:10}),
   황개:o('황개','고육계의 노장',[83,68,80,58,74]),
@@ -199,6 +216,7 @@ const TEMPERS:Record<string,Temper>={
   조인:'cautious',우금:'cautious',손권:'cautious',조비:'cautious',조예:'cautious',심배:'cautious',왕릉:'cautious',
   사마의:'wise',제갈량:'wise',순욱:'wise',육손:'wise',환범:'wise',가규:'wise',
   조상:'timid',하안:'timid',조희:'timid',원담:'timid',
+  항우:'proud',유방:'calm',장량:'wise',한신:'proud',소하:'cautious',범증:'wise',우희:'calm',영포:'reckless',팽월:'brave',번쾌:'reckless',진평:'wise',종리매:'brave',계포:'calm',용저:'reckless',조참:'calm',관영:'brave',
 };
 /** 신장수: 플레이어가 만든 장수를 장수록에 올린다(능력·성격이 전투·설득·무대에 그대로 쓰인다). */
 export function registerOfficer(r:RomanceOfficer,temper?:Temper){byName[r.name]=r;if(temper)TEMPERS[r.name]=temper;else delete TEMPERS[r.name];}
