@@ -459,3 +459,16 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
 .persuade-gauge.pg-ok .pg-fill{background:linear-gradient(90deg,#3a7a4a,#8ad070)}
 .persuade-gauge .pg-goal{position:absolute;top:-4px;bottom:-4px;width:2px;background:#f3e6c0}
 .persuade-gauge .pg-num{min-width:70px;text-align:right;color:#f3c86a}
+/* 신장수 만들기 · 신세력 */
+.custom-body{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr);gap:16px}
+@media(max-width:700px){.custom-body{grid-template-columns:1fr}}
+.custom-form{display:flex;flex-direction:column;gap:8px}
+.custom-form label{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.custom-form input[type=text],.custom-form input:not([type]),.custom-form select{flex:1;min-width:0;background:#141c1e;color:#efe6cf;border:1px solid #6a5a3a;padding:5px 8px}
+.cu-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:4px 14px}
+.cu-stats label{gap:6px}.cu-stats input{flex:1}.cu-stats b{min-width:26px;text-align:right;color:#f3c86a}
+.cu-total b.over{color:#ff7a5a}.cu-error{color:#ff9a7a;min-height:1.2em;margin:0}
+.fa-colors{display:flex;gap:8px}.fa-color input{position:absolute;opacity:0}.fa-color span{display:inline-block;width:28px;height:28px;border-radius:4px;background:var(--c);border:2px solid #3a3020;cursor:pointer}
+.fa-color input:checked+span{border-color:#f3e6c0;box-shadow:0 0 0 2px #f3c86a}
+.faction-form fieldset{border:1px solid #4a4030;padding:8px 10px;display:flex;flex-direction:column;gap:4px}
+.sc-faction{display:inline-block;min-width:1.4em;text-align:center;background:var(--fc);color:#f8ecc8;border-radius:3px;padding:0 3px;font-weight:700}

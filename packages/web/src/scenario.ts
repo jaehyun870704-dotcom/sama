@@ -12,8 +12,10 @@
 import {ROUTES,routeById,routesFor,validRoute,type Route,type Tale} from './fate.ts';
 import {STORY_ORDER,RUN_FLOORS,XP_PER_LEVEL,WOUNDED,RELICS,OFFICER_RECRUITS,grantXp,registerTales,landClass,type Run,type RunUnit} from './roguelike.ts';
 import {Rng} from '../../core/src/index.ts';
+import {checkFaction,customList,type Faction,type CustomOfficer} from './custom.ts';
+import {isNewPower,newPowerScript,setFactionContext} from './newpower.ts';
 import {evolvedClass,type UnitClass} from '../../core/src/index.ts';
-import type {ChapterScript,ChoiceEffect,ExtraTale,ScenarioPack,ScriptStep} from './scenario-types.ts';
+import type {ChapterScript,ChoiceEffect,ExtraTale,ScenarioPack,ScriptStep,Look} from './scenario-types.ts';
 import history1 from './scenario/history-1.ts';
 import history2 from './scenario/history-2.ts';
 import history3 from './scenario/history-3.ts';
@@ -25,7 +27,7 @@ export const PACKS:ScenarioPack[]=[history1,history2,history3,ifA,ifB,ifC];
 const SCRIPTS=new Map<string,ChapterScript>(PACKS.flatMap(p=>p.chapters.map(c=>[c.id,c] as const)));
 export const EXTRA_TALES:ExtraTale[]=PACKS.flatMap(p=>p.extraTales??[]);
 export const ENDING_NOTES=PACKS.flatMap(p=>p.endingNotes??[]);
-export const scriptOf=(id:string)=>SCRIPTS.get(id);
+export const scriptOf=(id:string)=>SCRIPTS.get(id)??(isNewPower(id)?newPowerScript(id):undefined);
 
 export type StepKind='story'|'fate'|'tale'|'boss'|'ending';
 export interface ScenarioStep {
@@ -82,6 +84,8 @@ export interface ScenarioRun {
   status:'alive'|'over'|'complete';
   /** 천명을 이미 받았나 */
   settled?:boolean;
+  /** 신세력으로 시작한 회차: 세력 이름·문장·깃발 색 */
+  faction?:Faction;
 }
 export type MarchKind='battle'|'elite'|'recruit'|'rest'|'treasure'|'training';
 export interface MarchNode {kind:MarchKind;label:string;detail:string}
@@ -108,10 +112,16 @@ function readRun(r:unknown):ScenarioRun|undefined{
   const strs=(a:unknown)=>Array.isArray(a)?a.filter((v):v is string=>typeof v==='string'):[];
   const hp:Record<string,number>={};for(const [k,v] of Object.entries(x.hp??{}))if(typeof v==='number'&&v>0&&v<=1)hp[k]=v;
   return {seed:x.seed!,no:x.no!,hp,relics:strs(x.relics).filter(id=>RELICS.some(q=>q.id===id)),fallen:strs(x.fallen),marched:strs(x.marched),...(x.march&&MARCH_KINDS.includes(x.march)?{march:x.march}:{}),
-    guard:!!x.guard,nodes:Number.isInteger(x.nodes)&&x.nodes!>=0?x.nodes!:0,status:x.status==='over'||x.status==='complete'?x.status:'alive',...(x.settled?{settled:true}:{})};
+    guard:!!x.guard,nodes:Number.isInteger(x.nodes)&&x.nodes!>=0?x.nodes!:0,status:x.status==='over'||x.status==='complete'?x.status:'alive',...(x.settled?{settled:true}:{}),
+    ...(x.faction&&typeof x.faction==='object'&&!checkFaction(x.faction)?{faction:{name:x.faction.name,emblem:x.faction.emblem,color:x.faction.color}}:{})};
 }
-export function loadScenario(){try{return readScenario(localStorage.getItem(KEY));}catch{return freshScenario();}}
-export function saveScenario(s:ScenarioState){try{localStorage.setItem(KEY,JSON.stringify(s));}catch{/* storage optional */}}
+export function loadScenario(){let s:ScenarioState;try{s=readScenario(localStorage.getItem(KEY));}catch{s=freshScenario();}syncFaction(s);return s;}
+/** 신세력 대본이 지금 회차의 세력 이름·동료를 쓰게 한다. */
+export function syncFaction(s:ScenarioState){
+  const LOOK:Record<string,Look>={infantry:'infantry',spearman:'spear',archer:'archer',cavalry:'cavalry',heavyCav:'heavy',crossbow:'crossbow',strategist:'strategist',physician:'physician',horseArcher:'horseArcher',bandit:'bandit',monk:'monk',taoist:'taoist',fengshui:'sage'};
+  const f=s.run?.faction;setFactionContext({name:f?.name??'신세력',emblem:f?.emblem??'新',companions:Object.values(s.officers).map(o=>({name:o.name,look:LOOK[o.unitClass]??'infantry'}))});
+}
+export function saveScenario(s:ScenarioState){syncFaction(s);try{localStorage.setItem(KEY,JSON.stringify(s));}catch{/* storage optional */}}
 
 /** 그 루트의 가상 전장(선택으로 바뀐 것 반영). */
 export function routeTales(route:Route,state:Pick<ScenarioState,'paths'>):Tale[]{
@@ -154,7 +164,7 @@ export const isDone=(state:ScenarioState,id:string)=>state.done.includes(id);
 /** 갈림길 장 id의 선택지(루트 id). */
 export function fateChoices(state:ScenarioState,stepId:string):Route[]{
   const [,actText]=stepId.split(':'),act=Number(actText) as 1|2|3;
-  return routesFor(act,state.route);
+  return routesFor(act,state.route,!!state.run?.faction);
 }
 
 /** 대사 선택을 기록하고 그 효과(표식·바꿔치기·영입)를 상태에 남긴다. 갈림길이면 루트를 고른다. */
@@ -231,14 +241,16 @@ export function endingNotes(state:ScenarioState){return ENDING_NOTES.filter(n=>s
 // ─────────────────────────────────────────────── 로그라이크 회차
 
 /** 새 회차: 연의 첫 장부터. 사마랑·조진이 곁에 있고, 해금에 따라 사마사·보물·가호가 더해진다. */
-export function newScenarioRun(no:number,seed:number,unlocks:readonly string[]=[],heroLevel=1):ScenarioState{
+export function newScenarioRun(no:number,seed:number,unlocks:readonly string[]=[],heroLevel=1,opts:{faction?:Faction;customs?:readonly CustomOfficer[]}={}):ScenarioState{
   const s=freshScenario(),lv=Math.max(1,heroLevel-1);
   s.officers['사마랑']={name:'사마랑',unitClass:'physician',level:lv,xp:0};
-  s.officers['조진']={name:'조진',unitClass:'cavalry',level:lv,xp:0};
+  // 신세력: 조씨의 장수 대신 직접 만든 신장수(최대 넷)가 처음부터 함께한다.
+  if(opts.faction)for(const c of (opts.customs??[]).slice(0,4))s.officers[c.name]={name:c.name,unitClass:landClass(c.unitClass),level:lv,xp:0};
+  else s.officers['조진']={name:'조진',unitClass:'cavalry',level:lv,xp:0};
   if(unlocks.includes('wide_network'))s.officers['사마사']={name:'사마사',unitClass:'heavyCav',level:lv,xp:0};
   const r=new Rng(seed>>>0||1),relics=unlocks.includes('heirloom')?[RELICS[r.int(0,RELICS.length-1)]!.id]:[];
-  s.run={seed,no,hp:{},relics,fallen:[],marched:[],guard:unlocks.includes('second_chance'),nodes:0,status:'alive'};
-  return s;
+  s.run={seed,no,hp:{},relics,fallen:[],marched:[],guard:unlocks.includes('second_chance'),nodes:0,status:'alive',...(opts.faction?{faction:{...opts.faction}}:{})};
+  syncFaction(s);return s;
 }
 /** 회차가 없는 예전 기록은 지금 자리에서 첫 회차로 이어 간다(진행을 지우지 않는다). */
 export function ensureRun(state:ScenarioState,seed:number,unlocks:readonly string[]=[],heroLevel=1){
@@ -275,7 +287,8 @@ export function marchNodes(state:ScenarioState,after:string,size=3):MarchNode[]{
 /** 맞아들일 수 있는 장수: 곁에 없고, 이번 회차에 쓰러지지 않았고, 고른 길의 적이 아닌 사람. */
 export function recruitPool(state:ScenarioState){
   const gone=new Set([...Object.keys(state.officers),...(state.run?.fallen??[]).map(f=>f.split(' Lv.')[0]!),...(['1','2','3'] as const).flatMap(a=>{const rt=routeById(state.route[Number(a) as 1|2|3]);return rt?foesOf(rt):[];})]);
-  return [...COMPANIONS,...OFFICER_RECRUITS].filter((o,i,a)=>a.findIndex(x=>x.name===o.name)===i&&!gone.has(o.name));
+  const customs=customList().map(c=>({name:c.name,unitClass:c.unitClass}));
+  return [...COMPANIONS,...OFFICER_RECRUITS,...customs].filter((o,i,a)=>a.findIndex(x=>x.name===o.name)===i&&!gone.has(o.name));
 }
 /** 모병소·전투 보상에 나오는 장수 둘. */
 export function recruitOffer(state:ScenarioState,after:string,n=2){
@@ -321,4 +334,12 @@ export function loseFight(state:ScenarioState){
 export function runMandate(state:ScenarioState){
   const done=new Set(state.done),path=scenarioPath(state).filter(x=>done.has(x.id));
   return 2*path.filter(x=>x.kind==='story'||x.kind==='tale').length+3*path.filter(x=>x.kind==='boss').length+(state.run?.nodes??0)+(path.some(x=>x.kind==='ending')?10:0);
+}
+
+/** 지금 가상 시나리오 안인가(다음 장의 편이 가상 루트를 걷는 중). 설득은 가상 시나리오에서만 한다. */
+export function inWhatIf(state:ScenarioState){const step=currentStep(state);if(!step)return false;const r=routeById(state.route[step.act]);return !!r&&!r.history;}
+/** 가상 전장에서 꺾은 적장을 설득해 들인다(성공하면 그 병종·레벨로 합류). */
+export function joinCaptive(state:ScenarioState,name:string,unitClass:UnitClass,level:number){
+  if(state.officers[name]||Object.keys(state.officers).length>=8)return false;
+  state.officers[name]={name,unitClass:landClass(unitClass),level:Math.max(1,level),xp:0};return true;
 }

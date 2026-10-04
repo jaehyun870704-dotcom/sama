@@ -11,7 +11,9 @@ import type {Deployment} from '../src/progression.ts';
 
 /** 모든 갈림길 조합(3 → 7 → 15). */
 function allRoutes(){const out:Array<{1:string;2:string;3:string}>=[];
-  for(const r3 of ROUTES.filter(r=>r.act===3))for(const r2 of ROUTES.filter(r=>r.act===2&&r3.after?.includes(r.id)))for(const r1 of ROUTES.filter(r=>r.act===1&&(r2.after?.includes(r.id)??r.id==='refuse')))out.push({1:r1.id,2:r2.id,3:r3.id});
+  // 신세력의 길(custom)은 플레이어가 지은 세력으로 그때그때 짓는 대본이라 따로 시험한다(persuade.test.ts).
+  const written=ROUTES.filter(r=>!r.custom);
+  for(const r3 of written.filter(r=>r.act===3))for(const r2 of written.filter(r=>r.act===2&&r3.after?.includes(r.id)))for(const r1 of written.filter(r=>r.act===1&&(r2.after?.includes(r.id)??r.id==='refuse')))out.push({1:r1.id,2:r2.id,3:r3.id});
   return out;}
 const walk=(route:{1:string;2:string;3:string}):ScenarioState=>{const s=freshScenario();s.route={...route};return s;};
 

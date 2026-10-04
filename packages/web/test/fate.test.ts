@@ -26,7 +26,7 @@ describe('운명의 갈림길 · 시나리오 나무',()=>{
  });
  it('never leads a what-if back to history: once off history, every later choice is a what-if',()=>{
   for(const r of ROUTES.filter(x=>!x.history)){
-   const next=r.act<3?routesFor((r.act+1) as 2|3,chain(r)):[];
+   const next=r.act<3?routesFor((r.act+1) as 2|3,chain(r),!!r.custom):[];
    if(r.act<3)expect(next.length,r.id).toBeGreaterThanOrEqual(2);
    for(const n of next)expect(n.history,`${r.id} → ${n.id}`).toBe(false);
   }
@@ -61,8 +61,8 @@ describe('운명의 갈림길 · 시나리오 나무',()=>{
   finishBattle(run,{kind:'tale',label:'',detail:'',tale:'IF2-zhi-1'},true,Object.fromEntries(run.party.map(u=>[u.id,1])));
   expect(run.talesDone).toEqual(['IF2-zhi-1']);expect(nextTale({...run,floor:10})!.id).toBe('IF2-zhi-2');
  });
- it('ends in one of fifteen endings, history only when all three choices follow history, and records it',()=>{
-  expect(ALL_ENDINGS).toHaveLength(15);expect(new Set(ALL_ENDINGS.map(id=>endingFor({3:id}).title)).size).toBe(15);
+ it('ends in one of seventeen endings (fifteen written + two of the new faction), history only when all three choices follow history, and records it',()=>{
+  expect(ALL_ENDINGS).toHaveLength(17);expect(new Set(ALL_ENDINGS.map(id=>endingFor({3:id}).title)).size).toBe(17);
   expect(endingFor({1:'refuse',2:'wei',3:'patience'}).history).toBe(true);
   expect(ALL_ENDINGS.filter(id=>endingFor(chain(routeById(id)!)).history)).toEqual(['patience']);
   const run=at(RUN_FLOORS,{1:'yuan',2:'hebei',3:'hebei_throne'});run.status='won';run.talesDone=['IF2-hb-1','IF3-ht-1'];

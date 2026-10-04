@@ -30,6 +30,8 @@ export interface Route {
   after?:string[];
   /** 하편의 길: 이 길로 완주했을 때의 결말 */
   ending?:{title:string;lines:string[]};
+  /** 신세력의 길: 신세력으로 시작한 본편 회차에서만 나온다(원정에는 나오지 않는다). 글의 '{세력}'은 세력 이름으로 바뀐다. */
+  custom?:true;
 }
 export interface FatePoint {act:1|2|3;year:string;title:string;prompt:string}
 
@@ -212,21 +214,60 @@ export const ROUTES:Route[]=[
       {id:'IF3-ie-1',title:'허창 북문',intro:'외눈의 하후돈이 허창 북문을 지킨다.',target:{name:'하후돈',unitClass:'cavalry'}},
       {id:'IF3-ie-2',title:'호치',intro:'허저가 웃통을 벗고 조조의 본진 앞을 막았다.',target:{name:'허저',unitClass:'infantry'}},
     ]},
+  // ── 신세력: 사마의가 스스로 새 깃발을 든다(신세력으로 시작한 회차에서만)
+  {id:'np1',act:1,history:false,custom:true,choice:'스스로 기치를 든다 — {세력}을 세운다',detail:'누구의 신하도 되지 않는다. 하내에서 {세력}의 깃발을 올리고, 조조와 원소 사이에서 살아남는다.',name:'신세력 · {세력}의 깃발',
+    region:{name:'하내 · 황하 나루',arc:'상편',terrain:0,boss:{name:'조조',unitClass:'infantry'},pool:WEI_POOL},
+    tales:[
+      {id:'NP1-1',title:'하내 거병',intro:'하내에 낯선 깃발이 올랐다는 소식에 조조가 토벌군을 보냈다. 선봉은 엄격하기로 이름난 우금이다. 첫 싸움에서 지면 {세력}은 이름도 남기지 못한다.',target:{name:'우금',unitClass:'spearman'}},
+      {id:'NP1-2',title:'황하 나루',intro:'원소도 황하 남쪽의 새 깃발을 가만두지 않는다. 하북의 맹장 문추가 기병을 몰아 나루를 건넌다.',target:{name:'문추',unitClass:'cavalry'}},
+      {id:'NP1-3',title:'허창 앞마당',intro:'두 번 이긴 {세력}을 조조가 직접 상대하기로 했다. 허창으로 가는 길목을 외눈의 하후돈이 막아선다.',target:{name:'하후돈',unitClass:'cavalry'}},
+    ]},
+  {id:'np_south',act:2,history:false,custom:true,after:['np1'],choice:'남쪽 형주로 내려간다',detail:'중원의 두 거인을 피해 형주의 기름진 땅을 노린다. 조인과 관우가 기다린다.',name:'신세력 · 형주의 {세력}',
+    region:{name:'형양 · 완성',arc:'중편',terrain:2,boss:{name:'유비',unitClass:'infantry'},pool:['infantry','spearman','cavalry','archer','crossbow','bandit']},
+    tales:[
+      {id:'NP2-s1',title:'완성 공략',intro:'형주로 가는 첫 문은 완성이다. 조조의 종제 조인이 성을 쇠처럼 지킨다.',target:{name:'조인',unitClass:'heavyCav'}},
+      {id:'NP2-s2',title:'양양 수채',intro:'강동의 금범적 감녕이 형주를 노리고 강을 거슬러 올라왔다. 강가의 수채를 먼저 쥐는 쪽이 형주를 얻는다.',target:{name:'감녕',unitClass:'bandit'}},
+      {id:'NP2-s3',title:'맥성 앞',intro:'형주의 주인 관우가 청룡언월도를 들고 나섰다. 그를 넘으면 형주는 {세력}의 것이다.',target:{name:'관우',unitClass:'cavalry'}},
+    ]},
+  {id:'np_west',act:2,history:false,custom:true,after:['np1'],choice:'서쪽 관중으로 나아간다',detail:'장안을 얻어 서쪽의 말과 군사를 쥔다. 하후연과 서량의 기병이 기다린다.',name:'신세력 · 관중의 {세력}',
+    region:{name:'관중 · 장안',arc:'중편',terrain:0,boss:{name:'마초',unitClass:'cavalry'},pool:['cavalry','horseArcher','spearman','infantry','archer','heavyCav']},
+    tales:[
+      {id:'NP2-w1',title:'동관 돌파',intro:'관중의 관문 동관을 질풍 같은 하후연이 지킨다. 사흘에 오백 리를 달린다는 그의 기병보다 빨라야 한다.',target:{name:'하후연',unitClass:'horseArcher'}},
+      {id:'NP2-w2',title:'위수의 다리',intro:'서량의 마대가 위수의 다리를 끊으려 한다. 다리가 끊기면 장안은 멀어진다.',target:{name:'마대',unitClass:'cavalry'}},
+      {id:'NP2-w3',title:'장안 성문',intro:'장안 성문 앞에 큰 도끼를 든 서황이 버티고 섰다. 그를 꺾으면 옛 도읍이 {세력}의 손에 들어온다.',target:{name:'서황',unitClass:'heavyCav'}},
+    ]},
+  {id:'np_unify',act:3,history:false,custom:true,after:['np_south','np_west'],choice:'천하를 하나로 묶는다',detail:'세 나라를 모두 꺾고 {세력}의 이름으로 천하를 하나로 만든다. 마지막 적은 와룡 제갈량이다.',name:'신세력 · {세력}의 천하',
+    region:{name:'장강 · 건업',arc:'하편',terrain:2,boss:{name:'제갈량',unitClass:'strategist'},pool:['infantry','spearman','cavalry','crossbow','archer','strategist','rattan']},
+    tales:[
+      {id:'NP3-u1',title:'장판의 재현',intro:'익주로 가는 길, 단기필마로 이름난 조운이 다리를 막았다. 이번에는 아이가 아니라 나라를 지키려는 창이다.',target:{name:'조운',unitClass:'cavalry'}},
+      {id:'NP3-u2',title:'합비 설욕',intro:'합비의 장료가 칠백 기병으로 {세력}의 대군을 노린다. 요래요래의 이름을 이번엔 꺾어야 한다.',target:{name:'장료',unitClass:'cavalry'}},
+      {id:'NP3-u3',title:'이릉의 불',intro:'서생 대도독 육손이 장강 위에 불을 준비했다. 바람을 먼저 읽는 쪽이 이긴다.',target:{name:'육손',unitClass:'strategist'}},
+    ],ending:{title:'새 하늘',lines:['{세력}의 깃발이 장강을 건넜다. 위도 촉도 오도 아닌, 아무도 예언하지 못한 나라가 천하를 하나로 묶었다.','사마의는 끝내 누구의 신하도 되지 않았다. 사람들은 그를 기다린 자가 아니라 처음부터 일어선 자로 기억했다.']}},
+  {id:'np_kingdom',act:3,history:false,custom:true,after:['np_south','np_west'],choice:'얻은 땅을 지켜 네 번째 나라가 된다',detail:'천하를 다 삼키려다 무너진 자들을 보았다. 얻은 땅을 굳게 지켜 {세력}을 네 번째 나라로 남긴다. 위가 마지막 대군을 보낸다.',name:'신세력 · 네 번째 나라',
+    region:{name:'하내 · 낙양',arc:'하편',terrain:0,boss:{name:'조비',unitClass:'strategist'},pool:WEI_POOL},
+    tales:[
+      {id:'NP3-k1',title:'맹진 방어',intro:'위의 맹장 하후돈이 다시 왔다. 이번에는 맹진 나루를 넘어 {세력}의 심장을 노린다.',target:{name:'하후돈',unitClass:'cavalry'}},
+      {id:'NP3-k2',title:'천리구',intro:'조씨 종실의 천리구 조휴가 동쪽에서 기병을 몰아온다.',target:{name:'조휴',unitClass:'cavalry'}},
+      {id:'NP3-k3',title:'옛 벗',intro:'위의 대장군이 되어 돌아온 조진이 군을 이끌고 왔다. 한때 함께 웃던 벗과 칼을 맞댈 차례다.',target:{name:'조진',unitClass:'heavyCav'}},
+    ],ending:{title:'네 번째 나라',lines:['위·촉·오에 이어 {세력}이 천하의 넷째 자리를 지켰다. 사가들은 이 시대를 삼국이 아니라 사국이라 적었다.','사마의는 끝까지 서두르지 않았다. 얻은 것을 지키는 것 또한 천하를 읽는 일이었다.']}},
 ];
 export const routeById=(id:string|undefined)=>ROUTES.find(r=>r.id===id);
 /** 이 편의 갈림길에 나오는 길: 앞선 선택에 이어지는 것만. */
-export function routesFor(act:1|2|3,route?:{1?:string;2?:string;3?:string}):Route[]{
-  if(act===1)return ROUTES.filter(r=>r.act===1);
+export function routesFor(act:1|2|3,route?:{1?:string;2?:string;3?:string},custom=false):Route[]{
+  const mine=(r:Route)=>custom||!r.custom;
+  if(act===1)return ROUTES.filter(r=>r.act===1&&mine(r));
   const parent=route?.[(act-1) as 1|2];
-  return ROUTES.filter(r=>r.act===act&&(parent?r.after?.includes(parent):r.after?.includes(act===2?'refuse':'wei')));
+  return ROUTES.filter(r=>r.act===act&&mine(r)&&(parent?r.after?.includes(parent):r.after?.includes(act===2?'refuse':'wei')));
 }
+/** 신세력의 글: '{세력}'을 세력 이름으로. */
+export const factionText=(text:string,faction='신세력')=>text.replaceAll('{세력}',faction);
 
 /** 저장된 선택의 사슬이 실제로 갈 수 있는 길인지: 각 편의 길이 그 편 것이고, 앞선 선택에 이어지는가. */
 export function validRoute(route:Record<string,unknown>):boolean{
   for(const [key,id] of Object.entries(route)){
     const act=Number(key),r=routeById(typeof id==='string'?id:undefined);
     if(!r||r.act!==act)return false;
-    if(act>1&&!routesFor(act as 2|3,route as {1?:string;2?:string}).includes(r))return false;
+    if(act>1&&!routesFor(act as 2|3,route as {1?:string;2?:string},true).includes(r))return false;
   }
   return true;
 }
@@ -240,6 +281,9 @@ const FATE_BY_PARENT:Record<string,FatePoint>={
   chibi:{act:3,year:'215년 · 건업',title:'강동을 얻은 뒤',prompt:'적벽을 넘은 위군이 건업을 차지했다. 천하의 셋 가운데 둘이 조씨의 것이다. 서쪽 익주의 유비만 남았고, 조조는 늙었다.'},
   heir:{act:3,year:'220년 · 낙양',title:'세자의 스승',prompt:'그대가 가르친 조비가 황제가 되었다. 한중을 지킨 공으로 그대는 대장군이다. 남쪽 강동은 아직 굴복하지 않았고, 황제는 병약하다.'},
   hebei:{act:3,year:'210년 · 허창',title:'원씨의 승상',prompt:'허창이 무너지고 조조는 서량으로 달아났다. 원상은 황제를 끼고 승상인 그대에게 모든 일을 맡겼다. 강동의 손권은 아직 고개를 숙이지 않는다.'},
+  np1:{act:2,year:'208년 · 하내',title:'두 거인 사이에서',prompt:'{세력}은 조조와 원소의 틈에서 살아남았다. 중원은 아직 두 거인의 것이다. 남쪽 형주의 기름진 땅인가, 서쪽 관중의 말과 옛 도읍인가.'},
+  np_south:{act:3,year:'219년 · 양양',title:'네 번째 깃발',prompt:'형주를 얻은 {세력}은 이제 위·촉·오와 어깨를 나란히 한다. 천하를 다 삼키러 갈 것인가, 얻은 땅을 굳게 지킬 것인가.'},
+  np_west:{act:3,year:'219년 · 장안',title:'네 번째 깃발',prompt:'장안을 얻은 {세력}은 이제 위·촉·오와 어깨를 나란히 한다. 천하를 다 삼키러 갈 것인가, 얻은 땅을 굳게 지킬 것인가.'},
   independent:{act:3,year:'215년 · 하내',title:'제3의 깃발',prompt:'하내의 사마씨 깃발 아래 장합과 고람이 모였다. 북쪽의 원씨는 기울었고, 남쪽의 조조는 강성하다. 어느 쪽을 먼저 칠 것인가.'},
 };
 export function fatePoint(act:1|2|3,route?:{1?:string;2?:string}):FatePoint{

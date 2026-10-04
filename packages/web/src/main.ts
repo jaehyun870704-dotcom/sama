@@ -22,6 +22,10 @@ import {scriptOf} from './scenario.ts';
 import {optionalOfficers,pickExtras,storySortieLimit} from './sortie.ts';
 import {isoBackdrop,loadIsoArt} from './story-iso.ts';
 import {loadFigures} from './story-figure.ts';
+import {registerCustoms} from './custom.ts';
+import {loadMeta as loadMetaForCustoms} from './meta.ts';
+// 플레이어가 만든 신장수를 장수록에 올린다(전투 능력·성격·무대 그림).
+registerCustoms(loadMetaForCustoms().customOfficers??[]);
 const scenarioYear=(id:string)=>scriptOf(id)?.year??'';
 import type {ScenarioDeployment} from './progression.ts';
 import {loadMeta} from './meta.ts';
