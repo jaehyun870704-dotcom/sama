@@ -4,6 +4,14 @@
 
 제작 도구: 내장 image_gen (CLI/API 대체 경로 사용 없음).
 
+## 왕릉 — 완료
+
+파일: `packages/web/public/portraits/wang-ling.png`. 백발의 노신, 긴 수염과 청록색 관복. 단독 인물·복식·얼굴 육안 확인, manifest 연결.
+
+### 생성 프롬프트
+
+Use case historical-scene. Single square premium Three Kingdoms game portrait of Wang Ling (왕릉), elderly Wei statesman and military governor, original semi-realistic digital oil painting matching polished Sima Fang / Sima Yi dark historical portraits. Lean East Asian man around  seventy, long angular face, high cheekbones, weathered warm skin and deep forehead lines, stern concerned deep-set eyes, thick silver eyebrows, elegant long silver-gray beard and mustache. Black ribbed Han official guan cap with small aged bronze plaque, dark muted teal official robes layered over barely visible worn iron lamellar at shoulders, restrained brown woven collar. Upright proud posture, three-quarter looking to left, calm resolve. Headgear and beard fully within square, shoulders and chest filling bottom, face large enough for tiny game thumbnail. Warm chiaroscuro light on face, subtle cool rim, softly painted dark olive charcoal background, meticulous aged skin and silk texture, painterly naturalism, sober dignified mood. No text, no name strip, no frame, no watermark, no extra person, no modern clothing, no anime, no vector art. One finished square portrait.
+
 ## 조상 — 완료
 
 파일: `packages/web/public/portraits/cao-shuang.png`. 둥근 얼굴, 검은 관모, 자주색 비단과 의장 갑옷. 단독 인물과 얼굴·복식 육안 확인, manifest 연결.
