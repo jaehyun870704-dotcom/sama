@@ -4,6 +4,14 @@
 
 제작 도구: 내장 image_gen (CLI/API 대체 경로 사용 없음).
 
+## 조상 — 완료
+
+파일: `packages/web/public/portraits/cao-shuang.png`. 둥근 얼굴, 검은 관모, 자주색 비단과 의장 갑옷. 단독 인물과 얼굴·복식 육안 확인, manifest 연결.
+
+### 생성 프롬프트
+
+Use case historical-scene. One square bust portrait of Cao Shuang (조상), Wei imperial clansman and grand general aged about 40. Premium semi-realistic digital oil painting for a Three Kingdoms strategy game matching dark painterly Sima Yi and Sima Fang portraits. Distinct East Asian man with full rounded cheeks, pale warm skin, broad softly rounded nose, small carefully groomed mustache and short neat chin beard, intelligent but complacent slightly anxious eyes. Broad imposing build. Tall formal black guan cap with restrained gold fittings, rich dark burgundy silk robes over subtle gold-edged ceremonial lamellar armor. No helmet, no crown of a king. Head and chest composition, three-quarter turned slightly right, eyes toward viewer, entire cap inside frame with breathing room, face large readable at 60px, chest cropped bottom. Deep charcoal brown smoky background, warm side light, fine silk embroidery and realistic face brushwork, exquisite historical game character illustration, understated luxury. Single person only, no writing, no borders, no symbols, no watermark, no anime, no flat vector, no photo. Square 1024x1024.
+
 ## 조휴 — 완료
 
 파일: `packages/web/public/portraits/cao-xiu.png`. 배포 manifest의 조휴 항목에 연결. 이미지 육안 확인: 단독 인물, 갑옷·얼굴 정상, 글자 없음. 인물열전은 공통 초상화 로더에서 이 파일을 읽는다.
