@@ -4,6 +4,14 @@
 
 제작 도구: 내장 image_gen (CLI/API 대체 경로 사용 없음).
 
+## 종회 — 완료
+
+파일: packages/web/public/portraits/zhong-hui.png. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
+
+### 생성 프롬프트
+
+Historical-scene. ONE square premium Three Kingdoms strategy-game officer bust portrait. Masterful semi-realistic digital oil painting matching polished dark Sima Yi / Sima Fang portraits: natural facial anatomy, detailed skin, fine silk and worn metal texture, restrained painterly brushwork. Chest-up three-quarter pose, face large and readable at 60px, entire headgear inside square with margin. Warm soft directional chiaroscuro, deep near-black smoky background. Historically inspired late Han/Wei clothes. Single East Asian adult character. No text, border, watermark, extra people, anime, vector, exaggerated fantasy armor. Subject: Zhong Hui, ambitious gifted Wei strategist about 35, narrow elegant face, bright sharp almond eyes, straight nose, youthful clean-shaven face, subtle confident half-smile. Small black and jade guan, rich dark teal robes and silver embroidered collar, no armor; cultured confident intellectual.
+
 ## 진태 — 완료
 
 파일: `packages/web/public/portraits/chen-tai.png`. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
