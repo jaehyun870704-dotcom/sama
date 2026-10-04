@@ -25,9 +25,15 @@ export function spriteStyle(look:Look,frame=0,walking=false){
   return `background-image:var(--${sheet}-atlas);background-size:400% ${s.rows*100}%;background-position:${frame/3*100}% ${s.rows>1?s.row/(s.rows-1)*100:0}%`;
 }
 /** 먹 붓 테두리 대화창: 큰 초상과 이름·대사. place: 무대 위('top')·아래('bottom'). */
-export function talkBox(speaker:string,line:string,place:'top'|'bottom'){
+/** 그린 초상이 없는 인물은 무대 위 병종 그림의 윗몸을 크게 잘라 초상으로 쓴다. */
+function spriteFace(look:Look){
+  const s=SPRITES[look]??SPRITES.infantry,y=s.rows>1?(s.row*2+0.42)/(s.rows*2-1)*100:0;
+  return `<div class="officer-face sprite-face" role="img" style="background-image:var(--${s.sheet}-atlas);background-size:800% ${s.rows*200}%;background-position:${0.5/7*100}% ${y}%"></div>`;
+}
+export function talkBox(speaker:string,line:string,place:'top'|'bottom',stageLook?:Look){
   const look=officerLook(speaker),name=look?.name??speaker;
-  return `<div class="ss-talk ${place}"><div class="ss-talk-face">${officerPortrait(speaker)}</div><div class="ss-talk-body"><b>${esc(name)}</b><p>${esc(line)}</p></div><span class="ss-talk-next" aria-hidden="true">▼</span></div>`;
+  let face=officerPortrait(speaker);if(stageLook&&face.includes('unknown-face'))face=spriteFace(stageLook);
+  return `<div class="ss-talk ${place}"><div class="ss-talk-face">${face}</div><div class="ss-talk-body"><b>${esc(name)}</b><p>${esc(line)}</p></div><span class="ss-talk-next" aria-hidden="true">▼</span></div>`;
 }
 
 export interface StageHooks {
@@ -35,7 +41,14 @@ export interface StageHooks {
   /** 표식(when/unless 판정) — 선택으로 늘어날 수 있어 매번 읽는다. */
   flags():readonly string[];
 }
-type Actor={el:HTMLElement;cell:Cell;face:'left'|'right';look:Look;on:boolean};
+type Actor={el:HTMLElement;cell:Cell;face:'left'|'right';look:Look;on:boolean;tick:number;posedUntil:number};
+/** 서 있을 때 번갈아 쓰는 그림(숨쉬듯 자세가 바뀐다). 병종 그림의 0번은 기본, 3번은 같은 자세의 다른 그림이다. */
+const IDLE_FRAMES=(look:Look)=>{const s=SPRITES[look];return s.sheet==='base'||s.sheet==='extra'||look==='monk'||look==='horseArcher'?[0,3]:[0];};
+/** 말을 꺼낼 때의 몸짓(책사는 부채로 가리키고, 의원은 약초를 들고, 무장은 자세를 고친다). */
+const TALK_FRAME=(look:Look)=>look==='strategist'||look==='civil'||look==='sage'||look==='shaman'||look==='lady'||look==='taoist'?2:look==='physician'||look==='monk'?3:look==='bandit'||look==='assassin'?1:3;
+/** 성낼 때(무장은 무기를 치켜든다). */
+const ANGER_FRAME=(look:Look)=>look==='bandit'||look==='assassin'||look==='physician'?3:look==='strategist'||look==='civil'?1:1;
+const REACTION:Array<[RegExp,string]>=[[/^!+$|놀람/,'jolt'],[/\?/,'tilt'],[/분노|怒|💢|화/,'shake'],[/땀|💧|…|\.\.\./,'droop'],[/♪|웃음|하하/,'bounce']];
 const STEP_MS=230;
 const same=(a:Cell,b:Cell)=>a[0]===b[0]&&a[1]===b[1];
 
@@ -55,7 +68,26 @@ export class Stage {
     // 대사·해설을 기다리는 중이면 어디를 눌러도(인물·대화창 위라도) 넘어간다. 기다리는 게 없을 때만 인물 누르기가 말 걸기다.
     this.el.addEventListener('click',e=>{if(!this.advance&&(e.target as HTMLElement).closest('.ss-actor.clickable'))return;this.next();});
     for(const m of cast)this.addActor(m);
+    // 인물은 서 있어도 멈추지 않는다: 자세 그림을 번갈아 바꾸고(숨쉬기는 CSS), 가끔 고개를 돌린다.
+    const idle=setInterval(()=>{if(!document.contains(this.el)){clearInterval(idle);return;}this.idleTick();},620);
   }
+  private idleTick(){
+    const now=Date.now();
+    for(const a of this.actors.values()){
+      if(!a.on||a.el.classList.contains('walking')||a.posedUntil>now)continue;
+      a.tick++;const frames=IDLE_FRAMES(a.look);
+      // 사람마다 박자가 다르게(넷 중 하나는 쉬고)
+      if(frames.length>1&&a.tick%4!==0)a.el.querySelector<HTMLElement>('.ss-sprite')!.setAttribute('style',spriteStyle(a.look,frames[Math.floor(a.tick/2)%frames.length]!));
+    }
+  }
+  /** 잠시 한 자세를 취한다(말하는 몸짓·성냄). */
+  gesture(name:string,frame:number,ms=900){
+    const a=this.actors.get(name);if(!a||a.el.classList.contains('walking'))return;
+    a.posedUntil=Date.now()+ms;a.el.querySelector<HTMLElement>('.ss-sprite')!.setAttribute('style',spriteStyle(a.look,frame));
+    setTimeout(()=>{if(a.posedUntil<=Date.now()&&!a.el.classList.contains('walking'))a.el.querySelector<HTMLElement>('.ss-sprite')!.setAttribute('style',spriteStyle(a.look));},ms+20);
+  }
+  /** 몸으로 하는 반응(펄쩍·갸웃·부들부들·축 처짐·들썩). */
+  react(name:string,kind:string){const a=this.actors.get(name);if(!a)return;a.el.classList.remove('jolt','tilt','shake','droop','bounce');void a.el.offsetWidth;a.el.classList.add(kind);setTimeout(()=>a.el.classList.remove(kind),900);}
   next(){this.advance?.();}
   /** 이 칸에 다른 사람이 서 있는가. */
   private taken(cell:Cell,except?:string){for(const [n,a] of this.actors)if(n!==except&&a.on&&same(a.cell,cell))return true;return false;}
@@ -70,7 +102,7 @@ export class Stage {
     el.innerHTML=`<div class="ss-shadow"></div><div class="ss-sprite" style="${spriteStyle(m.look)}"></div><span class="ss-name">${esc(m.name)}</span><div class="ss-bubble" hidden></div>`;
     const cell=m.at?this.free(this.scene.toCell(m.at)):this.scene.toCell([-12,60]);
     const face=m.face??(this.scene.toPct(cell)[0]<50?'right':'left');
-    const a:Actor={el,cell,face,look:m.look,on:!!m.at};this.actors.set(m.name,a);
+    const a:Actor={el,cell,face,look:m.look,on:!!m.at,tick:Math.floor(Math.random()*4),posedUntil:0};this.actors.set(m.name,a);el.style.setProperty('--d',`${-(Math.random()*2.4).toFixed(2)}s`);
     this.place(a,false);if(!m.at)el.classList.add('off');this.el.appendChild(el);return a;
   }
   /** 화면 위 자리(%). */
@@ -87,9 +119,28 @@ export class Stage {
   /** 화자가 말한다: 화자 쪽 반대편(위/아래)에 대화창. */
   async say(speaker:string,line:string,to?:string){
     const a=this.actors.get(speaker);for(const o of this.actors.values())o.el.classList.remove('speaking');
-    if(a){a.el.classList.add('speaking');if(to)this.faceTo(speaker,to);bubble(a.el,'…','talk');}
-    this.talk.innerHTML=talkBox(speaker,line,a&&this.scene.toPct(a.cell)[1]>58?'top':'bottom');
+    if(a){
+      a.el.classList.add('speaking');if(to)this.faceTo(speaker,to);
+      // 듣는 사람들은 말하는 사람 쪽으로 몸을 돌린다.
+      for(const [n,o] of this.actors)if(n!==speaker&&o.on&&!o.el.classList.contains('walking'))this.faceTo(n,speaker);
+      if(!to){const near=[...this.actors.entries()].filter(([n,o])=>n!==speaker&&o.on).sort((p,q)=>Math.abs(p[1].cell[0]-a.cell[0])+Math.abs(p[1].cell[1]-a.cell[1])-Math.abs(q[1].cell[0]-a.cell[0])-Math.abs(q[1].cell[1]-a.cell[1]))[0];if(near)this.faceTo(speaker,near[0]);}
+      this.gesture(speaker,/[!！]{1}$|이놈|닥쳐|물러서/.test(line)?ANGER_FRAME(a.look):TALK_FRAME(a.look),1000);
+    }
+    this.talk.innerHTML=talkBox(speaker,'',a&&this.scene.toPct(a.cell)[1]>58?'top':'bottom',a?.look);
+    await this.typeLine(this.talk.querySelector<HTMLElement>('.ss-talk-body p')!,line,a);
     await this.waitClick();if(a)a.el.classList.remove('speaking');this.talk.innerHTML='';
+  }
+  /** 한 글자씩 써 내려간다. 도중에 누르면 문장을 한꺼번에 보인다. 말하는 동안 몸짓을 한두 번 더 한다. */
+  private typeLine(el:HTMLElement,line:string,a?:Actor){
+    if(this.skipping){el.textContent=line;return Promise.resolve();}
+    return new Promise<void>(done=>{
+      const chars=[...line];let i=0;
+      const finish=()=>{clearInterval(t);el.textContent=line;this.advance=undefined;done();};
+      this.advance=finish;
+      const t=setInterval(()=>{if(!document.contains(el)){finish();return;}i++;el.textContent=chars.slice(0,i).join('');
+        if(a&&i%22===0)this.gesture([...this.actors].find(([,o])=>o===a)![0],i%44===0?TALK_FRAME(a.look):IDLE_FRAMES(a.look).at(-1)!,420);
+        if(i>=chars.length)finish();},28);
+    });
   }
   async narrate(text:string){this.caption.hidden=false;this.caption.textContent=text;this.talk.innerHTML='';await this.waitClick();this.caption.hidden=true;}
   /** 칸을 하나씩 밟아 걷는다. 걸음마다 발을 떼고(들썩임) 방향을 바꾼다. */
@@ -153,19 +204,24 @@ export class Stage {
         while(i+1<steps.length){const n=steps[i+1]!;if(!('move' in n||'enter' in n||'exit' in n))break;i++;if((n.when&&!flags.includes(n.when))||(n.unless&&flags.includes(n.unless)))continue;group.push(n);}
         await Promise.all(group.map(g=>'enter' in g?this.walk(g.enter,g.at,'enter',g.from):'exit' in g?this.walk(g.exit,[0,0],'exit',g.to):this.walk((g as {move:string}).move,(g as {to:At}).to)));continue;
       }
-      if('emote' in st){this.bubble(st.emote,st.text,'emote');if(!this.skipping)await wait(650);continue;}
+      if('emote' in st){
+        this.bubble(st.emote,st.text,'emote');
+        const r=REACTION.find(([re])=>re.test(st.text));if(r)this.react(st.emote,r[1]);
+        if(r?.[1]==='shake'){const a=this.actors.get(st.emote);if(a)this.gesture(st.emote,ANGER_FRAME(a.look),900);}
+        if(!this.skipping)await wait(650);continue;
+      }
       if('narrate' in st){await this.narrate(st.narrate);continue;}
       if('say' in st){await this.say(st.say,st.line,st.to);continue;}
       if('choice' in st){
         this.skipping=false;this.el.classList.add('choosing');
         const hero=this.actors.get(st.choice);if(hero){hero.el.classList.add('speaking');bubble(hero.el,'?','emote');}
-        this.talk.innerHTML=talkBox(st.choice,'…어떻게 할 것인가.',hero&&this.scene.toPct(hero.cell)[1]>58?'top':'bottom');
+        this.talk.innerHTML=talkBox(st.choice,'…어떻게 할 것인가.',hero&&this.scene.toPct(hero.cell)[1]>58?'top':'bottom',hero?.look);
         const picked=await new Promise<ChoiceOption>(r=>{this.choices.innerHTML=st.options.map((o,k)=>`<button type="button" data-k="${k}"><span class="ss-choice-no">${k+1}</span><strong>${esc(o.text)}</strong>${o.note?`<small>${esc(o.note)}</small>`:''}</button>`).join('');
           this.choices.querySelectorAll<HTMLButtonElement>('[data-k]').forEach(b=>b.onclick=()=>r(st.options[Number(b.dataset.k)]!));});
         this.choices.innerHTML='';this.talk.innerHTML='';this.el.classList.remove('choosing');hero?.el.classList.remove('speaking');
         hooks.onChoice?.(picked,st);
         if(picked.reply)await this.say(st.choice,picked.reply);
-        if(picked.answer){this.bubble(picked.answer.speaker,'!','emote');await this.say(picked.answer.speaker,picked.answer.line);}
+        if(picked.answer){this.bubble(picked.answer.speaker,'!','emote');this.react(picked.answer.speaker,'jolt');await this.say(picked.answer.speaker,picked.answer.line);}
       }
     }
   }
