@@ -7,6 +7,9 @@ import type { BattleMap } from "./grid.ts";
 import { manhattan } from "./grid.ts";
 import type { Rng } from "./rng.ts";
 import { applyTraitHooks, combine, type AttackKind, type DamageContext } from "./traits.ts";
+import { familyOf } from "./classes.ts";
+import { hasTrait, traitParam } from "./traits.ts";
+import { tacticMultiplier } from "./tactics.ts";
 
 /** 최소 보장 피해. 방어력이 아무리 높아도 이만큼은 들어간다. */
 export const MIN_DAMAGE = 1;
@@ -18,7 +21,7 @@ export const BASE_ACCURACY = 90;
  * 조조전 계열의 가위바위보 구조를 따른다:
  *   창병 > 기병 > 궁병/책사 > 보병 > 창병
  */
-const MATCHUP: Record<UnitClass, Partial<Record<UnitClass, number>>> = {
+const MATCHUP: Partial<Record<UnitClass, Partial<Record<UnitClass, number>>>> = {
   infantry:   { spearman: 1.3, catapult: 1.3, engineer: 1.5, cavalry: 0.8, heavyCav: 0.7 },
   spearman:   { cavalry: 1.5, heavyCav: 1.5, infantry: 0.8, archer: 0.9 },
   cavalry:    { archer: 1.4, crossbow: 1.4, strategist: 1.4, fengshui: 1.4, catapult: 1.3, spearman: 0.6 },
@@ -28,13 +31,25 @@ const MATCHUP: Record<UnitClass, Partial<Record<UnitClass, number>>> = {
   strategist: { infantry: 1.1, spearman: 1.1, heavyCav: 1.2 },
   fengshui:   { infantry: 1.1, spearman: 1.1, heavyCav: 1.2 },
   catapult:   { infantry: 1.3, spearman: 1.3, crossbow: 1.2, cavalry: 0.7 },
+  ram: {infantry:.7,cavalry:.5,heavyCav:.5},
   engineer:   {},
   navy:       { infantry: 1.2, cavalry: 1.3 },
   civilian:   {},
+  shaman: { infantry: 1.1, spearman: 1.1, heavyCav: 1.2 },
+  maiden:   { infantry: 1.1, spearman: 1.1, heavyCav: 1.2 },
+  taoist: { infantry: 1.1, spearman: 1.1, heavyCav: 1.2 },
+  physician:   { infantry: 1.1, spearman: 1.1, heavyCav: 1.2 },
+  monk:   { spearman: 1.3, catapult: 1.3, engineer: 1.5, cavalry: 0.8, heavyCav: 0.7 },
+  horseArcher:    { archer: 1.4, crossbow: 1.4, strategist: 1.4, fengshui: 1.4, catapult: 1.3, spearman: 0.6 },
+  bandit:   { spearman: 1.3, catapult: 1.3, engineer: 1.5, cavalry: 0.8, heavyCav: 0.7 },
 };
 
+// New troop families inherit the established defensive counters.
+for(const row of Object.values(MATCHUP))for(const [kind,base] of Object.entries({shaman:'strategist',maiden:'fengshui',taoist:'strategist',physician:'fengshui',monk:'infantry',horseArcher:'cavalry',bandit:'infantry'}))if(row[base as UnitClass]!==undefined)row[kind as UnitClass]=row[base as UnitClass]!;
+
 export function matchupMultiplier(attacker: UnitClass, defender: UnitClass): number {
-  return MATCHUP[attacker][defender] ?? 1.0;
+  const row = MATCHUP[attacker] ?? MATCHUP[familyOf(attacker)] ?? {};
+  return row[defender] ?? row[familyOf(defender)] ?? 1.0;
 }
 
 /** 사기 보정. 사기 0 → 0.8배, 50 → 1.0배, 100 → 1.2배 */
@@ -57,8 +72,8 @@ export function createDamageContext(
     defender,
     kind,
     distance: manhattan(attacker.pos, defender.pos),
-    attackMul: 1,
-    reduction: 0,
+    attackMul: attacker.statuses.some(s=>s.kind==='rally')?1.12:1,
+    reduction: defender.statuses.some(s=>s.kind==='guard')?.15:0,
     accuracyMod: 0,
     defenseIgnore: 0,
     criticalChance: 0,
@@ -121,7 +136,8 @@ export function computePhysical(
   const variance = 0.95 + rng.next() * 0.1;
   const critical = ctx.criticalChance > 0 && rng.chance(ctx.criticalChance);
 
-  let dmg = base * matchup * terrain * elevation * morale * variance * (1 - ctx.reduction);
+  const tactic = tacticMultiplier(attacker, defender, map, !!opts.isCounter);
+  let dmg = base * matchup * terrain * elevation * morale * variance * (1 - ctx.reduction) * tactic.mul;
   if (critical) dmg *= CRITICAL_MULTIPLIER;
   if (opts.isCounter) dmg *= counterMultiplier(attacker);
 
@@ -134,6 +150,7 @@ export function computePhysical(
     critical,
     lethal: damage >= defender.hp,
     breakdown: { base, matchup, terrain, elevation, morale, variance, reduction: ctx.reduction },
+    ...(tactic.name ? { tactic: tactic.name } : {}),
   };
 }
 
@@ -153,9 +170,7 @@ export function computeStrategy(
   const hit = ctx.alwaysHit || rng.chance(accuracy(ctx, map));
   if (!hit) return miss(caster, target, false);
 
-  const power = caster.stats.intellect * (strategy.power / 100) * ctx.attackMul;
-  const resist = target.stats.spirit * 0.5;
-  const base = Math.max(MIN_DAMAGE, power - resist);
+  const base = strategyBase(caster, target, strategy, ctx.attackMul);
 
   const elemental = elementalMultiplier(strategy, map, target);
   const variance = 0.95 + rng.next() * 0.1;
@@ -183,12 +198,36 @@ export function computeStrategy(
   };
 }
 
+/**
+ * 책략 기본 피해: 지력을 따라 늘고, 상대의 정신이 높을수록 비율로 줄어든다.
+ *   지력 × 위력 × 1.2 × 지력 / (지력 + 정신)
+ * 지력과 정신이 같으면 지력 × 위력 × 0.6. 빼기식과 달리 지력이 낮아도 0으로 꺾이지 않고,
+ * 지력이 오르는 만큼 꾸준히(제곱에 가깝게) 강해진다.
+ */
+export function strategyBase(caster: Unit, target: Unit, strategy: StrategyDef, attackMul = 1): number {
+  // 옛 규칙 전투(저장 재생)는 예전 빼기식 그대로.
+  if (!caster.classTactics) return Math.max(MIN_DAMAGE, caster.stats.intellect * (strategy.power / 100) * attackMul - target.stats.spirit * 0.5);
+  const int = Math.max(1, caster.stats.intellect), spirit = Math.max(1, target.stats.spirit);
+  return Math.max(MIN_DAMAGE, int * (strategy.power / 100) * attackMul * 1.2 * int / (int + spirit));
+}
+
+/**
+ * 회복량: 책략 위력의 절반에 지력의 0.6배를 더하고, 회복 특성(healPower %)을 곱한다.
+ * 지력 40이면 소회복(위력 25) 약 36, 지력 100이면 약 72.
+ */
+export function healAmount(power: number, intellect: number, healPower = 0): number {
+  return Math.max(1, Math.round((power * 0.5 + Math.max(0, intellect) * 0.6) * (1 + healPower / 100)));
+}
+
 /** 계열 × 대상 지형 보정. 화계는 숲에서, 수계는 수상에서 강해진다. */
 function elementalMultiplier(strategy: StrategyDef, map: BattleMap, target: Unit): number {
   const terrain = map.tileAt(target.pos).terrain;
   switch (strategy.element) {
-    case "fire":
-      return terrain === "forest" ? 1.4 : terrain === "water" || terrain === "rapids" ? 0.6 : 1.0;
+    case "fire": {
+      // 등갑병: 기름 먹인 등나무 갑옷은 칼은 막아도 불에는 약하다.
+      const burn = hasTrait(target, "fireWeakness") ? 1 + traitParam(target, "fireWeakness") / 100 : 1;
+      return burn * (terrain === "forest" ? 1.4 : terrain === "water" || terrain === "rapids" ? 0.6 : 1.0);
+    }
     case "water":
       return terrain === "water" || terrain === "rapids" ? 1.3 : 1.0;
     case "thunder":
@@ -223,8 +262,75 @@ function flatBreakdown(base: number): DamageBreakdown {
   return { base, matchup: 1, terrain: 1, elevation: 1, morale: 1, variance: 1, reduction: 0 };
 }
 
+/**
+ * RNG를 소비하지 않는 기대 피해 추정. AI의 행동 선택에만 쓴다.
+ * 실제 피해와 같은 계수를 통과하되 분산은 1.0, 회심은 기대값으로 반영하고
+ * 마지막에 명중 확률을 곱한다.
+ */
+export function estimatePhysical(attacker: Unit, defender: Unit, map: BattleMap): number {
+  const ctx = createDamageContext(attacker, defender, "physical");
+  applyTraitHooks(ctx);
+  if (ctx.immune) return 0;
+
+  const atk = attacker.stats.attack * ctx.attackMul;
+  const def = defender.stats.defense * (1 - ctx.defenseIgnore);
+  const base = Math.max(MIN_DAMAGE, atk - def);
+
+  const raw =
+    base *
+    matchupMultiplier(attacker.unitClass, defender.unitClass) *
+    map.terrainAffinity(attacker.unitClass, attacker.pos) *
+    elevationMultiplier(map.heightAt(attacker.pos), map.heightAt(defender.pos)) *
+    moraleMultiplier(attacker.stats.morale) *
+    (1 - ctx.reduction) *
+    tacticMultiplier(attacker, defender, map, false).mul *
+    (1 + (Math.min(100, ctx.criticalChance) / 100) * (CRITICAL_MULTIPLIER - 1));
+
+  const hitRate = ctx.alwaysHit ? 1 : accuracy(ctx, map) / 100;
+  return Math.max(0, raw * hitRate);
+}
+
+export function estimateStrategy(
+  caster: Unit,
+  target: Unit,
+  strategy: StrategyDef,
+  map: BattleMap,
+): number {
+  const ctx = createDamageContext(caster, target, "strategy");
+  applyTraitHooks(ctx);
+  if (ctx.immune) return 0;
+
+  const base = strategyBase(caster, target, strategy, ctx.attackMul);
+  const raw = base * elementalMultiplier(strategy, map, target) * (1 - ctx.reduction);
+  const hitRate = ctx.alwaysHit ? 1 : accuracy(ctx, map) / 100;
+  return Math.max(0, raw * hitRate);
+}
+
 export function clamp(v: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, v));
 }
 
 export { combine };
+
+/** What the player sees before attacking: hit chance and damage on a normal hit,
+ * plus the counterattack if the defender survives and can answer. No RNG is drawn. */
+export interface AttackPreview { hit: number; damage: number; lethal: boolean; counter?: { hit: number; damage: number } }
+function hitPreview(attacker: Unit, defender: Unit, map: BattleMap, counter = false): { hit: number; damage: number } {
+  const ctx = createDamageContext(attacker, defender, "physical");
+  applyTraitHooks(ctx);
+  if (ctx.immune) return { hit: 0, damage: 0 };
+  const atk = attacker.stats.attack * ctx.attackMul;
+  const def = defender.stats.defense * (1 - ctx.defenseIgnore);
+  const dmg = Math.max(MIN_DAMAGE, atk - def) *
+    matchupMultiplier(attacker.unitClass, defender.unitClass) *
+    map.terrainAffinity(attacker.unitClass, attacker.pos) *
+    elevationMultiplier(map.heightAt(attacker.pos), map.heightAt(defender.pos)) *
+    moraleMultiplier(attacker.stats.morale) * (1 - ctx.reduction) * tacticMultiplier(attacker, defender, map, counter).mul;
+  return { hit: ctx.alwaysHit ? 100 : Math.round(accuracy(ctx, map)), damage: Math.max(MIN_DAMAGE, Math.round(dmg)) };
+}
+export function previewAttack(attacker: Unit, defender: Unit, map: BattleMap, canCounter: boolean): AttackPreview {
+  const strike = hitPreview(attacker, defender, map), lethal = strike.hit > 0 && strike.damage >= defender.hp;
+  if (!canCounter || lethal) return { ...strike, lethal };
+  const back = hitPreview(defender, attacker, map, true);
+  return { ...strike, lethal, counter: { hit: back.hit, damage: Math.max(MIN_DAMAGE, Math.round(back.damage * counterMultiplier(defender))) } };
+}

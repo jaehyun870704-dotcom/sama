@@ -1,0 +1,44 @@
+import type {Growth} from './progression.ts';
+import type {StrategyDef,Unit} from '../../core/src/index.ts';
+import {romanceWar} from './romance.ts';
+export const officerFeatures:Record<string,{name:string;description:string;trait:string;strength:number}>={
+  sima_yi:{name:'은인자중',description:'책략 피해 15% 감소 · 매 턴 MP 3 회복',trait:'simaPatience',strength:30},
+  cao_zhen:{name:'선봉 지휘',description:'물리 공격 피해 12% 증가',trait:'caoVanguard',strength:78},
+  sima_lang:{name:'가문의 방패',description:'물리 피해 15% 감소',trait:'familyShield',strength:62},
+  sima_fang:{name:'엄정한 수비',description:'물리 피해 15% 감소',trait:'familyShield',strength:67},
+  cao_cao:{name:'위기 관리',description:'받는 물리 피해 10% 감소',trait:'commandDefense',strength:72},
+  xu_chu:{name:'호위의 맹세',description:'인접 아군의 피해를 대신 받음 · 관통 공격 제외',trait:'guardian',strength:96},
+  ma_chao:{name:'서량의 맹장',description:'물리 공격 피해 10% 증가',trait:'westernValor',strength:95},
+  yang_ang:{name:'전초 수비',description:'받는 물리 피해 10% 감소',trait:'commandDefense',strength:74},
+  zhang_lu:{name:'성채 수비',description:'받는 물리 피해 10% 감소',trait:'commandDefense',strength:64},
+  chen_gong:{name:'냉철한 간파',description:'받는 책략 피해 15% 감소',trait:'strategicGuard',strength:50},
+  lu_bu:{name:'비장의 무위',description:'물리 공격 피해 18% 증가',trait:'flyingGeneral',strength:99},
+  zhou_yu:{name:'주랑의 계책',description:'책략 공격 피해 12% 증가',trait:'zhouStrategy',strength:70},
+};
+export interface Talent {name:string;description:string;trait:string;level:number;requirement:string;ready:boolean}
+export function talentTree(id:string,level:number,growth:Growth):Talent[]{const f=officerFeatures[id];if(!f)return [];return [
+ {name:f.name,description:f.description,trait:f.trait,level:3,requirement:'Lv.3 · 본편 1승',ready:level>=3&&growth.storyWins>=1},
+ {name:{sima_yi:'정중동',cao_zhen:'철벽 선봉',sima_lang:'후방의 버팀목',sima_fang:'노장의 침착'}[id]??'전장의 단련',description:'물리 피해 10% 감소',trait:'commandDefense',level:6,requirement:'첫 특성 해금 · Lv.6 · 수련 3승',ready:level>=6&&growth.storyWins>=1&&growth.trainingWins>=3},
+ {name:{sima_yi:'심모원려',cao_zhen:'상승장군',sima_lang:'가문의 기둥',sima_fang:'병법의 전수'}[id]??'대가의 경지',description:id==='sima_yi'?'책략 공격 피해 12% 증가':'물리 공격 피해 10% 증가',trait:id==='sima_yi'?'zhouStrategy':'westernValor',level:10,requirement:'둘째 특성 해금 · Lv.10 · 보물 외전 3개 완료',ready:level>=10&&growth.storyWins>=1&&growth.trainingWins>=3&&growth.questWins>=3},
+ ];}
+export function applyOfficerFeatures(units:Unit[],growth?:Growth){for(const u of units){const feature=officerFeatures[u.id];if(!feature)continue;const ids=growth&&['sima_yi','cao_zhen','sima_lang','sima_fang'].includes(u.id)?talentTree(u.id,u.level,growth).filter(t=>t.ready).map(t=>t.trait):growth&&u.level<4?[]:[feature.trait];for(const trait of ids)if(!u.traits.includes(trait))u.traits.push(trait);}}
+/** 일기토 무력: 연의 장수록의 무력, 없으면 고유 특성의 무력, 그것도 없으면 공격력으로 어림. */
+export function martialPower(u:Unit){return (romanceWar(u)??officerFeatures[u.id]?.strength??Math.min(95,40+u.stats.attack))+u.level;}
+export type SupportEffect='heal'|'cleanse'|'guard'|'haste'|'rally'|'mana';
+export type LearnedStrategy=StrategyDef&{level:number;support?:SupportEffect};
+export const learnedStrategies:LearnedStrategy[]=[
+  {id:'fire',name:'화계',level:1,element:'fire',shape:'single',range:3,radius:0,mpCost:6,power:100,inflicts:['burn'],targetSides:['enemy']},
+  {id:'windDragon',name:'풍룡',level:3,element:'wind',shape:'spread',range:4,radius:1,mpCost:9,power:120,targetSides:['enemy']},
+  {id:'bind',name:'속박',level:5,element:'earth',shape:'single',range:4,radius:0,mpCost:8,power:65,inflicts:['immobile'],targetSides:['enemy']},
+  {id:'confuse',name:'교란',level:7,element:'support',shape:'single',range:3,radius:0,mpCost:12,power:45,inflicts:['confusion'],targetSides:['enemy']},
+  {id:'flood',name:'수계',level:10,element:'water',shape:'cross',range:4,radius:1,mpCost:15,power:135,targetSides:['enemy']},
+  {id:'thunder',name:'낙뢰',level:14,element:'thunder',shape:'single',range:5,radius:0,mpCost:18,power:175,inflicts:['shock'],targetSides:['enemy']},
+  {id:'inferno',name:'업화',level:20,element:'fire',shape:'spread',range:4,radius:2,mpCost:26,power:155,inflicts:['burn'],targetSides:['enemy']},
+];
+const more:LearnedStrategy[]=[
+ ...([['embers','불씨',2,'fire',3,0,5,75,'burn'],['gust','돌풍',4,'wind',4,0,6,90,undefined],['ambush','매복',6,'earth',3,0,7,95,'bound'],['poison','독계',8,'earth',3,0,8,60,'bleed'],['silence','금언',9,'support',4,0,9,35,'seal'],['fireWall','화진',11,'fire',3,1,13,100,'burn'],['rockfall','낙석',12,'earth',4,0,12,140,undefined],['waterSurge','격류',13,'water',4,1,14,115,'immobile'],['feint','허보',15,'support',4,0,12,40,'confusion'],['whirlwind','회오리',16,'wind',5,1,16,130,undefined],['lightningNet','뇌진',17,'thunder',4,1,17,120,'shock'],['encircle','포위계',18,'earth',3,1,15,70,'bound'],['demoralize','이간',19,'support',4,1,18,45,'confusion'],['deluge','수룡',22,'water',5,2,23,140,undefined],['tempest','폭풍',24,'wind',5,2,25,150,undefined],['thunderbolt','천뢰',27,'thunder',5,0,24,185,'shock'],['grandFeint','공성계',30,'support',5,2,28,55,'confusion']] as const).map(([id,name,level,element,range,radius,mpCost,power,status])=>({id,name,level,element,range,radius,mpCost,power,shape:radius?'spread' as const:'single' as const,targetSides:['enemy' as const],...(status?{inflicts:[status]}:{})})),
+ ...([['mend','소회복',2,6,0,'heal',25],['purify','정화',4,7,0,'cleanse',0],['fortify','견고',6,8,1,'guard',0],['march','강행',8,8,0,'haste',0],['inspire','고무',10,10,1,'rally',0],['greatMend','대회복',15,18,1,'heal',40]] as const).map(([id,name,level,mpCost,radius,support,power])=>({id,name,level,mpCost,radius,support,power,element:'support' as const,range:3,shape:radius?'spread' as const:'single' as const,targetSides:['player','ally','allyAi'] as Array<'player'|'ally'|'allyAi'>})),
+];
+export const allStrategies:LearnedStrategy[]=[...learnedStrategies,...more].sort((a,b)=>a.level-b.level);
+export function strategyHint(id:string){const s=allStrategies.find(x=>x.id===id);if(!s)return '';const effect=s.support?({heal:'아군 체력 회복',cleanse:'해로운 상태이상 제거',guard:'받는 피해 15% 감소',haste:'이동력 +1',rally:'공격 피해 12% 증가',mana:'MP 회복'}[s.support]):`위력 ${s.power}${s.inflicts?.length?' · '+s.inflicts.map(x=>({burn:'화상',bleed:'출혈',seal:'책략 봉인',confusion:'혼란',immobile:'이동 불가',bound:'포박',shock:'감전'} as Record<string,string>)[x]??x).join(' · '):''}`;return `${effect} · 사거리 ${s.range} · ${s.radius?'주변 '+s.radius+'칸':'한 부대'}`;}
+export function availableStrategies(level:number,expanded=false){return (expanded?allStrategies:learnedStrategies).filter(s=>s.level<=level).map(s=>s.id);}

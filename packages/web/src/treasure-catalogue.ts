@@ -1,0 +1,20 @@
+import type {Treasure,GearSlot} from './progression.ts';
+// Four discoveries per side story. Stable IDs preserve equipment saves.
+const entries:Array<[string,string,GearSlot,number,number,string]>=[
+ ['doubleSwords','쌍고검','weapon',3,1,'Q01'],['ancientBlade','고정도','weapon',3,4,'Q01'],['leatherArmor','피갑','armor',1,15,'Q01'],['warDrum','진군고','accessory',1,14,'Q01'],
+ ['ironSpear','철척사모','weapon',2,9,'Q02'],['flyingBlade','비도','weapon',2,7,'Q02'],['chainArmor','쇄자갑','armor',2,0,'Q02'],['militarySeal','장군인','accessory',2,14,'Q02'],
+ ['phoenixSpear','봉취도','weapon',3,9,'Q03'],['crescentBlade','월아극','weapon',3,10,'Q03'],['scaleArmor','어린갑','armor',2,15,'Q03'],['swiftSaddle','비운안','accessory',2,5,'Q03'],
+ ['ironBow','철태궁','weapon',3,11,'Q04'],['repeatingCrossbow','원융노','weapon',3,11,'Q04'],['rattanArmor','등갑','armor',3,15,'Q04'],['sunzi','손자병법','accessory',3,6,'Q04'],
+ ['threePointBlade','삼첨도','weapon',3,8,'Q05'],['steelWhip','강편','weapon',2,9,'Q05'],['brightArmor','명광개','armor',3,0,'Q05'],['sixTeachings','육도','accessory',3,3,'Q05'],
+ ['longbow','양유궁','weapon',3,11,'Q06'],['ironAxe','개산부','weapon',2,10,'Q06'],['blackArmor','현철갑','armor',3,15,'Q06'],['threeStrategies','삼략','accessory',3,2,'Q06'],
+ ['dragonSpear','용담창','weapon',4,9,'Q07'],['twinHalberds','쌍철극','weapon',3,10,'Q07'],['tigerArmor','호위갑','armor',3,0,'Q07'],['shadowHorse','절영','accessory',4,12,'Q07'],
+ ['goldHammer','유금추','weapon',3,10,'Q08'],['moonSword','월광검','weapon',3,7,'Q08'],['craneRobe','학창의','armor',3,0,'Q08'],['yellowHorse','조황비전','accessory',4,5,'Q08'],
+ ['jadeSword','백옥검','weapon',4,1,'Q09'],['tigerSpear','호두창','weapon',3,9,'Q09'],['cloudRobe','운금포','armor',3,0,'Q09'],['qingshu','청낭서','accessory',4,3,'Q09'],
+ ['sevenStarFlag','칠성기','accessory',4,13,'Q10'],['formationScroll','팔진도','accessory',4,2,'Q10'],['dragonArmor','용린갑','armor',4,15,'Q10'],['goldArmor','황금갑','armor',4,0,'Q10'],
+ ['springAutumn','춘추좌씨전','accessory',4,6,'Q11'],['jadePendant','백옥환','accessory',3,14,'Q11'],['tigerTally','호부','accessory',4,14,'Q11'],['strategistRobe','군사포','armor',4,0,'Q11'],
+];
+export const extraTreasures:Treasure[]=entries.map(([id,name,slot,grade,icon,quest],i)=>{
+ const bonus:Treasure['bonus']=slot==='weapon'?{attack:2+grade, ...(i%2?{agility:2}:{maxHp:4})}:slot==='armor'?{defense:grade+1,maxHp:grade*3}:i%3===0?{maxMp:grade*2,intellect:grade}:i%3===1?{spirit:grade+1,agility:grade}:{maxHp:grade*3,agility:grade};
+ const names:Record<string,string>={attack:'공격',defense:'방어',maxHp:'최대 체력',maxMp:'최대 MP',intellect:'지력',spirit:'정신',agility:'민첩'};
+ return {id,name,slot,grade,icon,quest,stage:quest,glyph:slot==='weapon'?'兵':slot==='armor'?'甲':'寶',bonus,effect:Object.entries(bonus).map(([k,v])=>names[k]+' +'+v).join(' · '),description:['흩어진 병장기를 되찾아 장인의 손에서 되살린 보물.','험한 길을 함께 넘은 이들이 신뢰의 증표로 건넨 보물.','전란 속에서 지켜 낸 기록과 기술이 담긴 보물.'][i%3]!};
+});
