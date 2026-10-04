@@ -25,8 +25,11 @@ import {isoBackdrop,loadIsoArt} from './story-iso.ts';
 import {loadFigures} from './story-figure.ts';
 import {registerCustoms} from './custom.ts';
 import {loadMeta as loadMetaForCustoms} from './meta.ts';
+import {loadPortraitImages} from './portrait-images.ts';
 // 플레이어가 만든 신장수를 장수록에 올린다(전투 능력·성격·무대 그림).
 registerCustoms(loadMetaForCustoms().customOfficers??[]);
+// 직접 넣은 초상 그림(저장소 public/portraits와 이 브라우저에 올린 것)을 먼저 읽어 둔다.
+void loadPortraitImages('');
 const scenarioYear=(id:string)=>scriptOf(id)?.year??'';
 import type {ScenarioDeployment} from './progression.ts';
 import {loadMeta} from './meta.ts';

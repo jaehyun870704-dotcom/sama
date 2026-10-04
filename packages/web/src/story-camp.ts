@@ -23,7 +23,7 @@ export function openCamp(host:HTMLElement,o:CampOptions){
   host.innerHTML=`<div class="ss-root camp-root"><div class="ss-head"><span class="eyebrow">${esc(o.heading)} · 출진 전 진영</span><span class="camp-hint">사람을 눌러 말을 걸어 보자 · <b class="camp-count"></b></span></div><div class="ss-frame"></div>
     <div class="ss-controls"><button type="button" class="camp-back">← 장 목록</button><button type="button" class="primary camp-ready">출진 정비 ▶</button></div></div>`;
   const hero:At=[50,80];
-  const stage=new Stage(host.querySelector<HTMLElement>('.ss-frame')!,o.camp.art,o.camp.place,[{name:'사마의',look:'strategist',at:hero,face:'right'},...people.map(p=>({name:p.name,look:p.look,at:p.at}))]);
+  const stage=new Stage(host.querySelector<HTMLElement>('.ss-frame')!,o.camp.art,o.camp.place,[{name:'사마의',look:'strategist',at:hero,face:'right'},...people.map(p=>({name:p.name,look:p.look,at:p.at}))]);stage.skin='paper';
   const count=host.querySelector<HTMLElement>('.camp-count')!;
   const mark=()=>{count.textContent=`이야기 ${people.filter(p=>o.talked.has(p.name)).length}/${people.length}`;for(const p of people){const a=stage.actors.get(p.name)!;a.el.classList.toggle('talked',o.talked.has(p.name));}};
   let busy=false;

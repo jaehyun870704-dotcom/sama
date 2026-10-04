@@ -272,19 +272,29 @@ function finish(g:G,s:PortraitSpec,R:()=>number){
   const v=g.createRadialGradient(CX,118,80,CX,128,190);v.addColorStop(0,'rgba(60,36,14,0)');v.addColorStop(1,'rgba(60,36,14,.5)');g.fillStyle=v;g.fillRect(0,0,S,S);
   g.strokeStyle='rgba(70,46,20,.55)';g.lineWidth=3;g.strokeRect(1.5,1.5,S-3,S-3);g.strokeStyle='rgba(240,222,180,.25)';g.lineWidth=1;g.strokeRect(5.5,5.5,S-11,S-11);
 }
+export interface DrawOpts {
+  /** 대화창 흉상: 바탕·제첨·낙관·테두리 없이 사람만(투명 바탕) */
+  bare?:boolean;
+}
 /** 초상 한 장을 캔버스(256×256)에 그린다. 이름을 주면 제첨에 세로로 쓴다. */
-export function drawPortrait(g:G,s:PortraitSpec,name?:string){
+export function drawPortrait(g:G,s:PortraitSpec,name?:string,opts:DrawOpts={}){
   const R=rng(PORTRAIT_KEYS.reduce((h,k)=>Math.imul(h^(s[k]+1),16777619)>>>0,2166136261)),f=faceOf(s);
   g.save();g.clearRect(0,0,S,S);g.lineCap='round';g.lineJoin='round';
-  silk(g,s,R);if(s.item===3||s.item===5)heldItem(g,s);hairBack(g,s,f);robe(g,s,f);ears(g,s,f);faceSkin(g,s,f);
+  if(!opts.bare)silk(g,s,R);else R();
+  if(s.item===3||s.item===5)heldItem(g,s);hairBack(g,s,f);robe(g,s,f);ears(g,s,f);faceSkin(g,s,f);
   ageMarks(g,s,f,R);eye(g,s,f,-1);eye(g,s,f,1);brows(g,s,f);nose(g,s,f);mouth(g,s,f);beard(g,s,f,R);
-  if(![2,3,4].includes(s.hat))hairFront(g,s,f);headwear(g,s,f,R);if(s.item!==3&&s.item!==5)heldItem(g,s);finish(g,s,R);inscription(g,name,R);g.restore();
+  if(![2,3,4].includes(s.hat))hairFront(g,s,f);headwear(g,s,f,R);if(s.item!==3&&s.item!==5)heldItem(g,s);
+  if(opts.bare)grain(g,R);else{finish(g,s,R);inscription(g,name,R);}g.restore();
+}
+/** 흉상용 마감: 바탕을 건드리지 않고(투명은 투명대로) 칠의 결만 얹는다. */
+function grain(g:G,R:()=>number){
+  const img=g.getImageData(0,0,S,S),d=img.data;for(let i=0;i<d.length;i+=4){if(!d[i+3])continue;const n=(R()-.5)*14;d[i]=Math.max(0,Math.min(255,d[i]!+n));d[i+1]=Math.max(0,Math.min(255,d[i+1]!+n));d[i+2]=Math.max(0,Math.min(255,d[i+2]!+n*.8));}g.putImageData(img,0,0);
 }
 const urls=new Map<string,string>();
 /** 초상의 data URL(같은 값·이름은 한 번만 그린다). 캔버스가 없으면(시험 환경) 빈 문자열. */
-export function portraitURL(s:PortraitSpec,name?:string){
-  const key=PORTRAIT_KEYS.map(k=>s[k]).join(',')+'|'+(name??'');const hit=urls.get(key);if(hit)return hit;
+export function portraitURL(s:PortraitSpec,name?:string,opts:DrawOpts={}){
+  const key=PORTRAIT_KEYS.map(k=>s[k]).join(',')+'|'+(name??'')+(opts.bare?'|bare':'');const hit=urls.get(key);if(hit)return hit;
   if(typeof document==='undefined')return '';
-  const c=document.createElement('canvas');c.width=c.height=S;const g=c.getContext('2d',{willReadFrequently:true})!;drawPortrait(g,s,name);
+  const c=document.createElement('canvas');c.width=c.height=S;const g=c.getContext('2d',{willReadFrequently:true})!;drawPortrait(g,s,name,opts);
   const url=c.toDataURL('image/png');urls.set(key,url);return url;
 }

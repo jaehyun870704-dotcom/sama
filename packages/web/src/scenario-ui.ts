@@ -256,7 +256,7 @@ export function showIfPrep(host:ScenarioHost,state:ScenarioState,step:ScenarioSt
   document.getElementById('prep-go')!.onclick=()=>launch(host,state,step,[...required,...get()],difficulty);
 }
 /** 연구·장수 효과를 배치에 적는다(출진 순간의 값). */
-function perksFor(party:ReadonlyArray<{name:string}>){const p=deploymentPerks(loadMeta(),party.map(u=>u.name));return p?{perks:p}:{};}
+function perksFor(party:ReadonlyArray<{name:string;unitClass:UnitClass}>){const p=deploymentPerks(loadMeta(),party.map(u=>({name:u.name,unitClass:u.unitClass})));return p?{perks:p}:{};}
 /** 전투가 끝나면 장수들이 닿은 레벨을 남긴다(장수 효과의 필요 레벨). */
 function noteLevels(party:ReadonlyArray<{name:string;level:number}>){const m=loadMeta();recordOfficerLevels(m,party);saveMeta(m);}
 function launch(host:ScenarioHost,state:ScenarioState,step:ScenarioStep,picked:string[],difficulty:'normal'|'extreme'){
