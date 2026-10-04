@@ -3,6 +3,7 @@ import {troopStrategies,supportOptions} from './troops.ts';
 import {refBattle,prepareRunBattle,applyBattleMods,applyRelics,addRecruits,taleById,xpFromLog,levelUpInBattle,RUN_FLOORS,PARTY_LIMIT,XP_PER_LEVEL,type XpGain} from './roguelike.ts';
 import {validRoute} from './fate.ts';
 import {applyPerkGrants,validGrants} from './perks.ts';
+import {stretchMap,stretchStage,canStretch,wideCoord} from './stretch.ts';
 import './scenario.ts';
 import {pickExtras} from './sortie.ts';
 import {applyRomance,temperOf} from './romance.ts';
@@ -136,6 +137,8 @@ export class Session {
   private breached=new Set<string>();
   barricadesLeft(id:string){return BARRICADES_PER_ENGINEER-(this.fortified.get(id)??0);}
   activeDuel:DuelState|null=null;
+  /** 넓은 전장(지도 1.5배 · 이동 +2)으로 만든 전투인가 */
+  wide=false;
   /** 방금 도전을 거절당했다면 그 사연(화면이 한 번 보여 준다) */
   lastRefusal:{kind:'duel'|'debate';challenger:string;target:string;line:string;reason:string}|null=null;
   /** 방금 응한 대결의 첫 대답 */
@@ -171,6 +174,10 @@ export class Session {
       const extra=pickExtras(entry.stage,entry.map,this.deployment.extraOfficers,this.difficulty);
       if(extra.length)entry={...entry,stage:{...entry.stage,deployment:{...entry.stage.deployment,forced:[...entry.stage.deployment.forced,...extra]}}};
     }
+    // 넓은 전장: 연의 지도를 1.5배로(지형·영역·등장 위치), 이동력은 +2로 걸음을 맞춘다.
+    const wide=!!this.deployment?.wide&&!this.deployment.run&&!this.deployment.mission&&canStretch(entry.map);
+    if(wide)entry={...entry,map:stretchMap(entry.map),stage:stretchStage(entry.stage)};
+    this.wide=wide;
     const level=entry.stage.difficulty[this.difficulty].recommendedLevel;
     const state=assemble({stage:entry.stage,map:entry.map,difficulty:this.difficulty,seed:this.seed,roster:[
       {id:'sima_yi',name:'사마의',unitClass:'strategist',level,strategies:['windDragon','fire'],traits:['alwaysHit']},
@@ -201,7 +208,8 @@ export class Session {
     for(const p of rules?.protect??[]){const u=state.find(p.unit);if(!u)continue;u.stats.maxHp=p.hp;u.hp=p.hp;u.range=[0,0];u.canUseItems=false;if(p.movement)u.stats.movement=p.movement;}
     for(const t of rules?.tough??[]){const u=state.find(t.unit);if(!u)continue;u.stats.maxHp=Math.round(u.stats.maxHp*t.hpScale);u.hp=u.stats.maxHp;if(t.defense)u.stats.defense+=t.defense;}
     for(const id of rules?.anchored??[]){const u=state.find(id);if(u)u.stats.movement=0;}
-    for(const at of rules?.barricades??[])if(!state.unitAt(at))placeBarricade(state,at,'enemy',(encounterLevels[state.stage.id]??5)+(state.difficulty==='extreme'?2:0));
+    for(const at0 of rules?.barricades??[]){const at=this.wide?wideCoord(at0):at0;if(!state.unitAt(at))placeBarricade(state,at,'enemy',(encounterLevels[state.stage.id]??5)+(state.difficulty==='extreme'?2:0));}
+    if(this.wide)state.map.moveBonus=2;
     if((this.deployment?.mission?.version??1)>=3){
       for(const id of ['convoy_trial','rescue_target']){const u=state.find(id);if(u){u.stats.maxHp=100+u.level*4;u.hp=u.stats.maxHp;u.stats.movement=3;u.range=[0,0];}}
       for(const u of state.living('enemy'))if(u.goalRegion==='trial_defense')u.stats.movement=3;
