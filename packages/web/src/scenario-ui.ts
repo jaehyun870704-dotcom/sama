@@ -3,7 +3,7 @@
  * 규칙은 scenario.ts, 무대 연출은 story-stage.ts. 연의 장의 정비·전투·보상은 main.ts의 기존 흐름을 쓴다.
  */
 import {loadScenario,saveScenario,scenarioPath,winOver,currentStep,scriptOf,choose,finishStep,fateChoices,floorFor,scenarioParty,rewardOfficers,endingNotes,routeTales,COMPANIONS,
-  ensureRun,newScenarioRun,inWhatIf,joinCaptive,pendingMarch,marchNodes,recruitOffer,relicOffer,recruitOfficer,healAll,finishMarch,marchFloor,afterFight,loseFight,runMandate,type ScenarioState,type ScenarioStep,type MarchNode} from './scenario.ts';
+  ensureRun,newScenarioRun,inWhatIf,joinCaptive,pendingMarch,marchNodes,recruitOffer,relicOffer,recruitOfficer,healAll,finishMarch,marchFloor,afterFight,loseFight,runMandate,omenOffer,omenOf,chooseOmen,omenReward,addRunBonus,type ScenarioState,type ScenarioStep,type MarchNode} from './scenario.ts';
 import {playScenes,playNarration,spriteStyle,Stage} from './story-stage.ts';
 import {startPersuasion,speak,reaction,PITCH,GREETING,AGREE,REFUSE,APPROACH_NAMES,PERSUADE_GOAL,type Approach} from './persuade.ts';
 import {openCamp} from './story-camp.ts';
@@ -96,6 +96,7 @@ async function runContest(host:ScenarioHost,state:ScenarioState,step:ScenarioSte
 export function modsOf(state:ScenarioState,step:ScenarioStep):BattleMods{
   const picked=state.choices[step.id],script=scriptOf(step.id),out:BattleMods={};
   // 일기토·설전에서 이겼다: 사기 상승 + (일기토) 적의 기세가 꺾인다 / (설전) 책략 MP
+  const om=omenOf(state,step.id);if(om?.mod)out[om.mod]=true;
   const c=contestOf(state,step);if(c?.result==='win'){out.rally=true;if(c.kind==='debate')out.insight=true;else if(step.kind==='story')out.guard=true;else out.ambush=true;}
   if(!picked||!script)return out;
   for(const scene of script.scenes)for(const st of scene.steps)if('choice' in st)for(const o of st.options)if(o.id===picked)for(const e of o.effects??[]){
@@ -208,6 +209,10 @@ async function replay(host:ScenarioHost,step:ScenarioStep){
 /** 출진 전 정비: 이야기가 끝나면 반드시 거친다. */
 export function prepare(host:ScenarioHost,step:ScenarioStep){
   const state=loadScenario();
+  if(state.run&&['story','tale','boss'].includes(step.kind)&&!omenOf(state,step.id)){
+    const offer=omenOffer(state,step.id);
+    return choiceScreen(host,`전황 · ${stepTitle(step,state)} — 싸우기 전에 하늘을 읽는다`,offer.map(o=>({title:(o.goal?'⚑ 도전 · ':'')+o.name,detail:o.text})),i=>{const st=loadScenario();chooseOmen(st,step.id,offer[i]!.id);saveScenario(st);prepare(host,step);},'천명의 길 · 전황 카드');
+  }
   if(step.kind==='story'){const run=state.run,hp=run?.hp['사마의'],h=host.hero(),recruits=scenarioParty(state,h.level,h.xp).filter(u=>!u.hero).sort((a,b)=>b.level-a.level).slice(0,3).map(u=>({...u,id:'rc_'+u.id}));host.storyBriefing(chapterIndex(step.stage!),{chapter:step.id,mods:modsOf(state,step),...(run?.relics.length?{relics:[...run.relics]}:{}),...(hp!==undefined?{heroHp:hp}:{}),...(recruits.length?{recruits}:{})});return;}
   showIfPrep(host,state,step);
 }
@@ -288,7 +293,7 @@ function launch(host:ScenarioHost,state:ScenarioState,step:ScenarioStep,picked:s
   const ref:RunBattleRef={seed:runSeed(state,step.id),floor:floorFor(step,state),kind:step.kind==='boss'?'boss':'tale',party,relics:[...(state.run?.relics??[])],route:{...state.route},
     ...(step.kind==='tale'?{tale:step.id}:{}),...(Object.keys(mods).length?{mods}:{}),enemyBase:enemyBase(state,hero.level,step),scenario:step.id};
   const loadout=host.heroLoadout()?.sima_yi;
-  const deployment:Deployment={levels:{sima_yi:hero.level,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},...(loadout?{loadouts:{sima_yi:loadout}}:{}),run:ref,...perksFor(party),scenario:{chapter:step.id,...(difficulty==='extreme'?{difficulty:'extreme' as const}:{})}};
+  const deployment:Deployment={levels:{sima_yi:hero.level,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},...(loadout?{loadouts:{sima_yi:loadout}}:{}),run:ref,trial:1,...perksFor(party),scenario:{chapter:step.id,...(difficulty==='extreme'?{difficulty:'extreme' as const}:{})}};
   host.startBattle(deployment,runSeed(state,step.id),difficulty);
 }
 
@@ -319,6 +324,7 @@ export async function finishIfBattle(host:ScenarioHost,state:BattleState,deploym
       if(ok&&joinCaptive(st,foe.name,foe.unitClass,level)){saveScenario(st);news.push(`${foe.name}이(가) 설득에 응해 사마의의 부대에 들어왔다.`);}else news.push(`${foe.name}은(는) 끝내 고개를 숙이지 않았다. 사마의는 그를 놓아 보냈다.`);}
     else news.push(`${foe.name}을(를) 놓아 보냈다.`);
   }
+  news.push(...await battleSpoils(host,step,state));
   await afterVictory(host,sc,step,news);
 }
 /** 연의 장 전투가 끝났을 때(main.ts가 보상 처리 뒤에 부른다). */
@@ -332,6 +338,7 @@ export async function finishStoryBattle(host:ScenarioHost,chapterId:string,victo
     const lost=afterFight(sc,recruits,surv,stepTitle(step,sc));news.push(...rewardOfficers(sc,recruits.filter(r=>surv[r.name]!==undefined),earned,50,xpMult(loadMeta())));
     if(lost.length)news.push(`중상: ${lost.join(' · ')} — 다음 싸움엔 체력 25%로 나선다.`);}
   finishStep(sc,step.id);saveScenario(sc);
+  if(battle)news.push(...await battleSpoils(host,step,battle));
   await afterVictory(host,sc,step,news);
 }
 /** 붙잡은 적장을 설득할지 묻는다. */
@@ -399,8 +406,23 @@ function pickMarch(host:ScenarioHost,after:string,node:MarchNode){
     return choiceScreen(host,'보물고 · 무엇을 들고 갈까',offer.map(r=>({title:r.name,detail:r.effect})),i=>{run.relics.push(offer[i]!.id);done([`보물 「${offer[i]!.name}」을 얻었다.`]);});}
   run.march=node.kind;saveScenario(state);launchMarch(host,state,after,node.kind);
 }
-function choiceScreen(host:ScenarioHost,title:string,items:Array<{title:string;detail:string}>,pick:(i:number)=>void){
-  host.modal(`<div class="briefing run-screen"><div class="eyebrow">행군로</div><h2>${esc(title)}</h2><div class="run-choices">${items.map((it,i)=>`<button data-pick="${i}"><strong>${esc(it.title)}</strong><small>${esc(it.detail)}</small></button>`).join('')}</div></div>`,false);
+/** 이긴 뒤: 전황 도전의 결과를 정산하고, 전공 보상 셋 중 하나를 고른다(천명·보물·치료/수련). */
+function battleSpoils(host:ScenarioHost,step:ScenarioStep,battle:BattleState):Promise<string[]>{
+  const sc=loadScenario(),out:string[]=[];if(!sc.run)return Promise.resolve(out);
+  const om=omenOf(sc,step.id),got=omenReward(om,{turn:battle.turn,lost:battle.losses.player});
+  if(om?.goal){if(got){addRunBonus(sc,got);out.push(`전황 「${om.name}」 달성 — 천명 +${got}`);}else out.push(`전황 「${om.name}」을(를) 이루지 못했다.`);}
+  saveScenario(sc);
+  const relic=relicOffer(sc,step.id+'#spoils',1)[0],wounded=Object.values(sc.run.hp).some(v=>v<1),h=host.hero();
+  const items:Array<{title:string;detail:string;take:(st:ScenarioState)=>string}>=[
+    {title:'천명 +3',detail:'공을 하늘에 돌린다 · 회차가 끝날 때 연구에 쓸 천명으로 받는다',take:st=>{addRunBonus(st,3);return '전공 보상 — 천명 +3';}},
+    ...(relic?[{title:`보물 · ${relic.name}`,detail:relic.effect+' · 이번 회차 내내 전원에게',take:(st:ScenarioState)=>{st.run!.relics.push(relic.id);return `전공 보상 — 보물 「${relic.name}」`;}}]:[]),
+    wounded?{title:'군의 치료',detail:'다친 장수 모두 체력을 회복한다',take:st=>{healAll(st,1);return '전공 보상 — 모든 장수가 회복했다';}}
+      :{title:'장수 수련',detail:'함께 싸우는 장수들 경험치 +60',take:st=>{const lines=rewardOfficers(st,scenarioParty(st,h.level,h.xp).filter(u=>!u.hero),{},60);return ['전공 보상 — 장수 수련',...lines].join(' · ');}},
+  ];
+  return new Promise(done=>choiceScreen(host,'전공 보상 · 무엇을 받을까',items,i=>{const st=loadScenario();out.push(items[i]!.take(st));saveScenario(st);done(out);},'전공 보상'));
+}
+function choiceScreen(host:ScenarioHost,title:string,items:Array<{title:string;detail:string}>,pick:(i:number)=>void,eyebrow='행군로'){
+  host.modal(`<div class="briefing run-screen"><div class="eyebrow">${esc(eyebrow)}</div><h2>${esc(title)}</h2><div class="run-choices">${items.map((it,i)=>`<button data-pick="${i}"><strong>${esc(it.title)}</strong><small>${esc(it.detail)}</small></button>`).join('')}</div></div>`,false);
   document.querySelectorAll<HTMLButtonElement>('[data-pick]').forEach(b=>b.onclick=()=>pick(Number(b.dataset.pick)));
 }
 function marchResult(host:ScenarioHost,label:string,news:string[]){
@@ -415,7 +437,7 @@ function launchMarch(host:ScenarioHost,state:ScenarioState,after:string,kind:'ba
   const levels=party.map(u=>u.level),base=Math.max(1,Math.round(levels.reduce((a,b)=>a+b,0)/levels.length)+(kind==='elite'?1:0));
   const ref:RunBattleRef={seed:runSeed(state,'march:'+after),floor:marchFloor(state,next.act),kind:kind==='elite'?'elite':'battle',party,relics:[...state.run!.relics],route:{...state.route},enemyBase:base,scenario:'march:'+after};
   const loadout=host.heroLoadout()?.sima_yi;
-  const deployment:Deployment={levels:{sima_yi:hero.level,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},...(loadout?{loadouts:{sima_yi:loadout}}:{}),run:ref,...perksFor(party),scenario:{chapter:'march:'+after}};
+  const deployment:Deployment={levels:{sima_yi:hero.level,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},...(loadout?{loadouts:{sima_yi:loadout}}:{}),run:ref,trial:1,...perksFor(party),scenario:{chapter:'march:'+after}};
   host.startBattle(deployment,ref.seed);
 }
 async function finishMarchBattle(host:ScenarioHost,battle:BattleState,deployment:Deployment,earned:Record<string,number>,after:string){

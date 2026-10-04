@@ -66,6 +66,8 @@ export interface ScenarioState {
  */
 export interface ScenarioRun {
   seed:number;
+  /** 전황 카드·전공 보상으로 쌓은 천명(회차가 끝날 때 함께 받는다) */
+  bonus?:number;
   /** 몇 번째 회차인가 */
   no:number;
   /** 체력 비율(이름 → 0~1, 없으면 1): 가상 전장·행군 전투 사이에 이어진다 */
@@ -112,7 +114,7 @@ function readRun(r:unknown):ScenarioRun|undefined{
   const strs=(a:unknown)=>Array.isArray(a)?a.filter((v):v is string=>typeof v==='string'):[];
   const hp:Record<string,number>={};for(const [k,v] of Object.entries(x.hp??{}))if(typeof v==='number'&&v>0&&v<=1)hp[k]=v;
   return {seed:x.seed!,no:x.no!,hp,relics:strs(x.relics).filter(id=>RELICS.some(q=>q.id===id)),fallen:strs(x.fallen),marched:strs(x.marched),...(x.march&&MARCH_KINDS.includes(x.march)?{march:x.march}:{}),
-    guard:!!x.guard,nodes:Number.isInteger(x.nodes)&&x.nodes!>=0?x.nodes!:0,status:x.status==='over'||x.status==='complete'?x.status:'alive',...(x.settled?{settled:true}:{}),
+    ...(Number.isInteger(x.bonus)&&x.bonus!>0&&x.bonus!<10000?{bonus:x.bonus!}:{}),guard:!!x.guard,nodes:Number.isInteger(x.nodes)&&x.nodes!>=0?x.nodes!:0,status:x.status==='over'||x.status==='complete'?x.status:'alive',...(x.settled?{settled:true}:{}),
     ...(x.faction&&typeof x.faction==='object'&&!checkFaction(x.faction)?{faction:{name:x.faction.name,emblem:x.faction.emblem,color:x.faction.color}}:{})};
 }
 export function loadScenario(){let s:ScenarioState;try{s=readScenario(localStorage.getItem(KEY));}catch{s=freshScenario();}syncFaction(s);return s;}
@@ -333,8 +335,36 @@ export function loseFight(state:ScenarioState){
 /** 이번 회차의 천명: 이긴 전투 장 2 · 우두머리 3 · 행군 1 · 결말 10. */
 export function runMandate(state:ScenarioState){
   const done=new Set(state.done),path=scenarioPath(state).filter(x=>done.has(x.id));
-  return 2*path.filter(x=>x.kind==='story'||x.kind==='tale').length+3*path.filter(x=>x.kind==='boss').length+(state.run?.nodes??0)+(path.some(x=>x.kind==='ending')?10:0);
+  return 2*path.filter(x=>x.kind==='story'||x.kind==='tale').length+3*path.filter(x=>x.kind==='boss').length+(state.run?.nodes??0)+(path.some(x=>x.kind==='ending')?10:0)+(state.run?.bonus??0);
 }
+
+// ─────────────────────────────────────────────── 연의의 로그라이크: 전황 카드 · 전공 보상
+/** 장마다 싸우기 전에 셋 중 하나를 고르는 전황. 이득(사기·방어·MP)이거나, 걸고 이기면 천명을 더 주는 도전이다. */
+export interface Omen {id:string;name:string;text:string;mod?:'rally'|'guard'|'insight';goal?:'gamble'|'swift'|'intact';reward?:number}
+export const OMENS:Omen[]=[
+  {id:'clear',name:'맑은 하늘',text:'아군 처음 2턴 사기 상승',mod:'rally'},
+  {id:'wind',name:'동남풍',text:'사마의 책략 MP +15',mod:'insight'},
+  {id:'terrain',name:'험한 지세',text:'아군 첫 턴 방어 태세',mod:'guard'},
+  {id:'gamble',name:'배수진',text:'사마의가 체력 70%로 나선다 · 이기면 천명 +4',goal:'gamble',reward:4},
+  {id:'swift',name:'속전속결',text:'14턴 안에 이기면 천명 +4',goal:'swift',reward:4},
+  {id:'intact',name:'무혈 승리',text:'아군이 하나도 퇴각하지 않고 이기면 천명 +3',goal:'intact',reward:3},
+];
+const omenHash=(s:string)=>{let h=2166136261;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;};
+export function omenOffer(state:ScenarioState,stepId:string,n=3){
+  const r=new Rng(((state.run?.seed??7)^omenHash(stepId+'#omen'))>>>0||1),pool=[...OMENS],out:Omen[]=[];
+  while(out.length<n&&pool.length)out.push(pool.splice(r.int(0,pool.length-1),1)[0]!);return out;
+}
+export function omenOf(state:ScenarioState,stepId:string){const f=state.flags.find(x=>x.startsWith(`omen:${stepId}:`));return f?OMENS.find(o=>o.id===f.split(':')[2]):undefined;}
+export function chooseOmen(state:ScenarioState,stepId:string,id:string){
+  const o=OMENS.find(x=>x.id===id);if(!o)return false;state.flags=state.flags.filter(f=>!f.startsWith(`omen:${stepId}:`));state.flags.push(`omen:${stepId}:${id}`);
+  if(o.goal==='gamble'&&state.run)state.run.hp['사마의']=Math.min(state.run.hp['사마의']??1,.7);return true;
+}
+/** 이긴 전투의 전황 도전 결과: 받은 천명(0이면 실패). */
+export function omenReward(o:Omen|undefined,b:{turn:number;lost:number}){
+  if(!o?.goal)return 0;if(o.goal==='gamble')return o.reward!;if(o.goal==='swift')return b.turn<=14?o.reward!:0;return b.lost===0?o.reward!:0;
+}
+export function addRunBonus(state:ScenarioState,n:number){if(state.run&&n>0)state.run.bonus=(state.run.bonus??0)+n;}
+
 
 /** 지금 가상 시나리오 안인가(다음 장의 편이 가상 루트를 걷는 중). 설득은 가상 시나리오에서만 한다. */
 export function inWhatIf(state:ScenarioState){const step=currentStep(state);if(!step)return false;const r=routeById(state.route[step.act]);return !!r&&!r.history;}

@@ -207,7 +207,7 @@ function showTale(host:RunHost,run:Run,taleId:string){
 function launch(host:RunHost,run:Run,kind:'battle'|'elite'|'boss'|'tale',tale?:string){
   const hero=run.party.find(u=>u.hero)!;
   const p=deploymentPerks(loadMeta(),run.party.map(u=>({name:u.hero?'사마의':u.name,unitClass:u.unitClass})));
-  const deployment:Deployment={levels:{sima_yi:Math.min(40,hero.level),sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},run:battleRef(run,kind,tale),...(p?{perks:p}:{})};
+  const deployment:Deployment={levels:{sima_yi:Math.min(40,hero.level),sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},run:battleRef(run,kind,tale),trial:1,...(p?{perks:p}:{})};
   run.active=kind;if(tale)run.activeTale=tale;else delete run.activeTale;saveRun(run);host.startBattle(deployment,(run.seed+run.floor*97)%2147483647);
 }
 
@@ -220,7 +220,7 @@ export function storyDeployment(run:Run,stage:string):{chapter:number;deployment
   d.equipped={};delete d.loadouts;
   d.levels.sima_yi=Math.min(40,Math.max(d.levels.sima_yi??1,hero.level));
   d.runStory={seed:run.seed,floor:run.floor,stage,heroLevel:hero.level,heroHp:hero.hp,relics:[...run.relics],heroXp:hero.xp};
-  {const p=deploymentPerks(loadMeta(),['사마의']);if(p)d.perks=p;}
+  {const p=deploymentPerks(loadMeta(),['사마의']);if(p)d.perks=p;}d.trial=1;
   return {chapter,deployment:d};
 }
 function launchStory(host:RunHost,run:Run,stage:string){

@@ -30,3 +30,13 @@ describe('잘게 쪼갠 연구(10단계·강화 구간·병종별)',()=>{
   expect(s.state.strategyFor(sima,'fire')!.tier).toBe(2);// Lv.6 + 숙달 2 → 화계 숙련
  });
 });
+
+describe('천명의 시련(로그라이크 난이도)',()=>{
+ it('hardens enemies in roguelike battles so research is what makes them easy',()=>{
+  const base={levels:{sima_yi:6,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{}};
+  const a=new Session(2,'normal',215,'survival',4,base),b=new Session(2,'normal',215,'survival',4,{...base,trial:1});
+  const ea=a.state.living('enemy').find(u=>u.stats.movement>0)!,eb=b.state.get(ea.id);
+  expect(eb.stats.maxHp).toBe(Math.round(ea.stats.maxHp*1.2));expect(eb.stats.attack).toBe(Math.round(ea.stats.attack*1.12));
+  expect(Session.load(b.save()).state.snapshot()).toEqual(b.state.snapshot());
+ });
+});

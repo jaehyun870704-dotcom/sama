@@ -163,3 +163,19 @@ describe('본편은 로그라이크: 회차·행군로·영구 이탈·천명',(
  });
  it('offers relics not yet carried',()=>{const s=newScenarioRun(1,9,['heirloom'],1);const offer=relicOffer(s,'x');expect(offer.length).toBe(3);for(const r of offer)expect(s.run!.relics).not.toContain(r.id);});
 });
+
+import {omenOffer,omenOf,chooseOmen,omenReward,addRunBonus,OMENS} from '../src/scenario.ts';
+describe('연의의 로그라이크 · 전황 카드와 전공',()=>{
+ it('offers three seeded omens, applies their battle mods, and pays off challenges into the run mandate',()=>{
+  const s=freshScenario();s.run={seed:42,no:1,hp:{},relics:[],fallen:[],marched:[],guard:false,nodes:0,status:'alive'};
+  const step=scenarioPath(s).find(x=>x.kind==='story')!;
+  const offer=omenOffer(s,step.id);expect(offer).toHaveLength(3);expect(new Set(offer.map(o=>o.id)).size).toBe(3);
+  expect(omenOffer(s,step.id).map(o=>o.id)).toEqual(offer.map(o=>o.id));
+  expect(chooseOmen(s,step.id,'clear')).toBe(true);expect(omenOf(s,step.id)?.id).toBe('clear');expect(modsOf(s,step).rally).toBe(true);
+  chooseOmen(s,step.id,'gamble');expect(s.run.hp['사마의']).toBe(.7);
+  const swift=OMENS.find(o=>o.id==='swift')!,intact=OMENS.find(o=>o.id==='intact')!;
+  expect(omenReward(swift,{turn:10,lost:0})).toBe(4);expect(omenReward(swift,{turn:20,lost:0})).toBe(0);expect(omenReward(intact,{turn:20,lost:1})).toBe(0);
+  const before=runMandate(s);addRunBonus(s,7);expect(runMandate(s)).toBe(before+7);
+  expect(readScenario(JSON.stringify(s)).run?.bonus).toBe(7);
+ });
+});
