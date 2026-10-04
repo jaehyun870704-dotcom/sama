@@ -54,6 +54,9 @@ export function moodOf(place:string,kind:Kind):Mood{
   return {light,...(weather?{weather}:{}),fx};
 }
 const cache=new Map<string,IsoScene>();
+/** 아군 깃발의 문장·색(신세력이면 그 세력의 것). */
+let FLAG={emblem:'魏',color:'#1f3f8a'};
+export function setPlayerFlag(emblem:string,color:string){FLAG={emblem,color};}
 /**
  * 장소 이름이 말하는 곳을 먼저 따른다(배경 번호는 대본을 쓸 때 고른 대략의 그림이라 장소와 어긋날 수 있다).
  * '지역 · 자세한 곳'의 자세한 곳을 본다(지역 이름의 '진'·'문' 같은 글자에 속지 않게). 말이 없으면 배경 번호.
@@ -95,7 +98,7 @@ export function kindFor(art:number,place:string):Kind{
  * (소품에 밀려 사람이 엉뚱한 자리로 가지 않게). 같은 장소라도 자리가 다르면 따로 만든다.
  */
 export function isoScene(art:number,place:string,clear:readonly At[]=[]):IsoScene{
-  const kind=kindFor(art,place),cells=[...new Set(clear.map(a=>pctCell(a).join(',')))].sort(),key=`${kind}:${place}:${cells.join(';')}`;
+  const kind=kindFor(art,place),cells=[...new Set(clear.map(a=>pctCell(a).join(',')))].sort(),key=`${kind}:${place}:${cells.join(';')}:${FLAG.emblem}${FLAG.color}`;
   const hit=cache.get(key);if(hit)return hit;
   const scene=build(kind,hash(place)+art*7919,place,new Set(cells));cache.set(key,scene);return scene;
 }
@@ -274,7 +277,7 @@ function indoorWalls(g:Ctx,kind:Kind,R:()=>number){
       for(let i=0;i<5;i++){const [m]=onWall('left',4.6+i*0.6,4.6+i*0.6,140+((i*37)%25),140);g.fillStyle='rgba(70,60,40,.7)';g.beginPath();g.moveTo(m[0]-5,m[1]);g.lineTo(m[0],m[1]-7);g.lineTo(m[0]+5,m[1]);g.fill();}
       for(const [t,z,cl] of [[5.2,118,'#1f3f8a'],[6.6,130,'#8a1f1a'],[6.2,104,'#8a1f1a']] as const){const [m]=onWall('left',t,t,z,z);g.fillStyle=cl;g.fillRect(m[0]-3,m[1]-3,6,6);}}
     // 오른벽: 걸어 둔 군기 둘
-    for(const t of [5,9]){const q=onWall('right',t,t+1,92,170);poly(g,q,t===5?'#1f3f8a':'#8a1f1a','#1a0c08',1);const [m]=onWall('right',t+0.5,t+0.5,130,130);g.fillStyle='rgba(255,230,160,.85)';g.font='bold 18px serif';g.textAlign='center';g.fillText(t===5?'魏':'帥',m[0],m[1]+6);g.textAlign='start';}
+    for(const t of [5,9]){const q=onWall('right',t,t+1,92,170);poly(g,q,t===5?FLAG.color:'#8a1f1a','#1a0c08',1);const [m]=onWall('right',t+0.5,t+0.5,130,130);g.fillStyle='rgba(255,230,160,.85)';g.font='bold 18px serif';g.textAlign='center';g.fillText(t===5?FLAG.emblem:'帥',m[0],m[1]+6);g.textAlign='start';}
     return;
   }
   const palace=kind==='palace'||kind==='throne';
@@ -477,7 +480,7 @@ function rack(c:number,r:number,len:number):Prop{return P(c,r,len,0.3,g=>{
   // 기대 놓은 방패
   const [sx,sy]=pt(c+len-0.25,r+0.35);g.fillStyle='#7a3a1a';g.strokeStyle='#2a1208';g.lineWidth=1.5;g.beginPath();g.ellipse(sx+8,sy-22,12,22,0.15,0,7);g.fill();g.stroke();g.fillStyle='#c9952a';g.beginPath();g.arc(sx+8,sy-22,4,0,7);g.fill();g.strokeStyle='rgba(230,190,90,.7)';g.beginPath();g.ellipse(sx+8,sy-22,9,18,0.15,0,7);g.stroke();
 });}
-function banner(c:number,r:number,col:string):Prop{return P(c,r,0.2,0.2,g=>{
+function banner(c:number,r:number,col0:string):Prop{const mine=col0==='#1f3f8a',col=mine?FLAG.color:col0,mark=mine?FLAG.emblem:'帥';return P(c,r,0.2,0.2,g=>{
   const [x,y]=pt(c+0.1,r+0.1);g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.ellipse(x,y,8,3,0,0,7);g.fill();
   g.strokeStyle='#3a2410';g.lineWidth=4;g.beginPath();g.moveTo(x,y);g.lineTo(x,y-172);g.stroke();
   g.fillStyle='#d8aa3a';g.beginPath();g.moveTo(x-4,y-172);g.lineTo(x,y-186);g.lineTo(x+4,y-172);g.closePath();g.fill();g.fillStyle='#b8261a';g.fillRect(x-3,y-172,6,6);
@@ -485,11 +488,11 @@ function banner(c:number,r:number,col:string):Prop{return P(c,r,0.2,0.2,g=>{
   const path=()=>{g.beginPath();g.moveTo(x+1,y-163);g.quadraticCurveTo(x+26,y-156,x+50,y-157);g.quadraticCurveTo(x+56,y-128,x+50,y-98);g.quadraticCurveTo(x+26,y-100,x+1,y-106);g.closePath();};
   path();g.fillStyle=col;g.fill();g.strokeStyle='#1a0c08';g.lineWidth=1.5;g.stroke();
   // 불꽃 모양 가장자리
-  g.fillStyle=col==='#1f3f8a'?'#d8b04a':'#1a1a1a';for(let k=0;k<5;k++){const yy=y-150+k*11;g.beginPath();g.moveTo(x+50+Math.sin(k)*2,yy);g.lineTo(x+60,yy+5);g.lineTo(x+51,yy+10);g.closePath();g.fill();}
+  g.fillStyle=mine?'#d8b04a':'#1a1a1a';for(let k=0;k<5;k++){const yy=y-150+k*11;g.beginPath();g.moveTo(x+50+Math.sin(k)*2,yy);g.lineTo(x+60,yy+5);g.lineTo(x+51,yy+10);g.closePath();g.fill();}
   // 주름 그늘
   g.save();path();g.clip();for(const k of [14,30,44]){const gr=g.createLinearGradient(x+k-6,0,x+k+6,0);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(0.5,'rgba(0,0,0,.22)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(x+k-6,y-170,12,80);}g.restore();
   g.strokeStyle='rgba(255,230,160,.6)';g.lineWidth=1;g.beginPath();g.moveTo(x+5,y-155);g.quadraticCurveTo(x+26,y-149,x+45,y-150);g.lineTo(x+45,y-106);g.stroke();
-  g.fillStyle='rgba(255,236,170,.92)';g.font='bold 22px serif';g.textAlign='center';g.fillText(col==='#1f3f8a'?'魏':'帥',x+26,y-120);g.textAlign='start';
+  g.fillStyle='rgba(255,236,170,.92)';g.font='bold 22px serif';g.textAlign='center';g.fillText(mark,x+26,y-120);g.textAlign='start';
 });}
 function tent(c:number,r:number,w:number,d:number,col:string):Prop{return P(c,r,w,d,g=>{
   const A=pt(c,r),B=pt(c+w,r),C=pt(c+w,r+d),D=pt(c,r+d),apex=up(pt(c+w/2,r+d/2),Math.max(w,d)*58),wall=26;

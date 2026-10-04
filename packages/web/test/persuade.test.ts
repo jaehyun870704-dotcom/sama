@@ -23,3 +23,38 @@ describe('장수 설득',()=>{
  it('reacts in proportion to how far the heart moved',()=>{expect(reaction(30,0).emote).toBe('!');expect(reaction(10,0).emote).toBe('…');expect(reaction(-20,0).emote).toBe('분노');});
  it('is the same talk for the same seed',()=>{expect(startPersuasion('조진',99)).toEqual(startPersuasion('조진',99));});
 });
+
+import {checkCustom,checkFaction,registerCustoms,readCustoms,STAT_BUDGET,type CustomOfficer} from '../src/custom.ts';
+import {romanceByName,temperOf} from '../src/romance.ts';
+import {newScenarioRun as newRun,fateChoices as fates,scenarioPath as pathOf,scriptOf as script,currentStep as cur,finishStep as fin,recruitPool as pool} from '../src/scenario.ts';
+import {ROUTES,routesFor,validRoute} from '../src/fate.ts';
+describe('신장수·신세력',()=>{
+ const hero:CustomOfficer={name:'강유린',epithet:'하내의 젊은 창',unitClass:'spearman',temper:'proud',war:80,int:60,lead:75,pol:60,cha:70};
+ it('checks a new officer: name, budget, class, temper',()=>{
+  expect(checkCustom(hero)).toBeUndefined();expect(checkCustom({...hero,name:'조운'})).toMatch(/이미/);expect(checkCustom({...hero,war:95,int:95,lead:95})).toMatch(String(STAT_BUDGET));
+  expect(checkCustom({...hero,name:'abc'})).toMatch(/한글/);expect(readCustoms([hero,{...hero,war:200}])).toHaveLength(1);
+ });
+ it('puts a made officer into the roll so battles, persuasion and recruiting know him',()=>{
+  registerCustoms([hero]);expect(romanceByName('강유린')!.war).toBe(80);expect(temperOf('강유린')).toBe('proud');
+  const s=newRun(1,3,[],1);expect(pool(s).some(o=>o.name==='강유린')).toBe(true);registerCustoms([]);expect(romanceByName('강유린')).toBeUndefined();
+ });
+ it('starts a new faction with the made officers and opens its own road at the first crossroads',()=>{
+  expect(checkFaction({name:'진',emblem:'晉',color:'#1f3f8a'})).toBeUndefined();expect(checkFaction({name:'',emblem:'晉',color:'#1f3f8a'})).toBeDefined();
+  const s=newRun(1,3,[],1,{faction:{name:'진',emblem:'晉',color:'#1f3f8a'},customs:[hero]});
+  expect(s.officers['강유린']).toBeDefined();expect(s.officers['조진']).toBeUndefined();expect(cur(s)!.id).toBe('S1-01');
+  for(const id of ['S1-01','S1-02','S1-03','S1-04'])fin(s,id);
+  expect(fates(s,'fate:1').map(r=>r.id)).toContain('np1');
+  const plain=newRun(1,3,[],1);for(const id of ['S1-01','S1-02','S1-03','S1-04'])fin(plain,id);expect(fates(plain,'fate:1').map(r=>r.id)).not.toContain('np1');
+  expect(routesFor(1).some(r=>r.custom)).toBe(false);
+ });
+ it('scripts every chapter of both new-faction roads to both endings, with the faction name in the text',()=>{
+  for(const [r2,r3] of [['np_south','np_unify'],['np_south','np_kingdom'],['np_west','np_unify'],['np_west','np_kingdom']]){
+   const s=newRun(1,3,[],1,{faction:{name:'진',emblem:'晉',color:'#1f3f8a'},customs:[hero]});s.route={1:'np1',2:r2,3:r3};expect(validRoute(s.route)).toBe(true);
+   const steps=pathOf(s);expect(steps.at(-1)!.id).toBe(`ending:${r3}`);
+   for(const st of steps.filter(x=>!x.id.startsWith('S1'))){const sc=script(st.id);expect(sc,st.id).toBeDefined();expect(sc!.history!.length,st.id).toBeGreaterThanOrEqual(2);
+    if(st.kind==='tale'||st.kind==='boss'){expect(sc!.camp!.people.length).toBeGreaterThanOrEqual(2);}
+    expect(JSON.stringify(sc)).not.toContain('{세력}');}
+  }
+  expect(ROUTES.filter(r=>r.custom)).toHaveLength(5);
+ });
+});

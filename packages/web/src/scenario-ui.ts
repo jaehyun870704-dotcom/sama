@@ -3,12 +3,15 @@
  * 규칙은 scenario.ts, 무대 연출은 story-stage.ts. 연의 장의 정비·전투·보상은 main.ts의 기존 흐름을 쓴다.
  */
 import {loadScenario,saveScenario,scenarioPath,winOver,currentStep,scriptOf,choose,finishStep,fateChoices,floorFor,scenarioParty,rewardOfficers,endingNotes,routeTales,COMPANIONS,
-  ensureRun,newScenarioRun,pendingMarch,marchNodes,recruitOffer,relicOffer,recruitOfficer,healAll,finishMarch,marchFloor,afterFight,loseFight,runMandate,type ScenarioState,type ScenarioStep,type MarchNode} from './scenario.ts';
+  ensureRun,newScenarioRun,inWhatIf,joinCaptive,pendingMarch,marchNodes,recruitOffer,relicOffer,recruitOfficer,healAll,finishMarch,marchFloor,afterFight,loseFight,runMandate,type ScenarioState,type ScenarioStep,type MarchNode} from './scenario.ts';
 import {playScenes,playNarration,spriteStyle,Stage} from './story-stage.ts';
 import {startPersuasion,speak,reaction,PITCH,GREETING,AGREE,REFUSE,APPROACH_NAMES,PERSUADE_GOAL,type Approach} from './persuade.ts';
 import {openCamp} from './story-camp.ts';
 import {isoBackdrop} from './story-iso.ts';
-import {routeById,fatePoint,endingFor,type Route} from './fate.ts';
+import {routeById,fatePoint,endingFor,factionText,ALL_ENDINGS,type Route} from './fate.ts';
+import {foundingOption} from './newpower.ts';
+import {pickFaction} from './custom-ui.ts';
+import {setPlayerFlag} from './story-iso.ts';
 import {chapters} from './session.ts';
 import {encounterLevels} from './campaign-rules.ts';
 import {treasures,type Deployment,type ScenarioDeployment} from './progression.ts';
@@ -89,13 +92,14 @@ export function modsText(m:BattleMods){return [...Object.entries(m).filter(([k,v
 export function showScenario(host:ScenarioHost,selected?:string){
   {let s0=loadScenario();const unlocks=loadMeta().unlocks;
     // 처음 여는 사람은 새 회차(연의 첫 장부터), 예전 기록은 그 자리에서 첫 회차로 이어 간다.
-    if(!s0.run&&!s0.done.length){s0=newScenarioRun(1,newSeed(),unlocks,host.hero().level);saveScenario(s0);}
+    if(!s0.run&&!s0.done.length)return startNewRun(host,1);
     else if(ensureRun(s0,newSeed(),unlocks,host.hero().level))saveScenario(s0);
     if(s0.run&&s0.run.status!=='alive')return showRunOver(host);}
   const state=loadScenario(),path=scenarioPath(state),cur=currentStep(state),done=new Set(state.done),run=state.run!,march=pendingMarch(state);
+  flagOf(state);
   const sel=path.find(s=>s.id===selected)??cur??path.at(-1)!;
   const route=(act:1|2|3)=>routeById(state.route[act]);
-  const track=[1,2,3].map(a=>{const r=route(a as 1|2|3);return `<span class="${r&&!r.history?'if':''} ${cur&&cur.act===a?'now':''}">${ACT_NAMES[a-1]!.split(' · ')[0]} · ${r?esc(r.name):'갈림길 전'}</span>`;}).join('');
+  const track=[1,2,3].map(a=>{const r=route(a as 1|2|3);return `<span class="${r&&!r.history?'if':''} ${cur&&cur.act===a?'now':''}">${ACT_NAMES[a-1]!.split(' · ')[0]} · ${r?esc(ft(state,r.name)):'갈림길 전'}</span>`;}).join('');
   const hero=host.hero();
   const card=(s:ScenarioStep,i:number)=>{const st=done.has(s.id)?'done':s===cur?'now':'locked';
     return `<button class="sc-card ${st} kind-${s.kind}" data-step="${esc(s.id)}" aria-pressed="${s===sel}"><span class="sc-thumb" style="${isoBackdrop(firstArt(s))}"></span><span class="sc-card-text"><small>${String(i+1).padStart(2,'0')} · ${kindTag[s.kind]} · ${esc(stepYear(s,state))}</small><strong>${esc(stepTitle(s,state))}</strong></span><b>${st==='done'?'◆':st==='now'?'▶':'·'}</b></button>`;};
@@ -144,7 +148,9 @@ async function stage(host:ScenarioHost,state:ScenarioState,step:ScenarioStep,sce
 }
 /** 지금 장에 들어간다: 이야기 장면부터. */
 export async function enter(host:ScenarioHost,step:ScenarioStep){
-  const state=loadScenario(),script=scriptOf(step.id)??fallbackScript(step,state);
+  const state=loadScenario();let script=scriptOf(step.id)??fallbackScript(step,state);flagOf(state);
+  // 신세력 회차: 첫 갈림길에 '스스로 기치를 든다'가 더해진다.
+  if(step.id==='fate:1'&&state.run?.faction){script=structuredClone(script);for(const sc of script.scenes)for(const st of sc.steps)if('choice' in st&&!st.options.some(o=>o.id==='np1'))st.options.unshift(foundingOption());}
   await stage(host,state,step,script.scenes,`${kindTag[step.kind]} · ${script.title}`,true,script.history?{year:script.year,title:script.title,lines:script.history}:undefined);
   if(step.kind==='fate'){
     if(!state.route[step.act])return showFateFallback(host,state,step);
@@ -187,15 +193,15 @@ export function prepare(host:ScenarioHost,step:ScenarioStep){
 function showFateFallback(host:ScenarioHost,state:ScenarioState,step:ScenarioStep){
   const p=fatePoint(step.act,state.route),routes=fateChoices(state,step.id);
   host.modal(`<div class="briefing run-screen fate-screen"><div class="eyebrow">${esc(p.year)} · 운명의 갈림길</div><h2>${esc(p.title)}</h2><blockquote>${esc(p.prompt)}</blockquote>
-  <div class="run-choices">${routes.map(r=>`<button data-route="${r.id}" class="${r.history?'history':'what-if'}"><strong><span class="route-tag">${r.history?'정사':'가상'}</span>${esc(r.choice)}</strong><small>${esc(r.detail)}</small></button>`).join('')}</div></div>`,false);
+  <div class="run-choices">${routes.map(r=>`<button data-route="${r.id}" class="${r.history?'history':'what-if'}"><strong><span class="route-tag">${r.custom?'신세력':r.history?'정사':'가상'}</span>${esc(ft(state,r.choice))}</strong><small>${esc(ft(state,r.detail))}</small></button>`).join('')}</div></div>`,false);
   document.querySelectorAll<HTMLButtonElement>('[data-route]').forEach(b=>b.onclick=()=>{choose(state,step,b.dataset.route!,[],host.hero().level);saveScenario(state);afterFate(host,state,step);});
 }
 function afterFate(host:ScenarioHost,state:ScenarioState,step:ScenarioStep){
   finishStep(state,step.id);saveScenario(state);
   const r=routeById(state.route[step.act])!;
   const people=Object.values(state.officers).map(o=>o.name);
-  host.modal(`<div class="briefing run-screen fate-screen"><div class="eyebrow">운명의 갈림길 · ${esc(fatePoint(step.act,step.act===1?{}:step.act===2?{1:state.route[1]??''}:{1:state.route[1]??'',2:state.route[2]??''}).title)}</div><h2>${esc(r.choice)}</h2>
-  <p class="route-result ${r.history?'history':'what-if'}"><b>${r.history?'정사':'가상'}</b> ${esc(r.name)} — ${esc(r.detail)}</p>
+  host.modal(`<div class="briefing run-screen fate-screen"><div class="eyebrow">운명의 갈림길 · ${esc(fatePoint(step.act,step.act===1?{}:step.act===2?{1:state.route[1]??''}:{1:state.route[1]??'',2:state.route[2]??''}).title)}</div><h2>${esc(ft(state,r.choice))}</h2>
+  <p class="route-result ${r.history?'history':'what-if'}"><b>${r.custom?'신세력':r.history?'정사':'가상'}</b> ${esc(ft(state,r.name))} — ${esc(ft(state,r.detail))}</p>
   ${!r.history?`<p class="muted">${r.region.name} · 우두머리 ${esc(r.region.boss.name)} · 가상 전장 ${routeTales(r,state).length}장</p><p>함께하는 장수: ${people.length?esc(people.join(' · ')):'없음'}</p>`:''}
   <div class="run-actions"><button class="primary" id="fate-next">다음 장 ▶</button><button id="fate-list">장 목록</button></div></div>`,false);
   document.getElementById('fate-next')!.onclick=()=>goNext(host);
@@ -203,10 +209,10 @@ function afterFate(host:ScenarioHost,state:ScenarioState,step:ScenarioStep){
 }
 function showEnding(host:ScenarioHost,state:ScenarioState,step:ScenarioStep){
   finishStep(state,step.id);if(state.run)state.run.status='complete';const gain=settleRun(state);saveScenario(state);
-  const e=endingFor(state.route),notes=endingNotes(state);
+  const e0=endingFor(state.route),e={...e0,title:ft(state,e0.title),lines:e0.lines.map(l=>ft(state,l))},notes=endingNotes(state);
   const meta=loadMeta();if(!meta.endings.includes(e.id)){meta.endings.push(e.id);saveMeta(meta);}
   host.modal(`<div class="briefing run-screen"><div class="eyebrow">결말 · ${e.history?'정사':'가상'}</div><div class="ending-card ${e.history?'history':'what-if'}"><h3>${esc(e.title)}</h3>${e.lines.map(l=>`<p>${esc(l)}</p>`).join('')}${notes.map(l=>`<p class="ending-note">${esc(l)}</p>`).join('')}</div>
-  <p class="muted">본 결말 ${meta.endings.length}/15 · 이번 회차 천명 +${gain}. 새 회차를 시작해 다른 갈림길을 고르면 다른 이야기와 결말이 펼쳐진다.</p>
+  <p class="muted">본 결말 ${meta.endings.length}/${ALL_ENDINGS.length} · 이번 회차 천명 +${gain}. 새 회차를 시작해 다른 갈림길을 고르면 다른 이야기와 결말이 펼쳐진다.</p>
   <div class="run-actions"><button class="primary" id="end-list">회차 정산 ▶</button><button id="end-menu">← 본영</button></div></div>`,false);
   document.getElementById('end-list')!.onclick=()=>showRunOver(host);document.getElementById('end-menu')!.onclick=host.showMenu;
 }
@@ -273,6 +279,15 @@ export async function finishIfBattle(host:ScenarioHost,state:BattleState,deploym
   news.push(...host.addHeroXp(Math.round((140+(earned.sima_yi??0))*mult)));
   const back=winOver(sc,step,Math.max(1,(ref.party[0]?.level??2)-1));if(back)news.push(`${back} 귀순 — 다시 사마의의 부대에 합류했다.`);
   finishStep(sc,step.id);saveScenario(sc);
+  // 가상 시나리오: 꺾은 적장이 붙잡혔다. 설득하면 부대에 들어온다.
+  const foe=step.tale?.target;
+  if(step.kind==='tale'&&foe&&!back&&!sc.officers[foe.name]&&Object.keys(sc.officers).length<8){
+    const level=Math.max(1,Math.round(ref.party.reduce((a,u)=>a+u.level,0)/Math.max(1,ref.party.length))-1);
+    const tryIt=await captiveChoice(host,foe.name,foe.unitClass);
+    if(tryIt){const ok=await persuadeOfficer(host,foe.name,foe.unitClass,runSeed(sc,step.id+'#captive'));const st=loadScenario();
+      if(ok&&joinCaptive(st,foe.name,foe.unitClass,level)){saveScenario(st);news.push(`${foe.name}이(가) 설득에 응해 사마의의 부대에 들어왔다.`);}else news.push(`${foe.name}은(는) 끝내 고개를 숙이지 않았다. 사마의는 그를 놓아 보냈다.`);}
+    else news.push(`${foe.name}을(를) 놓아 보냈다.`);
+  }
   await afterVictory(host,sc,step,news);
 }
 /** 연의 장 전투가 끝났을 때(main.ts가 보상 처리 뒤에 부른다). */
@@ -283,6 +298,15 @@ export async function finishStoryBattle(host:ScenarioHost,chapterId:string,victo
   if(sc.run&&heroHp!==undefined){if(heroHp>=0.999)delete sc.run.hp['사마의'];else sc.run.hp['사마의']=Math.max(.05,heroHp);}
   finishStep(sc,step.id);saveScenario(sc);
   await afterVictory(host,sc,step,news);
+}
+/** 붙잡은 적장을 설득할지 묻는다. */
+function captiveChoice(host:ScenarioHost,name:string,unitClass:UnitClass){
+  const r=romanceByName(name),t=temperOf(name);
+  return new Promise<boolean>(done=>{host.modal(`<div class="briefing run-screen"><div class="eyebrow">가상 시나리오 · 붙잡은 적장</div><h2>${esc(name)}이(가) 붙잡혔다</h2>
+    <p>${r?esc(r.epithet)+' · ':''}${esc(classNames[unitClass]??unitClass)}${r?` · ${esc(romanceStats(name))}`:''}${t?` · 성격 ${temperNames[t]}`:''}</p>
+    <p class="muted">설득하면 사마의의 부대에 들어온다. 마음이 움직이지 않으면 놓아 보낸다.</p>
+    <div class="run-actions"><button class="primary" id="cap-talk">설득한다 ▶</button><button id="cap-free">놓아 보낸다</button></div></div>`,false);
+    document.getElementById('cap-talk')!.onclick=()=>done(true);document.getElementById('cap-free')!.onclick=()=>done(false);});
 }
 async function afterVictory(host:ScenarioHost,sc:ScenarioState,step:ScenarioStep,news:string[]){
   const script=scriptOf(step.id);
@@ -311,7 +335,7 @@ function runBar(state:ScenarioState){
   const run=state.run;if(!run)return '';
   const relics=run.relics.map(id=>RELICS.find(r=>r.id===id)).filter(Boolean).map(r=>`<span class="run-relic" title="${esc(r!.effect)}">${esc(r!.name)}</span>`).join('');
   const hurt=Object.entries(run.hp).filter(([,v])=>v<1).map(([k,v])=>`${esc(k)} ${Math.round(v*100)}%`).join(' · ');
-  return `<p class="sc-runbar"><b>천명의 길 제${run.no}회차</b> · 행군 ${run.nodes} · 천명의 가호 ${run.guard?'있음':'없음'}${hurt?` · 다친 사람 ${hurt}`:''}</p>${relics?`<p class="run-relics">${relics}</p>`:''}`;
+  return `<p class="sc-runbar"><b>천명의 길 제${run.no}회차</b>${run.faction?` · <span class="sc-faction" style="--fc:${run.faction.color}">${esc(run.faction.emblem)}</span> ${esc(run.faction.name)}`:''} · 행군 ${run.nodes} · 천명의 가호 ${run.guard?'있음':'없음'}${hurt?` · 다친 사람 ${hurt}`:''}</p>${relics?`<p class="run-relics">${relics}</p>`:''}`;
 }
 /** 다음으로: 행군로가 남았으면 행군로, 아니면 다음 장. */
 function goNext(host:ScenarioHost):void{const st=loadScenario();if(pendingMarch(st))return showMarch(host);const n=currentStep(st);if(n)void enter(host,n);else showScenario(host);}
@@ -333,7 +357,8 @@ function pickMarch(host:ScenarioHost,after:string,node:MarchNode){
   if(node.kind==='rest'){healAll(state,meta.unlocks.includes('field_medic')?1:.6);return done(['의원에서 사마의와 장수들이 기운을 되찾았다.']);}
   if(node.kind==='training'){const party=scenarioParty(state,hero.level,hero.xp),news=rewardOfficers(state,party,{},100);news.push(...host.addHeroXp(80));return done(news);}
   if(node.kind==='recruit'){const offer=recruitOffer(state,after);if(!offer.length)return done(['맞아들일 사람이 없었다.']);
-    return choiceScreen(host,'모병소 · 누구를 설득할까',offer.map(o=>({title:`${o.name} (${classNames[o.unitClass]??o.unitClass})`,detail:`${romanceStats(o.name)??''}${temperOf(o.name)?` · 성격 ${temperNames[temperOf(o.name)!]}`:''}`})),i=>{const o=offer[i]!;
+    return choiceScreen(host,inWhatIf(state)?'모병소 · 누구를 설득할까 (가상 시나리오 — 설득해야 합류)':'모병소 · 누구를 맞아들일까',offer.map(o=>({title:`${o.name} (${classNames[o.unitClass]??o.unitClass})`,detail:`${romanceStats(o.name)??''}${temperOf(o.name)?` · 성격 ${temperNames[temperOf(o.name)!]}`:''}`})),i=>{const o=offer[i]!;
+      if(!inWhatIf(state)){recruitOfficer(state,o.name,hero.level,meta.unlocks.includes('elite_recruits'));return done([`${o.name}이(가) 사마의의 부대에 들어왔다.`]);}
       void persuadeOfficer(host,o.name,o.unitClass,run.seed^hashSeed(after)).then(ok=>{if(ok){recruitOfficer(state,o.name,hero.level,meta.unlocks.includes('elite_recruits'));done([`${o.name}이(가) 설득에 응해 사마의의 부대에 들어왔다.`]);}else done([`${o.name}은(는) 이번엔 거절하고 떠났다. 다른 길목에서 다시 만날 수 있다.`]);});});}
   if(node.kind==='treasure'){const offer=relicOffer(state,after);if(!offer.length)return done(['보물고는 비어 있었다.']);
     return choiceScreen(host,'보물고 · 무엇을 들고 갈까',offer.map(r=>({title:r.name,detail:r.effect})),i=>{run.relics.push(offer[i]!.id);done([`보물 「${offer[i]!.name}」을 얻었다.`]);});}
@@ -369,7 +394,7 @@ async function finishMarchBattle(host:ScenarioHost,battle:BattleState,deployment
   delete state.run!.march;saveScenario(state);
   const relics=relicOffer(state,after+'#win',kind==='elite'?3:1),recruits=kind==='elite'?[]:recruitOffer(state,after+'#win',1);
   const items=[...relics.map(r=>({title:`보물 · ${r.name}`,detail:r.effect,take:()=>{state.run!.relics.push(r.id);return `보물 「${r.name}」을 얻었다.`;}})),
-    ...recruits.map(o=>({title:`장수 설득 · ${o.name} (${classNames[o.unitClass]??o.unitClass})`,detail:`${romanceStats(o.name)??''} · 설득에 성공하면 합류`,take:async()=>{const ok=await persuadeOfficer(host,o.name,o.unitClass,state.run!.seed^hashSeed(after+'#win'));if(!ok)return `${o.name}은(는) 이번엔 거절하고 떠났다.`;recruitOfficer(state,o.name,host.hero().level,loadMeta().unlocks.includes('elite_recruits'));return `${o.name}이(가) 설득에 응해 부대에 들어왔다.`;}})),
+    ...recruits.map(o=>({title:`${inWhatIf(state)?'장수 설득':'장수 영입'} · ${o.name} (${classNames[o.unitClass]??o.unitClass})`,detail:`${romanceStats(o.name)??''}${inWhatIf(state)?' · 설득에 성공하면 합류':''}`,take:async()=>{const ok=!inWhatIf(state)||await persuadeOfficer(host,o.name,o.unitClass,state.run!.seed^hashSeed(after+'#win'));if(!ok)return `${o.name}은(는) 이번엔 거절하고 떠났다.`;recruitOfficer(state,o.name,host.hero().level,loadMeta().unlocks.includes('elite_recruits'));return `${o.name}이(가) 부대에 들어왔다.`;}})),
     ...(kind==='elite'?[]:[{title:'휴식',detail:'사마의와 장수들의 체력 40% 회복',take:()=>{healAll(state,.4);return '잠시 쉬며 숨을 골랐다.';}}])];
   if(!items.length){finishMarch(state,after);saveScenario(state);return marchResult(host,'행군 전투 승리',news);}
   choiceScreen(host,`행군 전투 승리 · 보상 하나`,items,i=>{void Promise.resolve(items[i]!.take()).then(line=>{news.push(line);finishMarch(state,after);saveScenario(state);marchResult(host,'행군 전투 승리',news);});});
@@ -430,11 +455,18 @@ export function showRunOver(host:ScenarioHost){
 }
 /** 새 회차: 연의 진행을 되돌리고 연의 첫 장부터. */
 export function startNewRun(host:ScenarioHost,no?:number){
-  const meta=loadMeta();host.resetCampaign(meta.unlocks.includes('veteran_start'));
-  talkedIn.clear();
-  const state=newScenarioRun(no??(loadScenario().run?.no??0)+1,newSeed(),meta.unlocks,host.hero().level);saveScenario(state);
-  const first=currentStep(state);if(first)void enter(host,first);else showScenario(host);
+  const number=no??(loadScenario().run?.no??0)+1;
+  pickFaction(host,(faction,companions)=>{
+    const meta=loadMeta();if(number>1||loadScenario().done.length)host.resetCampaign(meta.unlocks.includes('veteran_start'));
+    talkedIn.clear();
+    const state=newScenarioRun(number,newSeed(),meta.unlocks,host.hero().level,{...(faction?{faction}:{}),...(companions?{customs:companions}:{})});saveScenario(state);
+    const first=currentStep(state);if(first)void enter(host,first);else showScenario(host);
+  },()=>host.showMenu());
 }
+/** 신세력의 글('{세력}')을 이 회차의 세력 이름으로. */
+const ft=(state:ScenarioState,text:string)=>factionText(text,state.run?.faction?.name);
+/** 무대 깃발: 신세력이면 그 문장·색, 아니면 위(魏). */
+function flagOf(state:ScenarioState){const f=state.run?.faction;setPlayerFlag(f?.emblem??'魏',f?.color??'#1f3f8a');}
 
 /** 본영 카드에 쓰는 요약. */
 export function scenarioSummary(){const s=loadScenario(),cur=currentStep(s);return {state:s,current:cur,title:cur?stepTitle(cur,s):'결말까지 보았다',tag:cur?kindTag[cur.kind]:'완결'};}

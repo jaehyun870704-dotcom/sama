@@ -198,6 +198,9 @@ const TEMPERS:Record<string,Temper>={
   사마의:'wise',제갈량:'wise',순욱:'wise',육손:'wise',환범:'wise',가규:'wise',
   조상:'timid',하안:'timid',조희:'timid',원담:'timid',
 };
+/** 신장수: 플레이어가 만든 장수를 장수록에 올린다(능력·성격이 전투·설득·무대에 그대로 쓰인다). */
+export function registerOfficer(r:RomanceOfficer,temper?:Temper){byName[r.name]=r;if(temper)TEMPERS[r.name]=temper;else delete TEMPERS[r.name];}
+export function unregisterOfficer(name:string){delete byName[name];delete TEMPERS[name];}
 export function temperOf(name:string):Temper|undefined{
   if(TEMPERS[name])return TEMPERS[name];const r=byName[name];if(!r)return undefined;
   return r.int>=85&&r.war<75?'wise':r.war>=85?'brave':r.lead<55&&r.war<60?'timid':r.war>=78?'proud':'calm';

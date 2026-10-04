@@ -7,6 +7,7 @@
  */
 import {mandateEarned,RUN_FLOORS,type Run} from './roguelike.ts';
 import {endingFor,ALL_ENDINGS,ROUTES} from './fate.ts';
+import {readCustoms,type CustomOfficer} from './custom.ts';
 
 export interface MetaState {
   version:1;
@@ -22,6 +23,8 @@ export interface MetaState {
   /** 본 결말(중편 루트/하편 루트) */
   endings:string[];
   runs:number;wins:number;best:number;
+  /** 플레이어가 만든 신장수(영구) */
+  customOfficers?:CustomOfficer[];
 }
 export interface Unlock {id:string;name:string;cost:number;effect:string}
 
@@ -48,7 +51,8 @@ export function readMeta(raw:string|null):MetaState{
       unlocks:Array.isArray(m.unlocks)?m.unlocks.filter(x=>typeof x==='string'&&ids.has(x)):[],
       chronicle:Array.isArray(m.chronicle)?m.chronicle.filter(x=>typeof x==='string'&&/^S[1-3]-\d\d$/.test(x)):[],
       tales:Array.isArray(m.tales)?m.tales.filter(x=>typeof x==='string'&&TALE_IDS.has(x)):[],
-      endings:Array.isArray(m.endings)?m.endings.filter(x=>typeof x==='string'&&ALL_ENDINGS.includes(x)):[]};
+      endings:Array.isArray(m.endings)?m.endings.filter(x=>typeof x==='string'&&ALL_ENDINGS.includes(x)):[],
+      ...(Array.isArray(m.customOfficers)?{customOfficers:readCustoms(m.customOfficers)}:{})};
   }catch{return freshMeta();}
 }
 export function loadMeta():MetaState{try{return readMeta(localStorage.getItem(KEY));}catch{return freshMeta();}}
