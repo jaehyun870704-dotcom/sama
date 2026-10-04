@@ -7,7 +7,10 @@
  * 대본의 자리([x%, y%])는 화면 좌표이므로 가장 가까운 빈 칸으로 맞춘다.
  */
 import type {At,Look} from './scenario-types.ts';
-import {drawPxFigure,type PxDir} from './story-pixel.ts';
+import {drawPxFigure,type PxDir,type PxPose} from './story-pixel.ts';
+import {drawFigure} from './story-figure.ts';
+/** 배경 속 인물(병사 대열·백관): 무대 인물과 같은 기존 그림, 아직 못 읽었으면 도트 인물. */
+const person=(g:CanvasRenderingContext2D,x:number,y:number,name:string,look:Look,dir:PxDir,pose:PxPose,flip:boolean)=>{if(!drawFigure(g,x,y,name,look,pose,88,flip))drawPxFigure(g,x,y,name,look,dir,pose,PIXEL,flip);};
 
 export type Cell=readonly [number,number];
 export const W=1280,H=640;
@@ -609,7 +612,7 @@ function build(kind:Kind,seed:number,place=''):IsoScene{
   if(kind==='camp'){palisade(g,'left',0,N);palisade(g,'right',0,N);}
   if(kind==='battlefield'){
     // 양군의 대열: 왼쪽 위는 아군(푸른 깃), 오른쪽 위는 적군(붉은 깃)
-    const troop=(c0:number,r0:number,name:string,look:Look,dir:PxDir,flip:boolean)=>{for(let i=0;i<4;i++)for(let k=0;k<3;k++){const [x,y]=pt(c0+i*0.7,r0+k*0.7);drawPxFigure(g,x,y,name,look,dir,'stand',PIXEL,flip);}};
+    const troop=(c0:number,r0:number,name:string,look:Look,dir:PxDir,flip:boolean)=>{for(let i=0;i<4;i++)for(let k=0;k<3;k++){const [x,y]=pt(c0+i*0.7,r0+k*0.7);person(g,x,y,name,look,dir,'stand',flip);}};
     troop(-1.5,4.5,'위군 창병','spear','front',false);troop(-1.2,8.6,'위군 궁병','archer','front',false);
     troop(5.2,-1.6,'적군 창병 붉은','spear','front',true);troop(9.4,-1.4,'적군 보병 붉은','infantry','front',true);
   }
@@ -620,8 +623,8 @@ function build(kind:Kind,seed:number,place=''):IsoScene{
   props.sort((a,b)=>(a.c+a.r+(a.w+a.d)/2)-(b.c+b.r+(b.w+b.d)/2));
   if(kind==='throne'){
     // 바깥 줄에 늘어선 문무백관(배경 인물): 왼쪽 문관, 오른쪽 무관이 길을 향해 선다
-    for(let k=3;k<=8;k++){let [x,y]=pt(k+0.5,k+5.5);drawPxFigure(g,x,y,'문관 '+k,'civil','front',k%3?'stand':'bow',PIXEL,false);[x,y]=pt(k+5.5,k+0.5);drawPxFigure(g,x,y,'무관 '+k,'heavy','front',k%3?'stand':'bow',PIXEL,true);}
-    for(const [c0,r0,f] of [[3.2,0.6,true],[0.6,3.2,false]] as const){const [x,y]=pt(c0,r0);drawPxFigure(g,x,y,'금군 위사','spear','front','stand',PIXEL,f);}
+    for(let k=3;k<=8;k++){let [x,y]=pt(k+0.5,k+5.5);person(g,x,y,'문관 '+k,'civil','front',k%3?'stand':'bow',false);[x,y]=pt(k+5.5,k+0.5);person(g,x,y,'무관 '+k,'heavy','front',k%3?'stand':'bow',true);}
+    for(const [c0,r0,f] of [[3.2,0.6,true],[0.6,3.2,false]] as const){const [x,y]=pt(c0,r0);person(g,x,y,'금군 위사','spear','front','stand',f);}
   }
   // 소품 그림자(빛은 왼쪽 위에서): 먼저 모두 깔고 소품을 올린다
   {const sh=document.createElement('canvas');sh.width=W;sh.height=H;const o=sh.getContext('2d')!;o.fillStyle='rgba(0,0,0,.32)';

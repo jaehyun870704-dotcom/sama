@@ -8,8 +8,8 @@
 import type {Scene,ScriptStep,ChoiceOption,Look,At,CastMember} from './scenario-types.ts';
 import {isoScene,stepsBetween,offscreenCell,type Cell,type IsoScene} from './story-iso.ts';
 import {officerPortrait,officerLook} from './officer-art.ts';
-import {romanceByName} from './romance.ts';
-import {pxSheet,pxStyle,type PxDir,type PxPose} from './story-pixel.ts';
+import {pxStyle,type PxDir,type PxPose} from './story-pixel.ts';
+import {figSheet,figArtFor,loadFigures,type FigArt} from './story-figure.ts';
 
 /** 겉모습 → 병사 그림(시트·줄). 시트는 main.ts가 CSS 변수(--이름-atlas)로 올려 둔다. */
 const SPRITES:Record<Look,{sheet:string;rows:number;row:number;walk?:string}>={
@@ -32,22 +32,8 @@ export function spriteStyle(look:Look,frame=0,walking=false){
  * - fig: 장수 전신 일러스트(사마의·사마랑·사마방·조진·조조·조비·허저 등). 이름 있는 다른 장수는 문관/무장 일러스트를 옷 색만 바꿔 쓴다.
  * - sheet: 이름 없는 병사·백성은 병종 그림(말 탄 병종은 무대에서 말에서 내린다).
  */
-type Art={kind:'fig';slot:number;tint:number}|{kind:'sheet';look:Look};
-const ON_FOOT:Partial<Record<Look,Look>>={cavalry:'infantry',heavy:'infantry',horseArcher:'archer',elephant:'infantry'};
-const ROBE=new Set<Look>(['strategist','civil','sage','physician','taoist']);
-const nameHash=(s:string)=>{let h=0;for(const ch of s)h=(h*31+ch.charCodeAt(0))>>>0;return h;};
-function artFor(name:string,look:Look):Art{
-  const p=officerLook(name);if(p&&p.slot<8)return {kind:'fig',slot:p.slot,tint:0};
-  if(romanceByName(name)&&look!=='lady'&&look!=='shaman'&&look!=='monk'&&look!=='bandit'&&look!=='assassin'){
-    const h=nameHash(name),pool=ROBE.has(look)?[2,3,6]:[4,7];
-    return {kind:'fig',slot:pool[h%pool.length]!,tint:((h>>3)%9-4)*36||40};
-  }
-  return {kind:'sheet',look:ON_FOOT[look]??look};
-}
-function artStyle(art:Art,frame=0,walking=false){
-  if(art.kind==='sheet')return spriteStyle(art.look,frame,walking);
-  return `background-image:var(--officer-story-atlas);background-size:400% 200%;background-position:${art.slot%4/3*100}% ${Math.floor(art.slot/4)*100}%`;
-}
+type Art=FigArt;
+const artFor=figArtFor;
 /** 전신 일러스트의 윗몸(초상이 없는 장수의 대화창 그림). */
 function figFace(art:Extract<Art,{kind:'fig'}>){
   return `<div class="officer-face sprite-face" role="img" style="background-image:var(--officer-story-atlas);background-size:800% 400%;background-position:${(art.slot%4*2+0.5)/7*100}% ${(Math.floor(art.slot/4)*2+0.08)/3*100}%;filter:hue-rotate(${art.tint}deg)"></div>`;
@@ -138,14 +124,17 @@ export class Stage {
   }
   addActor(m:CastMember,seat?:Cell){
     const art=artFor(m.name,m.look),look=art.kind==='sheet'?art.look:m.look;
-    const el=document.createElement('div');el.className='ss-actor px';el.dataset.name=m.name;
+    const el=document.createElement('div');el.className='ss-actor px fig';el.dataset.name=m.name;
     if(art.kind==='fig'&&art.tint)el.style.setProperty('--tint',`${art.tint}deg`);
     // 윗몸과 다리를 나눠 그린다: 걸을 때 다리(옷자락)만 번갈아 흔들려 한 걸음씩 내딛는 것처럼 보인다.
     el.innerHTML=`<div class="ss-shadow"></div><div class="ss-body"><div class="ss-sprite top"></div><div class="ss-sprite legs"></div></div><span class="ss-name">${esc(m.name)}</span><div class="ss-bubble" hidden></div>`;
     const cell=seat??(m.at?this.free(this.scene.toCell(m.at)):this.scene.toCell([-12,60]));
     const face=m.face??(this.scene.toPct(cell)[0]<50?'right':'left');
-    const a:Actor={el,cell,face,look,art,px:pxSheet(m.name,m.look),dir:'front',pose:'stand',on:!!m.at,tick:Math.floor(Math.random()*4),posedUntil:0};this.actors.set(m.name,a);el.style.setProperty('--d',`${-(Math.random()*2.4).toFixed(2)}s`);
-    this.paint(a);this.place(a,false);if(!m.at)el.classList.add('off');this.el.appendChild(el);return a;
+    const a:Actor={el,cell,face,look,art,px:figSheet(m.name,m.look)??'',dir:'front',pose:'stand',on:!!m.at,tick:Math.floor(Math.random()*4),posedUntil:0};this.actors.set(m.name,a);el.style.setProperty('--d',`${-(Math.random()*2.4).toFixed(2)}s`);
+    this.paint(a);this.place(a,false);if(!m.at)el.classList.add('off');this.el.appendChild(el);
+    // 그림을 아직 읽는 중이면 다 읽은 뒤에 칠한다
+    if(!a.px)void loadFigures().then(()=>{a.px=figSheet(m.name,m.look)??'';this.paint(a);});
+    return a;
   }
   /** 인물 그림(윗몸·다리 두 겹에 같은 그림). */
   private paint(a:Actor,pose:PxPose=a.pose){a.pose=pose;a.el.querySelector<HTMLElement>('.ss-sprite.top')!.setAttribute('style',pxStyle(a.px,a.dir,pose));}
