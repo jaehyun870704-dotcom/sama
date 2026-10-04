@@ -20,7 +20,7 @@ import {showHub,showQuests,finishRunBattle,finishRunStory,RUN_CHAPTER,type RunHo
 import {showScenario,campOf,finishIfBattle,finishStoryBattle,type ScenarioHost} from './scenario-ui.ts';
 import {scriptOf} from './scenario.ts';
 import {optionalOfficers,pickExtras,storySortieLimit} from './sortie.ts';
-import {isoBackdrop} from './story-iso.ts';
+import {isoBackdrop,loadIsoArt} from './story-iso.ts';
 import {loadFigures} from './story-figure.ts';
 const scenarioYear=(id:string)=>scriptOf(id)?.year??'';
 import type {ScenarioDeployment} from './progression.ts';
@@ -437,7 +437,7 @@ document.addEventListener('keydown',e=>{if($<HTMLDialogElement>('#modal').open||
   else{const id=({1:'move',2:'attack',3:session.state.find(selected)?.strategies[0],w:'wait'} as Record<string,string|undefined>)[e.key.toLowerCase()];if(id)document.querySelector<HTMLButtonElement>(`[data-command="${id}"]`)?.click();}});
 // Story and gallery art reads the cut sheets through CSS; a blob URL avoids encoding megapixels into a string.
 const atlasUrl=(canvas:HTMLCanvasElement)=>new Promise<string>(resolve=>canvas.toBlob(blob=>resolve(blob?URL.createObjectURL(blob):canvas.toDataURL())));
-async function boot(){try{await Promise.all([...[['officer-story','officer-story-v1.png',2,4],['base','units-v3.png',6,4],['extra','units-extra-v1.png',4,4],['ram','ram-v1.png',2,2],...troopSheets.map(s=>[s.id,s.url,s.rows,4])].map(async([name,url,rows,columns])=>{const atlas=await spriteAtlas(String(url),Number(rows),Number(columns));document.documentElement.style.setProperty('--'+name+'-atlas','url('+await atlasUrl(atlas)+')');}),loadFigures(),field.init($('#map'))]);field.load(session.state);render();showMenu();}catch(error){$('#map').innerHTML='<p class="render-error">전장 그래픽을 초기화하지 못했습니다. 새로고침해 주세요.</p>';console.error(error);}}
+async function boot(){try{await Promise.all([...[['officer-story','officer-story-v1.png',2,4],['base','units-v3.png',6,4],['extra','units-extra-v1.png',4,4],['ram','ram-v1.png',2,2],...troopSheets.map(s=>[s.id,s.url,s.rows,4])].map(async([name,url,rows,columns])=>{const atlas=await spriteAtlas(String(url),Number(rows),Number(columns));document.documentElement.style.setProperty('--'+name+'-atlas','url('+await atlasUrl(atlas)+')');}),loadFigures(),loadIsoArt(),field.init($('#map'))]);field.load(session.state);render();showMenu();}catch(error){$('#map').innerHTML='<p class="render-error">전장 그래픽을 초기화하지 못했습니다. 새로고침해 주세요.</p>';console.error(error);}}
 // ?dev only: a handle for QA scripts to inspect or nudge the running battle.
 if(devMode)Object.assign(window,{__sama:{get session(){return session;},render,start(chapter:number){session=new Session(chapter,'normal',215,'survival',4,deployment(campaign,true));activate();},story(chapter:number){storyScene(chapter);},act(cmd:Command){act(cmd);}}});
 void boot();
