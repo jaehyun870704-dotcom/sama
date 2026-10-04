@@ -233,6 +233,8 @@ export class Session {
     if(this.deployment?.run)prepareRunBattle(state,this.deployment.run);
     // 시나리오 모드의 연의 장: 대사 선택의 효과(사기·방어 태세·책략 MP).
     if(this.deployment?.scenario?.mods&&!this.deployment.run)applyBattleMods(state,this.deployment.scenario.mods);
+    // 로그라이크 회차의 연의 장: 회차 보물이 본대에 실리고, 사마의는 남은 체력으로 나선다.
+    if(this.deployment?.scenario&&!this.deployment.run){const sc=this.deployment.scenario;if(sc.relics?.length)applyRelics(state,sc.relics);const h=state.find('sima_yi');if(h&&sc.heroHp!==undefined)h.hp=Math.max(1,Math.round(h.stats.maxHp*sc.heroHp));}
     // 원정의 연의 전장: 사마의는 원정에서 남은 체력으로 나서고, 원정 보물이 본대에 실린다.
     if(this.deployment?.runStory){const r=this.deployment.runStory,h=state.find('sima_yi');if(h)h.hp=Math.max(1,Math.round(h.stats.maxHp*r.heroHp));applyRelics(state,r.relics);}
     this.applyRomanceToNew(state);
@@ -524,6 +526,7 @@ export class Session {
         if((m.reinforce!==undefined&&(!Array.isArray(m.reinforce)||m.reinforce.length>4||m.reinforce.some(x=>typeof x?.name!=='string'||!['npc','ally'].includes(x.side))))||Object.entries(m).some(([k,v])=>k!=='reinforce'&&typeof v!=='boolean'))throw new Error('잘못된 시나리오 기록');
         for(const x of m.reinforce??[])statsFor(x.unitClass,1);}
       if(sc&&(typeof sc.chapter!=='string'||sc.chapter.length>40))throw new Error('잘못된 시나리오 기록');
+      if(sc&&((sc.relics!==undefined&&(!Array.isArray(sc.relics)||sc.relics.length>12||sc.relics.some(x=>typeof x!=='string')))||(sc.heroHp!==undefined&&!(sc.heroHp>0&&sc.heroHp<=1))))throw new Error('잘못된 시나리오 기록');
       if(data.deployment.run&&data.deployment.run.enemyBase!==undefined&&(!Number.isInteger(data.deployment.run.enemyBase)||data.deployment.run.enemyBase<1||data.deployment.run.enemyBase>60))throw new Error('잘못된 시나리오 기록');}
     if(data.deployment?.runStory){const r=data.deployment.runStory;
       if(!Number.isInteger(r.floor)||r.floor<1||r.floor>RUN_FLOORS||typeof r.stage!=='string'||!chapters.some(c=>c.stage.id===r.stage)||chapters[data.chapter]?.stage.id!==r.stage||!Number.isSafeInteger(r.seed)
