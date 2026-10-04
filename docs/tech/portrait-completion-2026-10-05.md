@@ -4,6 +4,14 @@
 
 제작 도구: 내장 image_gen (CLI/API 대체 경로 사용 없음).
 
+## 조예 — 완료
+
+파일: `packages/web/public/portraits/cao-rui.png`. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
+
+### 생성 프롬프트
+
+Historical-scene. One square bust portrait of Cao Rui (조예), young adult Wei emperor aged 30, handsome East Asian man with refined narrow oval face, fine arched brows, pale ivory skin, composed perceptive eyes, clean shaven, elegant lips, black hair arranged under a restrained tall black-and-gold ceremonial guan with a small jade inset, face unobscured. Dark black silk imperial robes with muted gold embroidered cloud patterns, vermilion crossed inner collar, dignified erect bearing. No armor, no weapons. Three-quarter bust turned slightly right, face large, headgear fully inside image with margin, upper chest visible. Premium Three Kingdoms strategy game painted portrait in polished semi-realistic digital oil technique matching the Sima Yi / Sima Fang collection. Natural facial texture, intricate elegant silk, warm soft directional chiaroscuro against dark near-black plum-brown smoky background, refined brushwork. Historically inspired late Han / Wei costume, single character, no text, no frame, no watermark, not photograph, not anime, not flat vector. One finished square image.
+
 ## 하후돈 — 완료
 
 파일: `packages/web/public/portraits/xiahou-dun.png`. 왼쪽 눈 안대·단독 인물·얼굴·복식 육안 확인, manifest 연결.
