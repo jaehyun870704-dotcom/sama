@@ -19,6 +19,8 @@ export const RUN_FLOORS=18;
 /** 사마의를 포함한 원정 부대 상한(출진 칸 7개) */
 export const PARTY_LIMIT=7;
 export const XP_PER_LEVEL=100;
+/** 쓰러진 부대가 돌아올 때의 체력(중상). 원정·본편 공통. */
+export const WOUNDED=.25;
 
 export interface RunUnit {id:string;name:string;unitClass:UnitClass;level:number;xp:number;/** 체력 비율 0~1 */hp:number;hero?:true;/** 이름 있는 장수(연의 장수록 능력을 받고, 진화해도 이름이 바뀌지 않는다) */officer?:true}
 export type NodeKind='battle'|'elite'|'boss'|'recruit'|'rest'|'treasure'|'training'|'story'|'fate'|'tale';
@@ -214,7 +216,7 @@ export function floorChoices(run:Run):RunNode[]{
 }
 function describeNode(kind:NodeKind):RunNode{
   switch(kind){
-    case 'battle':return {kind,label:'전투',detail:'적 부대를 섬멸한다. 경험치 120과 보상 하나.'};
+    case 'battle':return {kind,label:'전투',detail:'적 부대를 섬멸한다. 경험치 120과 보상 하나. 쓰러진 부대는 중상(체력 25%)으로 돌아온다.'};
     case 'elite':return {kind,label:'정예 전투',detail:'진화한 정예가 섞인 강적. 경험치 180과 보물 보상.'};
     case 'boss':return {kind,label:'우두머리',detail:''};
     case 'recruit':return {kind,label:'모병소',detail:'새 병종 하나를 부대에 들인다.'};
@@ -263,15 +265,14 @@ export function grantXp(run:Run,amount:number,who=run.party){
 /** 전투 결과를 원정에 반영한다. survivors: 살아남은 부대의 체력 비율. */
 export function finishBattle(run:Run,node:RunNode,victory:boolean,survivors:Record<string,number>,earned:Record<string,number>={}){
   run.news=[];delete run.active;delete run.activeTale;
+  // 쓰러진 부대는 떠나지 않는다: 크게 다쳐(체력 25%) 물러났다가 다음 싸움에 다시 나선다.
   const lost=run.party.filter(u=>survivors[u.id]===undefined);
-  for(const u of lost)run.fallen.push(`${u.hero?'사마의':u.name} Lv.${u.level} · ${run.floor}층`);
   if(!victory||!survivors.sima_yi){
-    run.party=run.party.filter(u=>survivors[u.id]!==undefined||u.hero);
+    for(const u of lost)if(!u.hero)u.hp=WOUNDED;
     if(spendSecondChance(run))return;
-    run.news.push(survivors.sima_yi?`${run.floor}층 전투에서 패했다. 원정은 여기서 끝난다.`:`사마의가 ${run.floor}층에서 쓰러졌다. 원정은 여기서 끝난다.`);run.status='lost';run.party=run.party.filter(u=>survivors[u.id]!==undefined);return;}
-  run.party=run.party.filter(u=>survivors[u.id]!==undefined);
-  for(const u of run.party)u.hp=Math.max(.05,survivors[u.id]!);
-  if(lost.length)run.news.push(`잃은 부대: ${lost.map(u=>u.name).join(', ')}`);
+    run.news.push(survivors.sima_yi?`${run.floor}층 전투에서 패했다. 원정은 여기서 끝난다.`:`사마의가 ${run.floor}층에서 쓰러졌다. 원정은 여기서 끝난다.`);run.status='lost';return;}
+  for(const u of run.party)u.hp=survivors[u.id]===undefined?WOUNDED:Math.max(.05,survivors[u.id]!);
+  if(lost.length)run.news.push(`중상: ${lost.map(u=>u.name).join(', ')} — 물러나 치료받고 체력 25%로 다시 나선다.`);
   if(run.relics.includes('herbs'))for(const u of run.party)u.hp=Math.min(1,u.hp+.2);
   if(node.kind==='boss'){for(const u of run.party)u.hp=1;run.bosses=(run.bosses??0)+1;}
   // 전투 중에 싸워서 번 경험치(공격·격파·책략)에 승리 보너스를 더한다.

@@ -10,7 +10,7 @@
  * 이 모듈은 순서·상태·선택 효과의 순수 규칙만 둔다. 화면은 scenario-ui.ts, 무대 연출은 story-stage.ts.
  */
 import {ROUTES,routeById,routesFor,validRoute,type Route,type Tale} from './fate.ts';
-import {STORY_ORDER,RUN_FLOORS,XP_PER_LEVEL,RELICS,OFFICER_RECRUITS,grantXp,registerTales,landClass,type Run,type RunUnit} from './roguelike.ts';
+import {STORY_ORDER,RUN_FLOORS,XP_PER_LEVEL,WOUNDED,RELICS,OFFICER_RECRUITS,grantXp,registerTales,landClass,type Run,type RunUnit} from './roguelike.ts';
 import {Rng} from '../../core/src/index.ts';
 import {evolvedClass,type UnitClass} from '../../core/src/index.ts';
 import type {ChapterScript,ChoiceEffect,ExtraTale,ScenarioPack,ScriptStep} from './scenario-types.ts';
@@ -59,7 +59,7 @@ export interface ScenarioState {
 /**
  * 본편은 로그라이크다: 한 회차는 언제나 연의 첫 장(S1-01)에서 시작해 결말이나 패배로 끝난다.
  * 장과 장 사이에는 씨앗으로 정해지는 '행군로' 세 갈래(전투·정예·모병·의원·보물고·수련) 중 하나를 고르고,
- * 가상 전장·행군 전투에서 쓰러진 장수는 그 회차에서 영원히 빠지며, 체력과 보물은 다음 싸움으로 이어진다.
+ * 쓰러진 장수는 떠나지 않고 중상(체력 25%)으로 돌아오며, 체력과 보물은 다음 싸움으로 이어진다. 장수는 설득해야 합류한다(persuade.ts).
  * 지면 회차가 끝나고(천명의 가호가 있으면 한 번 견딘다) 천명을 얻어 다음 회차를 강하게 한다(meta.ts 해금).
  */
 export interface ScenarioRun {
@@ -69,7 +69,7 @@ export interface ScenarioRun {
   /** 체력 비율(이름 → 0~1, 없으면 1): 가상 전장·행군 전투 사이에 이어진다 */
   hp:Record<string,number>;
   relics:string[];
-  /** 쓰러진 장수("이름 Lv.n · 장 제목") */
+  /** 예전 기록의 쓰러진 장수 목록(지금은 쓰지 않는다 — 쓰러진 장수는 중상으로 돌아온다) */
   fallen:string[];
   /** 행군로를 지난 자리(앞 장 id) */
   marched:string[];
@@ -258,7 +258,7 @@ export function pendingMarch(state:ScenarioState):string|undefined{
   return run.marched.includes(prev.id)?undefined:prev.id;
 }
 const MARCH_TEXT:Record<MarchKind,[string,string]>={
-  battle:['전투','길목의 적을 친다. 장수들이 경험치를 얻고 보상 하나를 고른다. 쓰러진 장수는 이번 회차에서 떠난다.'],
+  battle:['전투','길목의 적을 친다. 장수들이 경험치를 얻고 보상 하나를 고른다. 쓰러진 장수는 중상(체력 25%)으로 돌아온다.'],
   elite:['정예 전투','진화한 정예가 섞인 강적. 이기면 보물 하나.'],
   recruit:['모병소','장수 한 사람을 맞아들인다.'],
   rest:['의원','모든 장수와 사마의의 체력을 되찾는다.'],
@@ -300,13 +300,14 @@ export function marchFloor(state:ScenarioState,act:1|2|3){
   return (act-1)*6+Math.min(5,2+inAct);
 }
 /**
- * 싸움이 끝난 뒤의 부대: 살아남은 장수의 체력을 남기고, 쓰러진 장수는 이번 회차에서 떠난다.
- * survivors: 이름 → 체력 비율(살아남은 사람만). 떠난 이름을 돌려준다.
+ * 싸움이 끝난 뒤의 부대: 살아남은 장수의 체력을 남기고, 쓰러진 장수는 중상(체력 25%)으로 돌아온다.
+ * survivors: 이름 → 체력 비율(살아남은 사람만). 쓰러진 이름을 돌려준다.
  */
 export function afterFight(state:ScenarioState,party:RunUnit[],survivors:Record<string,number>,where:string){
   const run=state.run;if(!run)return [];const lost:string[]=[];
   for(const u of party){const hp=survivors[u.name];
-    if(hp===undefined){if(u.hero)continue;lost.push(u.name);run.fallen.push(`${u.name} Lv.${u.level} · ${where}`);delete state.officers[u.name];delete run.hp[u.name];continue;}
+    // 쓰러진 장수는 떠나지 않는다: 중상(체력 25%)으로 물러나 다음 싸움에 다시 나선다.
+    if(hp===undefined){if(u.hero)continue;lost.push(u.name);run.hp[u.name]=WOUNDED;void where;continue;}
     if(hp>=0.999)delete run.hp[u.name];else run.hp[u.name]=Math.max(.05,hp);}
   return lost;
 }

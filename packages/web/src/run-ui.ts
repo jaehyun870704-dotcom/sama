@@ -2,7 +2,7 @@
 import {newRun,startingOfficers,departingOfficers,floorChoices,visitNode,finishBattle,finishStory,takeReward,skipReward,describeReward,nextEvolutionText,battleRef,survivorsOf,
   regionFor,actOf,isBossFloor,mandateEarned,chooseFate,taleById,RELICS,REGIONS,STORY_ORDER,RUN_FLOORS,PARTY_LIMIT,XP_PER_LEVEL,type Run,type RunNode,type RunUnit,type OfficerSpec} from './roguelike.ts';
 import {romanceStats,romanceByName} from './romance.ts';
-import {scenarioSummary} from './scenario-ui.ts';
+import {scenarioSummary,persuadeOfficer} from './scenario-ui.ts';
 import {classTactics} from '../../core/src/index.ts';
 import {loadMeta,saveMeta,buyUnlock,recordStory,settleRun,UNLOCKS,type MetaState} from './meta.ts';
 import {fatePoint,ROUTES,routesFor,routeById,endingFor,ALL_ENDINGS} from './fate.ts';
@@ -71,7 +71,7 @@ export function showHub(host:RunHost){
   host.modal(`<div class="campaign run-hub"><div class="campaign-art"><img src="sima-portrait-v2.png" alt="부채를 든 사마의 창작 초상"><div class="art-caption">司 馬 懿 <span>천명은 기다리는 자에게 온다</span></div></div>
   <div class="campaign-copy"><div class="eyebrow">三國志 · TACTICAL CHRONICLE</div><p class="chapter-pretitle">사마의전 · 연의와 가상의 천하</p><h2>사마의전</h2><p class="tagline">칼을 거두고, 때를 기다린다.</p>
   <div class="hub-stats"><span><b>${done}</b><small>마친 장</small></span><span><b>${esc(sc.tag)}</b><small>지금</small></span><span><b>${meta.endings.length}/${ALL_ENDINGS.length}</b><small>본 결말</small></span><span><b>${meta.mandate}</b><small>천명</small></span></div>
-  <p class="intro">로그라이크 『천명의 길』 — 회차마다 『삼국지연의』의 첫 장(189년 하내)에서 사마의의 일생을 다시 시작한다. 장마다 이야기 → 출진 전 정비 → 전투, 장과 장 사이엔 무작위 행군로(전투·정예·모병·의원·보물고·수련) 세 갈래. 쓰러진 장수는 그 회차에서 영영 떠나고, 체력과 보물은 다음 싸움으로 이어진다. 지면 회차가 끝나고, 얻은 천명으로 해금해 다음 회차를 강하게. 세 번의 갈림길에서 다른 길을 고르면 일어나지 않은 역사가 결말까지 펼쳐진다(결말 15종).</p>
+  <p class="intro">로그라이크 『천명의 길』 — 회차마다 『삼국지연의』의 첫 장(189년 하내)에서 사마의의 일생을 다시 시작한다. 장마다 이야기 → 출진 전 정비 → 전투, 장과 장 사이엔 무작위 행군로(전투·정예·모병·의원·보물고·수련) 세 갈래. 쓰러진 장수는 중상으로 물러났다 돌아오고, 체력과 보물은 다음 싸움으로 이어진다. 새 장수는 사마의가 직접 설득해야 합류한다. 지면 회차가 끝나고, 얻은 천명으로 해금해 다음 회차를 강하게. 세 번의 갈림길에서 다른 길을 고르면 일어나지 않은 역사가 결말까지 펼쳐진다(결말 15종).</p>
   <div class="hub-actions"><button id="hub-scenario" class="primary">${done?'천명의 길 이어하기':'천명의 길 시작'}${sc.state.run?` · 제${sc.state.run.no}회차`:''} · ${esc(sc.tag)} 「${esc(sc.title)}」</button>
   <button id="hub-quests">반복 퀘스트 <small>원정 · 수련 · 회상</small></button>${host.resumeSaved?'<button id="hub-resume">전투 이어하기</button>':''}<button id="hub-slots">저장 칸</button><button id="hub-troops">병종 도감</button><button id="hub-officers">장수 · 연의 장수록</button></div>
   <p class="prototype-note">기록은 이 브라우저에 저장됩니다.</p></div></div>`,false);
@@ -242,9 +242,12 @@ function choose(host:RunHost,run:Run,node:RunNode){
 function showReward(host:RunHost,run:Run){
   const offer=run.offer??[];
   host.modal(`<div class="briefing run-screen"><div class="eyebrow">천명의 원정 · ${run.floor}층 · 보상</div><h2>하나를 고른다</h2>${news(run)}${partyPanel(run)}
-  <div class="run-choices">${offer.map((o,i)=>{const d=describeReward(o);return `<button data-reward="${i}"><strong>${esc(d.title)}</strong><small>${esc(d.detail)}${o.kind==='recruit'&&run.party.length>=PARTY_LIMIT?' · 부대가 가득 차 경험치로 바뀜':''}</small></button>`;}).join('')}</div>
+  <div class="run-choices">${offer.map((o,i)=>{const d=describeReward(o);return `<button data-reward="${i}"><strong>${esc(o.kind==='recruit'&&o.officer?d.title.replace('장수 영입','장수 설득'):d.title)}</strong><small>${esc(d.detail)}${o.kind==='recruit'&&run.party.length>=PARTY_LIMIT?' · 부대가 가득 차 경험치로 바뀜':''}</small></button>`;}).join('')}</div>
   <div class="run-actions"><button id="run-skip">건너뛰기</button></div></div>`,false);
-  document.querySelectorAll<HTMLButtonElement>('[data-reward]').forEach(b=>b.onclick=()=>{takeReward(run,Number(b.dataset.reward));saveRun(run);showRun(host,run);});
+  document.querySelectorAll<HTMLButtonElement>('[data-reward]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.reward),o=offer[i];
+    // 이름 있는 장수는 설득해야 합류한다(거절하면 이번 보상은 없다).
+    if(o?.kind==='recruit'&&o.officer&&run.party.length<PARTY_LIMIT){void persuadeOfficer(host,o.officer,o.unitClass,run.seed*31+run.floor).then(ok=>{if(ok)takeReward(run,i);else{skipReward(run);run.news=[`${o.officer}은(는) 이번엔 거절하고 떠났다. 다음 기회에 다시 만날 수 있다.`];}saveRun(run);showRun(host,run);});return;}
+    takeReward(run,i);saveRun(run);showRun(host,run);});
   document.getElementById('run-skip')!.onclick=()=>{skipReward(run);saveRun(run);showRun(host,run);};
 }
 
