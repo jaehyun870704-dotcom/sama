@@ -472,3 +472,10 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
 .fa-color input:checked+span{border-color:#f3e6c0;box-shadow:0 0 0 2px #f3c86a}
 .faction-form fieldset{border:1px solid #4a4030;padding:8px 10px;display:flex;flex-direction:column;gap:4px}
 .sc-faction{display:inline-block;min-width:1.4em;text-align:center;background:var(--fc);color:#f8ecc8;border-radius:3px;padding:0 3px;font-weight:700}
+/* 신장수 초상 */
+.cu-portrait{display:grid;grid-template-columns:200px minmax(0,1fr);gap:12px;align-items:start}
+@media(max-width:620px){.cu-portrait{grid-template-columns:1fr}}
+.cu-face{display:flex;flex-direction:column;gap:6px}.cu-face img{width:192px;height:192px;max-width:100%;border:1px solid #99805a;background:#142421}
+.cu-parts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:4px 10px}.cu-parts label{font-size:12px}
+.cu-thumb{background-size:cover!important;background-position:center!important;border:1px solid #6a5a3a}
+.battle-model.custom-portrait{border:1px solid #99805a}

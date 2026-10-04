@@ -27,7 +27,13 @@ export function troopFaceRow(name:string){
 const factions:Record<string,'wei'|'shu'|'wu'|'yan'>={'사마사':'wei','사마소':'wei','장합':'wei','곽회':'wei','조상':'wei','대릉':'wei','공병':'wei','맹달':'shu','제갈량':'shu','마속':'shu','왕평':'shu','위연':'shu','강유':'shu','맹염':'shu','고상':'shu','이엄':'shu','손권':'wu','여몽':'wu','장소':'wu','제갈근':'wu','주연':'wu','제갈각':'wu','비연':'yan','공손연':'yan'};
 export function factionOf(name:string){return factions[name];}
 function nameHash(name:string){let h=0;for(const ch of name)h=(h*31+ch.charCodeAt(0))>>>0;return h;}
-export function officerPortrait(name:string){const p=officerLook(name),row=p?undefined:troopFaceRow(name);if(row!==undefined){
+/** 신장수 초상: 이름 → 그림 주소(그때 그린다). custom.ts가 등록한다. */
+const customFaces=new Map<string,()=>string>();
+export function registerFace(name:string,url:()=>string){customFaces.set(name,url);}
+export function clearFaces(){customFaces.clear();}
+export function customFace(name:string){const f=customFaces.get(name);return f?f():undefined;}
+export function officerPortrait(name:string){
+  const cf=customFaces.get(name);if(cf){const url=cf();if(url)return `<div class="officer-face custom-face" role="img" aria-label="${escape(name)} 초상" style="background-image:url(${url});background-size:cover;background-position:center"></div>`;}const p=officerLook(name),row=p?undefined:troopFaceRow(name);if(row!==undefined){
   // A named officer without painted art: the troop face, nudged in hue per person and marked with
   // the first syllable of the name on a seal in the colour of their side.
   const f=factions[name],named=name in troopFaces&&f!==undefined,h=nameHash(name);
