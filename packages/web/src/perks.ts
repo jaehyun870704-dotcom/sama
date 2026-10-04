@@ -4,7 +4,7 @@
  * 전투를 열 때 배치(Deployment)에 그 순간의 값을 적어 두므로, 저장된 전투를 다시 돌려도 같은 결과가 나온다.
  */
 import type {BattleState,Unit} from '../../core/src/index.ts';
-import {allTraitIds} from '../../core/src/index.ts';
+import {allTraitIds,familyOf} from '../../core/src/index.ts';
 
 /** [특성 id, 수치] */
 export type PerkGrant=[string,number];
@@ -13,11 +13,19 @@ export interface PerkGrants {
   all:PerkGrant[];
   /** 장수 이름 → 그 장수만(장수 효과) */
   byName:Record<string,PerkGrant[]>;
+  /** 계열(familyOf) → 그 계열 병종만(병종 연구) */
+  byFamily?:Record<string,PerkGrant[]>;
 }
+/** 특성이 아닌 보정: 능력치 %(stat:…)와 책략 숙달·절약(전투 규칙이 traitParams에서 읽는다). */
+export const STAT_KEYS=['maxHp','maxMp','attack','defense','intellect','spirit','agility'] as const;
+export const PARAM_ONLY=new Set(['strategyMastery','mpThrift']);
+const isStat=(id:string)=>id.startsWith('stat:')&&(STAT_KEYS as readonly string[]).includes(id.slice(5));
 
 /** 특성 하나를 입힌다. 이미 있으면 수치를 더한다. */
 export function grantPerk(u:Unit,id:string,param:number){
-  if(!u.traits.includes(id))u.traits.push(id);
+  if(isStat(id)){const k=id.slice(5) as typeof STAT_KEYS[number],s=u.stats,before=s[k],after=Math.round(before*(1+param/100));s[k]=after;
+    if(k==='maxHp')u.hp=Math.max(1,Math.round(u.hp*after/Math.max(1,before)));if(k==='maxMp')u.mp=Math.round(u.mp*after/Math.max(1,before));return;}
+  if(!PARAM_ONLY.has(id)&&!u.traits.includes(id))u.traits.push(id);
   u.traitParams[id]=(u.traitParams[id]??0)+param;
 }
 /** 전장의 아군에게 연구·장수 효과를 입힌다. */
@@ -25,14 +33,15 @@ export function applyPerkGrants(state:BattleState,g:PerkGrants){
   for(const u of state.living('player')){
     for(const [id,n] of g.all)grantPerk(u,id,n);
     for(const [id,n] of g.byName[u.name]??[])grantPerk(u,id,n);
+    for(const [id,n] of g.byFamily?.[familyOf(u.unitClass)]??[])grantPerk(u,id,n);
   }
 }
 /** 저장된 보정이 올바른가(알 수 없는 특성·터무니없는 수치는 거절). */
 export function validGrants(g:unknown):g is PerkGrants{
   if(!g||typeof g!=='object')return false;
   const x=g as PerkGrants,ids=new Set(allTraitIds());
-  const ok=(list:unknown)=>Array.isArray(list)&&list.length<=40&&list.every(p=>Array.isArray(p)&&p.length===2&&typeof p[0]==='string'&&ids.has(p[0])&&Number.isFinite(p[1])&&Math.abs(p[1])<=200);
-  return ok(x.all)&&!!x.byName&&typeof x.byName==='object'&&Object.keys(x.byName).length<=40&&Object.values(x.byName).every(ok);
+  const ok=(list:unknown)=>Array.isArray(list)&&list.length<=80&&list.every(p=>Array.isArray(p)&&p.length===2&&typeof p[0]==='string'&&(ids.has(p[0])||isStat(p[0])||PARAM_ONLY.has(p[0]))&&Number.isFinite(p[1])&&Math.abs(p[1])<=200);
+  return ok(x.all)&&!!x.byName&&typeof x.byName==='object'&&Object.keys(x.byName).length<=40&&Object.values(x.byName).every(ok)&&(x.byFamily===undefined||(typeof x.byFamily==='object'&&Object.keys(x.byFamily).length<=40&&Object.values(x.byFamily).every(ok)));
 }
 
 /** 화면에 보일 이름·설명(수치는 n). */
@@ -58,5 +67,10 @@ export const PERK_TEXT:Record<string,{name:string;text:(n:number)=>string}>={
   chargePower:{name:'돌격 숙련',text:n=>`움직인 뒤 물리 공격 피해 +${n}%`},
   rangedPower:{name:'원거리 숙련',text:n=>`두 칸 이상 물리 공격 피해 +${n}%`},
   meleePower:{name:'근접 숙련',text:n=>`붙어서 물리 공격 피해 +${n}%`},
+  'stat:maxHp':{name:'체력 단련',text:n=>`최대 체력 +${n}%`},'stat:maxMp':{name:'책략 수련',text:n=>`최대 MP +${n}%`},
+  'stat:attack':{name:'근력 단련',text:n=>`공격 +${n}%`},'stat:defense':{name:'방호 단련',text:n=>`방어 +${n}%`},
+  'stat:intellect':{name:'학문',text:n=>`지력 +${n}%`},'stat:spirit':{name:'심지',text:n=>`정신 +${n}%`},'stat:agility':{name:'몸놀림 단련',text:n=>`순발 +${n}%`},
+  strategyMastery:{name:'책략 숙달',text:n=>`책략 진화(숙련·극의)가 레벨 ${n} 빨리 온다`},
+  mpThrift:{name:'책략 절약',text:n=>`책략 소모 MP -${n}%`},
 };
 export const perkText=(id:string,n:number)=>PERK_TEXT[id]?.text(n)??`${id} ${n}`;

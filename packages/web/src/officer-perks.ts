@@ -114,5 +114,6 @@ export function officerGrants(m:MetaState,party:readonly Sortie[]):Record<string
 export function deploymentPerks(m:MetaState,party:readonly Sortie[]):PerkGrants|undefined{
   const r=researchGrants(m),byName:Record<string,PerkGrant[]>={...r.byName};r.all=[...r.all,...heirGrants(m)];
   for(const [n,g] of Object.entries(officerGrants(m,party)))byName[n]=[...(byName[n]??[]),...g];
-  return r.all.length||Object.keys(byName).length?{all:r.all,byName}:undefined;
+  const fam=r.byFamily&&Object.keys(r.byFamily).length?{byFamily:r.byFamily}:{};
+  return r.all.length||Object.keys(byName).length||fam.byFamily?{all:r.all,byName,...fam}:undefined;
 }

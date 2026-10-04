@@ -21,14 +21,14 @@ import {strategyArea,makeUnit,profileOf,EVOLUTION,VARIANTS,estimatePhysical,allT
 const rich=()=>{const m=freshMeta();m.mandate=500;m.runs=10;m.chronicle=['S1-01','S1-02','S1-03','S1-04','S1-05','S1-06','S1-07','S1-08','S1-09','S1-10','S1-11'];m.endings=['a'];m.officerBest={관우:30};return m;};
 
 describe('연구 나무',()=>{
- it('has four tabs, valid prerequisites and traits',()=>{
-  expect(new Set(RESEARCH.map(n=>n.tab))).toEqual(new Set(['battle','domestic','formation','legend']));
+ it('has eight tabs, valid prerequisites and traits',()=>{
+  expect(new Set(RESEARCH.map(n=>n.tab))).toEqual(new Set(['battle','domestic','formation','legend','drill','corps','arms','mind']));
   const traits=new Set(allTraitIds());
-  for(const n of RESEARCH){for(const [id] of n.requires??[])expect(nodeById(id),n.id).toBeDefined();if(n.perk)expect(traits.has(n.perk.trait),n.perk.trait).toBe(true);}
+  for(const n of RESEARCH){for(const [id] of n.requires??[])expect(nodeById(id),n.id).toBeDefined();if(n.perk)expect(traits.has(n.perk.trait)||n.perk.trait.startsWith('stat:')||['strategyMastery','mpThrift'].includes(n.perk.trait),n.perk.trait).toBe(true);}
  });
  it('opens slowly: a fresh save sees only roots, gated nodes wait for runs',()=>{
   const m=freshMeta();m.mandate=100;
-  expect(RESEARCH.filter(n=>nodeState(m,n)==='open').map(n=>n.id).sort()).toEqual(['armor','drill','guard','medic','temper','training']);
+  expect(RESEARCH.filter(n=>['battle','domestic','formation','legend'].includes(n.tab)&&nodeState(m,n)==='open').map(n=>n.id).sort()).toEqual(['armor','drill','guard','medic','temper','training']);
   expect(buyResearch(m,'blade')).toBe(false);expect(buyResearch(m,'drill')).toBe(true);expect(buyResearch(m,'blade')).toBe(true);
   expect(buyResearch(m,'pierce')).toBe(false);// 연의 전장 2승 필요
   m.chronicle=['S1-01','S1-02'];expect(buyResearch(m,'pierce')).toBe(true);
