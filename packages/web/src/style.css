@@ -901,3 +901,13 @@ dialog:has(.ss-root){max-height:calc(100dvh - 16px)}
   .right-panel .commands button>span{font-size:13px!important}
   .battle-panel .map{height:calc(100dvh - 312px)!important;min-height:300px!important}
 }
+/* 전투 앞 이야기 창 한 화면: 무대 높이를 남는 화면 높이에 맞춘다(초상·대사·버튼 ≈ 360px) */
+dialog:has(.story-scene){max-height:calc(100dvh - 16px)}
+.story-scene .story-stage{height:clamp(150px,calc(100dvh - 400px),440px)!important}
+@media (max-height:760px){.story-scene{padding:14px 20px!important}.story-scene h2{margin:4px 0 8px!important;font-size:22px!important}.story-scene .modal-actions{margin-top:10px}}
+@media (max-width:700px){
+  .layout{display:flex!important;flex-direction:column;height:calc(100dvh - 52px)!important;min-height:0!important}
+  .battle-panel{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+  .battle-panel .map{flex:1 1 auto;height:auto!important;min-height:240px!important}
+  .right-panel{flex:0 0 auto}
+}
