@@ -4,6 +4,14 @@
 
 제작 도구: 내장 image_gen (CLI/API 대체 경로 사용 없음).
 
+## 하후돈 — 완료
+
+파일: `packages/web/public/portraits/xiahou-dun.png`. 왼쪽 눈 안대·단독 인물·얼굴·복식 육안 확인, manifest 연결.
+
+### 생성 프롬프트
+
+Historical-scene, ONE finished square premium Three Kingdoms strategy game portrait of Xiahou Dun (하후돈). Powerful East Asian general in his early 50s, distinctive long angular face, heavy sharply angled brows, strong cheekbones, black mustache and full pointed black beard, stern unwavering expression. His anatomical LEFT eye is covered by a simple matte black leather eyepatch (viewer right in this near frontal portrait), intact right eye clearly visible. No blood or wound. Black hair topknot with modest bronze military hair crown, no helmet. Worn dark steel lamellar armor with restrained aged bronze details, deep crimson cloak. Three-quarter torso slightly angled, face nearly frontal, head and shoulders fill square with small margin above topknot, large readable face. Masterful semi-realistic digital oil painting matching dark polished Sima Yi and Sima Fang collection, natural rugged skin, controlled brushwork, warm side lighting, charcoal smoky background with muted burgundy haze, credible late Han clothing and metal. No fantasy spikes, no text, no frame, no watermark, no other people, no anime or flat vector. Serious painterly historical character art.
+
 ## 대릉 — 완료
 
 파일: `packages/web/public/portraits/dai-ling.png`. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
