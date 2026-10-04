@@ -1,66 +1,67 @@
-import {Container,Sprite,Texture,Rectangle,Graphics} from 'pixi.js';
+import {Container,Sprite,Texture,Rectangle,Graphics,CanvasSource} from 'pixi.js';
 import type {BattleState,TerrainKind,Coord} from '../../core/src/index.ts';
-import {MATERIALS,materialOf,biomeFor,noiseField,sample,blendWeights,pickMaterial,rampIndex,bayer,smooth,type Biome,type RGB} from './terrain-paint.ts';
-import {ART_SCALE} from './pixel-look.ts';
+import {MATERIALS,materialOf,biomeFor,noiseField,sample,blendWeights,smooth,type Biome,type RGB} from './terrain-paint.ts';
 
-/** Battlefield art is painted on a pixel grid of 24 art pixels per tile and shown
- * at 2× with nearest-neighbour scaling: fine enough to sit beside the detailed
- * troop art, coarse enough to stay dot art. Only ramp colours are written. */
-const T=24,SCALE=ART_SCALE,S=T*SCALE;
-/** Painters were laid out on a 16-dot tile; u() keeps their proportions on any grid. */
-const u=(n:number)=>Math.round(n*T/16),Q=16/T;
-/** Ramps gain a midpoint between neighbours so dithering mixes close colours
- * instead of checkering two distant ones. */
-const fineRamps=new WeakMap<RGB[],RGB[]>();
-function fine(ramp:RGB[]){
-  let out=fineRamps.get(ramp);if(out)return out;
-  out=ramp.flatMap((c,i)=>{const n=ramp[i+1];return n?[c,[0,1,2].map(k=>Math.round((c[k]!+n[k]!)/2)) as RGB]:[c];});
-  fineRamps.set(ramp,out);return out;
-}
+/**
+ * 전장 땅 — 한 칸 48점. 화면에서 크게 보아도 붓으로 칠한 그림처럼 보이게:
+ * 바탕색은 절반 해상도에서 재질을 부드럽게 섞어 칠하고(디더링 없이) 두 배로 펴서 경계를 녹인 뒤,
+ * 풀포기·자갈·물결·바퀴 자국·갈대 같은 잔붓질을 원래 해상도로 얹는다.
+ */
+const T=48,B=24,S=48;
+const u=(n:number)=>n*T/16,Q=16/B;
 let noises:{warpA:Float32Array;warpB:Float32Array;coarse:Float32Array;fine:Float32Array}|undefined;
 function noise(){return noises??={warpA:noiseField(11,4,3),warpB:noiseField(23,4,3),coarse:noiseField(37,3,4),fine:noiseField(53,32,2)};}
 /** Deterministic per-cell random so the same map always paints the same way. */
 function hash(x:number,y:number,i=0){let h=(x*374761393+y*668265263+i*2147483647)>>>0;h=Math.imul(h^(h>>>13),1274126177)>>>0;return ((h^(h>>>16))>>>0)/4294967296;}
-const css=(c:RGB)=>`rgb(${c[0]},${c[1]},${c[2]})`;
+const css=(c:RGB,a=1)=>a<1?`rgba(${c[0]},${c[1]},${c[2]},${a})`:`rgb(${c[0]},${c[1]},${c[2]})`;
 function terrainAt(state:BattleState,x:number,y:number):TerrainKind|undefined{return state.map.inBounds({x,y})?state.map.tileAt({x,y}).terrain:undefined;}
 const idx=(m:string)=>MATERIALS.indexOf(m as never);
+/** 색띠(어두움→밝음)에서 0~1 자리의 색(띠 사이를 섞는다). */
+function rampAt(r:RGB[],t:number,out:number[]){const k=Math.max(0,Math.min(1,t))*(r.length-1),i=Math.min(r.length-2,Math.floor(k)),f=k-i,a=r[i]!,b=r[i+1]!;out[0]=a[0]+(b[0]-a[0])*f;out[1]=a[1]+(b[1]-a[1])*f;out[2]=a[2]+(b[2]-a[2])*f;}
 
-function paintGround(img:ImageData,state:BattleState,biome:Biome){
-  const map=state.map,W=img.width,H=img.height,d=img.data,n=noise(),M=MATERIALS.length;
+/** 바탕: 재질마다 색을 구해 무게대로 섞는다. 물은 깊을수록 짙고, 물가는 모래빛으로 번진다. */
+function paintBase(state:BattleState,biome:Biome){
+  const map=state.map,w=map.width*B,h=map.height*B,n=noise(),M=MATERIALS.length;
+  const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d')!,img=g.createImageData(w,h),d=img.data;
   const mats=new Uint8Array(map.width*map.height);
   for(let y=0;y<map.height;y++)for(let x=0;x<map.width;x++)mats[y*map.width+x]=idx(materialOf(map.tileAt({x,y}).terrain));
-  const pick=new Uint8Array(W*H),elev=new Float32Array(W*H),wet=new Float32Array(W*H);
+  const elev=new Float32Array(w*h),wgts=new Float32Array(w*h*M),raws=new Float32Array(w*h*M);
   const wgt=new Float32Array(M),raw=new Float32Array(M);
   const WA=idx('water'),HI=idx('hill'),R=idx('rock'),CL=idx('cliff'),F=idx('forest'),FO=idx('ford'),MA=idx('marsh');
-  for(let py=0;py<H;py++)for(let px=0;px<W;px++){
+  for(let py=0;py<h;py++)for(let px=0;px<w;px++){
     const wa=sample(n.warpA,px*1.6*Q,py*1.6*Q)-.5,wb=sample(n.warpB,px*1.6*Q,py*1.6*Q)-.5;
-    blendWeights(mats,map.width,map.height,(px+.5)/T-.5+wa*.5,(py+.5)/T-.5+wb*.5,wgt,raw,6);
-    const i=py*W+px;pick[i]=pickMaterial(wgt,bayer(px,py));
-    elev[i]=raw[HI]!*.9+raw[R]!*1.3+raw[CL]!*1.8+raw[F]!*.15-raw[WA]!*.3;wet[i]=raw[WA]!+raw[FO]!*.6+raw[MA]!*.2;
+    blendWeights(mats,map.width,map.height,(px+.5)/B-.5+wa*.55,(py+.5)/B-.5+wb*.55,wgt,raw,3.2);
+    const i=py*w+px;wgts.set(wgt,i*M);raws.set(raw,i*M);
+    elev[i]=raw[HI]!*.9+raw[R]!*1.3+raw[CL]!*1.8+raw[F]!*.15-raw[WA]!*.3;
   }
-  for(let py=0;py<H;py++)for(let px=0;px<W;px++){
-    const i=py*W+px,m=MATERIALS[pick[i]!]!,th=bayer(px,py),c=sample(n.coarse,px*1.2*Q,py*1.2*Q),f=hash(px,py,3)*.25+sample(n.fine,px*.9*Q,py*.9*Q)*.75;
-    const e0=elev[Math.max(0,py-1)*W+Math.max(0,px-1)]!,e1=elev[Math.min(H-1,py+1)*W+Math.min(W-1,px+1)]!,light=(e0-e1)*1.6/Q;
-    // Calm, broad shading: per-dot noise made the ground fizz behind the troops.
-    let ramp=fine(biome.ramps[m]),shade=.45+(c-.5)*.5+(f-.5)*.2+light;
-    if(m==='water'){
-      const depth=smooth(.45,1,wet[i]!);shade=.85-depth*.6+(f-.5)*.12;
-      if(wet[i]!<.52){ramp=fine(biome.sand);shade=.25+(c-.5)*.4+(f-.5)*.3;} else if(wet[i]!<.58)shade=0;
-    }else if(m==='dirt'){if(f>.8)shade-=.2;}
-    else if(m==='yard'){if(px%u(8)===0||(py+(Math.floor(px/u(8))%2)*u(4))%u(8)===0)shade-=.3;}
-    else if(m==='marsh'&&f>.72){ramp=fine(biome.ramps.water);shade=.55;}
-    else if(m==='ford'){shade=.4+(f-.5)*.5;}
-    else if(m==='cliff'){if(py%u(5)===0)shade-=.35;shade+=light*.5;}
-    const col=ramp[rampIndex(Math.max(0,Math.min(1,shade)),ramp.length,th)]!;
-    d[i*4]=col[0];d[i*4+1]=col[1];d[i*4+2]=col[2];d[i*4+3]=255;
+  const col=[0,0,0],acc=[0,0,0];
+  for(let py=0;py<h;py++)for(let px=0;px<w;px++){
+    const i=py*w+px,cN=sample(n.coarse,px*1.2*Q,py*1.2*Q),f=sample(n.fine,px*.9*Q,py*.9*Q);
+    const e0=elev[Math.max(0,py-1)*w+Math.max(0,px-1)]!,e1=elev[Math.min(h-1,py+1)*w+Math.min(w-1,px+1)]!,light=(e0-e1)*1.4/Q;
+    const base=.48+(cN-.5)*.55+(f-.5)*.16+light,wet=raws[i*M+WA]!+raws[i*M+FO]!*.6+raws[i*M+MA]!*.2;
+    acc[0]=acc[1]=acc[2]=0;
+    for(let m=0;m<M;m++){const k=wgts[i*M+m]!;if(k<.004)continue;const name=MATERIALS[m]!;
+      if(name==='water'){const depth=smooth(.42,1,wet);rampAt(biome.ramps.water,.8-depth*.58+(f-.5)*.1,col);
+        if(wet<.6){const sand=[0,0,0];rampAt(biome.sand,.35+(cN-.5)*.4,sand);const t=smooth(.38,.6,wet);for(let q=0;q<3;q++)col[q]=sand[q]!*(1-t)+col[q]!*t;}}
+      else if(name==='cliff')rampAt(biome.ramps.cliff,base*.9+light*.4,col);
+      else if(name==='forest')rampAt(biome.ramps.forest,base*.9,col);
+      else rampAt(biome.ramps[name],base,col);
+      acc[0]+=col[0]!*k;acc[1]+=col[1]!*k;acc[2]+=col[2]!*k;}
+    d[i*4]=acc[0]!;d[i*4+1]=acc[1]!;d[i*4+2]=acc[2]!;d[i*4+3]=255;
   }
+  g.putImageData(img,0,0);return c;
 }
-
-/** Scenery-v3 objects (oak, pine, rock spire, …) shrunk to art pixels with a hard
- * alpha cut so their soft glow never reaches the battlefield. */
+/** 고운 붓결(화면 전체에 옅게 깔리는 질감). */
+function brushGrain(ctx:CanvasRenderingContext2D,w:number,h:number){
+  const t=document.createElement('canvas');t.width=t.height=192;const tg=t.getContext('2d')!;
+  for(let i=0;i<900;i++){const x=hash(i,1,7)*192,y=hash(i,2,7)*192,l=4+hash(i,3,7)*10,a=hash(i,4,7)*Math.PI;tg.strokeStyle=hash(i,5,7)<.5?'rgba(255,248,225,.16)':'rgba(20,16,8,.16)';tg.lineWidth=1+hash(i,6,7)*1.5;tg.beginPath();tg.moveTo(x,y);tg.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l*.5);tg.stroke();}
+  ctx.save();ctx.globalCompositeOperation='overlay';ctx.fillStyle=ctx.createPattern(t,'repeat')!;ctx.fillRect(0,0,w,h);ctx.restore();
+}
+/** Scenery-v3 그림(참나무·소나무·바위…)을 크기에 맞춰 줄인다. 가장자리는 부드럽게 두되 옅은 번짐은 잘라 낸다. */
 const thumbs=new Map<string,HTMLCanvasElement>();
 const boxes=new Map<number,{x:number;y:number;w:number;h:number}>();
 function sceneryThumb(atlas:Texture,frame:number,w:number,h:number,flip=false,dark=false){
+  w=Math.max(1,Math.round(w));h=Math.max(1,Math.round(h));
   const key=frame+':'+w+':'+h+':'+flip+':'+dark;const old=thumbs.get(key);if(old)return old;
   const src=atlas.source.resource as CanvasImageSource,cw=atlas.width/4,ch=atlas.height/2,ox=(frame%4)*cw,oy=Math.floor(frame/4)*ch;
   if(!boxes.has(frame)){
@@ -71,150 +72,177 @@ function sceneryThumb(atlas:Texture,frame:number,w:number,h:number,flip=false,da
   }
   const b=boxes.get(frame)!,out=document.createElement('canvas');out.width=w;out.height=h;const g=out.getContext('2d',{willReadFrequently:true})!;
   g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';if(flip){g.translate(w,0);g.scale(-1,1);}g.drawImage(src,b.x,b.y,b.w,b.h,0,0,w,h);
-  const img=g.getImageData(0,0,w,h);for(let i=3;i<img.data.length;i+=4){img.data[i]=img.data[i]!>150?255:0;if(dark){img.data[i-3]=img.data[i-3]!*.55;img.data[i-2]=img.data[i-2]!*.5;img.data[i-1]=img.data[i-1]!*.52;}}g.setTransform(1,0,0,1,0,0);g.putImageData(img,0,0);
+  const img=g.getImageData(0,0,w,h);for(let i=3;i<img.data.length;i+=4){const a=img.data[i]!;img.data[i]=a<60?0:a>200?255:Math.round((a-60)/140*255);if(dark){img.data[i-3]=img.data[i-3]!*.55;img.data[i-2]=img.data[i-2]!*.5;img.data[i-1]=img.data[i-1]!*.52;}}g.setTransform(1,0,0,1,0,0);g.putImageData(img,0,0);
   thumbs.set(key,out);return out;
 }
+const stroke=(ctx:CanvasRenderingContext2D,color:string,lw:number,pts:Array<[number,number]>,curve?:[number,number])=>{ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(...pts[0]!);if(curve&&pts[1])ctx.quadraticCurveTo(...curve,...pts[1]);else for(const p of pts.slice(1))ctx.lineTo(...p);ctx.stroke();};
 
+/** 물결·여울·급류: 밝은 물결 붓질, 흰 물거품, 여울의 디딤돌. */
 function paintWaterDetail(ctx:CanvasRenderingContext2D,state:BattleState,biome:Biome){
-  const foam=css(biome.ramps.water[4]!),white='rgb(226,240,236)';
+  const foam=biome.ramps.water[4]!;
   for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){
     const t=terrainAt(state,x,y),px=x*T,py=y*T;
-    if(t==='water')for(let i=0;i<2;i++){if(hash(x,y,i+60)<.45)continue;ctx.fillStyle=foam;ctx.fillRect(px+u(2)+Math.floor(hash(x,y,i+61)*u(10)),py+u(3)+Math.floor(hash(x,y,i+62)*u(10)),u(3)+Math.floor(hash(x,y,i+63)*u(3)),1);}
-    if(t==='rapids')for(let i=0;i<6;i++){const sx=px+Math.floor(hash(x,y,i)*u(12)),sy=py+u(1)+i*u(2)+Math.floor(hash(x,y,i+9)*u(2));ctx.fillStyle=i%2?white:foam;ctx.fillRect(sx,sy,u(3)+Math.floor(hash(x,y,i+3)*u(3)),1);ctx.fillRect(sx+1,sy-1,1,1);}
-    if(t==='ford')for(let i=0;i<4;i++){const sx=px+u(2)+Math.floor(hash(x,y,i+20)*u(11)),sy=py+u(2)+Math.floor(hash(x,y,i+21)*u(11));ctx.fillStyle='rgb(120,116,104)';ctx.fillRect(sx,sy,u(2),1);ctx.fillStyle='rgb(170,166,150)';ctx.fillRect(sx,sy-1,u(2),1);ctx.fillStyle=white;ctx.fillRect(sx-1,sy+1,u(4),1);}
+    if(t==='water')for(let i=0;i<4;i++){if(hash(x,y,i+60)<.35)continue;const sx=px+hash(x,y,i+61)*T*.8,sy=py+4+hash(x,y,i+62)*T*.85,l=8+hash(x,y,i+63)*14;stroke(ctx,css(foam,.45),1.6,[[sx,sy],[sx+l,sy]],[sx+l/2,sy-3]);}
+    if(t==='rapids')for(let i=0;i<9;i++){const sx=px+hash(x,y,i)*T*.8,sy=py+3+i*5+hash(x,y,i+9)*3,l=8+hash(x,y,i+3)*14;stroke(ctx,i%2?'rgba(240,248,245,.85)':css(foam,.7),2,[[sx,sy],[sx+l,sy+1]],[sx+l/2,sy-4]);}
+    if(t==='ford')for(let i=0;i<5;i++){const sx=px+6+hash(x,y,i+20)*(T-12),sy=py+6+hash(x,y,i+21)*(T-12),r=3+hash(x,y,i+22)*3;ctx.fillStyle='rgba(235,245,240,.55)';ctx.beginPath();ctx.ellipse(sx,sy+2,r+3,r*.6+1,0,0,7);ctx.fill();ctx.fillStyle='rgb(128,124,110)';ctx.beginPath();ctx.ellipse(sx,sy,r,r*.7,0,0,7);ctx.fill();ctx.fillStyle='rgba(220,215,195,.8)';ctx.beginPath();ctx.ellipse(sx-1,sy-1,r*.5,r*.3,0,0,7);ctx.fill();}
   }
 }
-
+/** 갈대늪: 가는 갈대 줄기와 이삭, 사이사이 고인 물. */
 function paintMarsh(ctx:CanvasRenderingContext2D,state:BattleState,biome:Biome){
   const [dark,,mid,light]=biome.canopy;
   for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){
     if(terrainAt(state,x,y)!=='marsh')continue;
-    for(let i=0;i<18;i++){const sx=x*T+Math.floor(hash(x,y,i+30)*(T-1)),sy=y*T+u(3)+Math.floor(hash(x,y,i+31)*u(12)),h=u(3)+Math.floor(hash(x,y,i+32)*u(3));
-      ctx.fillStyle=css(i%3===0?light!:i%3===1?mid!:dark!);ctx.fillRect(sx,sy-h,1,h);if(i%4===0){ctx.fillStyle='rgb(150,112,62)';ctx.fillRect(sx,sy-h-1,1,2);}}
+    for(let i=0;i<3;i++){ctx.fillStyle=css(biome.ramps.water[2]!,.45);ctx.beginPath();ctx.ellipse(x*T+hash(x,y,i+90)*T,y*T+hash(x,y,i+91)*T,6+hash(x,y,i+92)*6,3+hash(x,y,i+93)*2,0,0,7);ctx.fill();}
+    for(let i=0;i<26;i++){const sx=x*T+hash(x,y,i+30)*T,sy=y*T+8+hash(x,y,i+31)*(T-6),h=8+hash(x,y,i+32)*10,lean=(hash(x,y,i+33)-.5)*6;
+      stroke(ctx,css(i%3===0?light!:i%3===1?mid!:dark!),1.2,[[sx,sy],[sx+lean,sy-h]]);if(i%4===0){ctx.fillStyle='rgb(150,112,62)';ctx.beginPath();ctx.ellipse(sx+lean,sy-h,1.4,3,0,0,7);ctx.fill();}}
   }
 }
-
+/** 들풀: 칸마다 풀포기(짧은 붓질 셋), 가끔 들꽃. */
 function paintGrass(ctx:CanvasRenderingContext2D,state:BattleState,biome:Biome){
   const g=biome.ramps.grass;
   for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){
     const t=terrainAt(state,x,y);if(t!=='plain'&&t!=='hill')continue;
-    for(let i=0;i<4;i++){const sx=x*T+u(2)+Math.floor(hash(x,y,i+40)*u(12)),sy=y*T+u(3)+Math.floor(hash(x,y,i+41)*u(11));ctx.fillStyle=css(g[1]!);ctx.fillRect(sx-1,sy,1,1);ctx.fillRect(sx+1,sy,1,1);ctx.fillStyle=css(g[4]!);ctx.fillRect(sx,sy-1,1,1);}
-    if(t==='plain'&&hash(x,y,77)>.88){const fx=x*T+u(3)+Math.floor(hash(x,y,78)*u(9)),fy=y*T+u(3)+Math.floor(hash(x,y,79)*u(9));ctx.fillStyle='rgb(238,226,160)';ctx.fillRect(fx,fy,1,1);ctx.fillRect(fx+2,fy+1,1,1);ctx.fillStyle='rgb(240,238,226)';ctx.fillRect(fx+1,fy+2,1,1);}
+    for(let i=0;i<9;i++){const sx=x*T+hash(x,y,i+40)*T,sy=y*T+4+hash(x,y,i+41)*(T-4),h=4+hash(x,y,i+42)*5,c=hash(x,y,i+43)<.55?g[4]!:g[0]!;
+      for(const dx of [-2.2,0,2.2])stroke(ctx,css(c,.7),1.1,[[sx+dx*.4,sy],[sx+dx,sy-h*(dx?0.8:1)]]);}
+    if(t==='plain'&&hash(x,y,77)>.82)for(let k=0;k<3;k++){const fx=x*T+6+hash(x,y,78+k)*(T-12),fy=y*T+6+hash(x,y,81+k)*(T-12);ctx.fillStyle=['rgb(242,232,170)','rgb(240,236,226)','rgb(226,150,170)'][k]!;ctx.beginPath();ctx.arc(fx,fy,1.6,0,7);ctx.fill();}
+    if(hash(x,y,88)>.9){const sx=x*T+8+hash(x,y,89)*(T-16),sy=y*T+8+hash(x,y,90)*(T-16);ctx.fillStyle='rgba(30,26,18,.25)';ctx.beginPath();ctx.ellipse(sx+1,sy+2,5,2.5,0,0,7);ctx.fill();ctx.fillStyle='rgb(150,146,132)';ctx.beginPath();ctx.ellipse(sx,sy,4.5,3,.3,0,7);ctx.fill();ctx.fillStyle='rgba(235,232,220,.6)';ctx.beginPath();ctx.ellipse(sx-1,sy-1,2,1.2,0,0,7);ctx.fill();}
   }
 }
-
+/** 길: 바퀴 자국 두 줄과 자갈. */
+function paintRoads(ctx:CanvasRenderingContext2D,state:BattleState){
+  const road=(x:number,y:number)=>{const t=terrainAt(state,x,y);return t==='road'||t==='bridge'||t==='gate';};
+  for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){
+    if(terrainAt(state,x,y)!=='road')continue;const px=x*T,py=y*T,h=road(x-1,y)||road(x+1,y),v=road(x,y-1)||road(x,y+1);
+    for(const off of [.36,.64]){if(h)stroke(ctx,'rgba(70,52,30,.22)',2,[[px,py+T*off],[px+T,py+T*off]]);if(v)stroke(ctx,'rgba(70,52,30,.22)',2,[[px+T*off,py],[px+T*off,py+T]]);}
+    for(let i=0;i<5;i++){const sx=px+hash(x,y,i+50)*T,sy=py+hash(x,y,i+51)*T;ctx.fillStyle=hash(x,y,i+52)<.5?'rgba(60,44,26,.45)':'rgba(236,222,190,.45)';ctx.beginPath();ctx.ellipse(sx,sy,1.6+hash(x,y,i+53)*1.5,1.2,0,0,7);ctx.fill();}
+  }
+}
+/** 밭: 고랑 줄과 이삭. */
 function paintFields(ctx:CanvasRenderingContext2D,state:BattleState){
   for(const p of state.map.regions.get('fields')??[]){
-    if(state.map.tileAt(p).terrain!=='plain')continue; // flooded or built over
-    const px=p.x*T,py=p.y*T;ctx.fillStyle='rgb(164,154,88)';ctx.fillRect(px+1,py+1,T-2,T-2);
-    for(let j=0;j<Math.floor((T-2)/3);j++){ctx.fillStyle='rgb(108,116,64)';ctx.fillRect(px+1,py+2+j*3,T-2,1);ctx.fillStyle='rgb(211,196,125)';ctx.fillRect(px+2,py+1+j*3,T-4,1);}
+    if(state.map.tileAt(p).terrain!=='plain')continue;
+    const px=p.x*T,py=p.y*T;ctx.fillStyle='rgba(164,150,84,.85)';ctx.fillRect(px+2,py+2,T-4,T-4);
+    for(let j=0;j<7;j++){const yy=py+5+j*6;stroke(ctx,'rgba(98,108,58,.8)',2,[[px+3,yy],[px+T-3,yy]]);stroke(ctx,'rgba(214,198,124,.8)',1.2,[[px+3,yy-2],[px+T-3,yy-2]]);}
   }
 }
-
+/** 다리: 판자를 가로질러 깔고 난간 기둥, 물에 비친 그늘. */
 function paintBridges(ctx:CanvasRenderingContext2D,state:BattleState,stone:(at:Coord)=>boolean){
   const wetAt=(x:number,y:number)=>{const t=terrainAt(state,x,y);return t==='water'||t==='rapids';};
   for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){
     if(terrainAt(state,x,y)!=='bridge')continue;
-    const across=wetAt(x,y-1)||wetAt(x,y+1)||!(wetAt(x-1,y)||wetAt(x+1,y));
-    const isStone=stone({x,y}),deck=isStone?['rgb(201,194,173)','rgb(163,155,134)','rgb(110,104,90)']:['rgb(196,154,98)','rgb(156,116,68)','rgb(90,62,38)'];
-    const px=x*T,py=y*T,before=across?terrainAt(state,x,y-1)==='bridge':terrainAt(state,x-1,y)==='bridge',after=across?terrainAt(state,x,y+1)==='bridge':terrainAt(state,x+1,y)==='bridge';
-    const lo=before?0:u(3),hi=after?T:T-u(3);
-    ctx.fillStyle='rgba(8,24,30,.55)';if(across)ctx.fillRect(px,py+lo+u(2),T,hi-lo);else ctx.fillRect(px+lo+u(2),py,hi-lo,T);
-    for(let k=0;k<T;k+=2){ctx.fillStyle=deck[(k/2)%2]!;if(across)ctx.fillRect(px+k,py+lo,2,hi-lo);else ctx.fillRect(px+lo,py+k,hi-lo,2);}
-    ctx.fillStyle=deck[2]!;
-    if(across){if(!before)ctx.fillRect(px,py+lo-1,T,1);if(!after)ctx.fillRect(px,py+hi,T,1);for(const k of [1,8,14].map(u)){if(!before)ctx.fillRect(px+k,py+lo-u(2),1,u(2));if(!after)ctx.fillRect(px+k,py+hi,1,u(2));}}
-    else{if(!before)ctx.fillRect(px+lo-1,py,1,T);if(!after)ctx.fillRect(px+hi,py,1,T);}
+    // across: 위아래로 건너는 다리(물이 양옆에) — 판자는 가로로 깔고 난간은 좌우에
+    const across=!(wetAt(x,y-1)||wetAt(x,y+1))&&(wetAt(x-1,y)||wetAt(x+1,y)),isStone=stone({x,y});
+    const deck=isStone?['rgb(201,194,173)','rgb(171,163,142)']:['rgb(190,148,94)','rgb(160,120,72)'],rail=isStone?'rgb(120,114,100)':'rgb(86,58,34)';
+    const px=x*T,py=y*T,m=6;
+    ctx.fillStyle='rgba(8,24,30,.45)';if(across)ctx.fillRect(px+m+3,py,T-2*m,T);else ctx.fillRect(px,py+m+3,T,T-2*m);
+    for(let k=0;k<T;k+=4){ctx.fillStyle=deck[(k/4)%2]!;if(across)ctx.fillRect(px+m,py+k,T-2*m,4);else ctx.fillRect(px+k,py+m,4,T-2*m);}
+    ctx.strokeStyle='rgba(40,24,12,.35)';ctx.lineWidth=1;for(let k=0;k<T;k+=4){ctx.beginPath();if(across){ctx.moveTo(px+m,py+k);ctx.lineTo(px+T-m,py+k);}else{ctx.moveTo(px+k,py+m);ctx.lineTo(px+k,py+T-m);}ctx.stroke();}
+    ctx.fillStyle=rail;if(across){ctx.fillRect(px+m-3,py,3,T);ctx.fillRect(px+T-m,py,3,T);for(const k of [4,24,44]){ctx.fillRect(px+m-5,py+k,6,5);ctx.fillRect(px+T-m-1,py+k,6,5);}}
+    else{ctx.fillRect(px,py+m-3,T,3);ctx.fillRect(px,py+T-m,T,3);for(const k of [4,24,44]){ctx.fillRect(px+k,py+m-5,5,6);ctx.fillRect(px+k,py+T-m-1,5,6);}}
   }
 }
-
-/** Plank roads (잔도) bolted to the cliff: boards across the path, posts and a drop. */
+/** 잔도: 벼랑에 박은 판자길. */
 function paintPlanks(ctx:CanvasRenderingContext2D,state:BattleState){
   const path=(x:number,y:number)=>{const t=terrainAt(state,x,y);return t!==undefined&&t!=='cliff'&&t!=='water'&&t!=='rapids'&&t!=='mountain';};
   for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){
     if(terrainAt(state,x,y)!=='plank')continue;
     const px=x*T,py=y*T,horizontal=path(x-1,y)||path(x+1,y);
-    ctx.fillStyle='rgba(10,8,6,.6)';if(horizontal)ctx.fillRect(px,py+u(12),T,u(3));else ctx.fillRect(px+u(12),py,u(3),T);
-    for(let k=0;k<T;k+=2){ctx.fillStyle=k%4?'rgb(170,126,74)':'rgb(138,98,56)';if(horizontal)ctx.fillRect(px+k,py+u(4),2,u(8));else ctx.fillRect(px+u(4),py+k,u(8),2);}
+    ctx.fillStyle='rgba(10,8,6,.55)';if(horizontal)ctx.fillRect(px,py+u(12),T,u(3));else ctx.fillRect(px+u(12),py,u(3),T);
+    for(let k=0;k<T;k+=4){ctx.fillStyle=k%8?'rgb(170,126,74)':'rgb(138,98,56)';if(horizontal)ctx.fillRect(px+k,py+u(4),4,u(8));else ctx.fillRect(px+u(4),py+k,u(8),4);}
     ctx.fillStyle='rgb(74,50,30)';
-    if(horizontal){ctx.fillRect(px,py+u(3),T,1);ctx.fillRect(px,py+u(12),T,1);for(const k of [2,9].map(u))ctx.fillRect(px+k,py+u(12),1,u(4));}
-    else{ctx.fillRect(px+u(3),py,1,T);ctx.fillRect(px+u(12),py,1,T);for(const k of [2,9].map(u))ctx.fillRect(px+u(12),py+k,u(4),1);}
+    if(horizontal){ctx.fillRect(px,py+u(3),T,2);ctx.fillRect(px,py+u(12),T,2);for(const k of [2,9].map(u))ctx.fillRect(px+k,py+u(12),3,u(4));}
+    else{ctx.fillRect(px+u(3),py,2,T);ctx.fillRect(px+u(12),py,2,T);for(const k of [2,9].map(u))ctx.fillRect(px+u(12),py+k,u(4),3);}
   }
 }
-
-/** Continuous ramparts in art pixels: walkway, merlons and a shaded outer face. */
+/**
+ * 성벽(위에서 비스듬히 내려다본): 성 위 길(돌판), 바깥 가장자리마다 성가퀴(타구와 활 구멍),
+ * 남쪽으로 드러난 벽면(벽돌 줄·빗물 자국·밑동의 그늘), 동쪽 그림자. 모서리는 각루처럼 넓게.
+ * 성문 칸은 문루 바닥과 두 문짝(징 박힌 붉은 나무), 부서진 성문은 열린 통로.
+ */
 function paintWalls(ctx:CanvasRenderingContext2D,state:BattleState){
   const isWall=(x:number,y:number)=>{const t=terrainAt(state,x,y);return t==='wall'||t==='gate';};
-  const cells:Coord[]=[];for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++)if(terrainAt(state,x,y)==='wall')cells.push({x,y});
-  const inset=u(2);
-  for(const {x,y} of cells){
-    if(isWall(x,y+1))continue;const px=x*T,py=y*T,l=isWall(x-1,y)?0:inset,r=isWall(x+1,y)?0:inset;
-    ctx.fillStyle='rgb(104,98,84)';ctx.fillRect(px+l,py+T-inset,T-l-r,inset+u(3));ctx.fillStyle='rgb(76,71,60)';ctx.fillRect(px+l,py+T+u(1),T-l-r,1);
-    ctx.fillStyle='rgba(15,18,12,.45)';ctx.fillRect(px+l,py+T+u(2),T-l-r,u(2));
+  const cells:Coord[]=[];for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++)if(isWall(x,y))cells.push({x,y});
+  const FACE=Math.round(T*.46);
+  // 1) 그림자와 남쪽 벽면(성 위 길보다 먼저)
+  for(const {x,y} of cells){const px=x*T,py=y*T;
+    if(!isWall(x+1,y)){const gr=ctx.createLinearGradient(px+T,0,px+T+14,0);gr.addColorStop(0,'rgba(10,14,8,.45)');gr.addColorStop(1,'rgba(10,14,8,0)');ctx.fillStyle=gr;ctx.fillRect(px+T,py+6,14,T+(isWall(x,y+1)?0:FACE));}
+    if(isWall(x,y+1))continue;
+    const fy=py+T,gr=ctx.createLinearGradient(0,fy,0,fy+FACE);gr.addColorStop(0,'rgb(126,118,102)');gr.addColorStop(1,'rgb(82,76,64)');ctx.fillStyle=gr;ctx.fillRect(px,fy,T,FACE);
+    for(let r=0;r*6<FACE;r++){const yy=fy+r*6,off=(r%2)*7;ctx.fillStyle='rgba(30,26,20,.5)';ctx.fillRect(px,yy,T,1);for(let k=-off;k<T;k+=14)ctx.fillRect(px+Math.max(0,k),yy,1,6);
+      for(let k=-off;k<T;k+=14)if(hash(x*7+k,y*5+r,3)<.3){ctx.fillStyle=hash(x+k,y+r,4)<.5?'rgba(255,245,225,.1)':'rgba(0,0,0,.12)';ctx.fillRect(px+Math.max(0,k)+1,yy+1,13,5);}}
+    for(let i=0;i<2;i++){const sx=px+hash(x,y,i+70)*T;const g2=ctx.createLinearGradient(0,fy,0,fy+FACE*.8);g2.addColorStop(0,'rgba(30,26,20,.35)');g2.addColorStop(1,'rgba(30,26,20,0)');ctx.fillStyle=g2;ctx.fillRect(sx,fy,3,FACE*.8);}
+    ctx.fillStyle='rgba(10,14,8,.4)';ctx.fillRect(px,fy+FACE,T,5);ctx.fillStyle='rgba(70,90,50,.35)';for(let i=0;i<4;i++){ctx.beginPath();ctx.ellipse(px+hash(x,y,i+80)*T,fy+FACE-1,4,2,0,0,7);ctx.fill();}
   }
+  // 2) 성 위 길과 성가퀴
   for(const {x,y} of cells){
-    const px=x*T,py=y*T,l=isWall(x-1,y)?0:inset,r=isWall(x+1,y)?0:inset,t=isWall(x,y-1)?0:inset,b=isWall(x,y+1)?0:inset;
-    ctx.fillStyle='rgb(166,159,139)';ctx.fillRect(px+l,py+t,T-l-r,T-t-b);
-    ctx.fillStyle='rgb(140,133,114)';for(let k=u(4);k<T;k+=u(4))ctx.fillRect(px+l,py+k,T-l-r,1);
-    ctx.fillStyle='rgb(196,189,168)';ctx.fillRect(px+l,py+t,T-l-r,1);
-    const horiz=isWall(x-1,y)||isWall(x+1,y),vert=isWall(x,y-1)||isWall(x,y+1),corner=horiz&&vert;
-    ctx.fillStyle='rgb(122,115,99)';
-    const m=u(2);
-    if(corner||(!horiz&&!vert)){ctx.fillRect(px,py,T,T);ctx.fillStyle='rgb(180,172,151)';ctx.fillRect(px+m,py+m,T-2*m,T-2*m);ctx.fillStyle='rgb(122,115,99)';for(let k=0;k<T;k+=u(4)){ctx.fillRect(px+k,py,m,m);ctx.fillRect(px+k,py+T-m,m,m);ctx.fillRect(px,py+k,m,m);ctx.fillRect(px+T-m,py+k,m,m);}}
-    else if(horiz)for(let k=0;k<T;k+=u(3)){ctx.fillRect(px+k,py+t,m,m);ctx.fillRect(px+k,py+T-b-m,m,m);}
-    else for(let k=0;k<T;k+=u(3)){ctx.fillRect(px+l,py+k,m,m);ctx.fillRect(px+T-r-m,py+k,m,m);}
-  }
-  for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){
-    if(terrainAt(state,x,y)!=='gate'||state.find(`gate_${x}_${y}`))continue;
-    const px=x*T,py=y*T,m=u(2);ctx.fillStyle='rgb(107,100,85)';ctx.fillRect(px,py+1,m,T-2);ctx.fillRect(px+T-m,py+1,m,T-2);ctx.fillStyle='rgb(74,52,36)';ctx.fillRect(px+m,py+m,1,T-2*m);ctx.fillRect(px+T-m-1,py+m,1,T-2*m);
+    const px=x*T,py=y*T,gate=terrainAt(state,x,y)==='gate';
+    const L=isWall(x-1,y),Rr=isWall(x+1,y),U=isWall(x,y-1),D=isWall(x,y+1),corner=(L||Rr)&&(U||D),lone=!L&&!Rr&&!U&&!D;
+    const gr=ctx.createLinearGradient(px,py,px+T,py+T);gr.addColorStop(0,'rgb(184,176,156)');gr.addColorStop(1,'rgb(156,148,128)');ctx.fillStyle=gr;ctx.fillRect(px,py,T,T);
+    ctx.strokeStyle='rgba(60,54,44,.3)';ctx.lineWidth=1;for(let k=12;k<T;k+=12){ctx.beginPath();ctx.moveTo(px,py+k);ctx.lineTo(px+T,py+k);ctx.stroke();}
+    for(let r=0;r<4;r++)for(let k=(r%2)*8;k<T;k+=16){ctx.beginPath();ctx.moveTo(px+k,py+r*12);ctx.lineTo(px+k,py+r*12+12);ctx.stroke();}
+    if(gate){
+      const across=L||Rr;// 성벽이 가로로 이어지면 문은 위아래로 지난다
+      const intact=!!state.find(`gate_${x}_${y}`);
+      ctx.fillStyle='rgb(120,110,92)';if(across)ctx.fillRect(px+10,py,T-20,T);else ctx.fillRect(px,py+10,T,T-20);
+      if(!intact){ctx.fillStyle='rgba(20,14,8,.35)';if(across)ctx.fillRect(px+12,py,T-24,T);else ctx.fillRect(px,py+12,T,T-24);}
+      else for(const side of [0,1]){const dx=across?(side?T/2:12):0,dy=across?0:(side?T/2:12);ctx.fillStyle='rgb(110,34,22)';if(across)ctx.fillRect(px+dx,py+6,T/2-12,T-12);else ctx.fillRect(px+6,py+dy,T-12,T/2-12);
+        ctx.fillStyle='rgb(222,184,90)';for(let a=0;a<3;a++)for(let b=0;b<4;b++){const sx=across?px+dx+4+a*((T/2-20)/2):px+10+b*((T-20)/3),sy=across?py+10+b*((T-20)/3):py+dy+4+a*((T/2-20)/2);ctx.beginPath();ctx.arc(sx,sy,1.6,0,7);ctx.fill();}}
+    }
+    // 성가퀴: 바깥(이웃이 성벽이 아닌) 가장자리마다
+    const parapet=(x0:number,y0:number,len:number,horiz:boolean)=>{
+      ctx.fillStyle='rgb(128,120,104)';if(horiz)ctx.fillRect(x0,y0,len,6);else ctx.fillRect(x0,y0,6,len);
+      for(let k=2;k<len-4;k+=10){ctx.fillStyle='rgb(198,190,170)';if(horiz)ctx.fillRect(x0+k,y0-1,6,7);else ctx.fillRect(x0-1,y0+k,7,6);
+        ctx.fillStyle='rgba(30,26,20,.55)';if(horiz)ctx.fillRect(x0+k+6,y0,2,6);else ctx.fillRect(x0,y0+k+6,6,2);ctx.fillStyle='rgb(40,34,28)';if(horiz)ctx.fillRect(x0+k+2.5,y0+2,1,3);else ctx.fillRect(x0+2,y0+k+2.5,3,1);}};
+    if(!U&&!(gate&&(L||Rr)))parapet(px,py,T,true);if(!D&&!(gate&&(L||Rr)))parapet(px,py+T-6,T,true);
+    if(!L&&!(gate&&(U||D)))parapet(px,py,T,false);if(!Rr&&!(gate&&(U||D)))parapet(px+T-6,py,T,false);
+    if(corner||lone){ctx.strokeStyle='rgba(40,34,26,.6)';ctx.lineWidth=2;ctx.strokeRect(px+3,py+3,T-6,T-6);ctx.fillStyle='rgba(255,245,220,.12)';ctx.fillRect(px+8,py+8,T-16,T-16);}
   }
 }
-
-/** Cliff faces drop below the rock where open ground begins. */
+/** 벼랑: 아래쪽이 트인 곳에 깎아지른 바위 면. */
 function paintCliffFaces(ctx:CanvasRenderingContext2D,state:BattleState,biome:Biome){
   const r=biome.ramps.cliff;
   for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){
     if(terrainAt(state,x,y)!=='cliff')continue;const below=terrainAt(state,x,y+1);if(below==='cliff'||below===undefined)continue;
-    const px=x*T,py=y*T+T-u(3);ctx.fillStyle=css(r[0]!);ctx.fillRect(px,py,T,u(4));ctx.fillStyle=css(r[1]!);for(let k=0;k<T;k+=u(3))ctx.fillRect(px+k,py+1,1,u(3));ctx.fillStyle='rgba(10,10,8,.45)';ctx.fillRect(px,py+u(4),T,u(2));
+    const px=x*T,py=y*T+T-10,gr=ctx.createLinearGradient(0,py,0,py+16);gr.addColorStop(0,css(r[1]!));gr.addColorStop(1,css(r[0]!));ctx.fillStyle=gr;ctx.fillRect(px,py,T,16);
+    for(let k=2;k<T;k+=7+hash(x,k,3)*4)stroke(ctx,css(r[3]!,.5),1.2,[[px+k,py+1],[px+k-2,py+14]]);ctx.fillStyle='rgba(10,10,8,.4)';ctx.fillRect(px,py+16,T,5);
   }
 }
-
-/** Trees, rock spires and mountains from scenery-v3, sorted back to front. */
+/** 나무·바위·산(scenery-v3), 뒤에서 앞으로. 그늘을 먼저 깔고 그림을 얹는다. */
 function paintScenery(ctx:CanvasRenderingContext2D,state:BattleState,atlas:Texture){
   const props:Array<{frame:number;x:number;y:number;w:number;h:number;flip:boolean;dark?:boolean}>=[];
   for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){
     const t=terrainAt(state,x,y),px=x*T,py=y*T;
     if(t==='forest'){
-      const count=2+(hash(x,y,1)>.6?1:0);
-      for(let i=0;i<count;i++){const h=u(12)+Math.floor(hash(x,y,i+2)*u(5)),w=Math.round(h*.82);props.push({frame:hash(x,y,i+7)>.62?1:0,x:px+u(1)+Math.floor(hash(x,y,i+3)*(T-w+u(6)))-u(2),y:py+u(4)+Math.floor(hash(x,y,i+4)*u(10)),w,h,flip:hash(x,y,i+5)>.5});}
+      const count=2+(hash(x,y,1)>.55?1:0);
+      for(let i=0;i<count;i++){const h=u(13)+hash(x,y,i+2)*u(6),w=h*.82;props.push({frame:hash(x,y,i+7)>.62?1:0,x:px+u(1)+hash(x,y,i+3)*(T-w+u(6))-u(2),y:py+u(5)+hash(x,y,i+4)*u(10),w,h,flip:hash(x,y,i+5)>.5});}
     }
     if(t==='mountain'){
       const inner=terrainAt(state,x-1,y)==='mountain'&&terrainAt(state,x+1,y)==='mountain'&&terrainAt(state,x,y-1)==='mountain'&&terrainAt(state,x,y+1)==='mountain';
       if(inner&&hash(x,y,12)<.62)continue;
-      const w=u(inner?30:23)+Math.floor(hash(x,y,13)*u(7)),h=Math.round(w*1.1);props.push({frame:4,x:px+T/2-w/2+Math.floor((hash(x,y,14)-.5)*u(8)),y:py+T+u(2),w,h,flip:hash(x,y,15)>.5});
+      const w=u(inner?30:23)+hash(x,y,13)*u(7),h=w*1.1;props.push({frame:4,x:px+T/2-w/2+(hash(x,y,14)-.5)*u(8),y:py+T+u(2),w,h,flip:hash(x,y,15)>.5});
     }
-    // Cliffs (impassable) use the same rock art, darkened and taller, so they read apart from climbable mountains.
-    if(t==='cliff'){const w=u(16)+Math.floor(hash(x,y,16)*u(5)),h=Math.round(w*1.3);props.push({frame:4,x:px+T/2-w/2,y:py+T,w,h,flip:hash(x,y,17)>.5,dark:true});}
+    if(t==='cliff'){const w=u(16)+hash(x,y,16)*u(5),h=w*1.3;props.push({frame:4,x:px+T/2-w/2,y:py+T,w,h,flip:hash(x,y,17)>.5,dark:true});}
   }
   props.sort((a,b)=>a.y-b.y);
   for(const p of props){
-    ctx.fillStyle='rgba(10,20,10,.35)';ctx.fillRect(Math.round(p.x+u(2)),Math.round(p.y-u(2)),p.w-u(2),u(2));
+    ctx.fillStyle='rgba(10,20,10,.32)';ctx.beginPath();ctx.ellipse(p.x+p.w/2+4,p.y-2,p.w*.42,p.w*.14,0,0,7);ctx.fill();
     ctx.drawImage(sceneryThumb(atlas,p.frame,p.w,p.h,p.flip,p.dark),Math.round(p.x),Math.round(p.y-p.h));
   }
 }
 
 function tint(ctx:CanvasRenderingContext2D,w:number,h:number,biome:Biome){
-  if(!biome.tint)return;const [c,a]=biome.tint,img=ctx.getImageData(0,0,w,h),d=img.data;
-  for(let i=0;i<d.length;i+=4){d[i]=d[i]!*(1-a)+c[0]*a;d[i+1]=d[i+1]!*(1-a)+c[1]*a;d[i+2]=d[i+2]!*(1-a)+c[2]*a;}
-  ctx.putImageData(img,0,0);
+  if(!biome.tint)return;const [c,a]=biome.tint;ctx.save();ctx.globalAlpha=a;ctx.fillStyle=css(c);ctx.globalCompositeOperation='multiply';ctx.fillRect(0,0,w,h);ctx.restore();
 }
 
 /** Render actual map data; decorations never replace collision or terrain rules. */
 export function terrainLayer(state:BattleState,atlas:Texture){
   const map=state.map,layer=new Container(),biome=biomeFor(state.stage.id);
   const canvas=document.createElement('canvas');canvas.width=map.width*T;canvas.height=map.height*T;
-  const ctx=canvas.getContext('2d',{willReadFrequently:true})!;ctx.imageSmoothingEnabled=false;
-  const img=ctx.createImageData(canvas.width,canvas.height);paintGround(img,state,biome);ctx.putImageData(img,0,0);
+  const ctx=canvas.getContext('2d')!;ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+  ctx.drawImage(paintBase(state,biome),0,0,canvas.width,canvas.height);
+  brushGrain(ctx,canvas.width,canvas.height);
   paintFields(ctx,state);
+  paintRoads(ctx,state);
   paintWaterDetail(ctx,state,biome);
   paintMarsh(ctx,state,biome);
   paintGrass(ctx,state,biome);
@@ -224,7 +252,7 @@ export function terrainLayer(state:BattleState,atlas:Texture){
   paintCliffFaces(ctx,state,biome);
   paintScenery(ctx,state,atlas);
   tint(ctx,canvas.width,canvas.height,biome);
-  const texture=Texture.from(canvas);texture.source.scaleMode='nearest';const ground=new Sprite(texture);ground.scale.set(SCALE);layer.addChild(ground);
+  const texture=new Texture({source:new CanvasSource({resource:canvas,autoGenerateMipmaps:true,scaleMode:'linear'})});const ground=new Sprite(texture);ground.scale.set(S/T);layer.addChild(ground);
   const frames=Array.from({length:8},(_,i)=>new Texture({source:atlas.source,frame:new Rectangle((i%4)*atlas.width/4,Math.floor(i/4)*atlas.height/2,atlas.width/4,atlas.height/2)}));
   const object=(cell:number,x:number,y:number,w:number,h:number)=>{
     const s=new Sprite(frames[cell]);s.anchor.set(.5,.87);s.position.set((x+.5)*S,(y+.8)*S);s.width=w;s.height=h;layer.addChild(s);

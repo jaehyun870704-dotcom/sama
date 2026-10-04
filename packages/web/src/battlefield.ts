@@ -150,7 +150,8 @@ export class Battlefield {
     });
     this.observer=new ResizeObserver(()=>requestAnimationFrame(()=>{
       this.app.resize();
-      if(this.overview)this.reset();else this.fit();
+      // 화면 크기가 바뀌어도 칸 크기는 같은 비율로(보던 곳을 가운데에 둔 채)
+      if(this.state){const c=this.world.toLocal({x:this.app.screen.width/2,y:this.app.screen.height/2});this.zoom=this.fixedZoom();this.fit();this.focus({x:c.x/W-.5,y:c.y/H-.5});}
     }));this.observer.observe(privateHost);
     this.app.ticker.maxFPS=60;
     // Boats ride the swell while idle; tweens own the sprite during playback.
@@ -184,7 +185,7 @@ export class Battlefield {
     this.onHover(c);
   }
   setZoom(z:number){
-    if(!this.state)return;
+    if(!this.state)return;void z;return;
     this.overview=false;
     const w=this.app.screen.width,h=this.app.screen.height;
     const center=this.world.toLocal({x:w/2,y:h/2});
@@ -193,12 +194,15 @@ export class Battlefield {
   zoomBy(d:number){this.setZoom(this.zoom+d);}
   /** Zoom keeping the world point under `at` (screen space) fixed; snap only when the gesture ends. */
   zoomAt(z:number,at:{x:number;y:number},snap:boolean){
-    if(!this.state)return;this.overview=false;
+    if(!this.state)return;void z;void at;void snap;return;this.overview=false;
     const before=this.world.toLocal(at),clamped=Math.max(.22,Math.min(1.8,z));
     this.zoom=snap?crispZoom(clamped,this.app.renderer.resolution):clamped;this.fit();
     const now=this.world.toGlobal(before);this.pan={x:this.pan.x+at.x-now.x,y:this.pan.y+at.y-now.y};this.fit();
   }
-  reset(){if(!this.state)return;this.overview=true;this.zoom=crispZoom(Math.min((this.app.screen.width-40)/(this.state.map.width*W),(this.app.screen.height-70)/(this.state.map.height*H)),this.app.renderer.resolution,-1);this.pan={x:0,y:0};this.fit();}
+  /** 전장 배율은 고정: 가로로 열두 칸 반, 세로로 일곱 칸 남짓이 보이게(작은 화면은 일곱 칸). 넓은 전장은 끌어서·미니맵으로 살핀다. */
+  private fixedZoom(){const w=this.app.screen.width,h=this.app.screen.height,across=w<600?7:12.5;return Math.max(.5,Math.min(w/(across*W),h/(7*H)));}
+  reset(){if(!this.state)return;this.overview=false;this.zoom=this.fixedZoom();this.fit();if(this.selected){const u=this.state.find(this.selected);if(u){this.focus(u.pos);return;}}this.focus(this.state.living('player')[0]?.pos??{x:0,y:0});}
+  overviewReset(){if(!this.state)return;this.overview=true;this.zoom=crispZoom(Math.min((this.app.screen.width-40)/(this.state.map.width*W),(this.app.screen.height-70)/(this.state.map.height*H)),this.app.renderer.resolution,-1);this.pan={x:0,y:0};this.fit();}
   /** 전장은 고정이다: 전체가 보이면 움직이지 않고, 확대해 둔 상태에서 그 칸이 화면 밖일 때만 그쪽으로 옮긴다(확대 배율은 그대로). */
   focusUnit(at:Coord){
     if(!this.state||this.overview)return;
@@ -222,7 +226,6 @@ export class Battlefield {
     // Whole device pixels keep ground dots the same size across the screen.
     const r=this.app.renderer.resolution,px=Math.round(x*r)/r,py=Math.round(y*r)/r;
     this.world.position.set(px,py);this.pan={x:px-left,y:py-top};
-    const ground=this.terrainTextures[0];if(ground)ground.source.scaleMode=groundScaleMode(scale,r);
     this.drawMinimap();
   }
   private drawMinimap(){
@@ -239,8 +242,7 @@ export class Battlefield {
     this.paintTerrain();
     // 전장 전체가 보이면 그대로 고정한다. 아주 큰 전장만 아군 쪽을 보여 주고 시작한다.
     // 칸이 충분히 크게 보일 때만 전체 보기로 고정하고, 넓은 전장은 아군 쪽을 크게 보여 준 채 시작한다(드래그·미니맵으로 살핀다).
-    if(this.overviewZoom()>=(this.app.screen.width<500?.42:.72))this.reset();
-    else{this.zoom=crispZoom(this.app.screen.width<500?.78:1,this.app.renderer.resolution);this.focus(state.living('player')[0]?.pos??{x:0,y:0});}
+    this.zoom=this.fixedZoom();this.focus(state.living('player')[0]?.pos??{x:0,y:0});
   }
   /** A bridge was built or the river rose: repaint the ground from the changed map. */
   repaintTerrain(){
