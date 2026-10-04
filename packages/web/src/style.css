@@ -624,3 +624,21 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
 .ss-narr{image-rendering:auto}
 @media(max-width:580px){.ss-stage.iso .ss-actor.px.fig{width:7.4%}.ss-stage.iso .ss-actor.px .ss-name{font-size:8px}}
 @media (prefers-reduced-motion:reduce){.ss-world{transition:none!important}}
+/* ── 전투 v2: 전장이 화면을 넓게 쓴다. 왼쪽 전황은 접는 덧창, 지도는 남은 높이를 다 채우고 배율은 고정 ── */
+.left-toggle{display:none}
+#zoom-in,#zoom-out{display:none}
+@media (min-width:1000px){
+  .layout{grid-template-columns:minmax(0,1fr) 250px!important;position:relative;height:calc(100dvh - 120px);min-height:560px}
+  .left-panel{position:absolute;z-index:40;left:12px;top:12px;width:240px;max-height:calc(100% - 24px);overflow:auto;padding:14px!important;border:1px solid #5a6a58;border-radius:6px;background:rgba(16,26,27,.93);box-shadow:0 10px 30px #0008;transform:translateX(calc(-100% - 24px));transition:transform .28s ease}
+  body.left-open .left-panel{transform:none}
+  .left-panel .left-bottom{display:none}
+  .battle-panel{grid-column:1;height:100%;min-height:0}
+  .battle-heading{position:absolute;top:0;left:0;right:0;padding:12px 18px 0 118px!important;background:linear-gradient(#0e1716cc,transparent);height:64px}
+  .battle-heading h2{font-size:20px}
+  .map{height:auto!important;min-height:0!important;flex:1}
+  .map .compass{display:none}
+  .left-toggle{display:block;position:absolute;z-index:6;left:12px;top:12px;padding:7px 12px;font-size:12px;background:#142520e6;border-color:#6a7a5c;color:#efe2c0}
+  body.left-open .left-toggle{left:262px}
+  .right-panel{overflow:auto}
+  .battle-heading .weather{margin-right:170px}
+}
