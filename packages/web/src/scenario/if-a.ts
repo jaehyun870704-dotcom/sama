@@ -11,6 +11,11 @@ type Chapters=ScenarioPack['chapters'];
 const SERVE:Chapters=[
   {id:'IF1-srv-1',year:'203년',title:'여양 공방',
     synopsis:'조조의 부름에 곧장 응한 젊은 사마의는 막부의 말석에서 하북을 셈했다. 원소가 죽고 아들들이 칼을 겨누자 그가 아뢴다. "형제가 다툴 때를 기다리십시오." 그 전에 여양의 길목을 막은 원소의 조카 고간부터 걷어내야 한다.',
+    history:[
+      '202년 여름, 관도에서 진 원소가 병으로 죽자 하북은 장자 원담과 막내 원상으로 갈라졌다. 203년 봄, 조조는 여양에서 원씨 형제를 몰아붙였다.',
+      '역사에서 사마의는 201년 조조의 부름을 풍비를 핑계로 물리쳤으나, 이 길에서 그는 곧장 출사해 막부의 말석에 앉았다.',
+      '형제가 서로 다툴 때를 기다리자는 셈이 그의 붓끝에서 나왔다. 그 전에 여양의 길목을 막은 원소의 조카 고간을 걷어내야 한다.',
+    ],
     scenes:[
       {place:'허도 · 사공부 회랑',art:13,cast:[{name:'사마의',look:'strategist',at:[30,62],face:'right'},{name:'조조',look:'civil',at:[64,58],face:'left'},{name:'순욱',look:'civil',at:[78,52],face:'left'},{name:'전령',look:'infantry'}],
         steps:[
@@ -100,6 +105,11 @@ const SERVE:Chapters=[
 
   {id:'IF1-srv-2',year:'204년',title:'업성 수공',
     synopsis:'원담과 원상이 서로를 치는 사이, 조조의 군이 업성을 에워쌌다. 원상의 충신 심배가 성을 지킨다. 장수(漳水)를 끌어 성을 잠기게 하자는 계책이 사마의의 붓끝에서 나왔다.',
+    history:[
+      '204년 봄, 원상이 형 원담을 치러 평원으로 나간 사이 조조는 하북의 심장 업성을 에워쌌다. 성은 원상의 충신 심배가 지켰다.',
+      '역사에서 조조는 장수(漳水)를 끌어 성을 잠기게 했고, 굶주린 업성은 그해 가을 심배의 조카 심영이 성문을 열면서 무너졌다.',
+      '이 길에서 그 물길의 계책을 올린 이는 막부의 젊은 참모 사마의다. 물로 잠글 것인가, 형을 먼저 칠 것인가, 성문을 안에서 열 것인가.',
+    ],
     scenes:[
       {place:'업성 · 장수 강둑',art:15,cast:[{name:'사마의',look:'strategist',at:[34,62],face:'right'},{name:'조조',look:'civil',at:[20,56],face:'right'},{name:'사마랑',look:'civil'},{name:'심배',look:'strategist',at:[82,40],face:'left'},{name:'위군 병사',look:'infantry',at:[56,72],face:'right'}],
         steps:[
@@ -182,6 +192,11 @@ const SERVE:Chapters=[
 
   {id:'IF1-srv-3',year:'207년',title:'백랑산 원정',
     synopsis:'원상과 원희는 오환으로 달아나 선우 답돈의 기병에 몸을 맡겼다. 장맛비에 해안길이 막힌 무종에서, 사마의는 사막을 건너는 강행군을 택한다. 백랑산 아래 오환의 기병이 펼쳐졌다.',
+    history:[
+      '207년, 조조는 오환으로 달아난 원상과 원희를 쫓아 북쪽 끝으로 원정했다. 장맛비에 바닷길이 끊기자 전주의 안내로 노룡새의 옛길을 넘었다.',
+      '역사에서 조조군은 백랑산에서 오환의 선우 답돈을 베었고, 군사 곽가는 이 원정에서 얻은 병으로 서른여덟에 세상을 떠났다.',
+      '이 길에서 사마의는 그 원정의 한가운데에 있다. 병든 곽가를 곁에 두고, 백랑산 아래 펼쳐진 오환의 기병을 마주한다.',
+    ],
     scenes:[
       {place:'무종 · 물에 잠긴 해안길',art:11,cast:[{name:'사마의',look:'strategist',at:[38,62],face:'right'},{name:'조진',look:'cavalry',at:[24,56],face:'right'},{name:'곽가',look:'civil',at:[54,58],face:'left'},{name:'전주',look:'cavalry'},{name:'위군 병사',look:'infantry',at:[72,70],face:'left'}],
         steps:[
@@ -259,6 +274,11 @@ const SERVE:Chapters=[
 
   {id:'IF1-srv-nanpi',year:'205년',title:'남피 설원',
     synopsis:'사마의는 업성을 둘러싸 둔 채 형 원담부터 치자고 아뢰었다. 정월의 남피, 해자는 얼어붙었고 원담은 성문을 열고 나와 죽기로 싸운다. 형을 꺾으면 아우는 돌아올 곳을 잃는다.',
+    history:[
+      '205년 정월, 조조는 남피에 웅거한 원담을 쳤다. 원담은 성을 나와 싸우다 목숨을 잃었고, 청주와 기주가 조조에게 돌아갔다.',
+      '역사에서는 업성을 먼저 함락한 뒤의 일이었으나, 이 길에서 사마의는 업성을 둘러싸 둔 채 형 원담부터 치자고 아뢰었다.',
+      '얼어붙은 해자 위로 원담의 군이 쏟아져 나온다. 형을 꺾으면 아우 원상은 돌아올 곳을 잃는다.',
+    ],
     scenes:[
       {place:'남피 · 얼어붙은 해자',art:8,cast:[{name:'사마의',look:'strategist',at:[34,62],face:'right'},{name:'조조',look:'civil',at:[20,56],face:'right'},{name:'조진',look:'cavalry',at:[48,58],face:'right'},{name:'원담',look:'infantry',at:[84,48],face:'left'},{name:'위군 병사',look:'infantry',at:[62,70],face:'right'}],
         steps:[
@@ -333,6 +353,11 @@ const SERVE:Chapters=[
 
   {id:'serve:boss',year:'207년',title:'유성의 마지막 기병',
     synopsis:'하북을 잃은 원상이 남은 기병을 모아 요서 유성 앞에 섰다. 등 뒤의 요동에는 그를 받아 줄지 모를 공손강이 있다. 원소가 남긴 마지막 칼을 꺾으면 하북은 조조의 것이 된다.',
+    history:[
+      '207년 가을, 백랑산에서 오환이 무너지자 원상과 원희는 요동의 공손강에게 달아났다. 공손강은 두 형제의 목을 베어 조조에게 보냈다.',
+      '이 길의 원상은 요동으로 달아나지 않았다. 남은 기병을 모아 요서의 유성 앞에서 마지막 칼을 들었다.',
+      '원소가 남긴 마지막 깃발을 꺾으면 하북은 온전히 조조의 것이 된다. 젊은 사마의가 셈해 온 하북 평정의 끝이다.',
+    ],
     scenes:[
       {place:'요서 · 유성 앞 군막',art:14,cast:[{name:'사마의',look:'strategist',at:[38,62],face:'right'},{name:'조조',look:'civil',at:[56,56],face:'left'},{name:'조진',look:'cavalry',at:[22,58],face:'right'},{name:'곽회',look:'archer'},{name:'곽가',look:'civil'}],
         steps:[
@@ -422,6 +447,11 @@ const SERVE:Chapters=[
 const YUAN:Chapters=[
   {id:'IF1-yuan-1',year:'201년',title:'백마 구원',
     synopsis:'조조의 부름을 물리친 사마의는 하북의 원소에게 몸을 맡겼다. 원소의 대장 안량이 백마에서 쓰러졌고, 그를 벤 붉은 얼굴의 장수 관우가 아직 전장에 있다. 분노한 문추가 홀로 뛰쳐나가려 한다.',
+    history:[
+      '200년, 원소는 십만 대군으로 황하를 건너 조조와 천하를 다투었다. 역사에서는 백마에서 안량이 관우에게 베이고, 연진에서 문추마저 쓰러졌다.',
+      '역사의 사마의는 조조의 부름을 병을 핑계로 물리친 채 하내에 머물렀으나, 이 길에서 그는 북쪽 원소의 막하로 갔다.',
+      '원소의 남정은 한 해 늦은 201년에 시작되었다. 백마에서 안량이 쓰러진 지금, 분노한 문추를 살릴 셈이 젊은 책사에게 걸렸다.',
+    ],
     scenes:[
       {place:'여양 · 원소의 군막',art:14,cast:[{name:'사마의',look:'strategist',at:[30,62],face:'right'},{name:'원소',look:'civil',at:[64,54],face:'left'},{name:'문추',look:'cavalry',at:[48,58],face:'left'},{name:'전령',look:'infantry'}],
         steps:[
@@ -515,6 +545,11 @@ const YUAN:Chapters=[
 
   {id:'IF1-yuan-2',year:'201년',title:'오소 수비',
     synopsis:'관도에서 두 진이 석 달째 마주했다. 하북의 군량은 오소에 쌓여 있다. 사마의는 오소를 지키라 간언했고, 이번에는 원소가 들었다. 밤을 틈타 조조의 기병이 온다. 선두에 선 자는 장료다.',
+    history:[
+      '200년 겨울, 관도의 대치는 원소의 모사 허유가 조조에게 달아나 오소의 군량고를 알려 주면서 끝났다. 조조가 몸소 불을 놓자 하북군은 무너졌다.',
+      '한 해 늦게 벌어진 이 길의 관도에서, 사마의는 오소를 굳게 지키라 간언했고 이번에는 원소가 그 말을 들었다.',
+      '석 달째 두 진이 마주한 밤, 장료가 이끄는 조조의 기병이 오소의 곡창을 노리고 온다. 이 불씨를 막으면 관도의 승부가 뒤집힌다.',
+    ],
     scenes:[
       {place:'관도 · 원소의 본진',art:14,cast:[{name:'사마의',look:'strategist',at:[30,62],face:'right'},{name:'원소',look:'civil',at:[66,54],face:'left'},{name:'저수',look:'strategist',at:[46,58],face:'right'},{name:'허유',look:'strategist'}],
         steps:[
@@ -599,6 +634,11 @@ const YUAN:Chapters=[
 
   {id:'IF1-yuan-3',year:'201년',title:'관도 결전',
     synopsis:'오소를 잃지 않은 하북군이 관도의 진채를 밀어붙인다. 조조의 본진 앞을 웃통 벗은 장사 허저가 막아선다. 그를 넘으면 조조가 보인다.',
+    history:[
+      '200년, 역사의 관도에서 하북군은 오소를 잃고 무너졌고 장합과 고람마저 조조에게 항복했다. 원소는 겨우 팔백 기로 황하를 건너 달아났다.',
+      '이 길에서는 오소의 곡창이 불타지 않았다. 군량이 넉넉한 하북군이 조조의 진채를 밀어붙인다.',
+      '조조의 벽력거가 망루를 부수는 가운데, 본진 앞을 웃통 벗은 장사 허저가 막아선다. 그를 넘으면 조조가 보인다.',
+    ],
     scenes:[
       {place:'관도 · 마주 선 진채',art:17,cast:[{name:'사마의',look:'strategist',at:[32,62],face:'right'},{name:'문추',look:'cavalry',at:[48,56],face:'right'},{name:'장합',look:'spear',at:[20,56],face:'right'},{name:'곽회',look:'archer'},{name:'하북 병사',look:'infantry',at:[66,70],face:'right'}],
         steps:[
@@ -678,6 +718,11 @@ const YUAN:Chapters=[
 
   {id:'IF1-yuan-xudu',year:'201년',title:'허도 급습',
     synopsis:'오소를 지킨 그 밤, 사마의는 허유와 함께 경기병을 이끌고 영천의 숲길로 내려갔다. 텅 빈 줄 알았던 허도 앞에는 조조의 종제 조홍이 남은 군을 모아 기다리고 있다.',
+    history:[
+      '200년, 허유는 원소에게 경기병으로 빈 허도를 기습해 천자를 받들라 권했다. 원소가 이를 듣지 않자 허유는 조조에게로 달아났다.',
+      '이 길에서 사마의는 오소를 지킨 그 밤, 허유와 함께 경기병을 이끌고 영천의 숲길로 내려갔다. 역사에서 끝내 쓰이지 못한 계책이다.',
+      '텅 빈 줄 알았던 허도 앞에는 조조의 종제 조홍이 남은 군을 모아 기다린다. 허도가 흔들리면 관도의 조조도 흔들린다.',
+    ],
     scenes:[
       {place:'영천 · 허도로 가는 숲길',art:11,cast:[{name:'사마의',look:'strategist',at:[30,62],face:'right'},{name:'허유',look:'strategist',at:[44,58],face:'right'},{name:'문추',look:'cavalry',at:[18,56],face:'right'},{name:'조홍',look:'cavalry',at:[84,54],face:'left'},{name:'척후',look:'cavalry'}],
         steps:[
@@ -751,6 +796,11 @@ const YUAN:Chapters=[
 
   {id:'yuan:boss',year:'201년',title:'관도의 범',
     synopsis:'조조의 본진이 흔들린다. 원소는 지금이야말로 조맹덕의 목을 거둘 때라 외친다. 그러나 궁지에 몰린 범은 가장 사납다. 사마의는 관도의 마지막 싸움을 어떻게 끝낼 것인가.',
+    history:[
+      '200년 관도에서 역사는 조조의 편이었다. 열세의 조조는 오소를 불태워 원소의 대군을 무너뜨리고 북방의 패자가 되었다.',
+      '이 길에서는 그 승부가 뒤집히려 한다. 사마의의 셈으로 버텨 낸 하북군이 조조의 본진을 눈앞에 두었다.',
+      '원소는 조맹덕의 목을 거두라 외친다. 그러나 궁지에 몰린 범은 가장 사납다. 관도의 마지막 싸움을 어떻게 끝낼지가 사마의에게 걸렸다.',
+    ],
     scenes:[
       {place:'관도 · 원소의 본진',art:14,cast:[{name:'사마의',look:'strategist',at:[32,62],face:'right'},{name:'원소',look:'civil',at:[62,54],face:'left'},{name:'장합',look:'spear',at:[46,58],face:'right'},{name:'문추',look:'cavalry'},{name:'전령',look:'infantry'}],
         steps:[
@@ -839,6 +889,12 @@ const YUAN:Chapters=[
 const FATE2:Chapters=[
   {id:'fate:2:serve',year:'208년 · 장강',title:'적벽 전야',
     synopsis:'조조의 대군이 형주를 삼키고 장강에 이르렀다. 남쪽에는 손권과 유비의 연합군, 안쪽에는 세자 자리를 두고 다투는 조비와 조식. 젊은 참모 사마의는 어디에 힘을 쏟을 것인가.',
+    history:[
+      '208년, 승상이 된 조조는 남쪽으로 내려가 형주를 삼켰다. 유종이 항복하고 유비는 장판에서 쫓겨 강하로 달아났으며, 손권은 주유에게 군을 맡겼다.',
+      '역사에서 사마의는 이 해에야 조조의 강요로 문학연이 되어 출사했다. 이 길의 사마의는 이미 여러 해 막부에서 하북 평정을 셈해 온 참모다.',
+      '강 위에서는 배를 쇠사슬로 묶자는 계책이 올라왔고, 업성에서는 세자 자리를 둘러싼 조비와 조식의 다툼이 싹튼다.',
+      '사슬의 속셈을 밝혀 적벽의 불을 막을 것인가, 조비의 곁에 서서 세자의 자리를 굳힐 것인가. 손은 하나뿐이다.',
+    ],
     scenes:[
       {place:'오림 · 장강 위의 누선',art:7,cast:[{name:'조조',look:'civil',at:[56,52],face:'left'},{name:'사마의',look:'strategist',at:[36,60],face:'right'},{name:'조진',look:'cavalry',at:[22,58],face:'right'},{name:'곽가',look:'civil'},{name:'전령',look:'infantry'}],
         steps:[
@@ -871,6 +927,12 @@ const FATE2:Chapters=[
 
   {id:'fate:2:yuan',year:'202년 · 업성',title:'원소의 죽음',
     synopsis:'관도를 이긴 원소도 병을 이기지 못했다. 원담과 원상 형제가 후계를 두고 칼을 겨누고, 조조는 허창에서 재기를 노린다. 원씨의 책사로 남을 것인가, 사마씨의 가장으로 설 것인가.',
+    history:[
+      '202년 여름, 역사의 원소는 관도에서 진 지 두 해 만에 피를 토하는 병으로 죽었다. 후계를 정하지 않은 탓에 원담과 원상이 갈라서고 하북은 무너져 갔다.',
+      '이 길의 원소는 관도를 이기고도 같은 병을 이기지 못했다. 승자의 하북에도 후계는 정해지지 않았다.',
+      '심배는 막내 원상을 밀고, 청주의 원담은 장자의 권리를 내세운다. 허창의 조조는 그 틈에 재기를 노린다.',
+      '원상을 세워 하북을 하나로 묶고 원씨의 천하를 열 것인가, 형제를 버리고 고향 하내에서 사마씨의 깃발을 세울 것인가.',
+    ],
     scenes:[
       {place:'업성 · 원소의 침전',art:5,cast:[{name:'사마의',look:'strategist',at:[30,62],face:'right'},{name:'원상',look:'cavalry',at:[56,56],face:'left'},{name:'원담',look:'infantry'},{name:'심배',look:'strategist',at:[70,52],face:'left'},{name:'문추',look:'cavalry',at:[16,58],face:'right'}],
         steps:[
@@ -904,6 +966,11 @@ const FATE2:Chapters=[
 const CHIBI:Chapters=[
   {id:'IF2-cb-1',year:'208년',title:'연환의 사슬',
     synopsis:'배를 사슬로 묶으라는 방통의 계책. 젊은 사마의는 그 사슬이 불을 기다리는 사슬임을 알아보았다. 때마침 장간이 훔쳐 온 편지 한 장에 형주 수군의 도독 채모의 목이 걸렸다.',
+    history:[
+      '208년 겨울, 조조의 대군이 장강의 오림에 진을 쳤다. 연의에서 방통은 배를 사슬로 묶게 했고, 장간의 편지에 속은 조조는 수군도독 채모를 베었다.',
+      '역사에서 그 사슬은 동남풍과 함께 적벽의 불길이 되었다. 이 길에서 사마의는 그 사슬이 불을 기다리는 사슬임을 알아보았다.',
+      '방통의 계책을 끊고, 훔쳐 온 편지 한 장에 걸린 채모의 목을 어찌할 것인가. 강 위의 첫 싸움이 시작된다.',
+    ],
     scenes:[
       {place:'오림 · 사슬로 묶인 수채',art:15,cast:[{name:'사마의',look:'strategist',at:[30,62],face:'right'},{name:'조조',look:'civil',at:[56,54],face:'left'},{name:'채모',look:'infantry',at:[74,62],face:'left'},{name:'장간',look:'civil'},{name:'위군 병사',look:'infantry',at:[86,70],face:'left'}],
         steps:[
@@ -987,6 +1054,11 @@ const CHIBI:Chapters=[
 
   {id:'IF2-cb-2',year:'208년',title:'고육계',
     synopsis:'노장 황개가 매를 맞고 투항해 왔다. 등의 상처가 진짜라 해도, 그가 끌고 온 배에는 기름과 마른 풀이 실려 있다. 사신으로 온 감택의 눈빛을 사마의가 읽는다.',
+    history:[
+      '208년, 연의에서 오의 노장 황개는 주유에게 매를 맞는 고육계로 거짓 항복을 꾸몄고, 감택이 그 항복의 글을 조조에게 전했다.',
+      '동남풍이 불던 밤, 기름과 마른 풀을 실은 황개의 배가 사슬에 묶인 조조의 함대를 불살랐다. 이것이 역사의 적벽이다.',
+      '이 길에서 사슬은 이미 반쯤 풀렸다. 사신으로 온 감택의 속을 읽고 황개의 불배를 막아 내면 적벽의 불은 일어나지 않는다.',
+    ],
     scenes:[
       {place:'오림 · 바람 부는 강가',art:7,cast:[{name:'사마의',look:'strategist',at:[30,62],face:'right'},{name:'조조',look:'civil',at:[50,54],face:'right'},{name:'감택',look:'civil'},{name:'조진',look:'cavalry',at:[16,56],face:'right'},{name:'위군 병사',look:'infantry',at:[64,72],face:'left'}],
         steps:[
@@ -1071,6 +1143,11 @@ const CHIBI:Chapters=[
 
   {id:'IF2-cb-3',year:'208년',title:'장강 도하',
     synopsis:'불이 일어나지 않은 장강을 위군이 건넌다. 그 선봉을 오의 감녕이 백 명의 결사대로 막아선다. 비단 돛을 단 강도 출신의 맹장, 그를 넘으면 강동이다.',
+    history:[
+      '208년, 역사의 적벽에서 패한 조조는 화용도로 달아났고, 장강은 그 뒤로 오래도록 남과 북을 가르는 경계가 되었다.',
+      '이 길에서 적벽의 불은 끝내 일어나지 않았다. 위군은 처음으로 장강을 건너 강동의 남안에 닿으려 한다.',
+      '그 선봉을 오의 감녕이 백 명의 결사대로 막아선다. 비단 돛을 달던 강도 출신의 맹장을 넘으면 강동이다.',
+    ],
     scenes:[
       {place:'장강 남안 · 도하 전야',art:15,cast:[{name:'사마의',look:'strategist',at:[32,62],face:'right'},{name:'조진',look:'cavalry',at:[48,58],face:'right'},{name:'곽회',look:'archer'},{name:'위군 병사',look:'infantry',at:[66,70],face:'right'}],
         steps:[
@@ -1142,6 +1219,11 @@ const CHIBI:Chapters=[
 
   {id:'IF2-cb-sanjiang',year:'208년',title:'삼강구 기습',
     synopsis:'불을 기다리지 않고 먼저 놓기로 했다. 사마의는 날랜 배를 모아 오군의 수채가 있는 삼강구로 내려간다. 그곳은 오하아몽이라 불리던 여몽이 지킨다.',
+    history:[
+      '208년, 역사에서 강동은 불로 조조를 막았다. 주유와 정보가 이끈 삼만의 수군이 적벽에서 조조의 함대를 불태웠다.',
+      '이 길의 사마의는 불을 기다리지 않고 먼저 놓기로 했다. 날랜 배를 모아 오군의 수채가 있는 삼강구로 내려간다.',
+      '그곳은 훗날 괄목상대의 고사를 남길 여몽이 지킨다. 수채를 태우면 강동이 위에게 쓰려던 불이 강동으로 돌아간다.',
+    ],
     scenes:[
       {place:'삼강구 · 오군 수채 앞',art:7,cast:[{name:'사마의',look:'strategist',at:[30,62],face:'right'},{name:'조진',look:'cavalry',at:[18,56],face:'right'},{name:'채모',look:'infantry'},{name:'여몽',look:'infantry',at:[84,54],face:'left'},{name:'위군 병사',look:'infantry',at:[48,72],face:'right'}],
         steps:[
@@ -1219,6 +1301,11 @@ const CHIBI:Chapters=[
 
   {id:'chibi:boss',year:'208년',title:'적벽의 주유',
     synopsis:'불은 일어나지 않았다. 등 뒤를 잃은 주유가 적벽 남안에 남은 수군을 모두 모았다. 미주랑이라 불린 강동의 대도독이 마지막 칼을 든다. 그를 꺾으면 강동의 문이 열린다.',
+    history:[
+      '208년 겨울, 역사의 주유는 적벽에서 조조를 꺾고 이듬해 강릉까지 빼앗았으나, 210년 서른여섯의 나이로 병사했다.',
+      '이 길에서 불은 일어나지 않았다. 등 뒤를 잃은 주유가 적벽 남안에 남은 수군을 모두 모았다.',
+      '미주랑이라 불린 강동의 대도독을 꺾으면 강동의 문이 열리고, 천하의 셋 가운데 둘이 한 사람의 것이 된다.',
+    ],
     scenes:[
       {place:'적벽 남안 · 붉은 절벽 아래',art:7,cast:[{name:'사마의',look:'strategist',at:[30,62],face:'right'},{name:'조조',look:'civil',at:[16,56],face:'right'},{name:'조진',look:'cavalry',at:[44,58],face:'right'},{name:'주유',look:'strategist',at:[84,50],face:'left'},{name:'오군 병사',look:'crossbow',at:[72,66],face:'left'}],
         steps:[
@@ -1303,6 +1390,11 @@ const CHIBI:Chapters=[
 const HEIR:Chapters=[
   {id:'IF2-hr-1',year:'219년',title:'정군산',
     synopsis:'적벽 대신 업성을 고른 사마의는 조비를 세자로 굳히고 세자의 스승이 되었다. 그 공으로 한중을 맡은 그의 앞에, 노장 황충이 정군산 꼭대기에 올랐다. 하후연이 쓰러졌어야 할 그 산을, 이번에는 사마의가 먼저 오른다.',
+    history:[
+      '219년 정월, 한중을 다투던 유비의 노장 황충이 정군산에서 하후연을 베었다. 위는 한중을 잃었고, 유비는 그해 한중왕에 올랐다.',
+      '이 길의 사마의는 적벽 대신 업성을 골랐다. 적벽의 불은 역사대로 일어났지만, 그 사이 그는 조비를 세자로 굳히고 세자의 스승이 되었다.',
+      '그 공으로 한중을 맡은 그의 앞에 황충이 정군산 꼭대기에 올랐다. 하후연이 쓰러졌어야 할 그 산을 이번에는 사마의가 먼저 오른다.',
+    ],
     scenes:[
       {place:'업성 · 동궁의 서재',art:12,cast:[{name:'사마의',look:'strategist',at:[34,62],face:'right'},{name:'조비',look:'civil',at:[56,56],face:'left'},{name:'전령',look:'infantry'}],
         steps:[
@@ -1390,6 +1482,11 @@ const HEIR:Chapters=[
 
   {id:'IF2-hr-2',year:'219년',title:'한수의 빈 진채',
     synopsis:'한수 가에 조운이 진채의 문을 활짝 열어 두었다. 공성계인가, 함정인가. 군사들이 머뭇거리는 사이 사마의는 문 안으로 군을 들이기로 한다. 다만 그 다음 걸음은 아직 정하지 않았다.',
+    history:[
+      '219년, 역사의 조조는 몸소 한중으로 왔으나 한수 가에서 조운의 빈 진채에 놀라 물러났다. 유비는 조운을 두고 온몸이 담이라 칭송했다.',
+      '이 길에서 사마의는 정군산을 먼저 차지했다. 그리고 한수 가에서 같은 열린 문을 마주했다.',
+      '공성계인가, 함정인가. 군사들이 머뭇거리는 사이 그는 문 안으로 군을 들이기로 한다. 다음 걸음은 아직 정하지 않았다.',
+    ],
     scenes:[
       {place:'한수 · 문 열린 진채 앞',art:15,cast:[{name:'사마의',look:'strategist',at:[30,62],face:'right'},{name:'서황',look:'heavy',at:[16,56],face:'right'},{name:'조진',look:'cavalry',at:[44,58],face:'right'},{name:'조운',look:'heavy',at:[84,54],face:'left'},{name:'위군 병사',look:'infantry',at:[60,72],face:'right'}],
         steps:[
@@ -1462,6 +1559,11 @@ const HEIR:Chapters=[
 
   {id:'IF2-hr-3',year:'219년',title:'양평관',
     synopsis:'한중의 관문 양평관을 위연이 지킨다. 반골이라 불리지만 그 용맹만은 유비도 아끼는 장수다. 관을 넘으면 유비의 본진이다.',
+    history:[
+      '219년, 역사의 조조는 한중을 계륵이라 부르며 군을 거두었고, 유비는 한중왕에 올라 위연을 한중태수로 삼았다.',
+      '이 길에서 위군은 물러나지 않았다. 사마의는 한중의 관문 양평관 앞까지 군을 밀고 나아갔다.',
+      '관을 지키는 자는 반골이라 불리지만 그 용맹만은 유비도 아끼는 위연이다. 관을 넘으면 유비의 본진이다.',
+    ],
     scenes:[
       {place:'양평관 · 관 아래',art:17,cast:[{name:'사마의',look:'strategist',at:[32,62],face:'right'},{name:'조진',look:'cavalry',at:[18,56],face:'right'},{name:'곽회',look:'archer',at:[46,60],face:'right'},{name:'위연',look:'infantry',at:[84,46],face:'left'},{name:'위군 병사',look:'infantry',at:[60,72],face:'right'}],
         steps:[
@@ -1531,6 +1633,11 @@ const HEIR:Chapters=[
 
   {id:'IF2-hr-micang',year:'219년',title:'미창 산길',
     synopsis:'양평관을 두고 미창산 샛길로 돌았다. 좁은 산길 끝에서 서량의 금마초가 기다린다. 아비와 일족을 조조에게 잃은 사내다. 그의 창끝에는 원한이 서려 있다.',
+    history:[
+      '219년, 역사의 한중 싸움은 유비의 승리로 끝났다. 아비와 일족을 조조에게 잃은 서량의 마초도 그때 유비의 장수로 곁에 있었다.',
+      '이 길의 사마의는 굳게 닫힌 양평관을 두고 미창산 샛길로 돌았다. 관의 등 뒤를 노리는 길이다.',
+      '좁은 산길 끝에서 금마초가 흰 갑옷의 기병을 이끌고 기다린다. 그의 창끝에는 원한이 서려 있다.',
+    ],
     scenes:[
       {place:'미창산 · 좁은 골짜기',art:4,cast:[{name:'사마의',look:'strategist',at:[30,62],face:'right'},{name:'조진',look:'cavalry',at:[16,56],face:'right'},{name:'곽회',look:'archer',at:[44,60],face:'right'},{name:'마초',look:'cavalry',at:[84,52],face:'left'},{name:'서량 기병',look:'horseArcher',at:[72,64],face:'left'}],
         steps:[
@@ -1600,6 +1707,11 @@ const HEIR:Chapters=[
 
   {id:'heir:boss',year:'219년',title:'면수의 한중왕',
     synopsis:'유비가 몸소 면수 남쪽에 본진을 펼쳤다. 곁에는 꾀주머니 법정이 있다. 한중을 지키면 세자 조비의 자리도, 세자의 스승의 자리도 굳어진다.',
+    history:[
+      '219년 가을, 역사에서 유비는 한중을 차지하고 면양에서 한중왕에 올랐다. 촉한의 기세가 가장 높았던 때였다.',
+      '이 길에서 한중은 아직 유비의 것이 아니다. 유비는 꾀주머니 법정을 곁에 두고 몸소 면수 남쪽에 본진을 펼쳤다.',
+      '한중을 지키면 세자 조비의 자리도, 세자의 스승 사마의의 자리도 굳어진다.',
+    ],
     scenes:[
       {place:'한중 · 면수 북안의 군막',art:14,cast:[{name:'사마의',look:'strategist',at:[32,62],face:'right'},{name:'조진',look:'cavalry',at:[18,56],face:'right'},{name:'곽회',look:'archer',at:[50,58],face:'left'},{name:'하후연',look:'cavalry'},{name:'전령',look:'infantry'}],
         steps:[
@@ -1686,6 +1798,11 @@ const HEIR:Chapters=[
 const HEBEI:Chapters=[
   {id:'IF2-hb-1',year:'203년',title:'허창 외곽',
     synopsis:'사마의는 원상을 후계로 세우고 원담에게는 청주와 대장군의 인수를 주어 달랬다. 하나로 묶인 하북이 남쪽 허창으로 내려간다. 외눈의 하후돈이 허창 앞에 마지막 방벽을 쳤다.',
+    history:[
+      '203년, 역사의 하북은 원담과 원상 형제의 다툼으로 갈라졌다. 원상에게 밀린 원담은 오히려 조조에게 원군을 청했다.',
+      '이 길에서는 관도를 이긴 원소가 죽자, 사마의가 원상을 후계로 세우고 원담에게 청주와 대장군의 인수를 주어 달랬다.',
+      '하나로 묶인 하북이 남쪽 허창으로 내려간다. 외눈의 하후돈이 허창 앞에 마지막 방벽을 쳤다.',
+    ],
     scenes:[
       {place:'업성 · 원소의 영전',art:5,cast:[{name:'사마의',look:'strategist',at:[32,62],face:'right'},{name:'원상',look:'cavalry',at:[56,56],face:'left'},{name:'원담',look:'infantry'}],
         steps:[
@@ -1774,6 +1891,11 @@ const HEBEI:Chapters=[
 
   {id:'IF2-hb-2',year:'204년',title:'완성 공략',
     synopsis:'허창으로 가는 원군은 남쪽 완성에서 올라온다. 완성은 조조의 사촌 조인이 지킨다. 그런데 완성 성 안에서, 언제나 살아남는 쪽을 고르던 늙은 책사 가후가 밀서를 보내왔다.',
+    history:[
+      '204년, 역사에서 조조는 업성을 물에 잠기게 해 함락하고 하북의 주인이 되었다. 그 막하에는 장수와 함께 항복해 온 책사 가후가 있었다.',
+      '이 길에서는 하북의 대군이 허창을 조여 간다. 허창으로 가는 원군은 남쪽 완성에서 올라오고, 그 성은 조조의 사촌 조인이 지킨다.',
+      '그런데 완성 성 안에서, 언제나 살아남는 쪽을 고르던 늙은 책사 가후가 밀서를 보내왔다.',
+    ],
     scenes:[
       {place:'완성 · 성벽 아래',art:8,cast:[{name:'사마의',look:'strategist',at:[30,62],face:'right'},{name:'문추',look:'cavalry',at:[16,56],face:'right'},{name:'곽회',look:'archer',at:[44,60],face:'right'},{name:'조인',look:'heavy',at:[84,44],face:'left'},{name:'밀사',look:'civil'}],
         steps:[
@@ -1847,6 +1969,11 @@ const HEBEI:Chapters=[
 
   {id:'IF2-hb-3',year:'205년',title:'신야의 객장',
     synopsis:'형주 유표에게 몸을 의탁한 유비가 신야에서 남쪽 길을 막는다. 관도에서 원소의 객장이던 그가, 이번에는 하북의 대군 앞에 선 객장이다. 그 곁에는 단복이라 이름을 바꾼 선비 서서가 있다.',
+    history:[
+      '205년 무렵, 역사의 유비는 형주의 유표에게 몸을 맡기고 신야에 머물렀다. 관도에서 원소의 객장이었다가 여남을 거쳐 남쪽으로 내려온 처지였다.',
+      '이 길에서 하북의 대군은 허창을 지나 형주의 문턱까지 닿았다. 신야의 유비가 그 남쪽 길을 막아선다.',
+      '관도에서 원소의 객장이던 그가 이번에는 하북의 적이다. 그 곁에는 단복이라 이름을 바꾼 선비 서서가 있다.',
+    ],
     scenes:[
       {place:'신야 · 백하 강둑',art:15,cast:[{name:'사마의',look:'strategist',at:[30,62],face:'right'},{name:'장합',look:'spear',at:[16,56],face:'right'},{name:'유비',look:'infantry',at:[82,52],face:'left'},{name:'서서',look:'civil'},{name:'하북 병사',look:'infantry',at:[50,72],face:'right'}],
         steps:[
@@ -1928,6 +2055,11 @@ const HEBEI:Chapters=[
 
   {id:'IF2-hb-runan',year:'205년',title:'여남 평정',
     synopsis:'허창의 동남쪽 여남은 조조의 군량 창고다. 작은 체구에 담이 큰 악진이 그 길을 지킨다. 여남을 쥐면 허창은 바다 위의 외딴 섬이 된다.',
+    history:[
+      '205년, 역사의 여남은 조조가 다스리는 땅이었다. 관도 때 유비가 여남의 황건 잔당과 손잡고 조조의 뒤를 흔든 곳이기도 하다.',
+      '이 길에서 사마의는 신야 대신 허창 동남쪽의 여남을 노렸다. 그곳의 창고에는 허창 군민이 한 해를 버틸 곡식이 쌓여 있다.',
+      '작은 체구에 담이 큰 악진이 그 길을 지킨다. 여남을 쥐면 허창은 바다 위의 외딴 섬이 된다.',
+    ],
     scenes:[
       {place:'여남 · 군량 창고 앞',art:9,cast:[{name:'사마의',look:'strategist',at:[30,62],face:'right'},{name:'문추',look:'cavalry',at:[16,56],face:'right'},{name:'곽회',look:'archer',at:[44,60],face:'right'},{name:'악진',look:'infantry',at:[84,54],face:'left'},{name:'위군 병사',look:'infantry',at:[70,68],face:'left'}],
         steps:[
@@ -1998,6 +2130,11 @@ const HEBEI:Chapters=[
 
   {id:'hebei:boss',year:'206년',title:'허창의 왕좌지재',
     synopsis:'조조는 서쪽으로 빠져나갔고, 허창에는 순욱이 남았다. 왕을 도울 재목이라 불린 사람, 한실의 신하로 남겠다는 사람이다. 허창의 성문을 열면 천자가 하북의 손에 들어온다.',
+    history:[
+      '206년, 역사의 조조는 고간의 병주를 평정하고 하북을 거의 다 손에 넣었다. 허창의 조정은 순욱이 지키고 있었다.',
+      '이 길에서는 하북의 대군이 허창을 에워쌌다. 조조는 서쪽으로 빠져나갔고, 성에는 순욱이 남았다.',
+      '왕을 도울 재목이라 불린 그는 한실의 신하로 남겠다는 사람이다. 허창의 성문이 열리면 천자가 하북의 손에 들어온다.',
+    ],
     scenes:[
       {place:'허창 · 닫힌 성문 앞',art:8,cast:[{name:'사마의',look:'strategist',at:[30,62],face:'right'},{name:'원상',look:'cavalry',at:[16,56],face:'right'},{name:'장합',look:'spear',at:[44,58],face:'right'},{name:'순욱',look:'civil',at:[82,40],face:'left'},{name:'문추',look:'cavalry'}],
         steps:[
@@ -2082,6 +2219,11 @@ const HEBEI:Chapters=[
 const INDEPENDENT:Chapters=[
   {id:'IF2-in-1',year:'202년',title:'온현 수비',
     synopsis:'원소가 죽은 밤, 사마의는 원씨 형제를 버리고 고향 하내 온현으로 돌아와 사마씨의 깃발을 세웠다. 원씨의 장수 고람이 배신자를 벌하러 온현으로 온다. 고향의 성벽이 첫 시험대다.',
+    history:[
+      '202년, 역사의 원소는 관도에서 진 지 두 해 만에 병사했다. 이 길의 원소는 관도를 이겼으나 같은 해 같은 병으로 눈을 감았다.',
+      '역사의 사마의는 이 무렵 하내에 머물며 조조의 부름을 피하고 있었다. 이 길의 사마의는 원씨 형제를 버리고 고향 온현에 사마씨의 깃발을 세웠다.',
+      '원씨의 장수 고람이 배신자를 벌하러 온현으로 온다. 고향의 성벽이 사마씨의 첫 시험대다.',
+    ],
     scenes:[
       {place:'하내 온현 · 사마가의 뜰',art:0,cast:[{name:'사마의',look:'strategist',at:[34,62],face:'right'},{name:'사마방',look:'civil',at:[62,54],face:'left'},{name:'사마랑',look:'civil',at:[20,58],face:'right'},{name:'사마부',look:'civil'}],
         steps:[
@@ -2170,6 +2312,11 @@ const INDEPENDENT:Chapters=[
 
   {id:'IF2-in-2',year:'203년',title:'장합의 귀순',
     synopsis:'원담과 원상 모두에게 의심받던 장합이 원씨를 떠났다. 갈 곳을 찾던 그가 하내의 경계에 창을 들고 섰다. "그대가 따를 만한 주인인지, 창으로 묻겠소." 칼로 꺾어야 그가 따른다.',
+    history:[
+      '203년, 역사의 장합은 이미 관도에서 조조에게 항복해 그 휘하의 명장이 되어 있었다. 하북에서는 원씨 형제가 서로 칼을 겨누었다.',
+      '이 길에서 장합은 원씨에 남았으나, 원담과 원상 모두에게 의심받다 끝내 업성을 떠났다.',
+      '갈 곳을 찾던 그가 하내의 경계에 창을 들고 섰다. 따를 만한 주인인지를 창으로 묻는 그를, 칼로 꺾어야 얻는다.',
+    ],
     scenes:[
       {place:'하내 경계 · 숲길',art:11,cast:[{name:'사마의',look:'strategist',at:[30,62],face:'right'},{name:'문추',look:'cavalry',at:[16,56],face:'right'},{name:'곽회',look:'archer'},{name:'장합',look:'spear',at:[82,54],face:'left'}],
         steps:[
@@ -2241,6 +2388,11 @@ const INDEPENDENT:Chapters=[
 
   {id:'IF2-in-3',year:'204년',title:'태항산 길',
     synopsis:'하내에 제3의 깃발이 섰다는 소식에 조조가 움직였다. 질풍 같은 행군으로 이름난 하후연이 태항산을 넘어 하내를 노린다. 산길에서 그를 막아야 한다.',
+    history:[
+      '204년, 역사의 조조는 업성을 함락하고 기주목이 되었다. 하북의 중심이 원씨에게서 조조에게로 넘어간 해다.',
+      '이 길에서는 하내에 제3의 깃발이 섰다는 소식에 조조가 움직였다.',
+      '사흘에 오백 리를 달린다는 하후연의 기병이 태항산을 넘어 하내를 노린다. 산길에서 그를 막아야 사마씨의 깃발이 선다.',
+    ],
     scenes:[
       {place:'태항산 · 굽이진 산길',art:3,cast:[{name:'사마의',look:'strategist',at:[32,62],face:'right'},{name:'장합',look:'spear',at:[18,56],face:'right'},{name:'양준',look:'civil'},{name:'산민',look:'bandit',at:[66,70],face:'left'}],
         steps:[
@@ -2312,6 +2464,11 @@ const INDEPENDENT:Chapters=[
 
   {id:'IF2-in-ford',year:'204년',title:'맹진 나루',
     synopsis:'장합의 창을 받은 뒤, 사마의는 태항산이 아니라 남쪽 맹진 나루로 군을 돌렸다. 조조의 우금이 황하를 건너려 한다. 군령이 엄하기로 이름난 장수다. 나루가 열리면 하내는 사흘을 버티지 못한다.',
+    history:[
+      '204년, 역사의 조조는 업성을 둘러싸고 하북을 삼켜 가고 있었다. 하내는 황하만 건너면 닿는 그 길목이었다.',
+      '이 길에서 장합의 창을 받은 사마의는 태항산이 아니라 남쪽 맹진 나루로 군을 돌렸다.',
+      '군령이 엄하기로 이름난 조조의 우금이 황하를 건너려 한다. 나루가 열리면 하내는 사흘을 버티지 못한다.',
+    ],
     scenes:[
       {place:'맹진 · 황하 나루',art:15,cast:[{name:'사마의',look:'strategist',at:[30,62],face:'right'},{name:'장합',look:'spear',at:[16,56],face:'right'},{name:'곽회',look:'archer',at:[44,60],face:'right'},{name:'우금',look:'spear',at:[84,52],face:'left'},{name:'위군 병사',look:'infantry',at:[70,68],face:'left'}],
         steps:[
@@ -2382,6 +2539,11 @@ const INDEPENDENT:Chapters=[
 
   {id:'independent:boss',year:'205년',title:'심수의 원담',
     synopsis:'아우 원상에게 쫓긴 원소의 장자 원담이 하내를 근거지로 삼으려 남쪽으로 내려왔다. 갈 곳 잃은 장자의 칼은 사납다. 그를 꺾으면 사마씨의 깃발은 원씨와 조조 사이에 홀로 선다.',
+    history:[
+      '205년 정월, 역사의 원담은 남피에서 조조에게 패해 죽었다. 원소의 장자는 끝내 하북을 잇지 못했다.',
+      '이 길에서 원담은 아우 원상에게 쫓겨 남쪽으로 내려왔다. 하내를 새 근거지로 삼으려는 것이다.',
+      '갈 곳 잃은 장자의 칼은 사납다. 그를 꺾으면 사마씨의 깃발은 원씨와 조조 사이에 홀로 선다.',
+    ],
     scenes:[
       {place:'하내 · 심수 강둑',art:15,cast:[{name:'사마의',look:'strategist',at:[30,62],face:'right'},{name:'장합',look:'spear',at:[44,58],face:'right'},{name:'문추',look:'cavalry',at:[16,56],face:'right'},{name:'원담',look:'infantry',at:[84,52],face:'left'},{name:'사자',look:'cavalry'}],
         steps:[

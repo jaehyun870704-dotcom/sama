@@ -34,6 +34,9 @@ describe('장소 이름에 맞는 배경',()=>{
   expect(kindFor(16,'건업 · 무너진 성문')).toBe('gatehouse');
   expect(kindFor(12,'허창 · 유수의 집무실')).toBe('hall');
   expect(kindFor(0,'하내 · 사마가의 뜰')).toBe('court');
+  expect(kindFor(5,'허창 · 천자를 알현하다')).toBe('throne');
+  expect(kindFor(16,'허창 앞 · 양군이 맞선 들판')).toBe('battlefield');
+  expect(kindFor(12,'낙양 · 병을 핑계로 누운 집')).toBe('home');
  });
  it('is not fooled by region names and falls back to the backdrop number',()=>{
   expect(kindFor(7,'맹진 · 물러가는 배들')).toBe('deck');
