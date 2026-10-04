@@ -13,7 +13,7 @@ export const W=1280,H=640;
 const TW=80,TH=40,OX=640,OY=40,N=22;
 const pt=(c:number,r:number):[number,number]=>[OX+(c-r)*TW/2,OY+(c+r)*TH/2];
 
-type Kind='hall'|'palace'|'study'|'corridor'|'tent'|'store'|'court'|'gatehouse'|'camp'|'field'|'hill'|'valley'|'forest'|'river'|'bank'|'wall'|'fort'|'fire';
+type Kind='hall'|'palace'|'study'|'corridor'|'tent'|'store'|'court'|'gatehouse'|'camp'|'field'|'hill'|'valley'|'forest'|'river'|'bank'|'wall'|'fort'|'fire'|'deck'|'town';
 /** 이야기 배경 번호(0~17, scenario-types.ts Scene.art) → 장면 종류. */
 const KIND:Record<number,Kind>={0:'court',1:'fire',2:'gatehouse',3:'hill',4:'valley',5:'palace',6:'camp',7:'river',8:'wall',9:'store',10:'court',11:'forest',12:'study',13:'corridor',14:'tent',15:'bank',16:'camp',17:'fort'};
 const INDOOR=new Set<Kind>(['hall','palace','study','corridor','tent','store']);
@@ -37,8 +37,40 @@ const shade=(hex:string,k:number)=>{const n=parseInt(hex.slice(1),16),f=(v:numbe
 const jitter=(hex:string,R:()=>number,amt=0.08)=>shade(hex,1-amt+R()*amt*2);
 
 const cache=new Map<string,IsoScene>();
+/**
+ * 장소 이름이 말하는 곳을 먼저 따른다(배경 번호는 대본을 쓸 때 고른 대략의 그림이라 장소와 어긋날 수 있다).
+ * '지역 · 자세한 곳'의 자세한 곳을 본다(지역 이름의 '진'·'문' 같은 글자에 속지 않게). 말이 없으면 배경 번호.
+ */
+const PLACE_RULES:Array<[RegExp,Kind]>=[
+  [/군막|막사|장막|군의|천막/,'tent'],
+  [/서재|서고|서방|글방/,'study'],
+  [/회랑|복도/,'corridor'],
+  [/창고|곳간|무기고|군량고|병기고/,'store'],
+  [/누선|배 위|갑판|선단|함선|전선 위|배들|뱃머리|선상/,'deck'],
+  [/불타|불길|불탄 (?!부교)|화공|잿더미|타오르|타고 남은/,'fire'],
+  [/침전|침소|내실|규방|병상|누운|방 안|안방|객사|빈소|사당|관청|부중|사공부|의정|중서성(?! 뒤뜰)|집무|초막|오두막|암자|객관|실$|방$/,'hall'],
+  [/(전|궁) 앞|뒤뜰|앞뜰|바깥뜰|앞마당|뜰|마당|정원|후원/,'court'],
+  [/조회|궁정|대전|어전|정전|궁중|조정|왕좌|옥좌|궁 안/,'palace'],
+  [/진영|군영|본진|야영|영채|진채|주둔|집결/,'camp'],
+  [/궁문|성문|관문|문 밖|문 앞|[남북동서]문/,'gatehouse'],
+  [/성루|성벽|성 위|성가퀴|망루|성곽/,'wall'],
+  [/요새|보루|관$|산성/,'fort'],
+  [/강둑|강가|강변|나루|물가|포구|기슭|남안|북안|샘|해안|바닷가|호숫가/,'bank'],
+  [/강$|강 위|물길|여울|부교|하구|강물|장강|수로|호수/,'river'],
+  [/숲|수풀|대숲|숲길/,'forest'],
+  [/골짜기|계곡|협곡|협석|벼랑|절벽|곡$|곡 |어귀/,'valley'],
+  [/산|고개|능선|언덕|봉우리|령$|비탈/,'hill'],
+  [/거리|저자|시장|성안|마을|촌$|읍|도성/,'town'],
+  [/들$|들판|평원|벌판|초원|길$|가도|길목/,'field'],
+  [/저택|의 집|집$|사마가|대문/,'court'],
+];
+export function kindFor(art:number,place:string):Kind{
+  const parts=place.split('·').map(p=>p.trim()),detail=parts.at(-1)??'';
+  for(const [re,k] of PLACE_RULES)if(re.test(detail))return k;
+  return KIND[art]??'field';
+}
 export function isoScene(art:number,place:string):IsoScene{
-  const kind=KIND[art]??'field',key=`${kind}:${place}`;
+  const kind=kindFor(art,place),key=`${kind}:${place}`;
   const hit=cache.get(key);if(hit)return hit;
   const scene=build(kind,hash(place)+art*7919);cache.set(key,scene);return scene;
 }
@@ -215,6 +247,18 @@ function boat(c:number,r:number):Prop{return P(c,r,3,1,g=>{
   poly(g,rim,'#7a5230','#1a0e06');poly(g,rim.map(([x,y]):[number,number]=>[x+(OX-x)*0+0,y+4]).slice(1,5),'rgba(0,0,0,.18)');
   prism(g,c+1.2,r+0.3,0.6,0.4,26,'#8a6a3a',10);const [mx,my]=up(pt(c+1.5,r+0.5),36);g.strokeStyle='#3a2410';g.lineWidth=3;g.beginPath();g.moveTo(mx,my);g.lineTo(mx,my-90);g.stroke();
 },false);}
+function stall(c:number,r:number,R:()=>number,cloth:string):Prop{return P(c,r,2,1,g=>{
+  prism(g,c,r,2,1,26,'#6b4426');for(let i=0;i<5;i++){const [x,y]=up(pt(c+0.3+i*0.35,r+0.5),30);g.fillStyle=['#c9a14a','#9b4a2a','#7a9a4a','#e0d0a0','#b8603a'][Math.floor(R()*5)]!;g.beginPath();g.ellipse(x,y,7,4,0,0,7);g.fill();}
+  for(const [a,b] of [[0,0],[2,0],[0,1],[2,1]] as const){const [x,y]=pt(c+a,r+b);g.strokeStyle='#3a2410';g.lineWidth=2;g.beginPath();g.moveTo(x,y);g.lineTo(x,y-74);g.stroke();}
+  const A=up(pt(c-0.1,r-0.1),74),B=up(pt(c+2.1,r-0.1),74),C=up(pt(c+2.1,r+1.1),64),D=up(pt(c-0.1,r+1.1),64);poly(g,[A,B,C,D],cloth,'#1a0c08');
+  for(let i=1;i<6;i++){const t=i/6,p0=[A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t],p1=[D[0]+(C[0]-D[0])*t,D[1]+(C[1]-D[1])*t];g.strokeStyle='rgba(255,240,210,.35)';g.lineWidth=3;g.beginPath();g.moveTo(p0[0]!,p0[1]!);g.lineTo(p1[0]!,p1[1]!);g.stroke();}
+});}
+function well(c:number,r:number):Prop{return P(c,r,1,1,g=>{prism(g,c,r,1,1,30,'#8e8b82');poly(g,diamond(c+0.15,r+0.15,0.7,0.7).map(p=>up(p,30)),'#1c2a30');const [x,y]=pt(c+0.5,r+0.5);g.strokeStyle='#4a3020';g.lineWidth=3;g.beginPath();g.moveTo(x-30,y-30);g.lineTo(x-30,y-86);g.lineTo(x+30,y-86);g.lineTo(x+30,y-30);g.stroke();});}
+function mast(c:number,r:number):Prop{return P(c,r,0.5,0.5,g=>{
+  const [x,y]=pt(c+0.25,r+0.25);g.strokeStyle='#4a2c14';g.lineWidth=8;g.beginPath();g.moveTo(x,y);g.lineTo(x,y-330);g.stroke();
+  poly(g,[[x-90,y-300],[x+90,y-290],[x+80,y-120],[x-80,y-130]],'#e6dcc0','#5a4a30');g.strokeStyle='rgba(120,90,50,.5)';g.lineWidth=2;for(let i=1;i<5;i++){g.beginPath();g.moveTo(x-88+i*0.5,y-300+i*36);g.lineTo(x+88-i*2,y-290+i*36);g.stroke();}
+  g.strokeStyle='rgba(40,30,20,.6)';g.lineWidth=1.5;g.beginPath();g.moveTo(x,y-330);g.lineTo(x-260,y+40);g.moveTo(x,y-330);g.lineTo(x+260,y+20);g.stroke();
+});}
 /** 가장자리를 따라 선 담·목책·성벽(r=0 또는 c=0 줄). */
 function edgeWall(g:Ctx,side:'left'|'right',from:number,to:number,h:number,col:string,crenel:boolean,roof?:string){
   for(let t=from;t<to;t+=1){const c=side==='right'?t:-0.6,r=side==='right'?-0.6:t;prism(g,c,r,side==='right'?1:0.6,side==='right'?0.6:1,h,col);
@@ -240,7 +284,7 @@ function build(kind:Kind,seed:number):IsoScene{
   const R=rng(seed),indoor=INDOOR.has(kind);
   const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;
   const g=canvas.getContext('2d')!;
-  const floor:Floor=kind==='palace'||kind==='corridor'?'stone':kind==='tent'?'mat':kind==='store'?'wood':indoor?'wood':kind==='court'||kind==='gatehouse'||kind==='wall'||kind==='fort'||kind==='fire'?'paving':kind==='bank'?'sand':kind==='valley'||kind==='camp'?'dirt':'grass';
+  const floor:Floor=kind==='palace'||kind==='corridor'?'stone':kind==='tent'?'mat':kind==='store'?'wood':indoor?'wood':kind==='court'||kind==='gatehouse'||kind==='wall'||kind==='fort'||kind==='fire'||kind==='town'?'paving':kind==='deck'?'wood':kind==='bank'?'sand':kind==='valley'||kind==='camp'?'dirt':'grass';
   const props:Prop[]=[],waterCells=new Set<string>();
   const add=(p:Prop)=>props.push(p);
   // 소품 배치: 대본의 사람들은 대개 화면 가운데 아래에 서므로, 무거운 소품은 뒤쪽 가장자리에.
@@ -270,6 +314,13 @@ function build(kind:Kind,seed:number):IsoScene{
     case 'fire':
       add(crate(5,9,0.8));add(rock(9,6,R,0.6));
       break;
+    case 'town':
+      add(stall(1.2,7,R,'#9b2a1c'));add(stall(7,1.2,R,'#2a5a8a'));add(well(9.5,9.5));add(crate(4,10.5,0.8));add(sacks(10.5,4,R));add(banner(5,0.8,'#8a1f1a'));
+      break;
+    case 'deck':
+      for(let c=-14;c<N+8;c++)for(let r=-14;r<N+8;r++)if(!(c>=0&&c<=15&&r>=3&&r<=11))waterCells.add(`${c},${r}`);
+      add(mast(6,6.6));add(crate(1,4,0.8));add(crate(1,5,0.8));add(sacks(13,4,R));add(rack(10,3.1,2));
+      break;
     case 'river':case 'bank':
       for(let c=-8;c<N+8;c++)for(let r=-8;r<N+8;r++){const band=kind==='river'?(r-c>=-1&&r-c<=3):(c+r>=4&&c+r<=7);if(band)waterCells.add(`${c},${r}`);}
       add(tree(12,1,R,false,0.9));add(rock(2,10,R,0.8));
@@ -297,9 +348,12 @@ function build(kind:Kind,seed:number):IsoScene{
   if(kind==='gatehouse'||kind==='wall'||kind==='fort'){const h=kind==='fort'?200:170;edgeWall(g,'left',0,N,h,'#8a857a',true);edgeWall(g,'right',0,N,h,'#8a857a',true);
     if(kind==='gatehouse'){const a=up(pt(6,0),0),b=up(pt(9,0),0);poly(g,[[a[0],a[1]],[b[0],b[1]],[b[0],b[1]-110],[a[0],a[1]-110]],'#2a1a10','#120a06',2);hallFacade(g,5.6,-2.4,4,2,'#7a3a26');}}
   if(kind==='camp'){palisade(g,'left',0,N);palisade(g,'right',0,N);}
+  if(kind==='town'){hallFacade(g,0.4,-2.2,4,2,'#b8a78a');hallFacade(g,5.4,-2.4,3,2,'#a89878');hallFacade(g,-2.2,0.6,2,4,'#b0a084');hallFacade(g,-2.4,5.6,2,3,'#a89878');hallFacade(g,10,-2.2,4,2,'#b8a78a');}
+  if(kind==='deck'){for(let c=0;c<=15;c++){prism(g,c,2.85,1,0.15,18,'#5a3a1e');}for(let r=3;r<=11;r++)prism(g,-0.15,r,0.15,1,18,'#5a3a1e');}
   if(kind==='fire'){burningHouse(g,0.6,0.6,R);burningHouse(g,5,-0.6,R);burningHouse(g,-0.6,5,R);burningHouse(g,10,-0.6,R);}
   // 소품을 깊이 순서로(뒤 → 앞)
   props.sort((a,b)=>(a.c+a.r+(a.w+a.d)/2)-(b.c+b.r+(b.w+b.d)/2)).forEach(p=>p.draw(g));
+  if(kind==='deck'){for(let c=0;c<=15;c++)prism(g,c,12,1,0.15,18,'#5a3a1e');for(let r=3;r<=11;r++)prism(g,16,r,0.15,1,18,'#5a3a1e');}
   // 빛과 공기
   const vg=g.createRadialGradient(W/2,H*0.6,H*0.3,W/2,H*0.6,H*0.95);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,indoor?'rgba(10,6,2,.55)':'rgba(5,10,5,.35)');g.fillStyle=vg;g.fillRect(0,0,W,H);
   if(kind==='fire'){g.fillStyle='rgba(120,30,10,.18)';g.fillRect(0,0,W,H);for(let i=0;i<6;i++){g.fillStyle='rgba(30,25,25,.25)';g.beginPath();g.ellipse(R()*W,R()*H*0.4,120,50,0,0,7);g.fill();}}
@@ -348,4 +402,4 @@ export function offscreenCell(cell:Cell,side:'left'|'right'):Cell{
 }
 
 /** 목록 썸네일·정비 화면 배경용(장소 이름 없이 종류별로 한 장). */
-export function isoBackdrop(art:number){return `background-image:url(${isoScene(art,'').url});background-size:cover;background-position:center 70%`;}
+export function isoBackdrop(art:number,place=''){return `background-image:url(${isoScene(art,place).url});background-size:cover;background-position:center 70%`;}
