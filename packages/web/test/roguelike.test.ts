@@ -44,13 +44,13 @@ describe('천명의 원정 · 규칙',()=>{
   const run=fresh();expect(recruit(run,'archer',9)).toBe(true);expect(run.party.at(-1)!.unitClass).toBe('longbow');
   while(run.party.length<PARTY_LIMIT)recruit(run,'spearman',2);expect(recruit(run,'spearman',2)).toBe(false);
  });
- it('removes fallen units for good, carries wounds, and offers a reward after a win',()=>{
+ it('brings fallen units back badly wounded instead of losing them, carries wounds, and offers a reward after a win',()=>{
   const run=fresh(),lost=run.party[1]!.id;
   const survivors:Record<string,number>={};for(const u of run.party)if(u.id!==lost)survivors[u.id]=.5;
   finishBattle(run,{kind:'battle',label:'',detail:''},true,survivors);
-  expect(run.party.some(u=>u.id===lost)).toBe(false);expect(run.fallen).toHaveLength(1);
-  expect(run.party.every(u=>u.hp===.5)).toBe(true);expect(run.status).toBe('reward');expect(run.offer).toHaveLength(3);
-  takeReward(run,1);expect(run.party.every(u=>u.hp===.9)).toBe(true);expect(run.floor).toBe(2);expect(run.status).toBe('map');
+  expect(run.party.find(u=>u.id===lost)!.hp).toBe(.25);expect(run.fallen).toHaveLength(0);
+  expect(run.party.filter(u=>u.id!==lost).every(u=>u.hp===.5)).toBe(true);expect(run.status).toBe('reward');expect(run.offer).toHaveLength(3);
+  takeReward(run,1);expect(run.party.filter(u=>u.id!==lost).every(u=>u.hp===.9)).toBe(true);expect(run.floor).toBe(2);expect(run.status).toBe('map');
  });
  it('ends the run when Sima Yi falls, and heals fully after a boss',()=>{
   const lost=fresh();finishBattle(lost,{kind:'battle',label:'',detail:''},false,{});expect(lost.status).toBe('lost');

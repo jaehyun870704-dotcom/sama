@@ -143,12 +143,12 @@ describe('본편은 로그라이크: 회차·행군로·영구 이탈·천명',(
   expect(new Set(a.map(n=>n.kind)).size).toBe(3);
   finishMarch(s,'S1-01');expect(pendingMarch(s)).toBeUndefined();expect(s.run!.nodes).toBe(1);
  });
- it('loses fallen officers for the rest of the run and keeps the wounded wounded',()=>{
+ it('brings fallen officers back badly wounded (never lost) and keeps the wounded wounded',()=>{
   const s=newScenarioRun(1,5,[],3);const party=[{id:'sima_yi',name:'사마의',unitClass:'strategist' as const,level:3,xp:0,hp:1,hero:true as const},{id:'of1',name:'조진',unitClass:'cavalry' as const,level:2,xp:0,hp:1,officer:true as const},{id:'of2',name:'사마랑',unitClass:'physician' as const,level:2,xp:0,hp:1,officer:true as const}];
-  const lost=afterFight(s,party,{사마의:.5,사마랑:1},'시험');expect(lost).toEqual(['조진']);expect(s.officers['조진']).toBeUndefined();expect(s.run!.hp['사마의']).toBe(.5);
-  expect(recruitPool(s).some(o=>o.name==='조진')).toBe(false);expect(recruitOfficer(s,'조진',3)).toBe(false);
-  healAll(s,1);expect(s.run!.hp['사마의']).toBeUndefined();
+  const lost=afterFight(s,party,{사마의:.5,사마랑:1},'시험');expect(lost).toEqual(['조진']);expect(s.officers['조진']).toBeDefined();expect(s.run!.hp['조진']).toBe(.25);expect(s.run!.hp['사마의']).toBe(.5);
+  healAll(s,1);expect(s.run!.hp['사마의']).toBeUndefined();expect(s.run!.hp['조진']).toBeUndefined();
  });
+
  it('ends the run on defeat unless the guard is left, and pays mandate for chapters, bosses, marches and the ending',()=>{
   const s=newScenarioRun(1,5,['second_chance'],1);expect(loseFight(s)).toBe(true);expect(s.run!.hp['사마의']).toBe(.3);expect(loseFight(s)).toBe(false);expect(s.run!.status).toBe('over');
   const t=newScenarioRun(1,5,[],1);for(const id of ['S1-01','S1-02'])finishStep(t,id);finishMarch(t,'S1-01');expect(runMandate(t)).toBe(2*2+1);

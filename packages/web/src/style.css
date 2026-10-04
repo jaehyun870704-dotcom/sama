@@ -452,3 +452,10 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
 .march-screen .march-recruit{border-left-color:#5a8ac0}.march-screen .march-rest{border-left-color:#5aa070}
 .march-screen .march-treasure{border-left-color:#d8b04a}.march-screen .march-training{border-left-color:#9a7ad0}
 .unlock-list button[disabled]{opacity:.55}
+/* 장수 설득: 마음 게이지 */
+.persuade-gauge{display:flex;align-items:center;gap:10px;margin:6px 0 8px;font-size:13px;color:#e8dcc0}
+.persuade-gauge .pg-bar{position:relative;flex:1;height:10px;background:#2a2620;border:1px solid #6a5a3a;border-radius:6px;overflow:visible}
+.persuade-gauge .pg-fill{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#8a3a2a,#d8a040);border-radius:6px;transition:width .5s ease}
+.persuade-gauge.pg-ok .pg-fill{background:linear-gradient(90deg,#3a7a4a,#8ad070)}
+.persuade-gauge .pg-goal{position:absolute;top:-4px;bottom:-4px;width:2px;background:#f3e6c0}
+.persuade-gauge .pg-num{min-width:70px;text-align:right;color:#f3c86a}
