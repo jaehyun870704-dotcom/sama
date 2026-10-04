@@ -4,6 +4,14 @@
 
 제작 도구: 내장 image_gen (CLI/API 대체 경로 사용 없음).
 
+## 대릉 — 완료
+
+파일: `packages/web/public/portraits/dai-ling.png`. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
+
+### 생성 프롬프트
+
+Use case historical-scene. ONE square premium Three Kingdoms officer bust portrait: Dai Ling (대릉), Wei field officer defending Shanggui. Original character design: East Asian man late thirties, narrow long face, straight narrow nose, tightly pursed lips, clean-shaven chin and fine short mustache, observant serious eyes, short black hair under practical charcoal cloth headwrap tied close to skull. Distinguish him from older bearded commanders. Practical dark blue lamellar armor with steel fastenings, pale gray crossed inner collar, burgundy sash at shoulder, no gold finery, no royal hat. Three-quarter view looking slightly left, head fully inside frame with space above, face upper third, shoulders and upper chest visible. Exquisite semi-realistic digital oil painting, restrained brushwork, natural skin and cloth texture, painterly realism matching Sima Yi and Sima Fang game portraits. Warm directional key light and cool soft fill, deep near-black blue smoke background, clear face silhouette readable at small thumbnail scale. Late Han military costume, no fantasy armor, no text, no border, no watermark, no other people, no anime, no vector. One finished square portrait.
+
 ## 장패 — 완료
 
 파일: `packages/web/public/portraits/zang-ba.png`. 거친 수염과 갈색 목도리, 실전 갑옷. 얼굴·복식 육안 확인, manifest 연결.
