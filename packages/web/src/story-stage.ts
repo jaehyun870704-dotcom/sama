@@ -64,6 +64,10 @@ export class Stage {
     this.scene=isoScene(art,place);
     host.innerHTML=`<div class="ss-stage iso"><div class="ss-shade"></div><span class="ss-place">${esc(place)}</span><div class="ss-caption" hidden></div><div class="ss-talk-slot"></div></div><div class="ss-choices"></div>`;
     this.el=host.querySelector<HTMLElement>('.ss-stage')!;this.el.style.backgroundImage=`url(${this.scene.url})`;
+    // 흩날리는 것들(꽃잎·불티·비·눈·반딧불·낙엽·먼지·물안개)
+    if(this.scene.fx){const fx=document.createElement('div');fx.className=`ss-fx fx-${this.scene.fx}`;const n=this.scene.fx==='rain'?70:this.scene.fx==='mist'?6:26;
+      for(let i=0;i<n;i++){const p=document.createElement('i');p.style.cssText=`--x:${(Math.random()*110-5).toFixed(1)}%;--y:${(Math.random()*100).toFixed(1)}%;--d:${(-Math.random()*12).toFixed(2)}s;--s:${(0.6+Math.random()*0.8).toFixed(2)};--t:${(0.8+Math.random()*0.6).toFixed(2)}`;fx.appendChild(p);}
+      this.el.insertBefore(fx,this.el.querySelector('.ss-place'));}
     this.talk=host.querySelector<HTMLElement>('.ss-talk-slot')!;this.caption=host.querySelector<HTMLElement>('.ss-caption')!;this.choices=host.querySelector<HTMLElement>('.ss-choices')!;
     // 대사·해설을 기다리는 중이면 어디를 눌러도(인물·대화창 위라도) 넘어간다. 기다리는 게 없을 때만 인물 누르기가 말 걸기다.
     this.el.addEventListener('click',e=>{if(!this.advance&&(e.target as HTMLElement).closest('.ss-actor.clickable'))return;this.next();});
