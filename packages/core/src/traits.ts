@@ -421,3 +421,11 @@ defineTrait({id:'zhouStrategy',name:'주랑의 계책',description:'책략 공�
 defineTrait({id:'strategyPower',name:'책략 위력',description:'책략 공격 피해가 param% 늘어난다.',hooks:{onAttack(ctx,_s,param){if(ctx.kind==='strategy')ctx.attackMul*=1+param/100;}}});
 defineTrait({id:'physicalPower',name:'무위',description:'물리 공격 피해가 param% 늘어난다.',hooks:{onAttack(ctx,_s,param){if(ctx.kind==='physical')ctx.attackMul*=1+param/100;}}});
 defineTrait({id:'healPower',name:'회복 위력',description:'회복 책략·치유의 회복량이 param% 늘어난다.',hooks:{}});
+// 연구·장수 효과용(param = 백분율 또는 수치). 같은 특성을 여러 곳에서 받으면 param이 더해진다.
+defineTrait({id:'accuracyBoost',name:'정조',description:'명중이 param%p 오른다.',hooks:{onAttack(ctx,_s,param){ctx.accuracyMod+=param;}}});
+defineTrait({id:'evasionBoost',name:'회피',description:'상대의 명중이 param%p 내려간다.',hooks:{onDefend(ctx,_s,param){ctx.accuracyMod-=param;}}});
+defineTrait({id:'regen',name:'재정비',description:'자기 차례 시작에 최대 체력의 param%를 회복한다.',hooks:{onTurnStart(u,param){u.hp=Math.min(u.stats.maxHp,u.hp+Math.max(1,Math.round(u.stats.maxHp*param/100)));}}});
+defineTrait({id:'manaRegen',name:'정심',description:'자기 차례 시작에 MP를 param 회복한다.',hooks:{onTurnStart(u,param){u.mp=Math.min(u.stats.maxMp,u.mp+param);}}});
+defineTrait({id:'chargePower',name:'돌격 숙련',description:'이번 차례에 움직인 뒤 물리 공격하면 피해가 param% 늘어난다.',hooks:{onAttack(ctx,self,param){if(ctx.kind==='physical'&&self.movedThisTurn)ctx.attackMul*=1+param/100;}}});
+defineTrait({id:'rangedPower',name:'원거리 숙련',description:'두 칸 이상 떨어진 적을 물리 공격하면 피해가 param% 늘어난다.',hooks:{onAttack(ctx,_s,param){if(ctx.kind==='physical'&&ctx.distance>=2)ctx.attackMul*=1+param/100;}}});
+defineTrait({id:'meleePower',name:'근접 숙련',description:'붙어 있는 적을 물리 공격하면 피해가 param% 늘어난다.',hooks:{onAttack(ctx,_s,param){if(ctx.kind==='physical'&&ctx.distance===1)ctx.attackMul*=1+param/100;}}});

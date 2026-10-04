@@ -2,6 +2,7 @@ import {repairError,repairAmount,fortifyError,parseCell,buildBarricade,placeBarr
 import {troopStrategies,supportOptions} from './troops.ts';
 import {refBattle,prepareRunBattle,applyBattleMods,applyRelics,taleById,xpFromLog,levelUpInBattle,RUN_FLOORS,PARTY_LIMIT,XP_PER_LEVEL,type XpGain} from './roguelike.ts';
 import {validRoute} from './fate.ts';
+import {applyPerkGrants,validGrants} from './perks.ts';
 import './scenario.ts';
 import {pickExtras} from './sortie.ts';
 import {applyRomance,temperOf} from './romance.ts';
@@ -17,7 +18,7 @@ import retreatMap from '../../data/maps/yangtze-retreat.json';
 import {stageRules,foeEdges} from './stage-rules.ts';
 import {campaignStage,addFortifications,addSiegeCompany,structureKind,encircled,encounterLevels} from './campaign-rules.ts';
 import {applyTreasure,equippedItems,treasureInfo,type Deployment,OFFICERS,treasures} from './progression.ts';
-import { assemble, Battle, CONTROLLABLE, isHostile, key, manhattan, statsFor, familyOf, evolvedClass, evolveUnit, healAmount } from '../../core/src/index.ts';
+import { assemble, Battle, CONTROLLABLE, isHostile, key, manhattan, statsFor, familyOf, evolvedClass, evolveUnit, healAmount, strategyArea } from '../../core/src/index.ts';
 import type { BattleState, Command, Difficulty, MapFile, StageDef, StrategyDef, LogEntry, Unit } from '../../core/src/index.ts';
 import escapeStage from '../../data/stages/S1-02.json';
 import fortStage from '../../data/stages/S1-08.json';
@@ -237,6 +238,8 @@ export class Session {
     if(this.deployment?.scenario&&!this.deployment.run){const sc=this.deployment.scenario;if(sc.relics?.length)applyRelics(state,sc.relics);const h=state.find('sima_yi');if(h&&sc.heroHp!==undefined)h.hp=Math.max(1,Math.round(h.stats.maxHp*sc.heroHp));}
     // 원정의 연의 전장: 사마의는 원정에서 남은 체력으로 나서고, 원정 보물이 본대에 실린다.
     if(this.deployment?.runStory){const r=this.deployment.runStory,h=state.find('sima_yi');if(h)h.hp=Math.max(1,Math.round(h.stats.maxHp*r.heroHp));applyRelics(state,r.relics);}
+    // 연구·장수 효과: 출진할 때 적어 둔 값 그대로(저장 재생도 같게).
+    if(this.deployment?.perks)applyPerkGrants(state,this.deployment.perks);
     this.applyRomanceToNew(state);
     return battle;
   }
@@ -256,7 +259,7 @@ export class Session {
       if(cmd.kind==='move' && key(cmd.to)===key(u.pos)) return {ok:false,error:'다른 칸을 선택해 주세요.'};
       if(cmd.kind==='strategy'){
         const def=s.strategies.get(cmd.strategy);
-        if(!s.map.inBounds(cmd.at) || !def || !s.living().some(e=>def.targetSides.includes(e.side)&&manhattan(e.pos,cmd.at)<=def.radius)) return {ok:false,error:'책략 범위 안에 적이 있어야 합니다.'};
+        if(!s.map.inBounds(cmd.at) || !def || !(()=>{const area=strategyArea(def,cmd.at,s.find(cmd.unit)?.pos);return s.living().some(e=>def.targetSides.includes(e.side)&&area.some(c=>c.x===e.pos.x&&c.y===e.pos.y));})()) return {ok:false,error:'책략 범위 안에 적이 있어야 합니다.'};
       }
     }
     if(this.chapter===6&&cmd.kind==='capture'&&s.find('ma_chao')?.alive)return {ok:false,error:'마초를 먼저 격퇴해야 돌파 구역을 확보할 수 있습니다.'};
@@ -274,13 +277,13 @@ export class Session {
   private execute(cmd:Command){
     const s=this.state;
     if(this.state.outcome!=='ongoing')return {ok:false,error:'이미 종료된 전투입니다.'};
-    if(cmd.kind==='strategy'&&this.deployment?.growth){
+    if(cmd.kind==='strategy'&&(this.deployment?.growth||this.deployment?.run)){
       const def=allStrategies.find(x=>x.id===cmd.strategy),u=s.find(cmd.unit);
       if(def?.support){
         if(!u?.alive||!u.strategies.includes(def.id)||u.mp<def.mpCost||s.hasStatus(u,'seal')||manhattan(u.pos,cmd.at)>def.range)return {ok:false,error:'지원 책략의 습득·MP·사거리를 확인하세요.'};
-        const targets=s.living().filter(t=>t.side!=='enemy'&&manhattan(t.pos,cmd.at)<=def.radius);
+        const area=strategyArea(def,cmd.at,u.pos),targets=s.living().filter(t=>t.side!=='enemy'&&area.some(c=>c.x===t.pos.x&&c.y===t.pos.y));
         if(!targets.length)return {ok:false,error:'지원할 아군을 선택하세요.'};
-        const damage:number[]=[];for(const t of targets){let healed=0;if(def.support==='heal'){healed=Math.min(t.stats.maxHp-t.hp,healAmount(def.power,u.stats.intellect,u.traitParams.healPower??0));t.hp+=healed;}else if(def.support==='cleanse')t.statuses=t.statuses.filter(x=>['guard','haste','rally'].includes(x.kind));else if(['guard','haste','rally'].includes(def.support))s.applyStatus(t,{kind:def.support as 'guard'|'haste'|'rally',turns:3,magnitude:1});damage.push(-healed);}
+        const damage:number[]=[];for(const t of targets){let healed=0;if(def.support==='heal'){healed=Math.min(t.stats.maxHp-t.hp,healAmount(def.power,u.stats.intellect,u.traitParams.healPower??0));t.hp+=healed;}else if(def.support==='cleanse')t.statuses=t.statuses.filter(x=>['guard','haste','rally'].includes(x.kind));else if(def.support==='mana'){const before=t.mp;t.mp=Math.min(t.stats.maxMp,t.mp+def.power);healed=0;void before;}else if(def.support==='valor'){s.applyStatus(t,{kind:'rally',turns:3,magnitude:1});s.applyStatus(t,{kind:'guard',turns:3,magnitude:1});}else if(['guard','haste','rally'].includes(def.support))s.applyStatus(t,{kind:def.support as 'guard'|'haste'|'rally',turns:3,magnitude:1});damage.push(-healed);}
         u.mp-=def.mpCost;s.push({t:'strategy',caster:u.id,strategy:def.id,targets:targets.map(t=>t.id),damage});const result=this.battle.execute({kind:'wait',unit:u.id});this.advanceScenario();return result;
       }
     }
@@ -537,6 +540,7 @@ export class Session {
     if(data.deployment?.mission&&(!expeditions.some(m=>m.id===data.deployment!.mission!.id)||typeof data.deployment.mission.runId!=='string'||data.deployment.mission.runId.length<1||data.chapter!==7||(data.deployment.mission.version!==undefined&&data.deployment.mission.version!==2&&data.deployment.mission.version!==3&&data.deployment.mission.version!==4)))throw new Error('잘못된 외전 기록');
     if(data.deployment?.mission?.balance!==undefined&&data.deployment.mission.balance!==1)throw new Error('지원하지 않는 성장 규칙입니다.');
     if(data.deployment?.mission?.supportClasses&&(!Array.isArray(data.deployment.mission.supportClasses)||data.deployment.mission.supportClasses.length!==2||data.deployment.mission.supportClasses.some(k=>!supportOptions.includes(k))))throw new Error('잘못된 지원 병종');
+    if(data.deployment?.perks!==undefined&&!validGrants(data.deployment.perks))throw new Error('잘못된 연구·장수 효과 기록');
     if(data.deployment?.growth&&Object.values(data.deployment.growth).some(n=>!Number.isSafeInteger(n)||n<0))throw new Error('잘못된 성장 기록');
     const session=new Session(data.chapter,data.difficulty,data.seed,data.preparation,data.revision??2,data.deployment?structuredClone(data.deployment):undefined);
     session.journal=structuredClone(data.journal);session.checkpoints=[...data.checkpoints];session.replay();return session;

@@ -20,7 +20,10 @@ import {temperNames} from './duel.ts';
 import {taleSortieLimit} from './sortie.ts';
 import {classNames} from './troops.ts';
 import {nextEvolutionText,XP_PER_LEVEL,RELICS,survivorsOf,type BattleMods,type RunBattleRef} from './roguelike.ts';
-import {loadMeta,saveMeta,recordStory,buyUnlock,UNLOCKS} from './meta.ts';
+import {loadMeta,saveMeta,recordStory,buyUnlock,UNLOCKS,recordOfficerLevels} from './meta.ts';
+import {xpMult,restMult,mandateBonus,recruitBonus,heroLevelBonus} from './research.ts';
+import {deploymentPerks} from './officer-perks.ts';
+import {showResearch} from './research-ui.ts';
 import {classTactics,evolvedClass,tierOf,familyOf,type BattleState,type UnitClass} from '../../core/src/index.ts';
 import type {ChapterScript,ChoiceEffect,Look,Scene,Camp} from './scenario-types.ts';
 
@@ -252,12 +255,16 @@ export function showIfPrep(host:ScenarioHost,state:ScenarioState,step:ScenarioSt
   document.getElementById('prep-camp')!.onclick=()=>showCampFor(host,step);
   document.getElementById('prep-go')!.onclick=()=>launch(host,state,step,[...required,...get()],difficulty);
 }
+/** 연구·장수 효과를 배치에 적는다(출진 순간의 값). */
+function perksFor(party:ReadonlyArray<{name:string}>){const p=deploymentPerks(loadMeta(),party.map(u=>u.name));return p?{perks:p}:{};}
+/** 전투가 끝나면 장수들이 닿은 레벨을 남긴다(장수 효과의 필요 레벨). */
+function noteLevels(party:ReadonlyArray<{name:string;level:number}>){const m=loadMeta();recordOfficerLevels(m,party);saveMeta(m);}
 function launch(host:ScenarioHost,state:ScenarioState,step:ScenarioStep,picked:string[],difficulty:'normal'|'extreme'){
   const hero=host.hero(),party=scenarioParty(state,hero.level,hero.xp,picked),mods=modsOf(state,step);
   const ref:RunBattleRef={seed:runSeed(state,step.id),floor:floorFor(step,state),kind:step.kind==='boss'?'boss':'tale',party,relics:[],route:{...state.route},
     ...(step.kind==='tale'?{tale:step.id}:{}),...(Object.keys(mods).length?{mods}:{}),enemyBase:enemyBase(state,hero.level,step),scenario:step.id};
   const loadout=host.heroLoadout()?.sima_yi;
-  const deployment:Deployment={levels:{sima_yi:hero.level,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},...(loadout?{loadouts:{sima_yi:loadout}}:{}),run:ref,scenario:{chapter:step.id,...(difficulty==='extreme'?{difficulty:'extreme' as const}:{})}};
+  const deployment:Deployment={levels:{sima_yi:hero.level,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},...(loadout?{loadouts:{sima_yi:loadout}}:{}),run:ref,...perksFor(party),scenario:{chapter:step.id,...(difficulty==='extreme'?{difficulty:'extreme' as const}:{})}};
   host.startBattle(deployment,runSeed(state,step.id),difficulty);
 }
 
@@ -273,12 +280,12 @@ export async function finishIfBattle(host:ScenarioHost,state:BattleState,deploym
   if(state.outcome!=='victory')return defeat(host,sc,step);
   const mult=(ref.mods?.bold?1.5:1)*(deployment.scenario?.difficulty==='extreme'?1.3:1),bonus=step.kind==='boss'?90:70;
   const lost=afterFight(sc,ref.party.filter(u=>surv[u.name]!==undefined||!u.hero),surv,stepTitle(step,sc));
-  const news=rewardOfficers(sc,ref.party.filter(u=>surv[u.name]!==undefined),earned,bonus,mult);
+  const news=rewardOfficers(sc,ref.party.filter(u=>surv[u.name]!==undefined),earned,bonus,mult*xpMult(loadMeta()));
   if(lost.length)news.unshift(`중상: ${lost.join(' · ')} — 물러나 치료받고 체력 25%로 다시 나선다.`);
   if(step.kind==='boss')healAll(sc,1);
   news.push(...host.addHeroXp(Math.round((140+(earned.sima_yi??0))*mult)));
   const back=winOver(sc,step,Math.max(1,(ref.party[0]?.level??2)-1));if(back)news.push(`${back} 귀순 — 다시 사마의의 부대에 합류했다.`);
-  finishStep(sc,step.id);saveScenario(sc);
+  finishStep(sc,step.id);saveScenario(sc);noteLevels([...Object.values(sc.officers),{name:'사마의',level:host.hero().level}]);
   // 가상 시나리오: 꺾은 적장이 붙잡혔다. 설득하면 부대에 들어온다.
   const foe=step.tale?.target;
   if(step.kind==='tale'&&foe&&!back&&!sc.officers[foe.name]&&Object.keys(sc.officers).length<8){
@@ -354,12 +361,12 @@ export function showMarch(host:ScenarioHost):void{
 function pickMarch(host:ScenarioHost,after:string,node:MarchNode){
   const state=loadScenario(),run=state.run!,meta=loadMeta(),hero=host.hero();
   const done=(news:string[])=>{finishMarch(state,after);saveScenario(state);marchResult(host,node.label,news);};
-  if(node.kind==='rest'){healAll(state,meta.unlocks.includes('field_medic')?1:.6);return done(['의원에서 사마의와 장수들이 기운을 되찾았다.']);}
+  if(node.kind==='rest'){healAll(state,Math.min(1,(meta.unlocks.includes('field_medic')?1:.6)*restMult(meta)));return done(['의원에서 사마의와 장수들이 기운을 되찾았다.']);}
   if(node.kind==='training'){const party=scenarioParty(state,hero.level,hero.xp),news=rewardOfficers(state,party,{},100);news.push(...host.addHeroXp(80));return done(news);}
   if(node.kind==='recruit'){const offer=recruitOffer(state,after);if(!offer.length)return done(['맞아들일 사람이 없었다.']);
     return choiceScreen(host,inWhatIf(state)?'모병소 · 누구를 설득할까 (가상 시나리오 — 설득해야 합류)':'모병소 · 누구를 맞아들일까',offer.map(o=>({title:`${o.name} (${classNames[o.unitClass]??o.unitClass})`,detail:`${romanceStats(o.name)??''}${temperOf(o.name)?` · 성격 ${temperNames[temperOf(o.name)!]}`:''}`})),i=>{const o=offer[i]!;
-      if(!inWhatIf(state)){recruitOfficer(state,o.name,hero.level,meta.unlocks.includes('elite_recruits'));return done([`${o.name}이(가) 사마의의 부대에 들어왔다.`]);}
-      void persuadeOfficer(host,o.name,o.unitClass,run.seed^hashSeed(after)).then(ok=>{if(ok){recruitOfficer(state,o.name,hero.level,meta.unlocks.includes('elite_recruits'));done([`${o.name}이(가) 설득에 응해 사마의의 부대에 들어왔다.`]);}else done([`${o.name}은(는) 이번엔 거절하고 떠났다. 다른 길목에서 다시 만날 수 있다.`]);});});}
+      if(!inWhatIf(state)){recruitOfficer(state,o.name,hero.level+recruitBonus(meta),meta.unlocks.includes('elite_recruits'));return done([`${o.name}이(가) 사마의의 부대에 들어왔다.`]);}
+      void persuadeOfficer(host,o.name,o.unitClass,run.seed^hashSeed(after)).then(ok=>{if(ok){recruitOfficer(state,o.name,hero.level+recruitBonus(meta),meta.unlocks.includes('elite_recruits'));done([`${o.name}이(가) 설득에 응해 사마의의 부대에 들어왔다.`]);}else done([`${o.name}은(는) 이번엔 거절하고 떠났다. 다른 길목에서 다시 만날 수 있다.`]);});});}
   if(node.kind==='treasure'){const offer=relicOffer(state,after);if(!offer.length)return done(['보물고는 비어 있었다.']);
     return choiceScreen(host,'보물고 · 무엇을 들고 갈까',offer.map(r=>({title:r.name,detail:r.effect})),i=>{run.relics.push(offer[i]!.id);done([`보물 「${offer[i]!.name}」을 얻었다.`]);});}
   run.march=node.kind;saveScenario(state);launchMarch(host,state,after,node.kind);
@@ -380,7 +387,7 @@ function launchMarch(host:ScenarioHost,state:ScenarioState,after:string,kind:'ba
   const levels=party.map(u=>u.level),base=Math.max(1,Math.round(levels.reduce((a,b)=>a+b,0)/levels.length)+(kind==='elite'?1:0));
   const ref:RunBattleRef={seed:runSeed(state,'march:'+after),floor:marchFloor(state,next.act),kind:kind==='elite'?'elite':'battle',party,relics:[...state.run!.relics],route:{...state.route},enemyBase:base,scenario:'march:'+after};
   const loadout=host.heroLoadout()?.sima_yi;
-  const deployment:Deployment={levels:{sima_yi:hero.level,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},...(loadout?{loadouts:{sima_yi:loadout}}:{}),run:ref,scenario:{chapter:'march:'+after}};
+  const deployment:Deployment={levels:{sima_yi:hero.level,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},...(loadout?{loadouts:{sima_yi:loadout}}:{}),run:ref,...perksFor(party),scenario:{chapter:'march:'+after}};
   host.startBattle(deployment,ref.seed);
 }
 async function finishMarchBattle(host:ScenarioHost,battle:BattleState,deployment:Deployment,earned:Record<string,number>,after:string){
@@ -389,13 +396,13 @@ async function finishMarchBattle(host:ScenarioHost,battle:BattleState,deployment
     if(loseFight(state)){finishMarch(state,after);saveScenario(state);return marchResult(host,'천명의 가호',['길목의 싸움에서 졌지만 하늘이 한 번 사마의를 지켰다. 체력 30%로 물러났다. (가호는 회차마다 한 번)']);}
     saveScenario(state);return showRunOver(host);}
   const lost=afterFight(state,ref.party,surv,`행군 · ${kind==='elite'?'정예 전투':'전투'}`);
-  const news=rewardOfficers(state,ref.party.filter(u=>surv[u.name]!==undefined),earned,kind==='elite'?70:50);news.push(...host.addHeroXp(80+(earned.sima_yi??0)));
+  const news=rewardOfficers(state,ref.party.filter(u=>surv[u.name]!==undefined),earned,kind==='elite'?70:50,xpMult(loadMeta()));news.push(...host.addHeroXp(80+(earned.sima_yi??0)));noteLevels([...Object.values(state.officers),{name:'사마의',level:host.hero().level}]);
   if(lost.length)news.unshift(`중상: ${lost.join(' · ')} — 물러나 치료받고 체력 25%로 다시 나선다.`);
   delete state.run!.march;saveScenario(state);
   const relics=relicOffer(state,after+'#win',kind==='elite'?3:1),recruits=kind==='elite'?[]:recruitOffer(state,after+'#win',1);
   const items=[...relics.map(r=>({title:`보물 · ${r.name}`,detail:r.effect,take:()=>{state.run!.relics.push(r.id);return `보물 「${r.name}」을 얻었다.`;}})),
-    ...recruits.map(o=>({title:`${inWhatIf(state)?'장수 설득':'장수 영입'} · ${o.name} (${classNames[o.unitClass]??o.unitClass})`,detail:`${romanceStats(o.name)??''}${inWhatIf(state)?' · 설득에 성공하면 합류':''}`,take:async()=>{const ok=!inWhatIf(state)||await persuadeOfficer(host,o.name,o.unitClass,state.run!.seed^hashSeed(after+'#win'));if(!ok)return `${o.name}은(는) 이번엔 거절하고 떠났다.`;recruitOfficer(state,o.name,host.hero().level,loadMeta().unlocks.includes('elite_recruits'));return `${o.name}이(가) 부대에 들어왔다.`;}})),
-    ...(kind==='elite'?[]:[{title:'휴식',detail:'사마의와 장수들의 체력 40% 회복',take:()=>{healAll(state,.4);return '잠시 쉬며 숨을 골랐다.';}}])];
+    ...recruits.map(o=>({title:`${inWhatIf(state)?'장수 설득':'장수 영입'} · ${o.name} (${classNames[o.unitClass]??o.unitClass})`,detail:`${romanceStats(o.name)??''}${inWhatIf(state)?' · 설득에 성공하면 합류':''}`,take:async()=>{const ok=!inWhatIf(state)||await persuadeOfficer(host,o.name,o.unitClass,state.run!.seed^hashSeed(after+'#win'));if(!ok)return `${o.name}은(는) 이번엔 거절하고 떠났다.`;recruitOfficer(state,o.name,host.hero().level+recruitBonus(loadMeta()),loadMeta().unlocks.includes('elite_recruits'));return `${o.name}이(가) 부대에 들어왔다.`;}})),
+    ...(kind==='elite'?[]:[{title:'휴식',detail:'사마의와 장수들의 체력 40% 회복',take:()=>{healAll(state,.4*restMult(loadMeta()));return '잠시 쉬며 숨을 골랐다.';}}])];
   if(!items.length){finishMarch(state,after);saveScenario(state);return marchResult(host,'행군 전투 승리',news);}
   choiceScreen(host,`행군 전투 승리 · 보상 하나`,items,i=>{void Promise.resolve(items[i]!.take()).then(line=>{news.push(line);finishMarch(state,after);saveScenario(state);marchResult(host,'행군 전투 승리',news);});});
 }
@@ -433,7 +440,7 @@ function defeat(host:ScenarioHost,state:ScenarioState,step:ScenarioStep){
 /** 회차 정산: 천명을 한 번만 준다. 이긴 연의 전장·가상 전장은 천명 기록에 남는다. */
 function settleRun(state:ScenarioState){
   const run=state.run;if(!run||run.settled)return 0;
-  const gain=runMandate(state),meta=loadMeta(),done=new Set(state.done);
+  const meta=loadMeta(),gain=runMandate(state)+mandateBonus(meta),done=new Set(state.done);
   meta.mandate+=gain;meta.earned+=gain;meta.runs++;if(run.status==='complete')meta.wins++;
   for(const st of scenarioPath(state))if(done.has(st.id)){if(st.kind==='story'&&st.stage)recordStory(meta,st.stage);}
   saveMeta(meta);run.settled=true;return gain;
@@ -441,23 +448,26 @@ function settleRun(state:ScenarioState){
 /** 회차가 끝났다(패배·결말·포기): 정산하고 해금을 사서 새 회차로. */
 export function showRunOver(host:ScenarioHost){
   const state=loadScenario(),run=state.run!;settleRun(state);saveScenario(state);
-  const meta=loadMeta(),gain=runMandate(state),done=new Set(state.done),cleared=scenarioPath(state).filter(x=>done.has(x.id)&&x.kind!=='fate'&&x.kind!=='ending').length;
+  const meta=loadMeta(),gain=runMandate(state)+mandateBonus(meta),done=new Set(state.done),cleared=scenarioPath(state).filter(x=>done.has(x.id)&&x.kind!=='fate'&&x.kind!=='ending').length;
   const won=run.status==='complete';
   const unlocks=UNLOCKS.map(u=>`<button data-unlock="${u.id}" ${meta.unlocks.includes(u.id)||meta.mandate<u.cost?'disabled':''}><strong>${esc(u.name)} ${meta.unlocks.includes(u.id)?'✓':`· 천명 ${u.cost}`}</strong><small>${esc(u.effect)}</small></button>`).join('');
   host.modal(`<div class="briefing run-screen"><div class="eyebrow">천명의 길 제${run.no}회차 · ${won?'완주':'끝'}</div><h2>${won?'한 생을 끝까지 걸었다':'천명이 다했다'}</h2>
   <p>${won?'결말까지 이르렀다.':'사마의는 여기서 쓰러졌다. 그러나 남긴 것은 다음 생으로 이어진다.'} 마친 장 ${cleared} · 행군 ${run.nodes}</p>
   <p class="route-result history"><b>천명 +${gain}</b> 지금 천명 ${meta.mandate} · 누적 ${meta.earned} · 회차 ${meta.runs}</p>
   <h3>천명 해금 — 다음 회차부터</h3><div class="run-choices unlock-list">${unlocks}</div>
-  <div class="run-actions"><button class="primary" id="run-new">새 회차 · 연의 첫 장부터 ▶</button><button id="run-menu">← 본영</button></div></div>`,false);
+  <p class="muted">천명은 아래 해금 말고도 <b>연구</b>(전투·내정·편성 나무)와 <b>장수 효과</b>(인물열전)에 쓸 수 있다.</p><div class="run-actions"><button class="primary" id="run-new">새 회차 · 연의 첫 장부터 ▶</button><button id="run-research">연구 ▸</button><button id="run-menu">← 본영</button></div></div>`,false);
   document.querySelectorAll<HTMLButtonElement>('[data-unlock]').forEach(b=>b.onclick=()=>{const m=loadMeta();if(buyUnlock(m,b.dataset.unlock!)){saveMeta(m);host.toast('해금했다. 다음 회차부터 적용된다.');}showRunOver(host);});
   document.getElementById('run-new')!.onclick=()=>startNewRun(host,run.no+1);
+  document.getElementById('run-research')!.onclick=()=>showResearch({modal:host.modal,toast:host.toast,back:()=>showRunOver(host)});
   document.getElementById('run-menu')!.onclick=host.showMenu;
 }
 /** 새 회차: 연의 진행을 되돌리고 연의 첫 장부터. */
 export function startNewRun(host:ScenarioHost,no?:number){
   const number=no??(loadScenario().run?.no??0)+1;
   pickFaction(host,(faction,companions)=>{
-    const meta=loadMeta();if(number>1||loadScenario().done.length)host.resetCampaign(meta.unlocks.includes('veteran_start'));
+    const meta=loadMeta();if(number>1||loadScenario().done.length){host.resetCampaign(meta.unlocks.includes('veteran_start'));
+      // 연구 '단련': 새 회차의 사마의가 몇 레벨 높게 시작한다.
+      for(let i=0;i<heroLevelBonus(meta);i++)host.addHeroXp(100+(host.hero().level-1)*20);}
     talkedIn.clear();
     const state=newScenarioRun(number,newSeed(),meta.unlocks,host.hero().level,{...(faction?{faction}:{}),...(companions?{customs:companions}:{})});saveScenario(state);
     const first=currentStep(state);if(first)void enter(host,first);else showScenario(host);

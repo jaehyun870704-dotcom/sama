@@ -8,6 +8,7 @@
 import {mandateEarned,RUN_FLOORS,type Run} from './roguelike.ts';
 import {endingFor,ALL_ENDINGS,ROUTES} from './fate.ts';
 import {readCustoms,type CustomOfficer} from './custom.ts';
+import {RESEARCH} from './research.ts';
 
 export interface MetaState {
   version:1;
@@ -25,6 +26,12 @@ export interface MetaState {
   runs:number;wins:number;best:number;
   /** 플레이어가 만든 신장수(영구) */
   customOfficers?:CustomOfficer[];
+  /** 연구: 칸 id → 배운 단계(research.ts) */
+  research?:Record<string,number>;
+  /** 장수 효과: 장수 이름 → 배운 효과·장착한 효과(officer-perks.ts) */
+  officerPerks?:Record<string,{learned:string[];equipped:string[]}>;
+  /** 장수가 어느 회차에서든 닿은 가장 높은 레벨(장수 효과의 필요 레벨) */
+  officerBest?:Record<string,number>;
 }
 export interface Unlock {id:string;name:string;cost:number;effect:string}
 
@@ -52,8 +59,25 @@ export function readMeta(raw:string|null):MetaState{
       chronicle:Array.isArray(m.chronicle)?m.chronicle.filter(x=>typeof x==='string'&&/^S[1-3]-\d\d$/.test(x)):[],
       tales:Array.isArray(m.tales)?m.tales.filter(x=>typeof x==='string'&&TALE_IDS.has(x)):[],
       endings:Array.isArray(m.endings)?m.endings.filter(x=>typeof x==='string'&&ALL_ENDINGS.includes(x)):[],
-      ...(Array.isArray(m.customOfficers)?{customOfficers:readCustoms(m.customOfficers)}:{})};
+      ...(Array.isArray(m.customOfficers)?{customOfficers:readCustoms(m.customOfficers)}:{}),
+      ...cleanProgress(m)};
   }catch{return freshMeta();}
+}
+const isName=(k:string)=>k.length>0&&k.length<=12;
+const strList=(v:unknown,limit:number)=>Array.isArray(v)?[...new Set(v.filter((x):x is string=>typeof x==='string'&&x.length<=40))].slice(0,limit):[];
+/** 연구·장수 효과·장수 최고 레벨을 정리한다(없는 칸·이상한 값은 버린다). */
+function cleanProgress(m:Partial<MetaState>):Pick<MetaState,'research'|'officerPerks'|'officerBest'>{
+  const out:Pick<MetaState,'research'|'officerPerks'|'officerBest'>={};
+  if(m.research&&typeof m.research==='object'){const r:Record<string,number>={};for(const n of RESEARCH){const v=(m.research as Record<string,unknown>)[n.id];if(Number.isInteger(v)&&(v as number)>0)r[n.id]=Math.min(n.max,v as number);}if(Object.keys(r).length)out.research=r;}
+  if(m.officerPerks&&typeof m.officerPerks==='object'){const r:NonNullable<MetaState['officerPerks']>={};
+    for(const [k,v] of Object.entries(m.officerPerks).slice(0,300)){if(!isName(k)||!v||typeof v!=='object')continue;const learned=strList((v as {learned?:unknown}).learned,8),equipped=strList((v as {equipped?:unknown}).equipped,4).filter(x=>learned.includes(x));r[k]={learned,equipped};}
+    if(Object.keys(r).length)out.officerPerks=r;}
+  if(m.officerBest&&typeof m.officerBest==='object'){const r:Record<string,number>={};for(const [k,v] of Object.entries(m.officerBest).slice(0,300))if(isName(k)&&Number.isInteger(v)&&(v as number)>=1)r[k]=Math.min(60,v as number);if(Object.keys(r).length)out.officerBest=r;}
+  return out;
+}
+/** 장수가 닿은 레벨을 기록한다(가장 높은 것만 남는다). */
+export function recordOfficerLevels(m:MetaState,party:ReadonlyArray<{name:string;level:number}>){
+  const best=m.officerBest??={};for(const u of party)if(u.level>(best[u.name]??0))best[u.name]=Math.min(60,u.level);
 }
 export function loadMeta():MetaState{try{return readMeta(localStorage.getItem(KEY));}catch{return freshMeta();}}
 export function saveMeta(m:MetaState){try{localStorage.setItem(KEY,JSON.stringify(m));}catch{/* storage optional */}}

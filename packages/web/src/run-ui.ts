@@ -1,4 +1,6 @@
 /** 천명의 원정 화면: 본영(첫 화면) · 출발 · 층 갈림길 · 보상 · 원정 종료 · 천명 해금. 규칙은 roguelike.ts, 영구 진행은 meta.ts. */
+import {showCodex} from './codex-ui.ts';
+import {showResearch} from './research-ui.ts';
 import {newRun,startingOfficers,departingOfficers,floorChoices,visitNode,finishBattle,finishStory,takeReward,skipReward,describeReward,nextEvolutionText,battleRef,survivorsOf,
   regionFor,actOf,isBossFloor,mandateEarned,chooseFate,taleById,RELICS,REGIONS,STORY_ORDER,RUN_FLOORS,PARTY_LIMIT,XP_PER_LEVEL,type Run,type RunNode,type RunUnit,type OfficerSpec} from './roguelike.ts';
 import {romanceStats,romanceByName} from './romance.ts';
@@ -74,10 +76,12 @@ export function showHub(host:RunHost){
   <div class="hub-stats"><span><b>${done}</b><small>마친 장</small></span><span><b>${esc(sc.tag)}</b><small>지금</small></span><span><b>${meta.endings.length}/${ALL_ENDINGS.length}</b><small>본 결말</small></span><span><b>${meta.mandate}</b><small>천명</small></span></div>
   <p class="intro">로그라이크 『천명의 길』 — 회차마다 『삼국지연의』의 첫 장(189년 하내)에서 사마의의 일생을 다시 시작한다. 장마다 이야기 → 출진 전 정비 → 전투, 장과 장 사이엔 무작위 행군로(전투·정예·모병·의원·보물고·수련) 세 갈래. 쓰러진 장수는 중상으로 물러났다 돌아오고, 체력과 보물은 다음 싸움으로 이어진다. 가상 시나리오에서는 장수를 설득해 들이고, 꺾은 적장도 설득할 수 있다. 지면 회차가 끝나고, 얻은 천명으로 해금해 다음 회차를 강하게. 세 번의 갈림길에서 다른 길을 고르면 일어나지 않은 역사가 결말까지 펼쳐진다(결말 17종). 직접 만든 신장수와 함께 신세력을 세워 진행할 수도 있다.</p>
   <div class="hub-actions"><button id="hub-scenario" class="primary">${done?'천명의 길 이어하기':'천명의 길 시작'}${sc.state.run?` · 제${sc.state.run.no}회차`:''} · ${esc(sc.tag)} 「${esc(sc.title)}」</button>
-  <button id="hub-quests">반복 퀘스트 <small>원정 · 수련 · 회상</small></button>${host.resumeSaved?'<button id="hub-resume">전투 이어하기</button>':''}<button id="hub-custom">신장수 · 신세력</button><button id="hub-slots">저장 칸</button><button id="hub-troops">병종 도감</button><button id="hub-officers">장수 · 연의 장수록</button></div>
+  <button id="hub-quests">반복 퀘스트 <small>원정 · 수련 · 회상</small></button>${host.resumeSaved?'<button id="hub-resume">전투 이어하기</button>':''}<button id="hub-codex">삼국지 인물열전 <small>장수 · 병종 · 책략</small></button><button id="hub-research">연구 <small>전투 · 내정 · 편성</small></button><button id="hub-custom">신장수 · 신세력</button><button id="hub-slots">저장 칸</button><button id="hub-troops">병종 도감</button><button id="hub-officers">장수 · 연의 장수록</button></div>
   <p class="prototype-note">기록은 이 브라우저에 저장됩니다.</p></div></div>`,false);
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
   on('hub-scenario',host.showScenario);on('hub-quests',()=>showQuests(host));on('hub-custom',()=>showCustomEditor(host,()=>showHub(host)));
+  const codex=()=>showCodex({modal:host.modal,toast:host.toast,back:()=>showHub(host),research:()=>research()}),research=()=>showResearch({modal:host.modal,toast:host.toast,back:()=>showHub(host),codex});
+  on('hub-codex',codex);on('hub-research',research);
   on('hub-resume',()=>host.resumeSaved?.());on('hub-slots',host.showSlots);on('hub-troops',host.showTroops);on('hub-officers',host.showOfficers);
 }
 

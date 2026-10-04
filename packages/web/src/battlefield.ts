@@ -14,7 +14,7 @@ import {romanceOf} from './romance.ts';
 import {crispZoom,groundScaleMode,unitTint} from './pixel-look.ts';
 import {dyeOfSide,dyePixels,clothBand,needsDye,type Dye} from './dye.ts';
 import type {LogEntry} from '../../core/src/index.ts';
-import { key, manhattan, ignoresRough, tierOf, familyOf } from '../../core/src/index.ts';
+import { key, manhattan, ignoresRough, tierOf, familyOf, strategyArea } from '../../core/src/index.ts';
 import type { BattleState, Coord, Unit, TerrainKind } from '../../core/src/index.ts';
 
 const W=48,H=48;
@@ -175,8 +175,8 @@ export class Battlefield {
   private setHover(c:Coord|undefined){
     this.hover=c;this.cursor.clear();if(c){
       const u=this.state?.find(this.selected),def=this.state?.strategies.get(this.mode);
-      if(u&&def&&manhattan(u.pos,c)<=def.range)for(let dy=-def.radius;dy<=def.radius;dy++)for(let dx=-def.radius;dx<=def.radius;dx++){
-        const at={x:c.x+dx,y:c.y+dy};if(Math.abs(dx)+Math.abs(dy)>def.radius||!this.state!.map.inBounds(at))continue;
+      if(u&&def&&manhattan(u.pos,c)<=def.range)for(const at of strategyArea(def,c,u.pos)){
+        if(!this.state!.map.inBounds(at))continue;
         const p=iso(at);diamond(this.cursor,p.x,p.y,0xf5d395,.34).stroke({color:0xffe1a8,width:1.4});
       }
       const p=iso(c);diamond(this.cursor,p.x,p.y,0xffffff,.12).stroke({color:0xe9dcc0,width:1.6,alpha:.8});
