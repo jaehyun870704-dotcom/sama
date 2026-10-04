@@ -50,7 +50,7 @@ export const ROUTES:Route[]=[
     region:{name:'하북 평원',arc:'상편',terrain:0,boss:{name:'원상',unitClass:'cavalry'},pool:['infantry','spearman','cavalry','archer','crossbow','heavyCav']},
     tales:[
       {id:'IF1-srv-1',title:'여양 공방',intro:'원소가 죽자 아들들이 서로 칼을 겨눈다. 젊은 사마의가 조조에게 아뢴다. "형제가 다툴 때를 기다리십시오." 그러나 여양의 길목은 원소의 조카 고간이 막고 있다.',target:{name:'고간',unitClass:'infantry'}},
-      {id:'IF1-srv-2',title:'업성 수공',intro:'원상의 충신 심배가 업성을 지킨다. 장수(漳水)를 끌어 성을 잠기게 하자는 계책이 사마의의 붓끝에서 나왔다. 물이 차오르기 전에 심배의 수비대를 꺾어야 한다.',target:{name:'심배',unitClass:'strategist'}},
+      {id:'IF1-srv-2',title:'업성 수공',intro:'원상의 충신 심배가 업성을 지킨다. 장수를 끌어 성을 잠기게 하자는 계책이 사마의의 붓끝에서 나왔다. 물이 차오르기 전에 심배의 수비대를 꺾어야 한다.',target:{name:'심배',unitClass:'strategist'}},
       {id:'IF1-srv-3',title:'백랑산 원정',intro:'원상은 오환으로 달아났다. 사막을 건너는 강행군 끝에, 오환의 선우 답돈이 백랑산 아래 기병을 펼쳤다.',target:{name:'답돈',unitClass:'horseArcher'}},
     ]},
   {id:'yuan',act:1,history:false,choice:'원소에게 간다',detail:'조조의 부름을 물리치고 하북의 원소에게 몸을 맡긴다. 관도의 승부를 뒤집으려 한다.',name:'가상 · 하북의 책사',
@@ -70,7 +70,7 @@ export const ROUTES:Route[]=[
       {id:'IF2-zhi-2',title:'허창 탈취',intro:'천자가 있는 허창을 쥐는 자가 명분을 쥔다. 조씨 종실의 대들보 조진이 허창을 지킨다. 한때 함께 싸운 벗과 칼을 맞댈 차례다.',target:{name:'조진',unitClass:'heavyCav'}},
       {id:'IF2-zhi-3',title:'종친의 반격',intro:'천리구라 불린 조휴가 동쪽 군을 이끌고 업성으로 내달린다. 그를 막지 못하면 조식의 왕위는 사흘을 넘기지 못한다.',target:{name:'조휴',unitClass:'cavalry'}},
     ]},
-  {id:'shu',act:2,history:false,after:['refuse'],choice:'유비에게 간다',detail:'조조 없는 위를 버리고 한중왕 유비에게 몸을 맡긴다. 와룡과 총(冢)이 한 깃발 아래 서서 북쪽을 친다.',name:'가상 · 촉의 사마의',
+  {id:'shu',act:2,history:false,after:['refuse'],choice:'유비에게 간다',detail:'조조 없는 위를 버리고 한중왕 유비에게 몸을 맡긴다. 와룡과 총이 한 깃발 아래 서서 북쪽을 친다.',name:'가상 · 촉의 사마의',
     region:{name:'형주 강릉',arc:'중편',terrain:2,boss:{name:'조인',unitClass:'heavyCav'},pool:WEI_POOL},
     tales:[
       {id:'IF2-shu-1',title:'양양 공략',intro:'제갈량이 부채를 거두며 말한다. "중달, 북쪽의 문은 양양이오." 위의 명장 서황이 양양을 굳게 지킨다.',target:{name:'서황',unitClass:'heavyCav'}},
@@ -80,7 +80,7 @@ export const ROUTES:Route[]=[
   // ── 분기 ② 오래 기다린 자의 선택
   {id:'patience',act:3,history:true,after:['wei'],choice:'병을 칭하고 때를 기다린다',detail:'정사대로 물러나 앉아 요동을 정벌하고, 때가 오면 고평릉에서 움직인다. 연의 전장이 이어진다.',name:'정사 · 은인자중',
     region:{name:'요동 요수',arc:'하편',terrain:2,boss:{name:'공손연',unitClass:'infantry'},pool:['infantry','spearman','cavalry','horseArcher','crossbow','archer','heavyCav','bandit','rattan']},tales:[],
-    ending:{title:'진(晉)의 기틀',lines:['위의 방패로 제갈량을 막아 낸 노신은 끝내 서두르지 않았다. 그가 쌓은 기다림 위에서 손자 사마염이 진(晉)을 연다.','정사의 결말이다. 천하는 결국 사마씨에게로 흘러갔다.']}},
+    ending:{title:'진의 기틀',lines:['위의 방패로 제갈량을 막아 낸 노신은 끝내 서두르지 않았다. 그가 쌓은 기다림 위에서 손자 사마염이 진을 연다.','정사의 결말이다. 천하는 결국 사마씨에게로 흘러갔다.']}},
   {id:'coup',act:3,history:false,after:['wei'],ending:{title:'낙양의 주인',lines:['사마의는 기다림을 버리고 칼을 뽑았다. 낙양은 하룻밤 사이 사마씨의 것이 되었다.','역사는 그를 찬탈자이자 구원자로 함께 기록했다.']},choice:'지금 조상을 친다',detail:'기다리지 않는다. 아직 힘이 남았을 때 군을 일으켜 낙양을 장악한다. 조상의 금군이 막아선다.',name:'가상 · 이른 정변',
     region:{name:'낙양 정변',arc:'하편',terrain:0,boss:{name:'조상',unitClass:'cavalry'},pool:['infantry','spearman','crossbow','cavalry','archer']},
     tales:[
@@ -133,7 +133,7 @@ export const ROUTES:Route[]=[
       {id:'IF3-zu-2',title:'건업 앞바다',intro:'건업 앞바다에 손권이 몸소 함대를 이끌고 나왔다. 강동의 주인과 마주할 때다.',target:{name:'손권',unitClass:'strategist'}},
     ]},
   {id:'zhi_throne',act:3,history:false,after:['cao_zhi'],choice:'조식에게서 선양받는다',detail:'정사를 모두 쥔 지 오래다. 왕은 시를 짓고, 천하는 사마씨를 본다. 이제 그 자리를 넘겨받는다.',name:'가상 · 선양의 날',
-    ending:{title:'선양의 날',lines:['조식은 웃으며 옥새를 내려놓았다. "그대가 더 잘 다스릴 것이오." 사마씨의 나라가 열렸다.','역사보다 한 세대 이른 진(晉) — 시인 왕의 양보로 시작된 왕조였다.']},
+    ending:{title:'선양의 날',lines:['조식은 웃으며 옥새를 내려놓았다. "그대가 더 잘 다스릴 것이오." 사마씨의 나라가 열렸다.','역사보다 한 세대 이른 진 — 시인 왕의 양보로 시작된 왕조였다.']},
     region:{name:'낙양 궁정',arc:'하편',terrain:0,boss:{name:'조식',unitClass:'strategist'},pool:['infantry','spearman','crossbow','cavalry','archer']},
     tales:[
       {id:'IF3-zt-1',title:'종친의 반발',intro:'선양의 소문에 조씨 종친 조휴가 군을 일으켰다. 낙양으로 오는 길목을 끊어라.',target:{name:'조휴',unitClass:'cavalry'}},
@@ -141,7 +141,7 @@ export const ROUTES:Route[]=[
     ]},
   // ── 하편: 촉의 사마의
   {id:'shu_north',act:3,history:false,after:['shu'],choice:'북벌을 완수한다',detail:'제갈량과 함께 기산을 넘는다. 이번에는 위의 지략을 아는 자가 촉에 있다.',name:'가상 · 한실 부흥',
-    ending:{title:'한실 부흥',lines:['와룡과 총이 함께 낙양에 들어섰다. 한(漢)의 깃발이 다시 도성 위에 올랐다.','위를 버린 사마의가 한실을 되살렸다 — 누구도 쓰지 못한 출사표의 끝이었다.']},
+    ending:{title:'한실 부흥',lines:['와룡과 총이 함께 낙양에 들어섰다. 한의 깃발이 다시 도성 위에 올랐다.','위를 버린 사마의가 한실을 되살렸다 — 누구도 쓰지 못한 출사표의 끝이었다.']},
     region:{name:'낙양 진격',arc:'하편',terrain:0,boss:{name:'조예',unitClass:'strategist'},pool:WEI_POOL},
     tales:[
       {id:'IF3-sn-1',title:'진창',intro:'진창성을 학소가 지킨다. 제갈량을 스무 날 붙잡았던 성을, 사마의는 사흘 안에 넘으려 한다.',target:{name:'학소',unitClass:'spearman'}},
@@ -163,7 +163,7 @@ export const ROUTES:Route[]=[
       {id:'IF3-cs-2',title:'성도의 문',intro:'성도 앞에 늙은 조운이 홀로 창을 세웠다.',target:{name:'조운',unitClass:'heavyCav'}},
     ]},
   {id:'chibi_throne',act:3,history:false,after:['chibi'],choice:'조씨에게서 천하를 넘겨받는다',detail:'천하의 둘을 얻은 조씨는 이제 그대의 지모 없이는 서지 못한다. 늙은 조조가 숨을 거두는 날, 움직인다.',name:'가상 · 조조의 그늘을 넘어',
-    ending:{title:'조조의 그늘을 넘어',lines:['조조를 도와 천하의 둘을 얻은 손이, 그 천하를 조씨에게서 거두었다.','간웅의 참모는 간웅이 되었다. 역사는 이 왕조를 사마씨의 위(魏)라 불렀다.']},
+    ending:{title:'조조의 그늘을 넘어',lines:['조조를 도와 천하의 둘을 얻은 손이, 그 천하를 조씨에게서 거두었다.','간웅의 참모는 간웅이 되었다. 역사는 이 왕조를 사마씨의 위라 불렀다.']},
     region:{name:'낙양 궁정',arc:'하편',terrain:0,boss:{name:'조비',unitClass:'strategist'},pool:['infantry','spearman','crossbow','cavalry','archer']},
     tales:[
       {id:'IF3-ct-1',title:'업성의 호위',intro:'조조의 호위 대장 허저가 업성 궁문을 지킨다.',target:{name:'허저',unitClass:'infantry'}},
@@ -201,7 +201,7 @@ export const ROUTES:Route[]=[
     ]},
   // ── 하편: 사마씨의 나라
   {id:'ind_alliance',act:3,history:false,after:['independent'],choice:'조조와 손잡고 원씨를 멸한다',detail:'남쪽의 조조와 동맹을 맺고 북쪽의 원씨부터 친다. 하북을 사마씨의 것으로 만든다.',name:'가상 · 하북의 주인',
-    ending:{title:'하북의 주인',lines:['조조와 천하를 반으로 나눈 사마씨 — 남쪽엔 위가, 북쪽엔 사마씨의 나라가 섰다.','두 영웅이 마주 선 이남북조(二南北朝)의 시대가 열렸다.']},
+    ending:{title:'하북의 주인',lines:['조조와 천하를 반으로 나눈 사마씨 — 남쪽엔 위가, 북쪽엔 사마씨의 나라가 섰다.','두 영웅이 마주 선 이남북조의 시대가 열렸다.']},
     region:{name:'업성 궁정',arc:'하편',terrain:0,boss:{name:'원상',unitClass:'cavalry'},pool:['infantry','spearman','cavalry','archer','crossbow','heavyCav']},
     tales:[
       {id:'IF3-ia-1',title:'업성 포위',intro:'원상의 충신 심배가 업성을 지킨다.',target:{name:'심배',unitClass:'strategist'}},

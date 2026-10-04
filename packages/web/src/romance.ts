@@ -24,7 +24,7 @@ const o=(name:string,epithet:string,[war,int,lead,pol,cha]:[number,number,number
 /** 장수 id → 연의 능력. 이름으로 찾는 원정 우두머리는 아래 byName이 맡는다. */
 export const romance:Record<string,RomanceOfficer>={
   // 사마씨 일가와 조진 (아군)
-  sima_yi:o('사마의','총(冢)에 숨은 이리 · 때를 기다린 자',[63,96,98,93,80]),
+  sima_yi:o('사마의','총에 숨은 이리 · 때를 기다린 자',[63,96,98,93,80]),
   sima_lang:o('사마랑','백달 · 사마팔달의 맏이',[38,76,56,82,78]),
   sima_fang:o('사마방','엄정한 가장 · 경조윤',[42,72,60,80,72]),
   cao_zhen:o('조진','조씨 종실의 대들보',[82,60,84,52,70]),
@@ -78,18 +78,18 @@ export const romance:Record<string,RomanceOfficer>={
 const byName:Record<string,RomanceOfficer>={
   ...Object.fromEntries(Object.values(romance).map(r=>[r.name,r])),
   안량:o('안량','원소의 하북 명장 · 백마에서 관우에게 베이다',[93,32,80,22,52],{name:'하북 명장',description:'물리 공격 피해 10% 증가',trait:'physicalPower',param:10}),
-  // 초한(楚漢) — 사백 년 전, 진이 무너진 뒤 천하를 다툰 선대 영웅들(인물열전·계승)
+  // 초한 — 사백 년 전, 진이 무너진 뒤 천하를 다툰 선대 영웅들(인물열전·계승)
   항우:o('항우','서초패왕 · 역발산 기개세',[100,58,96,36,84],{name:'역발산',description:'물리 공격 피해 20% 증가',trait:'physicalPower',param:20}),
   유방:o('유방','한 고조 · 패현의 정장',[66,70,80,86,100],{name:'관인대도',description:'받는 물리 피해 10% 감소',trait:'commandDefense'}),
   장량:o('장량','자방 · 장막 안에서 천 리 밖을 이긴 책사',[32,99,82,88,86],{name:'운주유악',description:'책략 공격 피해 15% 증가',trait:'strategyPower',param:15}),
-  한신:o('한신','국사무쌍 · 배수진의 병선(兵仙)',[80,94,100,62,64],{name:'배수진',description:'체력이 낮을수록 공격력 상승(최대 25%)',trait:'lastStand',param:25}),
+  한신:o('한신','국사무쌍 · 배수진의 병선',[80,94,100,62,64],{name:'배수진',description:'체력이 낮을수록 공격력 상승(최대 25%)',trait:'lastStand',param:25}),
   소하:o('소하','한의 상국 · 관중을 지킨 재상',[24,90,72,99,88],{name:'관중 경영',description:'받는 책략 피해 15% 감소',trait:'strategyDamageReduction',param:15}),
   범증:o('범증','아부 · 항우의 늙은 책사',[30,95,74,80,58],{name:'옥결',description:'책략 공격 피해 12% 증가',trait:'strategyPower',param:12}),
   우희:o('우희','우미인 · 패왕과 이별한 여인',[30,64,42,62,96],{name:'검무',description:'적 명중 15%p 감소',trait:'evasionBoost',param:15}),
   영포:o('영포','경포 · 얼굴에 먹 글씨가 새겨진 맹장',[92,48,82,30,60],{name:'경형의 맹장',description:'물리 공격 피해 12% 증가',trait:'physicalPower',param:12}),
   팽월:o('팽월','양 땅을 휘저은 유격의 명수',[84,72,80,50,66],{name:'유격',description:'움직인 뒤 물리 공격 피해 15% 증가',trait:'chargePower',param:15}),
   번쾌:o('번쾌','홍문연에 뛰어든 개백정 용사',[93,40,74,36,74],{name:'홍문의 방패',description:'인접 아군의 피해를 대신 받는다',trait:'guardian'}),
-  진평:o('진평','여섯 번의 기계(奇計)',[40,94,64,86,70],{name:'반간계',description:'적 책략 명중 15%p 감소',trait:'strategyEvasion',param:15}),
+  진평:o('진평','여섯 번의 기계',[40,94,64,86,70],{name:'반간계',description:'적 책략 명중 15%p 감소',trait:'strategyEvasion',param:15}),
   종리매:o('종리매','항우의 골육 같은 명장',[88,62,82,44,62]),
   계포:o('계포','계포일낙 · 한 번 한 약속은 천금',[82,56,80,58,82],{name:'일낙천금',description:'체력 절반 이하에서 받는 피해 20% 감소',trait:'veteran',param:20}),
   용저:o('용저','초의 맹장 · 유수에서 한신에게 지다',[90,40,80,30,52]),
@@ -113,7 +113,7 @@ const byName:Record<string,RomanceOfficer>={
   노숙:o('노숙','동오의 대국을 본 자',[56,92,84,90,88]),
   봉기:o('봉기','원씨의 직언가',[40,80,60,72,58]),
   순욱:o('순욱','왕좌지재 · 조조의 장자방',[24,96,64,98,90],{name:'왕좌지재',description:'받는 책략 피해 15% 감소',trait:'strategicGuard'}),
-  관우:o('관우','미염공 · 청룡언월도의 무성(武聖)',[97,75,95,62,93],{name:'청룡언월도',description:'물리 공격 피해 15% 증가',trait:'physicalPower',param:15}),
+  관우:o('관우','미염공 · 청룡언월도의 무성',[97,75,95,62,93],{name:'청룡언월도',description:'물리 공격 피해 15% 증가',trait:'physicalPower',param:15}),
   장료:o('장료','합비의 귀신 · 요래요래',[92,78,91,58,78],{name:'요래요래',description:'적 방어 15% 무시',trait:'penetrate',param:15}),
   원상:o('원상','원소의 셋째 아들 · 하북의 후계',[72,58,70,52,74]),
   심배:o('심배','원씨의 충신 · 업성의 마지막 수비장',[48,84,78,72,70],{name:'업성 사수',description:'받는 물리 피해 10% 감소',trait:'commandDefense'}),

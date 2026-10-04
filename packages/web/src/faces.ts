@@ -4,7 +4,7 @@
  * 우선순위: 직접 넣은 그림(portrait-images.ts) → 전용 원화(officer-art.ts) → 신장수 초상 → 초상 생성기로 지은 얼굴.
  * 카드(인물열전·목록)는 족자 같은 네모 초상, 대화창은 바탕 없이 사람만 떼어 낸 큰 흉상을 쓴다
  * (조조전 리메이크 대화창처럼 흉상이 대사 상자 위로 걸친다).
- * 이름 옆의 자(字)도 여기서 붙인다 — 「유비 현덕」, 「조조 맹덕」.
+ * 이름 옆의 자도 여기서 붙인다 — 「유비 현덕」, 「조조 맹덕」.
  */
 import {officerLook,officerPortrait} from './officer-art.ts';
 import {portraitImage} from './portrait-images.ts';

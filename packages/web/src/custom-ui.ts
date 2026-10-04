@@ -70,7 +70,7 @@ export function pickFaction(host:CustomHost,onPick:(faction?:Faction,companions?
   <form id="fa-form" class="custom-form faction-form"><h3>신세력 — 사마의가 새 깃발을 든다</h3>
     <p class="muted">첫 갈림길(201년)에서 '스스로 기치를 든다'를 고르면 신세력의 길(형주·관중 → 천하 통일 또는 네 번째 나라)로 간다. 가상 시나리오라 장수는 설득해서 들인다.</p>
     <label>세력 이름 <input name="name" maxlength="4" value="${esc(f.name)}" placeholder="예: 진, 하내" required></label>
-    <label>문장(한 글자) <input name="emblem" maxlength="2" value="${esc(f.emblem)}" placeholder="예: 晉"></label>
+    <label>문장(한 글자) <input name="emblem" maxlength="2" value="${esc(f.emblem)}" placeholder="예: 진"></label>
     <div class="fa-colors">${FACTION_COLORS.map(c=>`<label class="fa-color" style="--c:${c}"><input type="radio" name="color" value="${c}" ${c===f.color?'checked':''}><span></span></label>`).join('')}</div>
     <fieldset><legend>처음부터 함께할 신장수(최대 넷) · 사마랑은 늘 함께</legend>${list.length?list.map(o=>`<label><input type="checkbox" name="mate" value="${esc(o.name)}" ${picked.has(o.name)?'checked':''}> ${esc(o.name)} · ${esc(classNames[o.unitClass]??o.unitClass)} · ${temperNames[o.temper]}</label>`).join(''):'<p class="muted">만든 신장수가 없다. 먼저 신장수를 만들면 함께 떠날 수 있다.</p>'}
       <button type="button" id="fa-custom">신장수 만들기 ▶</button></fieldset>

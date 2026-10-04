@@ -67,7 +67,7 @@ export function moodOf(place:string,kind:Kind):Mood{
 }
 const cache=new Map<string,IsoScene>();
 /** 아군 깃발의 문장·색(신세력이면 그 세력의 것). */
-let FLAG={emblem:'魏',color:'#1f3f8a'};
+let FLAG={emblem:'위',color:'#1f3f8a'};
 export function setPlayerFlag(emblem:string,color:string){FLAG={emblem,color};}
 /**
  * 장소 이름이 말하는 곳을 먼저 따른다(배경 번호는 대본을 쓸 때 고른 대략의 그림이라 장소와 어긋날 수 있다).
@@ -300,7 +300,7 @@ function indoorWalls(g:Ctx,kind:Kind,R:()=>number){
       for(let i=0;i<5;i++){const [m]=onWall('left',4.6+i*0.6,4.6+i*0.6,140+((i*37)%25),140);g.fillStyle='rgba(70,60,40,.7)';g.beginPath();g.moveTo(m[0]-5,m[1]);g.lineTo(m[0],m[1]-7);g.lineTo(m[0]+5,m[1]);g.fill();}
       for(const [t,z,cl] of [[5.2,118,'#1f3f8a'],[6.6,130,'#8a1f1a'],[6.2,104,'#8a1f1a']] as const){const [m]=onWall('left',t,t,z,z);g.fillStyle=cl;g.fillRect(m[0]-3,m[1]-3,6,6);}}
     // 오른벽: 걸어 둔 군기 둘
-    for(const t of [5,9]){const q=onWall('right',t,t+1,92,170);poly(g,q,t===5?FLAG.color:'#8a1f1a','#1a0c08',1);const [m]=onWall('right',t+0.5,t+0.5,130,130);g.fillStyle='rgba(255,230,160,.85)';g.font='bold 18px serif';g.textAlign='center';g.fillText(t===5?FLAG.emblem:'帥',m[0],m[1]+6);g.textAlign='start';}
+    for(const t of [5,9]){const q=onWall('right',t,t+1,92,170);poly(g,q,t===5?FLAG.color:'#8a1f1a','#1a0c08',1);const [m]=onWall('right',t+0.5,t+0.5,130,130);g.fillStyle='rgba(255,230,160,.85)';g.font='bold 18px serif';g.textAlign='center';g.fillText(t===5?FLAG.emblem:'장',m[0],m[1]+6);g.textAlign='start';}
     return;
   }
   const palace=kind==='palace'||kind==='throne';
@@ -518,7 +518,7 @@ function crate(c:number,r:number,s=1):Prop{return P(c,r,s,s,g=>{
   for(let k=1;k<4;k++){const z=h*k/4;for(const [A,B] of [[pt(c,r+s),pt(c+s,r+s)],[pt(c+s,r+s),pt(c+s,r)]] as const){g.beginPath();g.moveTo(...up(A,z));g.lineTo(...up(B,z));g.stroke();}}
   for(let k=1;k<3;k++){const a=up(pt(c+s*k/3,r),h),b=up(pt(c+s*k/3,r+s),h);g.beginPath();g.moveTo(...a);g.lineTo(...b);g.stroke();}
   for(const P0 of [pt(c,r+s),pt(c+s,r+s),pt(c+s,r)]){g.strokeStyle='#3a3836';g.lineWidth=3;g.beginPath();g.moveTo(...P0);g.lineTo(...up(P0,h));g.stroke();for(let z=5;z<h;z+=11)stud(g,P0[0],P0[1]-z,1.1,'#a8a49a');}
-  const [x,y]=up(pt(c+s/2,r+s),h/2);g.fillStyle='rgba(40,20,8,.65)';g.font=`bold ${Math.round(13*s)}px serif`;g.textAlign='center';g.fillText('糧',x-3*s,y+5);g.textAlign='start';
+  const [x,y]=up(pt(c+s/2,r+s),h/2);g.fillStyle='rgba(40,20,8,.65)';g.font=`bold ${Math.round(13*s)}px serif`;g.textAlign='center';g.fillText('곡',x-3*s,y+5);g.textAlign='start';
 });}
 function sacks(c:number,r:number,R:()=>number):Prop{return P(c,r,1,1,g=>{
   const [cx,cy]=pt(c+0.5,r+0.5);g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.ellipse(cx,cy,32,11,0,0,7);g.fill();
@@ -544,7 +544,7 @@ function rack(c:number,r:number,len:number):Prop{return P(c,r,len,0.3,g=>{
   // 기대 놓은 방패
   const [sx,sy]=pt(c+len-0.25,r+0.35);g.fillStyle='#7a3a1a';g.strokeStyle='#2a1208';g.lineWidth=1.5;g.beginPath();g.ellipse(sx+8,sy-22,12,22,0.15,0,7);g.fill();g.stroke();g.fillStyle='#c9952a';g.beginPath();g.arc(sx+8,sy-22,4,0,7);g.fill();g.strokeStyle='rgba(230,190,90,.7)';g.beginPath();g.ellipse(sx+8,sy-22,9,18,0.15,0,7);g.stroke();
 });}
-function banner(c:number,r:number,col0:string):Prop{const mine=col0==='#1f3f8a',col=mine?FLAG.color:col0,mark=mine?FLAG.emblem:'帥';return P(c,r,0.2,0.2,g=>{
+function banner(c:number,r:number,col0:string):Prop{const mine=col0==='#1f3f8a',col=mine?FLAG.color:col0,mark=mine?FLAG.emblem:'장';return P(c,r,0.2,0.2,g=>{
   const [x,y]=pt(c+0.1,r+0.1);g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.ellipse(x,y,8,3,0,0,7);g.fill();
   g.strokeStyle='#3a2410';g.lineWidth=4;g.beginPath();g.moveTo(x,y);g.lineTo(x,y-172);g.stroke();
   g.fillStyle='#d8aa3a';g.beginPath();g.moveTo(x-4,y-172);g.lineTo(x,y-186);g.lineTo(x+4,y-172);g.closePath();g.fill();g.fillStyle='#b8261a';g.fillRect(x-3,y-172,6,6);
@@ -706,7 +706,7 @@ function stoneBorder(c:number,r:number,len:number,R:()=>number,alongC=true):Prop
   if(R()<0.3){g.fillStyle=['#b89ad8','#e8e0f0','#f2d24a'][Math.floor(R()*3)]!;g.beginPath();g.arc(x+(R()-0.5)*14,y-12,2,0,7);g.fill();}}},false);}
 function pots(c:number,r:number):Prop{return P(c,r,0.8,0.6,g=>{for(const [dc,dr,s] of [[0.2,0.2,1],[0.55,0.35,0.75]] as const){const [x,y]=pt(c+dc,r+dr);g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.ellipse(x,y,14*s,6*s,0,0,7);g.fill();g.fillStyle='#5a4a3a';g.strokeStyle='#1a120c';g.lineWidth=1;g.beginPath();g.ellipse(x,y-14*s,13*s,15*s,0,0,7);g.fill();g.stroke();g.fillStyle='#3a2e24';g.beginPath();g.ellipse(x,y-27*s,8*s,3*s,0,0,7);g.fill();}});}
 function grandThrone(c:number,r:number):Prop{return {keep:true,...P(c,r,3.2,3.2,g=>{
-  // 세 층의 단, 용상, 뒤 병풍과 일산(日傘)
+  // 세 층의 단, 용상, 뒤 병풍과 일산
   prism(g,c,r,3.2,3.2,10,'#5a1a12');prism(g,c+0.3,r+0.3,2.6,2.6,10,'#7a2418',10);prism(g,c+0.6,r+0.6,2,2,10,'#8a2c1e',20);
   for(const k of [0,1,2]){const z=10+k*10,A=up(pt(c+0.3*k,r+3.2-0.3*k),z),B=up(pt(c+3.2-0.3*k,r+3.2-0.3*k),z);g.strokeStyle='#d8a838';g.lineWidth=1.5;g.beginPath();g.moveTo(...A);g.lineTo(...B);g.stroke();}
   prism(g,c+0.7,r+0.6,1.8,0.25,96,'#b8862a',30);
@@ -874,7 +874,7 @@ function wallTop(g:Ctx,c0:number,r0:number,c1:number,r1:number,z:number){
   for(let c=Math.ceil(c0*2)/2;c<c1;c+=0.5){g.beginPath();g.moveTo(...up(pt(c,r0),z));g.lineTo(...up(pt(c,r1),z));g.stroke();}
   for(let r=Math.ceil(r0*2)/2;r<r1;r+=0.5){g.beginPath();g.moveTo(...up(pt(c0,r),z));g.lineTo(...up(pt(c1,r),z));g.stroke();}
 }
-/** 성가퀴(여장): 바깥 가장자리를 따라 엇갈린 타구(凸)와 활 쏘는 구멍. along: 'c'면 c를 따라(r 고정). */
+/** 성가퀴(여장): 바깥 가장자리를 따라 엇갈린 타구와 활 쏘는 구멍. along: 'c'면 c를 따라(r 고정). */
 function merlons(g:Ctx,along:'c'|'r',fixed:number,from:number,to:number,z:number,R:()=>number,h=34,thick=0.45){
   for(let t=from;t<to-0.1;t+=1){
     const w=0.62;const [c,r,ww,dd]=along==='c'?[t,fixed,w,thick]:[fixed,t,thick,w];
@@ -1226,7 +1226,7 @@ function build(kind:Kind,seed:number,place='',clear:Set<string>=new Set(),artNo=
       break;}
     case 'wall':
       // 성벽 위: 사람은 성 위 길에 선다. 뒤쪽은 성가퀴, 그 너머로 성 밖 들판. 문루와 각루, 지킬 채비(돌·통나무·노포)
-      add(P(13,0.6,4,2.2,g=>tower(g,13,0.6,4,2.2,0,R,2,'城樓')));
+      add(P(13,0.6,4,2.2,g=>tower(g,13,0.6,4,2.2,0,R,2,'성루')));
       add(stonePile(2,4,R));add(stonePile(4.6,1.4,R));add(logPile(1.2,7.4));add(ballista(6,1.2));add(ballista(1.2,10.6));add(warDrum(10.4,1.2));
       add(banner(1.1,3.2,'#1f3f8a'));add(banner(3.2,1.1,'#1f3f8a'));add(banner(1.1,13,'#1f3f8a'));add(banner(14.4,1.1,'#1f3f8a'));
       add(brazier(2.2,6.4,R));add(brazier(6.4,2.6,R));add(torch(1.2,15.4,R));add(arrows(3.6,3.6,R));add(arrows(1.4,12,R));add(debris(8.6,1.4,R));add(rack(1.1,16.6,2,));add(crate(11.8,2.8,0.8));
@@ -1251,7 +1251,7 @@ function build(kind:Kind,seed:number,place='',clear:Set<string>=new Set(),artNo=
       add(crate(5,9,0.8));add(rock(9,6,R,0.6));add(debris(3,7,R));add(debris(8,3,R));add(debris(11.5,8,R));add(smoke(6,1,R));
       // 땅에 떨어져 타는 들보·쓰러진 깃발·엎어진 수레
       for(const [c0,r0] of [[4,5],[10,10.5],[2.2,10]] as const)add(P(c0,r0,1.2,0.4,g=>{const a=pt(c0,r0+0.2),b=pt(c0+1.2,r0+0.2);g.strokeStyle='#2a1a10';g.lineWidth=9;g.lineCap='round';g.beginPath();g.moveTo(a[0],a[1]-5);g.lineTo(b[0],b[1]-5);g.stroke();g.lineCap='butt';g.strokeStyle='rgba(255,110,30,.8)';g.lineWidth=2;g.setLineDash([4,5]);g.beginPath();g.moveTo(a[0],a[1]-7);g.lineTo(b[0],b[1]-7);g.stroke();g.setLineDash([]);flame(g,(a[0]+b[0])/2,(a[1]+b[1])/2-6,10,R);},false));
-      add(P(7.2,12,1,0.3,g=>{const [x,y]=pt(7.2,12.15);g.strokeStyle='#3a2410';g.lineWidth=3;g.beginPath();g.moveTo(x-30,y);g.lineTo(x+40,y-8);g.stroke();g.fillStyle='#6a1a12';g.beginPath();g.moveTo(x+6,y-4);g.lineTo(x+40,y-8);g.lineTo(x+44,y+10);g.lineTo(x+10,y+12);g.closePath();g.fill();g.fillStyle='rgba(240,210,150,.7)';g.font='bold 12px serif';g.fillText('漢',x+20,y+6);},false));
+      add(P(7.2,12,1,0.3,g=>{const [x,y]=pt(7.2,12.15);g.strokeStyle='#3a2410';g.lineWidth=3;g.beginPath();g.moveTo(x-30,y);g.lineTo(x+40,y-8);g.stroke();g.fillStyle='#6a1a12';g.beginPath();g.moveTo(x+6,y-4);g.lineTo(x+40,y-8);g.lineTo(x+44,y+10);g.lineTo(x+10,y+12);g.closePath();g.fill();g.fillStyle='rgba(240,210,150,.7)';g.font='bold 12px serif';g.fillText('한',x+20,y+6);},false));
       add(cart(12,4));
       break;
     case 'town':
@@ -1323,7 +1323,7 @@ function build(kind:Kind,seed:number,place='',clear:Set<string>=new Set(),artNo=
   if(kind==='gatehouse'){
     cityWall(g,'r',-3,N,-3,2.6,CASTLE_H,R);cityWall(g,'c',-3,N,-3,2.6,CASTLE_H,R);
     archGate(g,2.6,6.2,2.4,150);
-    tower(g,-2.2,-2.2,3.4,3.4,CASTLE_H,R,1);tower(g,5.4,-1.6,4,3.6,CASTLE_H,R,2,'城門');
+    tower(g,-2.2,-2.2,3.4,3.4,CASTLE_H,R,1);tower(g,5.4,-1.6,4,3.6,CASTLE_H,R,2,'성문');
     // 성 위의 깃발 줄
     for(const t of [11,14,17])drawFlagPole(g,up(pt(t,2.2),CASTLE_H),FLAG.color);for(const t of [5,9,13])drawFlagPole(g,up(pt(2.2,t),CASTLE_H),FLAG.color);
   }

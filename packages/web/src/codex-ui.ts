@@ -32,7 +32,7 @@ const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;
 // ─────────────────────────────────────────────── 인물
 
 export type Side='wei'|'shu'|'wu'|'other'|'chu'|'han'|'custom';
-const SIDE_NAMES:Record<Side,string>={wei:'위',shu:'촉',wu:'오',other:'군웅',chu:'초(楚)',han:'한(漢)',custom:'신장수'};
+const SIDE_NAMES:Record<Side,string>={wei:'위',shu:'촉',wu:'오',other:'군웅',chu:'초',han:'한',custom:'신장수'};
 const SHU=new Set('마초 황충 조운 마속 왕평 위연 고상 맹염 강유 제갈량 방통 유비 관우 장비 서서 관평 유봉 마대 관색 황권 하후패 이엄'.split(' '));
 const WU=new Set('주유 손권 장소 제갈근 여몽 여범 손소 육손 주연 제갈각 고수 황개 감녕 노숙 정봉 전종 서성'.split(' '));
 const OTHER=new Set('여포 진궁 양앙 공손연 비연 안량 원담 고람 맹획 축융 올돌골 봉기 원상 심배 고간 답돈 문추 저수 채모 전풍 타사대왕 원희'.split(' '));
@@ -120,9 +120,9 @@ function classesTab(pick:string){
 
 // ─────────────────────────────────────────────── 책략
 
-const ELEMENT_NAMES:Record<string,string>={fire:'화(火)',wind:'풍(風)',water:'수(水)',thunder:'뇌(雷)',earth:'지(地)',support:'술(術)'};
-const GLYPH:Record<string,string>={fire:'火',windDragon:'龍',bind:'縛',confuse:'亂',flood:'水',thunder:'雷',inferno:'業',embers:'燼',gust:'風',ambush:'伏',poison:'毒',silence:'封',fireWall:'陣',rockfall:'石',waterSurge:'濤',feint:'虛',whirlwind:'旋',lightningNet:'網',encircle:'圍',demoralize:'離',deluge:'洪',tempest:'嵐',thunderbolt:'霆',grandFeint:'空',
-  mend:'癒',purify:'淨',fortify:'固',march:'行',inspire:'鼓',greatMend:'生',weakenCurse:'衰',breakArmor:'破',rumor:'言',mire:'泥',terror:'威',gale:'斬',plague:'疫',tidalLine:'決',chainFire:'連',thunderCross:'擊',skyFire:'天',quake:'震',shatter:'碎',chaos:'混',warCry:'喊',focus:'瞑',swiftWind:'迅',grandDrum:'鳴',ironWall:'鐵',valor:'勇',sanctuary:'聖',hongmen:'鴻',secretPath:'倉',burnBoats:'釜',backWater:'背',fourSongs:'楚',weiRiver:'濰',tenAmbush:'伏'};
+const ELEMENT_NAMES:Record<string,string>={fire:'화',wind:'풍',water:'수',thunder:'뇌',earth:'지',support:'술'};
+/** 책략 그림 가운데 글자: 책략 이름의 첫 글자(한글). */
+const glyphOf=(name:string)=>[...name][0]??'책';
 /** 책략마다 한 줄 풀이(무엇을 하는 계책인가). */
 export const STRATEGY_TEXT:Record<string,string>={
   fire:'적 한 부대에 불을 놓아 태운다. 숲에서 더 거세다.',embers:'작은 불씨를 던져 적을 그을린다. 적은 MP로 쓰는 첫 화계.',inferno:'넓은 땅을 업화로 덮는다. 맞은 적은 화상을 입는다.',fireWall:'불의 진을 쳐 둘레의 적을 태운다.',
@@ -156,8 +156,8 @@ export function strategyIcon(id:string){
     const gr=g.createLinearGradient(48,s.shape==='cross'?48:84,48+Math.cos(a)*len,(s.shape==='cross'?48:84)+Math.sin(a)*len);gr.addColorStop(0,'rgba(255,255,255,.85)');gr.addColorStop(1,'rgba(255,255,255,0)');
     g.strokeStyle=gr;g.lineWidth=s.shape==='cross'?10:3+((i*13)%4);g.beginPath();g.moveTo(48,s.shape==='cross'?48:84);g.lineTo(48+Math.cos(a)*len,(s.shape==='cross'?48:84)+Math.sin(a)*len);g.stroke();}
   g.restore();
-  g.fillStyle='rgba(0,0,0,.35)';g.font='bold 46px "Noto Serif KR","Nanum Myeongjo",serif';g.textAlign='center';g.textBaseline='middle';g.fillText(GLYPH[id]??'策',50,52);
-  g.fillStyle='#fffaf0';g.fillText(GLYPH[id]??'策',48,49);
+  g.fillStyle='rgba(0,0,0,.35)';g.font='bold 46px "Noto Serif KR","Nanum Myeongjo",serif';g.textAlign='center';g.textBaseline='middle';g.fillText(glyphOf(s.name),50,52);
+  g.fillStyle='#fffaf0';g.fillText(glyphOf(s.name),48,49);
   g.strokeStyle='rgba(255,236,190,.55)';g.lineWidth=3;g.strokeRect(1.5,1.5,93,93);
   const url=c.toDataURL('image/png');iconCache.set(id,url);return url;
 }
@@ -189,7 +189,7 @@ export function showCodex(host:CodexHost,view:CodexView={tab:'people'}){
   const v:CodexView={side:'all',...view};
   const people=v.tab==='people'?peopleTab(v.person??'사마의',v.side??'all'):undefined;
   const body=people?people.html:v.tab==='classes'?classesTab(v.cls??'infantry'):strategiesTab(v.spell??'fire');
-  host.modal(`<div class="briefing codex-screen"><div class="eyebrow">三國志 人物列傳 · 삼국지 인물열전</div><h2>${v.tab==='people'?'난세를 살아간 사람들':v.tab==='classes'?'병종 — 전장을 채운 부대들':'책략 목록'}</h2>
+  host.modal(`<div class="briefing codex-screen"><div class="eyebrow">삼국지 인물열전 · 사람과 병종과 책략</div><h2>${v.tab==='people'?'난세를 살아간 사람들':v.tab==='classes'?'병종 — 전장을 채운 부대들':'책략 목록'}</h2>
     <div class="cx-tabs">${([['people','인물 열전'],['classes','병종'],['strategies','책략']] as const).map(([id,label])=>`<button data-cx-tab="${id}" class="${v.tab===id?'active':''}">${label}</button>`).join('')}${host.research?'<button id="cx-research" class="cx-research">연구 ▸</button>':''}</div>
     ${body}<div class="run-actions"><button id="cx-back">← 본영</button></div></div>`,false);
   const all=<T extends HTMLElement>(sel:string)=>document.querySelectorAll<T>(sel);

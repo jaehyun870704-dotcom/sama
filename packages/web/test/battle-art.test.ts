@@ -86,7 +86,7 @@ import {officerPortrait,troopFaceRow} from '../src/officer-art.ts';
 describe('portraits without painted art',()=>{
  it('fall back to troop art for named commanders and keep painted faces',()=>{
   expect(officerPortrait('양앙')).toContain('troop-face');expect(troopFaceRow('전초 노병')).toBe(2);expect(troopFaceRow('추격 기병')).toBe(3);
-  expect(officerPortrait('사마의')).toContain('data-officer="sima_yi"');expect(officerPortrait('꿈속의 목소리')).toContain('夢');
+  expect(officerPortrait('사마의')).toContain('data-officer="sima_yi"');expect(officerPortrait('꿈속의 목소리')).toContain('<span>꿈</span>');
  });
 });
 import {raceGap} from '../src/campaign-rules.ts';

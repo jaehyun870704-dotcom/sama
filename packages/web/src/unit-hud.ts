@@ -12,7 +12,7 @@ import {classNames} from './troops.ts';
 
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 /** 지형 한 글자(카드 머리띠에 크게). */
-export const TERRAIN_GLYPH:Record<TerrainKind,string>={plain:'平',road:'道',forest:'林',mountain:'山',hill:'丘',water:'水',rapids:'湍',bridge:'橋',fort:'砦',gate:'門',wall:'城',cliff:'崖',marsh:'沼',plank:'棧',ford:'灘'};
+export const TERRAIN_GLYPH:Record<TerrainKind,string>={plain:'평지',road:'길',forest:'숲',mountain:'산',hill:'언덕',water:'물',rapids:'급류',bridge:'다리',fort:'성채',gate:'성문',wall:'성벽',cliff:'벼랑',marsh:'늪',plank:'잔도',ford:'여울'};
 const isOfficer=(u:Unit)=>factionOf(u.name)!==undefined||!!romanceByName(u.name);
 
 export interface CardOpts {
@@ -26,7 +26,7 @@ export interface CardOpts {
 function bar(kind:'hp'|'mp',now:number,max:number,from?:number,preview=0){
   const pct=(v:number)=>Math.max(0,Math.min(100,v/Math.max(1,max)*100)).toFixed(1);
   const start=from??now,cut=Math.min(preview,now);
-  return `<div class="hud-bar ${kind}"><i class="hud-icon">${kind==='hp'?'♥':'策'}</i><div class="hud-track"><span class="hud-fill" style="width:${pct(start)}%" data-to="${pct(now)}"></span>${cut>0?`<span class="hud-cut" style="left:${pct(now-cut)}%;width:${pct(cut)}%"></span>`:''}</div><b class="hud-num" data-to="${now}">${start}/${max}</b></div>`;
+  return `<div class="hud-bar ${kind}"><i class="hud-icon">${kind==='hp'?'♥':'책'}</i><div class="hud-track"><span class="hud-fill" style="width:${pct(start)}%" data-to="${pct(now)}"></span>${cut>0?`<span class="hud-cut" style="left:${pct(now-cut)}%;width:${pct(cut)}%"></span>`:''}</div><b class="hud-num" data-to="${now}">${start}/${max}</b></div>`;
 }
 /** 카드 한 장(HTML). side: 'left'면 초상이 왼쪽, 'right'면 오른쪽. */
 export function hudCard(u:Unit,state:BattleState,side:'left'|'right',o:CardOpts={}){
