@@ -4,6 +4,14 @@
 
 제작 도구: 내장 image_gen (CLI/API 대체 경로 사용 없음).
 
+## 우금 — 완료
+
+파일: `packages/web/public/portraits/yu-jin.png`. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
+
+### 생성 프롬프트
+
+Historical-scene. ONE square premium Three Kingdoms game officer portrait, Yu Jin (우금), stern disciplined Wei general. East Asian man late fifties, long rectangular lean face, slightly hollow cheeks, narrow assessing eyes, straight severe brows, graying short neat mustache and neatly trimmed narrow beard. Black hair gathered under a tightly fitted black military cloth cap with simple iron band, no large helmet or royal crown. Dark blue and charcoal lamellar armor in orderly rows, simple silver clasps, blue-gray mantle, white inner collar. Upright disciplined posture, controlled severe expression with faint sadness. Head and shoulders bust three-quarter looking right, clear face large enough for tiny thumbnail, head fully inside square. Masterful semi-realistic digital oil painting matching Sima Yi / Sima Fang dark realistic portrait collection, painterly natural skin, fine aged metal and woven cloth, warm key light and cool gray fill, deep midnight-blue smoky background. No text, frame, watermark, other people, anime, vector or shiny fantasy armor. One finished square image.
+
 ## 조인 — 완료
 
 파일: `packages/web/public/portraits/cao-ren.png`. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
