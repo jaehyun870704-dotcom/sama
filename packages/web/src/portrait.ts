@@ -209,7 +209,7 @@ function headwear(g:G,s:PortraitSpec,f:Face,R:()=>number){
   if(s.hat===0){// 상투와 비녀, 작은 검은 건
     shape(g,()=>g.ellipse(f.cx,top-20,15,13,0,0,7),d,1.4);shape(g,()=>{g.moveTo(f.cx-17,top-12);g.quadraticCurveTo(f.cx,top-18,f.cx+17,top-12);g.lineTo(f.cx+15,top-6);g.quadraticCurveTo(f.cx,top-12,f.cx-15,top-6);g.closePath();},'#1c1814',1.2);
     stroke(g,[[f.cx-30,top-18],[f.cx,top-24],[f.cx+32,top-28]],2.2,'#c8a04a');shape(g,()=>g.arc(f.cx+32,top-28,2.6,0,7),'#e8c870',1);}
-  if(s.hat===1){// 진현관: 검은 사(紗) 관, 앞이 높고 뒤로 기운 양(梁), 갓끈
+  if(s.hat===1){// 진현관: 검은 사 관, 앞이 높고 뒤로 기운 양, 갓끈
     shape(g,()=>{g.moveTo(f.cx-f.rx-4,top+14);g.quadraticCurveTo(f.cx,top+2,f.cx+f.rx+4,top+14);g.lineTo(f.cx+f.rx+2,top+4);g.quadraticCurveTo(f.cx,top-8,f.cx-f.rx-2,top+4);g.closePath();},'#1e1a18',1.4);
     shape(g,()=>{g.moveTo(f.cx-18,top+2);g.lineTo(f.cx-22,top-36);g.quadraticCurveTo(f.cx+4,top-50,f.cx+30,top-30);g.lineTo(f.cx+20,top-2);g.closePath();},lin(g,f.cx-20,0,f.cx+30,0,[[0,'#3a3430'],[1,'#141210']]),1.6);
     g.strokeStyle='rgba(220,200,160,.4)';g.lineWidth=1;for(let k=0;k<3;k++){g.beginPath();g.moveTo(f.cx-12+k*10,top);g.lineTo(f.cx-16+k*12,top-38+k*3);g.stroke();}
@@ -262,7 +262,7 @@ function inscription(g:G,name:string|undefined,R:()=>number){
     g.fillStyle=INK;g.font='bold 17px "Noto Serif KR","Nanum Myeongjo","Batang",serif';g.textAlign='center';g.textBaseline='middle';
     chars.forEach((c,i)=>g.fillText(c,x+12,y+16+i*19));}
   const sx=12,sy=S-38;g.save();g.translate(sx+13,sy+13);g.rotate(-.04);g.fillStyle='#b8261a';g.fillRect(-12,-12,24,24);
-  g.strokeStyle='#f4e6cc';g.lineWidth=1.2;g.strokeRect(-9,-9,18,18);g.fillStyle='#f4e6cc';g.font='bold 13px "Noto Serif KR",serif';g.textAlign='center';g.textBaseline='middle';g.fillText(name?[...name][0]!:'將',0,1);
+  g.strokeStyle='#f4e6cc';g.lineWidth=1.2;g.strokeRect(-9,-9,18,18);g.fillStyle='#f4e6cc';g.font='bold 13px "Noto Serif KR",serif';g.textAlign='center';g.textBaseline='middle';g.fillText(name?[...name][0]!:'장',0,1);
   g.globalCompositeOperation='destination-out';for(let i=0;i<40;i++){g.fillStyle=`rgba(0,0,0,${.2+R()*.5})`;g.fillRect(-12+R()*24,-12+R()*24,1.4,1.4);}g.restore();
 }
 function finish(g:G,s:PortraitSpec,R:()=>number){

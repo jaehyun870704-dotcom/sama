@@ -119,7 +119,7 @@ export function loadScenario(){let s:ScenarioState;try{s=readScenario(localStora
 /** 신세력 대본이 지금 회차의 세력 이름·동료를 쓰게 한다. */
 export function syncFaction(s:ScenarioState){
   const LOOK:Record<string,Look>={infantry:'infantry',spearman:'spear',archer:'archer',cavalry:'cavalry',heavyCav:'heavy',crossbow:'crossbow',strategist:'strategist',physician:'physician',horseArcher:'horseArcher',bandit:'bandit',monk:'monk',taoist:'taoist',fengshui:'sage'};
-  const f=s.run?.faction;setFactionContext({name:f?.name??'신세력',emblem:f?.emblem??'新',companions:Object.values(s.officers).map(o=>({name:o.name,look:LOOK[o.unitClass]??'infantry'}))});
+  const f=s.run?.faction;setFactionContext({name:f?.name??'신세력',emblem:f?.emblem??'신',companions:Object.values(s.officers).map(o=>({name:o.name,look:LOOK[o.unitClass]??'infantry'}))});
 }
 export function saveScenario(s:ScenarioState){syncFaction(s);try{localStorage.setItem(KEY,JSON.stringify(s));}catch{/* storage optional */}}
 

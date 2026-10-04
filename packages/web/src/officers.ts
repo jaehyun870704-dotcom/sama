@@ -50,7 +50,7 @@ const wider:LearnedStrategy[]=[
   ['shatter','괴멸계',29,'earth','spread',4,1,24,110,'breach'],['chaos','대혼란계',33,'support','spread',5,2,32,50,'confusion']] as const).map(([id,name,level,element,shape,range,radius,mpCost,power,status])=>({id,name,level,element,shape,range,radius,mpCost,power,targetSides:['enemy' as const],...(status?{inflicts:[status]}:{})} as LearnedStrategy)),
  ...([['warCry','함성',4,8,1,'rally',0],['focus','명상',9,2,0,'mana',18],['swiftWind','신속',12,12,1,'haste',0],['grandDrum','대고무',14,16,2,'rally',0],['ironWall','철벽',16,16,2,'guard',0],['valor','결사',18,12,0,'valor',0],['sanctuary','성역',24,26,2,'heal',35]] as const).map(([id,name,level,mpCost,radius,support,power])=>({id,name,level,mpCost,radius,support,power,element:'support' as const,range:3,shape:radius?'spread' as const:'single' as const,targetSides:['player','ally','allyAi'] as Array<'player'|'ally'|'allyAi'>})),
 ];
-/** 초한 고사(故事)의 책략: 사백 년 전 영웅들의 이름난 계책. */
+/** 초한 고사의 책략: 사백 년 전 영웅들의 이름난 계책. */
 const legends:LearnedStrategy[]=[
  {id:'hongmen',name:'홍문연',level:16,element:'support',shape:'single',range:4,radius:0,mpCost:16,power:60,inflicts:['seal','confusion'],targetSides:['enemy']},
  {id:'secretPath',name:'암도진창',level:20,element:'support',shape:'spread',range:3,radius:2,mpCost:18,power:0,support:'haste',targetSides:['player','ally','allyAi']},

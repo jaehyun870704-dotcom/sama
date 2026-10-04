@@ -71,8 +71,8 @@ const actTrack=(run:Run)=>`<div class="run-track" aria-label="원정 진행">${[
 /** 게임의 첫 화면. 본편은 시나리오(연의 + 가상), 레벨업용 반복 전투는 '반복 퀘스트'로 따로 둔다. */
 export function showHub(host:RunHost){
   const meta=loadMeta(),sc=scenarioSummary(),done=sc.state.done.length;
-  host.modal(`<div class="campaign run-hub"><div class="campaign-art"><img src="sima-portrait-v2.png" alt="부채를 든 사마의 창작 초상"><div class="art-caption">司 馬 懿 <span>천명은 기다리는 자에게 온다</span></div></div>
-  <div class="campaign-copy"><div class="eyebrow">三國志 · TACTICAL CHRONICLE</div><p class="chapter-pretitle">사마의전 · 연의와 가상의 천하</p><h2>사마의전</h2><p class="tagline">칼을 거두고, 때를 기다린다.</p>
+  host.modal(`<div class="campaign run-hub"><div class="campaign-art"><img src="sima-portrait-v2.png" alt="부채를 든 사마의 창작 초상"><div class="art-caption">사 마 의 <span>천명은 기다리는 자에게 온다</span></div></div>
+  <div class="campaign-copy"><div class="eyebrow">삼국지 · 전략 연대기</div><p class="chapter-pretitle">사마의전 · 연의와 가상의 천하</p><h2>사마의전</h2><p class="tagline">칼을 거두고, 때를 기다린다.</p>
   <div class="hub-stats"><span><b>${done}</b><small>마친 장</small></span><span><b>${esc(sc.tag)}</b><small>지금</small></span><span><b>${meta.endings.length}/${ALL_ENDINGS.length}</b><small>본 결말</small></span><span><b>${meta.mandate}</b><small>천명</small></span></div>
   <p class="intro">로그라이크 『천명의 길』 — 회차마다 『삼국지연의』의 첫 장(189년 하내)에서 사마의의 일생을 다시 시작한다. 장마다 이야기 → 출진 전 정비 → 전투, 장과 장 사이엔 무작위 행군로(전투·정예·모병·의원·보물고·수련) 세 갈래. 쓰러진 장수는 중상으로 물러났다 돌아오고, 체력과 보물은 다음 싸움으로 이어진다. 가상 시나리오에서는 장수를 설득해 들이고, 꺾은 적장도 설득할 수 있다. 지면 회차가 끝나고, 얻은 천명으로 해금해 다음 회차를 강하게. 세 번의 갈림길에서 다른 길을 고르면 일어나지 않은 역사가 결말까지 펼쳐진다(결말 17종). 직접 만든 신장수와 함께 신세력을 세워 진행할 수도 있다.</p>
   <div class="hub-actions"><button id="hub-scenario" class="primary">${done?'천명의 길 이어하기':'천명의 길 시작'}${sc.state.run?` · 제${sc.state.run.no}회차`:''} · ${esc(sc.tag)} 「${esc(sc.title)}」</button>

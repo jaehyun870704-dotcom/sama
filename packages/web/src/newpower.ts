@@ -7,7 +7,7 @@ import type {ChapterScript,Look,CastMember,ScriptStep,CampPerson,ChoiceOption,Ca
 import {ROUTES,routeById,factionText,fatePoint} from './fate.ts';
 
 export interface FactionContext {name:string;emblem:string;companions:Array<{name:string;look:Look}>}
-let ctx:FactionContext={name:'신세력',emblem:'新',companions:[]};
+let ctx:FactionContext={name:'신세력',emblem:'신',companions:[]};
 /** 지금 회차의 세력·동료(scenario.ts가 불러올 때마다 맞춘다). */
 export function setFactionContext(c:FactionContext){ctx=c;}
 export const factionContext=()=>ctx;

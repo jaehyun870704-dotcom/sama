@@ -108,7 +108,7 @@ export function showScenario(host:ScenarioHost,selected?:string){
     return `<button class="sc-card ${st} kind-${s.kind}" data-step="${esc(s.id)}" aria-pressed="${s===sel}"><span class="sc-thumb" style="${isoBackdrop(firstArt(s))}"></span><span class="sc-card-text"><small>${String(i+1).padStart(2,'0')} · ${kindTag[s.kind]} · ${esc(stepYear(s,state))}</small><strong>${esc(stepTitle(s,state))}</strong></span><b>${st==='done'?'◆':st==='now'?'▶':'·'}</b></button>`;};
   const groups=[1,2,3].map(a=>{const items=path.map((s,i)=>({s,i})).filter(x=>x.s.act===a);return items.length?`<h3 class="sc-act">${ACT_NAMES[a-1]}</h3>${items.map(x=>card(x.s,x.i)).join('')}`:'';}).join('');
   const isCur=sel===cur,isDone=done.has(sel.id);
-  host.modal(`<div class="scenario-screen"><div class="sc-top"><div><div class="eyebrow">三國志 · 사마의전 · 시나리오</div><h2>천명의 길</h2></div>
+  host.modal(`<div class="scenario-screen"><div class="sc-top"><div><div class="eyebrow">삼국지 · 사마의전 · 시나리오</div><h2>천명의 길</h2></div>
     <div class="sc-route">${track}</div><p class="muted">사마의 Lv.${hero.level} · 함께하는 장수 ${Object.keys(state.officers).length}명 · 마친 장 ${state.done.length}</p>${runBar(state)}</div>
     <div class="sc-body"><nav class="sc-list" aria-label="장 목록">${groups}</nav>
     <section class="sc-detail"><div class="sc-banner" style="${isoBackdrop(firstArt(sel))}"><span class="sc-kind kind-${sel.kind}">${kindTag[sel.kind]}</span><div class="sc-banner-title"><small>${esc(stepYear(sel,state))}</small><h3>${esc(stepTitle(sel,state))}</h3></div></div>
@@ -377,7 +377,7 @@ function choiceScreen(host:ScenarioHost,title:string,items:Array<{title:string;d
 }
 function marchResult(host:ScenarioHost,label:string,news:string[]){
   const next=currentStep(loadScenario());
-  host.modal(`<div class="result scenario-result"><div class="result-character">行</div><h2>${esc(label)}</h2>${news.length?`<div class="run-news">${news.map(n=>`<p${n.startsWith('진화!')?' class="evo"':''}>${esc(n)}</p>`).join('')}</div>`:''}
+  host.modal(`<div class="result scenario-result"><div class="result-character">길</div><h2>${esc(label)}</h2>${news.length?`<div class="run-news">${news.map(n=>`<p${n.startsWith('진화!')?' class="evo"':''}>${esc(n)}</p>`).join('')}</div>`:''}
   ${next?`<p class="muted">다음 장 · ${esc(kindTag[next.kind])} · ${esc(stepTitle(next,loadScenario()))}</p>`:''}
   <div class="modal-actions"><button id="mr-list">장 목록</button><button class="primary" id="mr-next">다음 장 ▶</button></div></div>`,false);
   document.getElementById('mr-list')!.onclick=()=>showScenario(host);document.getElementById('mr-next')!.onclick=()=>goNext(host);
@@ -475,8 +475,8 @@ export function startNewRun(host:ScenarioHost,no?:number){
 }
 /** 신세력의 글('{세력}')을 이 회차의 세력 이름으로. */
 const ft=(state:ScenarioState,text:string)=>factionText(text,state.run?.faction?.name);
-/** 무대 깃발: 신세력이면 그 문장·색, 아니면 위(魏). */
-function flagOf(state:ScenarioState){const f=state.run?.faction;setPlayerFlag(f?.emblem??'魏',f?.color??'#1f3f8a');}
+/** 무대 깃발: 신세력이면 그 문장·색, 아니면 위. */
+function flagOf(state:ScenarioState){const f=state.run?.faction;setPlayerFlag(f?.emblem??'위',f?.color??'#1f3f8a');}
 
 /** 본영 카드에 쓰는 요약. */
 export function scenarioSummary(){const s=loadScenario(),cur=currentStep(s);return {state:s,current:cur,title:cur?stepTitle(cur,s):'결말까지 보았다',tag:cur?kindTag[cur.kind]:'완결'};}

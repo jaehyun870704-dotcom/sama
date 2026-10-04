@@ -16,5 +16,5 @@ const entries:Array<[string,string,GearSlot,number,number,string]>=[
 export const extraTreasures:Treasure[]=entries.map(([id,name,slot,grade,icon,quest],i)=>{
  const bonus:Treasure['bonus']=slot==='weapon'?{attack:2+grade, ...(i%2?{agility:2}:{maxHp:4})}:slot==='armor'?{defense:grade+1,maxHp:grade*3}:i%3===0?{maxMp:grade*2,intellect:grade}:i%3===1?{spirit:grade+1,agility:grade}:{maxHp:grade*3,agility:grade};
  const names:Record<string,string>={attack:'공격',defense:'방어',maxHp:'최대 체력',maxMp:'최대 MP',intellect:'지력',spirit:'정신',agility:'민첩'};
- return {id,name,slot,grade,icon,quest,stage:quest,glyph:slot==='weapon'?'兵':slot==='armor'?'甲':'寶',bonus,effect:Object.entries(bonus).map(([k,v])=>names[k]+' +'+v).join(' · '),description:['흩어진 병장기를 되찾아 장인의 손에서 되살린 보물.','험한 길을 함께 넘은 이들이 신뢰의 증표로 건넨 보물.','전란 속에서 지켜 낸 기록과 기술이 담긴 보물.'][i%3]!};
+ return {id,name,slot,grade,icon,quest,stage:quest,glyph:slot==='weapon'?'무':slot==='armor'?'갑':'보',bonus,effect:Object.entries(bonus).map(([k,v])=>names[k]+' +'+v).join(' · '),description:['흩어진 병장기를 되찾아 장인의 손에서 되살린 보물.','험한 길을 함께 넘은 이들이 신뢰의 증표로 건넨 보물.','전란 속에서 지켜 낸 기록과 기술이 담긴 보물.'][i%3]!};
 });

@@ -12,7 +12,7 @@ import {bustFace,displayName} from './faces.ts';
 import {officerPortrait} from './officer-art.ts';
 
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
-const NUM=['一','二','三','四','五'];
+const NUM=['1합','2합','3합','4합','5합'];
 /** 행동 아이콘(먹 붓으로 그린 듯한 선 그림). */
 const ICON:Record<'duel'|'debate',Record<DuelAction,string>>={
   duel:{
@@ -42,7 +42,7 @@ const face=(name:string)=>bustFace(name)??`<div class="talk-bust sprite">${offic
 
 /** 1) 대결 선포 화면. */
 export function duelSplash(d:DuelState,acceptLine?:string,historic=false){
-  const title=d.kind==='duel'?'對決':'舌戰',sub=d.kind==='duel'?'단기접전':'설전';
+  const title=d.kind==='duel'?'일기토':'설전',sub=d.kind==='duel'?'단기접전':'설전';
   const banner=(name:string,side:'red'|'blue',model:string)=>`<div class="vs-banner ${side}"><div class="vs-face">${face(name)}</div><b>${esc(displayName(name))}</b><div class="vs-model">${model}</div></div>`;
   return `<div class="duel-splash ${d.kind}" role="dialog" aria-label="${sub}">
     <div class="vs-title">${sub}</div>
@@ -68,7 +68,7 @@ export function duelArena(d:DuelState,o:{models:{player:string;enemy:string};bac
     return `<div class="duel-round ${cls}${i===d.round&&!d.result?' now':''}"><span class="duel-round-no">${n}</span><div class="duel-round-tile">${h?icon(d.kind,h.action):''}</div>${h?`<small>${h.dealt}:${h.taken}</small>`:''}</div>${i<4?'<i class="duel-arrow">➜</i>':''}`;}).join('');
   const actions=(Object.keys(labels) as DuelAction[]).map(a=>{const off=a==='special'&&d.player.energy<2;
     return `<button type="button" class="duel-act${off?' off':''}" data-duel-action="${a}" ${off||d.result?'disabled':''}>${icon(d.kind,a)}<b>${labels[a]}</b><small>${HELP[d.kind][a]}</small></button>`;}).join('');
-  const result=d.result?`<div class="duel-result ${d.result}"><span>${d.result==='win'?'勝':d.result==='lose'?'敗':'和'}</span><p>${d.result==='win'?'승리':d.result==='lose'?'패배':'무승부'} · 전투 체력: 승자 15% · 패자 45% · 무승부 양쪽 25% 피해(최소 1). 패자는 2턴 혼란.</p><button id="duel-return" class="primary">전장으로 돌아가기</button></div>`:'';
+  const result=d.result?`<div class="duel-result ${d.result}"><span>${d.result==='win'?'승리':d.result==='lose'?'패배':'무승부'}</span><p>${d.result==='win'?'승리':d.result==='lose'?'패배':'무승부'} · 전투 체력: 승자 15% · 패자 45% · 무승부 양쪽 25% 피해(최소 1). 패자는 2턴 혼란.</p><button id="duel-return" class="primary">전장으로 돌아가기</button></div>`:'';
   return `<div class="duel-stage ${d.kind}">
     <div class="duel-view" style="${o.backdrop}">
       <div class="duel-sun"></div>

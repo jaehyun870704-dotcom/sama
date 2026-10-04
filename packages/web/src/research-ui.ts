@@ -25,9 +25,9 @@ export function showResearch(host:ResearchHost,tab:ResearchTab='battle',pick?:st
     <p>${r?`지금: ${esc(sel.effect(r))}`:'아직 배우지 않았다.'}${r<sel.max?`<br>다음: <b>${esc(sel.effect(r+1))}</b>`:'<br><b>끝까지 연구했다.</b>'}</p></div></div>
     ${reqs?`<p class="rs-req">선행 ${reqs}</p>`:''}${sel.gate?`<p class="rs-req">조건 <span class="${gateOpen(meta,sel.gate)?'ok':'no'}">${esc(gateText(sel.gate))}</span></p>`:''}
     ${r<sel.max?`<button id="rs-buy" class="primary" ${st==='open'&&meta.mandate>=cost?'':'disabled'}>연구 · 천명 ${cost}</button>`:''}</div>`;
-  host.modal(`<div class="briefing research-screen"><div class="eyebrow">硏究 · 회차를 넘어 남는 힘</div><h2>연구</h2>
+  host.modal(`<div class="briefing research-screen"><div class="eyebrow">연구 · 회차를 넘어 남는 힘</div><h2>연구</h2>
     <div class="rs-tabs">${RESEARCH_TABS.map(x=>`<button data-rs-tab="${x.id}" class="rs-tab-${x.id} ${x.id===tab?'active':''}">${x.name}</button>`).join('')}<span class="rs-mandate">천명 <b>${meta.mandate}</b></span></div>
-    <div class="rs-body"><aside class="rs-banner rs-tab-${tab}"><h3>${t.name}</h3><p>${esc(t.blurb)}</p><div class="rs-emblem">${tab==='battle'?'⚔':tab==='domestic'?'⚖':tab==='formation'?'⚑':'楚'}</div><small>연구 진행률</small><b>${prog.done}/${prog.total}</b></aside>
+    <div class="rs-body"><aside class="rs-banner rs-tab-${tab}"><h3>${t.name}</h3><p>${esc(t.blurb)}</p><div class="rs-emblem">${tab==='battle'?'⚔':tab==='domestic'?'⚖':tab==='formation'?'⚑':'초'}</div><small>연구 진행률</small><b>${prog.done}/${prog.total}</b></aside>
     <div class="rs-tree-wrap"><div class="rs-tree" style="width:${W}px;height:${H}px"><svg width="${W}" height="${H}" aria-hidden="true"><defs><marker id="rs-arrow" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z"/></marker></defs>${arrows}</svg>${tiles}</div></div></div>
     ${detail}
     <p class="muted">천명은 천명의 길 회차가 끝날 때 얻는다. 잠긴 칸은 회차를 거듭하고 연의 전장을 이기고 결말을 볼수록 서서히 열린다.</p>
