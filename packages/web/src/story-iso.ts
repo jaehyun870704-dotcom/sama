@@ -17,7 +17,7 @@ export const W=1280,H=640;
 const TW=80,TH=40,OX=640,N=22;
 /** 방·뜰의 안쪽 모서리 높이(화면 y). 실내는 벽을 사람들 바로 뒤로 당겨 내린다(빈 바닥 대신 벽·가구가 사람 곁에). */
 let OY=40;
-const originFor=(kind:Kind)=>kind==='throne'?40:kind==='palace'?110:INDOOR.has(kind)?170:kind==='court'?110:kind==='gatehouse'||kind==='wall'||kind==='fort'||kind==='camp'||kind==='town'?70:40;
+const originFor=(kind:Kind)=>kind==='throne'?40:kind==='palace'?110:INDOOR.has(kind)?170:kind==='court'?110:kind==='wall'?200:kind==='gatehouse'||kind==='fort'||kind==='camp'||kind==='town'?70:40;
 const pt=(c:number,r:number):[number,number]=>[OX+(c-r)*TW/2,OY+(c+r)*TH/2];
 
 type Kind='hall'|'palace'|'study'|'corridor'|'tent'|'store'|'court'|'gatehouse'|'camp'|'field'|'hill'|'valley'|'forest'|'river'|'bank'|'wall'|'fort'|'fire'|'deck'|'town'|'throne'|'battlefield'|'home';
@@ -355,25 +355,66 @@ function art(c:number,r:number,w:number,d:number,f:Art,h:number,flip=false,opts:
 function stud(g:Ctx,x:number,y:number,rad=1.6,col='#e0b450'){g.fillStyle=col;g.beginPath();g.arc(x,y,rad,0,7);g.fill();g.fillStyle='rgba(255,255,230,.7)';g.fillRect(Math.round(x-rad*0.5),Math.round(y-rad*0.6),1,1);}
 /** 윗면 위의 한 점(칸 c+t·w, r+u·d, 높이 h). */
 const onTop=(c:number,r:number,w:number,d:number,h:number)=>(t:number,u:number)=>up(pt(c+w*t,r+d*u),h);
+/** 카펫 무늬(평면): 칸 하나 = PX점. 바닥 마름모에 비스듬히 붙여 쓴다. */
+const RUG_PX=96;
+const rugCache=new Map<string,HTMLCanvasElement>();
+function hexMix(a:string,b:string,t:number){const A=parseInt(a.slice(1),16),B=parseInt(b.slice(1),16),m=(s:number)=>Math.round(((A>>s)&255)*(1-t)+((B>>s)&255)*t);return `rgb(${m(16)},${m(8)},${m(0)})`;}
+function rugTexture(w:number,d:number,col:string){
+  const key=`${w}:${d}:${col}`;const hit=rugCache.get(key);if(hit)return hit;
+  const W2=Math.round(w*RUG_PX),H2=Math.round(d*RUG_PX),c=document.createElement('canvas');c.width=W2;c.height=H2;const g=c.getContext('2d')!;
+  const gold='#d9a94a',dark='#1d2440',cream='#e8d8b0',deep=hexMix(col,'#000000',.35),light=hexMix(col,'#ffe0b0',.18);
+  let seed=W2*31+H2;const R=()=>{seed=(seed*1103515245+12345)>>>0;return (seed>>>8)/16777216;};
+  g.fillStyle=col;g.fillRect(0,0,W2,H2);
+  const B1=Math.min(W2,H2)*0.085,B2=Math.min(W2,H2)*0.06;
+  // 바깥 테두리: 남색 띠에 금빛 회문(번개무늬)
+  g.fillStyle=dark;g.fillRect(0,0,W2,B1);g.fillRect(0,H2-B1,W2,B1);g.fillRect(0,0,B1,H2);g.fillRect(W2-B1,0,B1,H2);
+  const fret=(x0:number,y0:number,len:number,horiz:boolean)=>{const step=B1*1.1,n=Math.floor(len/step);g.strokeStyle=gold;g.lineWidth=Math.max(1.5,B1*.09);g.lineCap='square';
+    for(let i=0;i<n;i++){const o=i*step+(len-n*step)/2,s=B1*.62,m=B1*.19;g.beginPath();
+      const P=(a:number,b:number):[number,number]=>horiz?[x0+o+a,y0+m+b]:[x0+m+b,y0+o+a];
+      g.moveTo(...P(0,s));g.lineTo(...P(0,0));g.lineTo(...P(s,0));g.lineTo(...P(s,s*.75));g.lineTo(...P(s*.3,s*.75));g.lineTo(...P(s*.3,s*.35));g.lineTo(...P(s*.65,s*.35));g.stroke();}};
+  fret(0,0,W2,true);fret(0,H2-B1,W2,true);fret(0,0,H2,false);fret(W2-B1,0,H2,false);
+  // 둘째 띠: 크림빛에 구름무늬 줄
+  g.fillStyle=cream;g.fillRect(B1,B1,W2-2*B1,B2);g.fillRect(B1,H2-B1-B2,W2-2*B1,B2);g.fillRect(B1,B1,B2,H2-2*B1);g.fillRect(W2-B1-B2,B1,B2,H2-2*B1);
+  const cloud=(x:number,y:number,r:number)=>{g.strokeStyle=deep;g.lineWidth=Math.max(1,r*.28);g.beginPath();g.arc(x-r*.6,y,r*.55,Math.PI*.9,Math.PI*2.1);g.arc(x+r*.6,y,r*.55,Math.PI*.9,Math.PI*2.1);g.stroke();g.beginPath();g.arc(x,y-r*.25,r*.5,Math.PI,0);g.stroke();};
+  for(let x=B1+B2;x<W2-B1-B2;x+=B2*2.2){cloud(x,B1+B2*.62,B2*.42);cloud(x,H2-B1-B2*.38,B2*.42);}
+  for(let y=B1+B2;y<H2-B1-B2;y+=B2*2.2){cloud(B1+B2*.5,y,B2*.42);cloud(W2-B1-B2*.5,y,B2*.42);}
+  // 금선 두 줄
+  g.strokeStyle=gold;g.lineWidth=2;g.strokeRect(B1+B2+3,B1+B2+3,W2-2*(B1+B2)-6,H2-2*(B1+B2)-6);g.strokeStyle=hexMix(gold,'#000000',.3);g.lineWidth=1;g.strokeRect(B1,B1,W2-2*B1,H2-2*B1);
+  // 안쪽 마당: 마름모 격자와 교차점의 작은 꽃
+  const x0=B1+B2+6,y0=B1+B2+6,x1=W2-x0,y1=H2-y0;g.save();g.beginPath();g.rect(x0,y0,x1-x0,y1-y0);g.clip();
+  const grd=g.createRadialGradient(W2/2,H2/2,10,W2/2,H2/2,Math.max(W2,H2)*.6);grd.addColorStop(0,light);grd.addColorStop(1,col);g.fillStyle=grd;g.fillRect(x0,y0,x1-x0,y1-y0);
+  const L=RUG_PX*.42;g.strokeStyle=hexMix(col,'#000000',.22);g.lineWidth=1.5;
+  for(let k=-H2;k<W2+H2;k+=L){g.beginPath();g.moveTo(k,0);g.lineTo(k+H2,H2);g.stroke();g.beginPath();g.moveTo(k,H2);g.lineTo(k+H2,0);g.stroke();}
+  for(let yy=0;yy<H2+L;yy+=L/2)for(let xx=((yy/(L/2))%2)*L/2;xx<W2+L;xx+=L){g.fillStyle=gold;g.globalAlpha=.75;for(let i=0;i<4;i++){const a=i*Math.PI/2;g.beginPath();g.ellipse(xx+Math.cos(a)*3,yy+Math.sin(a)*3,2.6,1.4,a,0,7);g.fill();}g.globalAlpha=1;g.fillStyle=cream;g.beginPath();g.arc(xx,yy,1.4,0,7);g.fill();}
+  g.restore();
+  // 메달리온(연꽃): 겹친 고리, 꽃잎 두 겹, 가운데 보주
+  const medal=(cx:number,cy:number,rad:number,clip?:[number,number,number,number])=>{g.save();if(clip){g.beginPath();g.rect(...clip);g.clip();}
+    g.fillStyle=deep;g.beginPath();g.ellipse(cx,cy,rad,rad,0,0,7);g.fill();g.strokeStyle=gold;g.lineWidth=3;g.stroke();
+    g.fillStyle=dark;g.beginPath();g.arc(cx,cy,rad*.82,0,7);g.fill();g.strokeStyle=gold;g.lineWidth=1.5;g.stroke();
+    for(let i=0;i<16;i++){const a=i/16*Math.PI*2;g.fillStyle=i%2?gold:hexMix(gold,'#ffffff',.25);g.beginPath();g.ellipse(cx+Math.cos(a)*rad*.62,cy+Math.sin(a)*rad*.62,rad*.2,rad*.08,a,0,7);g.fill();}
+    for(let i=0;i<8;i++){const a=i/8*Math.PI*2+Math.PI/8;g.fillStyle=i%2?col:light;g.strokeStyle=gold;g.lineWidth=1.2;g.beginPath();g.ellipse(cx+Math.cos(a)*rad*.34,cy+Math.sin(a)*rad*.34,rad*.2,rad*.11,a,0,7);g.fill();g.stroke();}
+    g.fillStyle=gold;g.beginPath();g.arc(cx,cy,rad*.15,0,7);g.fill();g.fillStyle=cream;g.beginPath();g.arc(cx,cy,rad*.07,0,7);g.fill();g.restore();};
+  const rad=Math.min(x1-x0,y1-y0)*.3;medal(W2/2,H2/2,rad);
+  for(const [cx,cy] of [[x0,y0],[x1,y0],[x0,y1],[x1,y1]] as const)medal(cx,cy,rad*.62,[x0,y0,x1-x0,y1-y0]);
+  // 낡은 결: 얼룩과 결 따라 옅은 줄
+  for(let i=0;i<W2*H2/900;i++){g.fillStyle=R()<.5?'rgba(0,0,0,.05)':'rgba(255,240,210,.05)';g.beginPath();g.ellipse(R()*W2,R()*H2,6+R()*18,3+R()*8,R()*3,0,7);g.fill();}
+  g.strokeStyle='rgba(0,0,0,.05)';g.lineWidth=1;for(let y=0;y<H2;y+=3){g.beginPath();g.moveTo(0,y);g.lineTo(W2,y);g.stroke();}
+  rugCache.set(key,c);return c;
+}
+/** 바닥 무늬 그림을 마름모 바닥(칸 c,r에서 w×d)에 비스듬히 붙인다. */
+function onFloor(g:Ctx,img:HTMLCanvasElement,c:number,r:number,w:number,d:number){
+  // 그림 한 점(ix,iy) → 칸 (c+ix·w/폭, r+iy·d/높이) → 화면
+  const [X,Y]=pt(c,r),ku=w/img.width,kv=d/img.height;
+  g.save();g.transform(TW/2*ku,TH/2*ku,-TW/2*kv,TH/2*kv,X,Y);g.imageSmoothingQuality='high';g.drawImage(img,0,0);g.restore();
+}
 function rug(c:number,r:number,w:number,d:number,col='#8a1f1a'):Prop{return P(c,r,w,d,g=>{
-  // 앞 두 가장자리의 술
-  g.strokeStyle='rgba(225,205,150,.85)';g.lineWidth=1;
-  for(let t=0.05;t<w;t+=0.07){const [x,y]=pt(c+t,r+d);g.beginPath();g.moveTo(x,y);g.lineTo(x-1,y+4);g.stroke();}
-  for(let t=0.05;t<d;t+=0.07){const [x,y]=pt(c+w,r+t);g.beginPath();g.moveTo(x,y);g.lineTo(x+1,y+4);g.stroke();}
-  poly(g,diamond(c,r,w,d),col,'#2a0c08');
-  // 남색 바깥 띠 + 금빛 회문
-  poly(g,diamond(c+0.12,r+0.12,w-0.24,d-0.24),'#1e2a4a');poly(g,diamond(c+0.3,r+0.3,w-0.6,d-0.6),col);
-  g.fillStyle='#d6a64a';
-  const band=(a:[number,number],b:[number,number],n:number)=>{for(let i=0;i<=n;i++){const x=a[0]+(b[0]-a[0])*i/n,y=a[1]+(b[1]-a[1])*i/n;g.fillRect(Math.round(x)-1,Math.round(y)-1,3,2);if(i%2)g.fillRect(Math.round(x)-1,Math.round(y)-3,1,2);}};
-  band(pt(c+0.21,r+0.21),pt(c+w-0.21,r+0.21),Math.round(w*6));band(pt(c+0.21,r+d-0.21),pt(c+w-0.21,r+d-0.21),Math.round(w*6));
-  band(pt(c+0.21,r+0.21),pt(c+0.21,r+d-0.21),Math.round(d*6));band(pt(c+w-0.21,r+0.21),pt(c+w-0.21,r+d-0.21),Math.round(d*6));
-  poly(g,diamond(c+0.5,r+0.5,w-1,d-1),shade(col,1.1),'rgba(214,166,74,.7)',1);
-  // 가운데 연꽃 무늬와 네 귀의 구름
-  const [x,y]=pt(c+w/2,r+d/2),s=Math.min(w,d);
-  g.strokeStyle='#d6a64a';g.lineWidth=2;g.beginPath();g.ellipse(x,y,s*14,s*7,0,0,7);g.stroke();
-  for(let i=0;i<8;i++){const a=i/8*Math.PI*2;g.fillStyle=i%2?'#e0b860':'#c9952a';g.beginPath();g.ellipse(x+Math.cos(a)*s*8,y+Math.sin(a)*s*4,s*3.2,s*1.6,a,0,7);g.fill();}
-  g.fillStyle='#f0d080';g.beginPath();g.ellipse(x,y,s*3,s*1.5,0,0,7);g.fill();
-  for(const [t,u] of [[0.62,0.62],[w-0.62,0.62],[0.62,d-0.62],[w-0.62,d-0.62]] as const){const [cx,cy]=pt(c+t,r+u);g.strokeStyle='rgba(214,166,74,.8)';g.lineWidth=1.5;g.beginPath();g.arc(cx-4,cy,4,Math.PI,0);g.arc(cx+4,cy,4,Math.PI,0);g.stroke();}
+  // 바닥에 드리운 그늘, 무늬, 앞 두 가장자리의 술
+  poly(g,diamond(c+0.06,r+0.06,w,d),'rgba(0,0,0,.28)');
+  onFloor(g,rugTexture(w,d,col),c,r,w,d);
+  poly(g,diamond(c,r,w,d),'rgba(0,0,0,0)','rgba(30,10,6,.6)',1);
+  g.strokeStyle='rgba(232,214,160,.9)';g.lineWidth=1.2;
+  for(let t=0.04;t<w;t+=0.06){const [x,y]=pt(c+t,r+d);g.beginPath();g.moveTo(x,y);g.lineTo(x-1,y+5);g.stroke();}
+  for(let t=0.04;t<d;t+=0.06){const [x,y]=pt(c+w,r+t);g.beginPath();g.moveTo(x,y);g.lineTo(x+1,y+5);g.stroke();}
 },false);}
 function table(c:number,r:number,w:number,d:number,R:()=>number):Prop{return P(c,r,w,d,g=>{
   const H=30;
@@ -1044,10 +1085,10 @@ function build(kind:Kind,seed:number,place='',clear:Set<string>=new Set()):IsoSc
       break;}
     case 'wall':
       // 성벽 위: 사람은 성 위 길에 선다. 뒤쪽은 성가퀴, 그 너머로 성 밖 들판. 문루와 각루, 지킬 채비(돌·통나무·노포)
-      add(P(8.6,0.6,4,2.2,g=>tower(g,8.6,0.6,4,2.2,0,R,2,'城樓')));
-      add(stonePile(2,4,R));add(stonePile(4.6,1.4,R));add(logPile(1.2,7.4));add(ballista(6,1.2));add(ballista(1.2,10.6));add(warDrum(13.6,2.2));
+      add(P(13,0.6,4,2.2,g=>tower(g,13,0.6,4,2.2,0,R,2,'城樓')));
+      add(stonePile(2,4,R));add(stonePile(4.6,1.4,R));add(logPile(1.2,7.4));add(ballista(6,1.2));add(ballista(1.2,10.6));add(warDrum(10.4,1.2));
       add(banner(1.1,3.2,'#1f3f8a'));add(banner(3.2,1.1,'#1f3f8a'));add(banner(1.1,13,'#1f3f8a'));add(banner(14.4,1.1,'#1f3f8a'));
-      add(brazier(2.2,6.4,R));add(brazier(6.4,2.6,R));add(torch(1.2,15.4,R));add(arrows(3.6,3.6,R));add(arrows(1.4,12,R));add(debris(15.6,1.4,R));add(rack(1.1,16.6,2,));add(crate(16.6,1.4,0.8));
+      add(brazier(2.2,6.4,R));add(brazier(6.4,2.6,R));add(torch(1.2,15.4,R));add(arrows(3.6,3.6,R));add(arrows(1.4,12,R));add(debris(8.6,1.4,R));add(rack(1.1,16.6,2,));add(crate(11.8,2.8,0.8));
       break;
     case 'fort':
       // 산 위 보루: 돌 기단 위 목책, 모서리와 문 옆의 망루, 말막이 말뚝, 군막·장작
@@ -1214,7 +1255,7 @@ function build(kind:Kind,seed:number,place='',clear:Set<string>=new Set()):IsoSc
   const passable=([c,r]:Cell)=>!blocked.has(`${c},${r}`)&&c>=minEdge&&r>=minEdge;
   // 돌려주는 함수들은 이 장면의 원점을 붙들어 둔다(다른 장면을 만들면 OY가 바뀐다)
   const oy=OY,ptL=(c:number,r:number):[number,number]=>[OX+(c-r)*TW/2,oy+(c+r)*TH/2];
-  const onScreen=([c,r]:Cell)=>{const [x,y]=ptL(c+0.5,r+0.5);return x>56&&x<W-56&&y>Math.max(oy+(indoor?60:150),120)&&y<H-24;};
+  const onScreen=([c,r]:Cell)=>{const [x,y]=ptL(c+0.5,r+0.5);return x>56&&x<W-56&&y>Math.max(oy+(indoor||kind==='wall'?60:150),120)&&y<H-24;};
   const standable=(cell:Cell)=>passable(cell)&&onScreen(cell);
   const toPct=([c,r]:Cell):At=>{const [x,y]=ptL(c+0.5,r+0.5);return [x/W*100,y/H*100];};
   const toCell=([px,py]:At):Cell=>{
@@ -1230,7 +1271,7 @@ function build(kind:Kind,seed:number,place='',clear:Set<string>=new Set()):IsoSc
   if(layout){blocked.delete('1,1');}
   // 꼭 화면에 담을 곳(성문 위 문루의 아래·망루): 카메라가 너무 다가가지 않게
   const pct=([x,y]:[number,number]):At=>[x/W*100,y/H*100];
-  const focus:At[]|undefined=kind==='gatehouse'?[pct(up(pt(7.4,2.6),CASTLE_H+30)),pct(pt(7.4,2.6))]:kind==='wall'?[pct(up(pt(10.6,2.8),60)),pct(up(pt(0,4),40)),pct(up(pt(4,0),40))]:kind==='fort'?[pct(up(pt(1.2,1.9),120))]:undefined;
+  const focus:At[]|undefined=kind==='gatehouse'?[pct(up(pt(7.4,2.6),CASTLE_H+30)),pct(pt(7.4,2.6))]:kind==='wall'?[pct(up(pt(0,3),90)),pct(up(pt(3,0),90))]:kind==='fort'?[pct(up(pt(1.2,1.9),120))]:undefined;
   return {url:canvas.toDataURL('image/jpeg',0.9),toCell,toPct,standable,passable,indoor,fx:mood.fx,light:mood.light,...(focus?{focus}:{}),...(layout?{layout}:{})};
 }
 
