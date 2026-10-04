@@ -4,6 +4,14 @@
 
 제작 도구: 내장 image_gen (CLI/API 대체 경로 사용 없음).
 
+## 환범 — 완료
+
+파일: `packages/web/public/portraits/huan-fan.png`. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
+
+### 생성 프롬프트
+
+Historical-scene. ONE square premium Three Kingdoms game portrait of Huan Fan (환범), the shrewd elderly Wei adviser called the bag of wisdom. Slender East Asian man around 60, exceptionally long narrow face, prominent aquiline nose, high forehead, sharp alert small eyes, fine gray mustache and thin long gray goatee, worried calculating expression. Tall austere black Han scholar guan cap with a tiny dark jade clasp. Layered muted plum and charcoal scholarly robes with subtle woven patterns and cream crossed inner collar, no armor. A tightly rolled bamboo document only partly visible at bottom edge, not obscuring face, no hands necessary. Chest-up three-quarter turned left, full cap within canvas, face large and readable. Masterful semi-realistic digital oil painting matching polished Sima Yi and Sima Fang portraits, warm nuanced natural skin, dark atmospheric olive-brown background, softly dramatic warm key lighting, refined painterly brushwork and silk texture. No text, label, border, watermark, other person, anime or vector. One finished square image.
+
 ## 우금 — 완료
 
 파일: `packages/web/public/portraits/yu-jin.png`. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
