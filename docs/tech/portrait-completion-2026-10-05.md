@@ -4,6 +4,38 @@
 
 제작 도구: 내장 image_gen (CLI/API 대체 경로 사용 없음).
 
+## 문흠 — 완료
+
+파일: packages/web/public/portraits/wen-qin.png. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
+
+### 생성 프롬프트
+
+Historical-scene. ONE square premium Three Kingdoms strategy-game officer bust portrait. Masterful semi-realistic digital oil painting matching polished dark Sima Yi / Sima Fang portraits: natural facial anatomy, detailed skin, fine silk and worn metal texture, restrained painterly brushwork. Chest-up three-quarter pose, face large and readable at 60px, entire headgear inside square with margin. Warm soft directional chiaroscuro, deep near-black smoky background. Historically inspired late Han/Wei clothes. Single East Asian adult character. No text, border, watermark, extra people, anime, vector, exaggerated fantasy armor. Subject: Wen Qin, fierce Wei warrior mid-40s, broad rugged face, heavy black brows, intense wide eyes, flat strong nose, dense short black beard, dark bronze helmet and crimson scarf over black lamellar armor, defiant formidable bearing.
+
+## 왕기 — 완료
+
+파일: packages/web/public/portraits/wang-ji.png. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
+
+### 생성 프롬프트
+
+Historical-scene. ONE square premium Three Kingdoms strategy-game officer bust portrait. Masterful semi-realistic digital oil painting matching polished dark Sima Yi / Sima Fang portraits: natural facial anatomy, detailed skin, fine silk and worn metal texture, restrained painterly brushwork. Chest-up three-quarter pose, face large and readable at 60px, entire headgear inside square with margin. Warm soft directional chiaroscuro, deep near-black smoky background. Historically inspired late Han/Wei clothes. Single East Asian adult character. No text, border, watermark, extra people, anime, vector, exaggerated fantasy armor. Subject: Wang Ji, seasoned Wei commander late 50s, long lean face, long narrow eyes, angular nose, graying mustache and short pointed goatee. Low dark steel helmet, navy cloak and silver-gray armor, calm thoughtful expression.
+
+## 손례 — 완료
+
+파일: packages/web/public/portraits/sun-li.png. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
+
+### 생성 프롬프트
+
+Historical-scene. ONE square premium Three Kingdoms strategy-game officer bust portrait. Masterful semi-realistic digital oil painting matching polished dark Sima Yi / Sima Fang portraits: natural facial anatomy, detailed skin, fine silk and worn metal texture, restrained painterly brushwork. Chest-up three-quarter pose, face large and readable at 60px, entire headgear inside square with margin. Warm soft directional chiaroscuro, deep near-black smoky background. Historically inspired late Han/Wei clothes. Single East Asian adult character. No text, border, watermark, extra people, anime, vector, exaggerated fantasy armor. Subject: Sun Li, veteran Wei general late 50s, broad square jaw, weathered tan skin, heavy eyebrows, stern loyal eyes, thick gray-flecked short beard. Practical black iron helmet with bronze nose bridge above brows, brown-gray cloak over worn iron lamellar, austere honest bearing.
+
+## 종회 — 완료
+
+파일: packages/web/public/portraits/zhong-hui.png. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
+
+### 생성 프롬프트
+
+Historical-scene. ONE square premium Three Kingdoms strategy-game officer bust portrait. Masterful semi-realistic digital oil painting matching polished dark Sima Yi / Sima Fang portraits: natural facial anatomy, detailed skin, fine silk and worn metal texture, restrained painterly brushwork. Chest-up three-quarter pose, face large and readable at 60px, entire headgear inside square with margin. Warm soft directional chiaroscuro, deep near-black smoky background. Historically inspired late Han/Wei clothes. Single East Asian adult character. No text, border, watermark, extra people, anime, vector, exaggerated fantasy armor. Subject: Zhong Hui, ambitious gifted Wei strategist about 35, narrow elegant face, bright sharp almond eyes, straight nose, youthful clean-shaven face, subtle confident half-smile. Small black and jade guan, rich dark teal robes and silver embroidered collar, no armor; cultured confident intellectual.
+
 ## 진태 — 완료
 
 파일: `packages/web/public/portraits/chen-tai.png`. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
