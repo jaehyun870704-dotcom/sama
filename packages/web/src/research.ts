@@ -10,11 +10,12 @@
 import type {MetaState} from './meta.ts';
 import type {PerkGrant,PerkGrants} from './perks.ts';
 
-export type ResearchTab='battle'|'domestic'|'formation';
+export type ResearchTab='battle'|'domestic'|'formation'|'legend';
 export const RESEARCH_TABS:Array<{id:ResearchTab;name:string;blurb:string}>=[
   {id:'battle',name:'전투',blurb:'전투에서 쓰이는 기술을 연구한다. 아군 전원에게 적용된다.'},
   {id:'domestic',name:'내정',blurb:'군영을 다스려 경험치·회복·천명을 늘린다.'},
   {id:'formation',name:'편성',blurb:'부대를 짜는 법을 연구한다. 장수 효과 칸과 사마의를 강하게 한다.'},
+  {id:'legend',name:'고사',blurb:'사백 년 전 초한 영웅들의 고사에서 배운다. 여러 생을 거쳐야 열린다.'},
 ];
 export interface Gate {runs?:number;chronicle?:number;endings?:number;wins?:number;officerLv?:number}
 export interface ResearchNode {
@@ -66,6 +67,15 @@ export const RESEARCH:ResearchNode[]=[
   {id:'drillForm',tab:'formation',name:'진형 훈련',glyph:'陣',col:1,row:1,max:3,cost:c(3,1),requires:[['guard',1]],gate:{runs:1},effect:r=>`적 명중 -${r*3}%p`,perk:{trait:'evasionBoost',per:3}},
   {id:'slot',tab:'formation',name:'장수 효과 칸',glyph:'將',col:2,row:1,max:1,cost:c(8,0),requires:[['drillForm',1]],gate:{officerLv:10},effect:r=>`장수 효과 장착 칸 +${r}`},
   {id:'slot2',tab:'formation',name:'명장의 그릇',glyph:'帥',col:3,row:1,max:1,cost:c(14,0),requires:[['slot',1]],gate:{endings:1},effect:r=>`장수 효과 장착 칸 +${r}`},
+  // ── 고사(초한) ──
+  {id:'jiangdong',tab:'legend',name:'강동 팔천',glyph:'霸',col:0,row:0,max:2,cost:c(6,2),gate:{runs:3},effect:r=>`물리 공격 피해 +${r*4}%`,perk:{trait:'physicalPower',per:4}},
+  {id:'burnboats',tab:'legend',name:'파부침주',glyph:'釜',col:1,row:0,max:2,cost:c(7,2),requires:[['jiangdong',1]],effect:r=>`체력이 낮을수록 공격력 상승(최대 +${r*10}%)`,perk:{trait:'lastStand',per:10}},
+  {id:'hongmenLore',tab:'legend',name:'홍문의 칼',glyph:'鴻',col:2,row:0,max:2,cost:c(8,3),requires:[['burnboats',1]],gate:{endings:1},effect:r=>`회심 확률 +${r*5}%`,perk:{trait:'critical',per:5}},
+  {id:'tactics',tab:'legend',name:'운주유악',glyph:'籌',col:0,row:1,max:2,cost:c(6,2),gate:{runs:4},effect:r=>`책략 공격 피해 +${r*5}%`,perk:{trait:'strategyPower',per:5}},
+  {id:'fourSongsLore',tab:'legend',name:'사면초가',glyph:'楚',col:1,row:1,max:2,cost:c(8,2),requires:[['tactics',1]],gate:{endings:2},effect:r=>`적 명중 -${r*4}%p`,perk:{trait:'evasionBoost',per:4}},
+  {id:'backwaterLore',tab:'legend',name:'배수진',glyph:'背',col:0,row:2,max:2,cost:c(6,2),gate:{chronicle:4},effect:r=>`체력 절반 이하에서 받는 피해 -${r*8}%`,perk:{trait:'veteran',per:8}},
+  {id:'ledger',tab:'legend',name:'소하의 장부',glyph:'蕭',col:1,row:2,max:2,cost:c(8,3),requires:[['backwaterLore',1]],gate:{runs:5},effect:r=>`회차가 끝날 때 천명 +${r}`},
+  {id:'unify',tab:'legend',name:'천하 통일',glyph:'漢',col:3,row:1,max:1,cost:c(20,0),requires:[['hongmenLore',1],['fourSongsLore',1],['ledger',1]],gate:{wins:1},effect:r=>`받는 모든 피해 -${r*5}% · 물리·책략 피해 +${r*5}%`,perk:{trait:'defenseBoost',per:5}},
 ];
 export const nodeById=(id:string)=>RESEARCH.find(n=>n.id===id);
 export const rankOf=(m:Pick<MetaState,'research'>,id:string)=>m.research?.[id]??0;
@@ -99,11 +109,12 @@ export function researchProgress(m:MetaState,tab?:ResearchTab){const ns=RESEARCH
 export function researchGrants(m:MetaState):PerkGrants{
   const all:PerkGrant[]=[],hero:PerkGrant[]=[];
   for(const n of RESEARCH){const r=rankOf(m,n.id);if(!r||!n.perk)continue;(n.perk.hero?hero:all).push([n.perk.trait,n.perk.per*r]);}
+  if(rankOf(m,'unify'))all.push(['physicalPower',5],['strategyPower',5]);
   return {all,byName:hero.length?{'사마의':hero}:{}};
 }
 export const xpMult=(m:MetaState)=>1+.1*(rankOf(m,'training')+rankOf(m,'academy'));
 export const restMult=(m:MetaState)=>1+.15*rankOf(m,'medic');
-export const mandateBonus=(m:MetaState)=>rankOf(m,'granary')+2*rankOf(m,'tribute');
+export const mandateBonus=(m:MetaState)=>rankOf(m,'granary')+2*rankOf(m,'tribute')+rankOf(m,'ledger');
 export const heroLevelBonus=(m:MetaState)=>rankOf(m,'temper');
 export const recruitBonus=(m:MetaState)=>rankOf(m,'elite');
 export const perkSlots=(m:MetaState)=>2+rankOf(m,'slot')+rankOf(m,'slot2');

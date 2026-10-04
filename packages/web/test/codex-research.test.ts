@@ -7,7 +7,10 @@ import {allStrategies} from '../src/officers.ts';
 import {troopRoles,recruitPool,classNames} from '../src/troops.ts';
 import {OFFICER_RECRUITS} from '../src/roguelike.ts';
 import {BIOS} from '../src/officer-bios.ts';
-import {codexNames,codexClasses,biography,STRATEGY_TEXT,castCells} from '../src/codex-ui.ts';
+import {CHUHAN,CHUHAN_FACES,unlockLegacy,chooseHeir,heirGrants} from '../src/chuhan.ts';
+import {PORTRAIT_PARTS} from '../src/portrait.ts';
+import {RELICS} from '../src/roguelike.ts';
+import {codexNames,codexClasses,biography,STRATEGY_TEXT,castCells,sideOf} from '../src/codex-ui.ts';
 import {freshScenario,scenarioPath,choose,scenarioParty,floorFor} from '../src/scenario.ts';
 import type {RunBattleRef} from '../src/roguelike.ts';
 import {Session} from '../src/session.ts';
@@ -17,8 +20,8 @@ import {strategyArea,makeUnit,profileOf,EVOLUTION,estimatePhysical,allTraitIds,e
 const rich=()=>{const m=freshMeta();m.mandate=500;m.runs=10;m.chronicle=['S1-01','S1-02','S1-03','S1-04','S1-05','S1-06','S1-07','S1-08','S1-09','S1-10','S1-11'];m.endings=['a'];m.officerBest={관우:30};return m;};
 
 describe('연구 나무',()=>{
- it('has three tabs, valid prerequisites and traits',()=>{
-  expect(new Set(RESEARCH.map(n=>n.tab))).toEqual(new Set(['battle','domestic','formation']));
+ it('has four tabs, valid prerequisites and traits',()=>{
+  expect(new Set(RESEARCH.map(n=>n.tab))).toEqual(new Set(['battle','domestic','formation','legend']));
   const traits=new Set(allTraitIds());
   for(const n of RESEARCH){for(const [id] of n.requires??[])expect(nodeById(id),n.id).toBeDefined();if(n.perk)expect(traits.has(n.perk.trait),n.perk.trait).toBe(true);}
  });
@@ -113,5 +116,34 @@ describe('인물열전',()=>{
  it('has a written biography for every officer in the roster',()=>{
   const missing=codexNames().filter(n=>!BIOS[n]);expect(missing).toEqual([]);
   for(const n of codexNames())expect(biography(n).length).toBeGreaterThan(40);
+ });
+});
+
+describe('초한의 선대 영웅',()=>{
+ it('are in the codex with biographies, own sides and recorded portraits',()=>{
+  for(const n of CHUHAN){expect(codexNames()).toContain(n);expect(BIOS[n],n).toBeTruthy();}
+  expect(sideOf('항우')).toBe('chu');expect(sideOf('유방')).toBe('han');expect(CHUHAN_FACES['항우']!.hat).toBe(2);expect(CHUHAN_FACES['유방']!.hat).toBe(7);
+  expect(PORTRAIT_PARTS.hat[7]).toContain('유씨관');
+ });
+ it('leave legacies: unlock by gate and mandate, pick one heir, and it rides into battle',()=>{
+  const m=freshMeta();m.mandate=40;
+  expect(unlockLegacy(m,'항우')).toBe(false);// 회차 2번 필요
+  m.runs=2;expect(unlockLegacy(m,'항우')).toBe(true);expect(m.heir).toBe('항우');expect(m.mandate).toBe(28);
+  m.runs=3;m.chronicle=['S1-01','S1-02','S1-03'];expect(unlockLegacy(m,'장량')).toBe(true);expect(m.heir).toBe('항우');
+  expect(chooseHeir(m,'장량')).toBe(true);expect(heirGrants(m)).toContainEqual(['strategyPower',10]);
+  expect(deploymentPerks(m,['사마의'])!.all).toContainEqual(['strategyPower',10]);
+  expect(chooseHeir(m,'유방')).toBe(false);
+  const back=readMeta(JSON.stringify({...m,legacies:[...m.legacies!,'가짜'],heir:'장량'}));expect(back.legacies).toEqual(['항우','장량']);expect(back.heir).toBe('장량');
+  expect(readMeta(JSON.stringify({...m,heir:'유방'})).heir).toBeUndefined();
+ });
+ it('adds legend research that opens only after several lives',()=>{
+  const m=freshMeta();m.mandate=200;expect(buyResearch(m,'jiangdong')).toBe(false);m.runs=3;expect(buyResearch(m,'jiangdong')).toBe(true);
+  expect(buyResearch(m,'unify')).toBe(false);
+ });
+ it('adds the legendary strategies, units and relics',()=>{
+  for(const id of ['hongmen','secretPath','burnBoats','backWater','fourSongs','weiRiver','tenAmbush'])expect(allStrategies.find(s=>s.id===id),id).toBeDefined();
+  expect(allStrategies.find(s=>s.id==='fourSongs')!.inflicts).toEqual(['confusion','weaken']);
+  expect(EVOLUTION.jiangdong?.[0]).toBe('bawang');expect(EVOLUTION.langzhong?.[0]).toBe('yulin');expect(recruitPool).toContain('jiangdong');
+  for(const id of ['bawangJi','huangshi','xiaoheLedger','yuJade'])expect(RELICS.some(r=>r.id===id)).toBe(true);
  });
 });

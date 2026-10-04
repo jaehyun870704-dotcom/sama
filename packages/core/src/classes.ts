@@ -176,6 +176,15 @@ export const VARIANTS: Partial<Record<UnitClass, ClassVariant>> = {
   riderSage: { family: "cavalry", tier: 1, profile: p(0.9, 1.15, 0.8, 0.8, 1.15, 1.05, 1.2, 6, [1, 1], true) },
   swiftSage: { family: "cavalry", tier: 2, profile: p(0.98, 1.35, 0.86, 0.86, 1.3, 1.15, 1.28, 7, [1, 1], true), traits: { strategyPower: 10, strategyEvasion: 10 },
     bloom: { name: "질풍군사", description: "이동 7의 기마 책사 · 책략 피해 10% 증가 · 적의 책략을 10% 확률로 흘린다" } },
+  // ── 초한(楚漢)의 이름난 부대 ──
+  // 강동자제 → 패왕친위군: 항우와 함께 강을 건넌 강동의 팔천 자제
+  jiangdong: { family: "infantry", tier: 1, profile: p(1.05, 0.4, 1.2, 0.95, 0.55, 0.85, 1.1, 5, [1, 1]), traits: { lastStand: 10 } },
+  bawang: { family: "infantry", tier: 2, profile: p(1.2, 0.43, 1.4, 1.05, 0.6, 0.9, 1.16, 5, [1, 1]), traits: { lastStand: 20, critical: 15 },
+    bloom: { name: "패왕친위", description: "항우의 친위 · 회심 15% · 체력이 낮을수록 공격력 상승(최대 20%)" } },
+  // 낭중기 → 우림기: 한이 초의 기병에 맞서 꾸린 기병대
+  langzhong: { family: "cavalry", tier: 1, profile: p(1.0, 0.4, 1.12, 0.92, 0.6, 0.85, 1.25, 7, [1, 1]), traits: { chargePower: 8 } },
+  yulin: { family: "cavalry", tier: 2, profile: p(1.12, 0.43, 1.3, 1.0, 0.64, 0.9, 1.32, 7, [1, 1]), traits: { chargePower: 15, penetrate: 10 },
+    bloom: { name: "우림기", description: "한의 친위 기병 · 움직인 뒤 물리 공격 +15% · 적 방어 10% 무시" } },
 };
 
 /** 진화 계통: 병종 → [다음 병종, 진화 레벨] */
@@ -205,6 +214,7 @@ export const EVOLUTION: Partial<Record<UnitClass, readonly [UnitClass, number]>>
   qingzhou: ["danyang", 10], danyang: ["baier", 18],
   jishi: ["daji", 12], shieldBow: ["xiandeng", 12],
   drummer: ["warDrummer", 12], riderSage: ["swiftSage", 14],
+  jiangdong: ["bawang", 12], langzhong: ["yulin", 12],
 };
 
 /** 이동·상성·그림의 기준이 되는 병종. 기존 병종은 자기 자신. */

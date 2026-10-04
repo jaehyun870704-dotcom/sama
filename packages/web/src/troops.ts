@@ -71,10 +71,14 @@ export const troopRoles:Partial<Record<UnitClass,{name:string;role:string;base:U
  daji:{name:'대극사',role:'극사 2단계 · 원소의 대극사, 방어를 꿰뚫는다',base:'spearman',tint:0xc890e8,spells:[]},
  shieldBow:{name:'방패노병',role:'방패를 세우고 쏘는 노병 · 사거리 2, 물리 피해 감소',base:'crossbow',tint:0xb0c4a0,spells:[]},
  xiandeng:{name:'선등사',role:'방패노병 2단계 · 국의의 결사대, 붙어도 쏘고 몇 번이고 맞받는다',base:'crossbow',tint:0xe8d070,spells:[]},
+ jiangdong:{name:'강동자제',role:'항우와 강을 건넌 강동의 팔천 · 궁지에 몰릴수록 사나워지는 보병',base:'infantry',tint:0xe08a6a,spells:[]},
+ bawang:{name:'패왕친위군',role:'강동자제 2단계 · 패왕의 곁을 지킨 최강의 보병',base:'infantry',tint:0xd85040,spells:[]},
+ langzhong:{name:'낭중기',role:'관영이 이끈 한의 기병 · 이동 7, 달려와 치면 더 세다',base:'cavalry',tint:0xa8c0e8,spells:[]},
+ yulin:{name:'우림기',role:'낭중기 2단계 · 한의 친위 기병, 방어를 꿰뚫는 돌격',base:'cavalry',tint:0x88b0ff,spells:[]},
  drummer:{name:'고취수',role:'북과 피리로 부대를 고무하는 지원 병종',base:'fengshui',tint:0xf0b0a0,spells:['inspire','march','fortify','warCry']},
- warDrummer:{name:'군악대',role:'고취수 2단계 · 진군의 북소리가 전장을 덮는다',base:'fengshui',tint:0xffc080,spells:['inspire','march','fortify','warCry','grandDrum','mend']},
+ warDrummer:{name:'군악대',role:'고취수 2단계 · 진군의 북소리가 전장을 덮는다',base:'fengshui',tint:0xffc080,spells:['inspire','march','fortify','warCry','grandDrum','mend','burnBoats','backWater']},
  riderSage:{name:'기마책사',role:'이동 6 · 말 위에서 책략을 쓰는 기동 책사',base:'strategist',tint:0xa8d8f0,spells:['fire','embers','gust','windDragon','rumor','ambush']},
- swiftSage:{name:'질풍군사',role:'기마책사 2단계 · 이동 7, 바람처럼 와서 계책을 놓고 간다',base:'strategist',tint:0x88e0ff,spells:['fire','embers','gust','windDragon','rumor','ambush','whirlwind','breakArmor']},
+ swiftSage:{name:'질풍군사',role:'기마책사 2단계 · 이동 7, 바람처럼 와서 계책을 놓고 간다',base:'strategist',tint:0x88e0ff,spells:['fire','embers','gust','windDragon','rumor','ambush','whirlwind','breakArmor','secretPath','hongmen']},
 };
 export const supportOptions:UnitClass[]=['infantry','fengshui','strategist','shaman','maiden','taoist','physician','monk','horseArcher','bandit','spearman','crossbow','archer','cavalry','heavyCav','catapult','ram','engineer'];
 export function troopStrategies(kind:UnitClass,level:number){const role=troopRoles[kind];return role?allStrategies.filter(s=>role.spells.includes(s.id)&&(s.level<=level||s.id==='mend')).map(s=>s.id):undefined;}
@@ -83,7 +87,7 @@ export const classNames:Record<string,string>={infantry:'보병',spearman:'창�
 /** The class whose sprite a unit is drawn with: extended classes borrow their lineage's art. */
 export function artClass(kind:UnitClass):UnitClass{return VARIANTS[kind]?(troopRoles[kind]?.base??familyOf(kind)):kind;}
 /** Every class a player can field, by tier: for codex and recruiting. */
-export const recruitPool:UnitClass[]=['infantry','spearman','cavalry','archer','crossbow','strategist','fengshui','horseArcher','heavyCav','slinger','assassin','rattan','elephant','monk','taoist','physician','bandit','javelin','axeman','mountaineer','xiliang','qingzhou','jishi','shieldBow','drummer','riderSage'];
+export const recruitPool:UnitClass[]=['infantry','spearman','cavalry','archer','crossbow','strategist','fengshui','horseArcher','heavyCav','slinger','assassin','rattan','elephant','monk','taoist','physician','bandit','javelin','axeman','mountaineer','xiliang','qingzhou','jishi','shieldBow','drummer','riderSage','jiangdong','langzhong'];
 
 export const troopSheets=[{id:'casters',url:'troops-casters-v1.png',rows:3},{id:'specialists',url:'troops-specialists-v1.png',rows:4},{id:'casters-walk',url:'troops-casters-walk-v1.png',rows:3},{id:'specialists-walk',url:'troops-specialists-walk-v1.png',rows:4},{id:'casters-reaction',url:'troops-casters-reaction-v1.png',rows:3},{id:'specialists-reaction',url:'troops-specialists-reaction-v1.png',rows:4},{id:'base-reaction',url:'units-base-reaction-v1.png',rows:6},{id:'extra-reaction',url:'units-extra-reaction-v1.png',rows:4}] as const;
 export const troopArt:Partial<Record<UnitClass,{sheet:'casters'|'specialists';row:number;rows:number}>>={shaman:{sheet:'casters',row:0,rows:3},maiden:{sheet:'casters',row:1,rows:3},taoist:{sheet:'casters',row:2,rows:3},physician:{sheet:'specialists',row:0,rows:4},monk:{sheet:'specialists',row:1,rows:4},horseArcher:{sheet:'specialists',row:2,rows:4},bandit:{sheet:'specialists',row:3,rows:4}};

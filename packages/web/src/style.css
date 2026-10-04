@@ -562,3 +562,6 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
 #rs-buy{margin-top:8px}
 @media(max-width:760px){.cx-split{grid-template-columns:1fr}.cx-list,.cx-detail{max-height:none}.rs-body{grid-template-columns:1fr}.rs-banner{flex-direction:row;flex-wrap:wrap;justify-content:center}.rs-emblem{width:48px;height:48px;font-size:26px;margin:0}}
 .cx-sprite{position:relative}.cx-dye{position:absolute;inset:0;mix-blend-mode:multiply;opacity:.75;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;pointer-events:none}
+.rs-tabs .rs-tab-legend.active{background:#6a4a10;border-color:#f0c050;color:#fff0c8}.rs-banner.rs-tab-legend{background:linear-gradient(180deg,#8a6420,#3a2808)}
+.cx-legacy.active{border:1px solid var(--gold);padding:8px;background:#d6b26a1a}.cx-legacy button{margin:4px 0}
+.cx-person.side-chu .cx-face{border-color:#c8442e}.cx-person.side-han .cx-face{border-color:#d8b04a}.cx-side.side-chu{color:#f07a5a}.cx-side.side-han{color:#f0c85a}
