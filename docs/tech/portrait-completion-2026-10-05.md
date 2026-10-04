@@ -4,6 +4,14 @@
 
 제작 도구: 내장 image_gen (CLI/API 대체 경로 사용 없음).
 
+## 왕기 — 완료
+
+파일: packages/web/public/portraits/wang-ji.png. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
+
+### 생성 프롬프트
+
+Historical-scene. ONE square premium Three Kingdoms strategy-game officer bust portrait. Masterful semi-realistic digital oil painting matching polished dark Sima Yi / Sima Fang portraits: natural facial anatomy, detailed skin, fine silk and worn metal texture, restrained painterly brushwork. Chest-up three-quarter pose, face large and readable at 60px, entire headgear inside square with margin. Warm soft directional chiaroscuro, deep near-black smoky background. Historically inspired late Han/Wei clothes. Single East Asian adult character. No text, border, watermark, extra people, anime, vector, exaggerated fantasy armor. Subject: Wang Ji, seasoned Wei commander late 50s, long lean face, long narrow eyes, angular nose, graying mustache and short pointed goatee. Low dark steel helmet, navy cloak and silver-gray armor, calm thoughtful expression.
+
 ## 손례 — 완료
 
 파일: packages/web/public/portraits/sun-li.png. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
