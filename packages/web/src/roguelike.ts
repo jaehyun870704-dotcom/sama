@@ -367,7 +367,7 @@ export function runMap(run:{seed:number;route?:Run['route']},floor:number,kind:N
 
 /** 원정 전투의 스테이지. 적은 층·지역·종류로 정해지고, 레벨이 높으면 그들도 진화해 있다. */
 /** 원정·가상 전장은 뭍의 싸움이다: 배(수군)는 뭍에서 움직이지 못하니 노병으로 싸운다. */
-export const landClass=(c:UnitClass):UnitClass=>c==='navy'?'crossbow':c;
+export const landClass=(c:UnitClass):UnitClass=>familyOf(c)==='navy'?'crossbow':c;
 /** 시나리오 모드의 대사 선택이 전투에 남기는 것(scenario-types.ts의 ChoiceEffect). */
 export interface BattleMods {reinforce?:Array<{name:string;unitClass:UnitClass;side:'npc'|'ally'}>;scout?:boolean;ambush?:boolean;bold?:boolean;rally?:boolean;guard?:boolean;insight?:boolean}
 export function runStage(run:Run,kind:NodeKind,map:MapFile,taleId?:string,opts:{mods?:BattleMods;enemyBase?:number}={}):StageDef{

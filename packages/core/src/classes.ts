@@ -5,7 +5,7 @@
  * 병종 상성·그림은 계열의 것을 쓰고, 능력치 계수·사거리·고유 특성만 따로 둔다.
  * 그래서 병종을 늘려도 지형표와 상성표를 병종 수만큼 다시 쓰지 않는다.
  *
- * 진화: 레벨이 기준에 닿으면 같은 계통의 다음 단계 병종으로 바뀐다(2단계 → 3단계).
+ * 진화: 레벨이 기준에 닿으면 같은 계통의 다음 단계 병종으로 바뀐다. 모든 계통은 1→2→3단으로 세 단계다.
  */
 import type { UnitClass } from "./types.ts";
 
@@ -185,6 +185,40 @@ export const VARIANTS: Partial<Record<UnitClass, ClassVariant>> = {
   langzhong: { family: "cavalry", tier: 1, profile: p(1.0, 0.4, 1.12, 0.92, 0.6, 0.85, 1.25, 7, [1, 1]), traits: { chargePower: 8 } },
   yulin: { family: "cavalry", tier: 2, profile: p(1.12, 0.43, 1.3, 1.0, 0.64, 0.9, 1.32, 7, [1, 1]), traits: { chargePower: 15, penetrate: 10 },
     bloom: { name: "우림기", description: "한의 친위 기병 · 움직인 뒤 물리 공격 +15% · 적 방어 10% 무시" } },
+  // ── 2단계에서 끝나던 명부대 계통의 3단계(v41): 모든 계통은 3단 진화
+  cliffWalker: { family: "bandit", tier: 3, profile: p(1.18, 0.46, 1.3, 1.02, 0.68, 0.96, 1.4, 6, [1, 2]), traits: { roughTerrainMove: 0, critical: 20, strategyDamageReduction: 15, penetrate: 10 },
+    bloom: { name: "잔도귀병", description: "험지 이동 · 회심 20% · 책략 피해 15% 감소 · 적 방어 10% 무시" } },
+  liangzhouIron: { family: "cavalry", tier: 3, profile: p(1.32, 0.46, 1.48, 1.1, 0.62, 0.9, 1.33, 7, [1, 1]), traits: { attackBoost: 7, lifesteal: 12, lastStand: 20, physicalDamageReduction: 8 },
+    bloom: { name: "서량철기", description: "공격력 +7 · 입힌 피해의 12% 회복 · 체력이 낮을수록 공격력 상승 · 물리 피해 8% 감소" } },
+  tianji: { family: "spearman", tier: 3, profile: p(1.3, 0.46, 1.42, 1.22, 0.64, 0.96, 1.04, 5, [1, 2]), traits: { counterBoost: 25, penetrate: 20, unlimitedCounter: 0 },
+    bloom: { name: "천극위", description: "사거리 1~2 · 반격 위력 25% · 적 방어 20% 무시 · 반격 제한 없음" } },
+  baizhan: { family: "crossbow", tier: 3, profile: p(1.25, 0.51, 1.35, 1.25, 0.8, 1.0, 1.0, 4, [1, 3]), traits: { physicalDamageReduction: 20, critical: 15, unlimitedCounter: 0, penetrate: 15 },
+    bloom: { name: "백전선등", description: "사거리 1~3 · 물리 피해 20% 감소 · 회심 15% · 반격 제한 없음 · 적 방어 15% 무시" } },
+  grandBand: { family: "fengshui", tier: 3, profile: p(1.12, 1.6, 0.86, 0.96, 1.08, 1.5, 1.17, 5, [1, 1], true), traits: { strategyDamageReduction: 15, defenseBoost: 8, healPower: 15 },
+    bloom: { name: "대고취대", description: "천 개의 북 · 받는 피해 8% 감소 · 책략 피해 15% 감소 · 회복 15% 증가 · 고무·강행·견고를 넓게 건다" } },
+  divineSage: { family: "cavalry", tier: 3, profile: p(1.05, 1.55, 0.91, 0.92, 1.42, 1.25, 1.35, 7, [1, 1], true), traits: { strategyPower: 15, strategyEvasion: 15 },
+    bloom: { name: "신기군사", description: "이동 7의 기마 책사 · 책략 피해 15% 증가 · 적의 책략을 15% 확률로 흘린다" } },
+  overlordGuard: { family: "infantry", tier: 3, profile: p(1.32, 0.46, 1.56, 1.14, 0.64, 0.96, 1.22, 5, [1, 1]), traits: { lastStand: 30, critical: 20, penetrate: 10 },
+    bloom: { name: "패왕금위", description: "강동 팔천의 끝 · 회심 20% · 체력이 낮을수록 공격력 상승(최대 30%) · 적 방어 10% 무시" } },
+  huben: { family: "cavalry", tier: 3, profile: p(1.24, 0.46, 1.44, 1.08, 0.68, 0.96, 1.39, 7, [1, 1]), traits: { chargePower: 22, penetrate: 15, critical: 10 },
+    bloom: { name: "호분위", description: "황제의 호위 기병 · 움직인 뒤 물리 공격 +22% · 적 방어 15% 무시 · 회심 10%" } },
+  // ── 공성·수군 계통도 3단 진화(v41)
+  sapper: { family: "engineer", tier: 2, profile: p(0.92, 0.33, 0.62, 0.95, 0.78, 1.0, 0.86, 5, [1, 1]), traits: { physicalDamageReduction: 10 },
+    bloom: { name: "축성병", description: "방책을 세우고 성벽을 고치는 숙련 공병 · 물리 피해 10% 감소" } },
+  masterBuilder: { family: "engineer", tier: 3, profile: p(1.05, 0.36, 0.74, 1.08, 0.88, 1.1, 0.92, 5, [1, 1]), traits: { physicalDamageReduction: 15, defenseBoost: 6 },
+    bloom: { name: "공성 장인", description: "운제·충차를 다루는 장인 · 물리 피해 15% 감소 · 받는 피해 6% 감소" } },
+  thunderCart: { family: "catapult", tier: 2, profile: p(1.05, 0.33, 1.25, 0.82, 0.64, 0.86, 0.64, 3, [2, 4]), traits: { penetrate: 15 },
+    bloom: { name: "벽력거", description: "조조가 관도에서 쓴 돌수레 · 적 방어 15% 무시" } },
+  greatTrebuchet: { family: "catapult", tier: 3, profile: p(1.15, 0.36, 1.42, 0.9, 0.68, 0.92, 0.68, 3, [2, 5]), traits: { penetrate: 25, critical: 10 },
+    bloom: { name: "천균거", description: "천 균의 돌을 던지는 큰 포차 · 사거리 2~5 · 적 방어 25% 무시 · 회심 10%" } },
+  ironRam: { family: "ram", tier: 2, profile: p(1.75, 0.22, 0.98, 1.6, 0.42, 0.86, 0.53, 3, [1, 1]), traits: { physicalDamageReduction: 15 },
+    bloom: { name: "철충차", description: "쇠를 씌운 충차 · 물리 피해 15% 감소" } },
+  cloudRam: { family: "ram", tier: 3, profile: p(2.0, 0.24, 1.12, 1.8, 0.45, 0.92, 0.56, 3, [1, 1]), traits: { physicalDamageReduction: 22, physicalReflect: 10 },
+    bloom: { name: "파성충차", description: "성문을 부수는 큰 망치 수레 · 물리 피해 22% 감소 · 받은 물리 피해의 10%를 되돌린다" } },
+  mengchong: { family: "navy", tier: 2, profile: p(1.12, 0.53, 1.15, 1.05, 0.84, 0.96, 1.08, 6, [1, 2]), traits: { chargePower: 12 },
+    bloom: { name: "몽충", description: "가죽을 씌운 돌격선 · 움직인 뒤 물리 공격 +12%" } },
+  louchuan: { family: "navy", tier: 3, profile: p(1.32, 0.56, 1.3, 1.2, 0.9, 1.02, 1.14, 6, [1, 3]), traits: { chargePower: 15, physicalDamageReduction: 12, penetrate: 10 },
+    bloom: { name: "누선", description: "여러 층 망루를 올린 큰 배 · 사거리 1~3 · 물리 피해 12% 감소 · 적 방어 10% 무시" } },
 };
 
 /** 진화 계통: 병종 → [다음 병종, 진화 레벨] */
@@ -210,11 +244,13 @@ export const EVOLUTION: Partial<Record<UnitClass, readonly [UnitClass, number]>>
   bandit: ["outlaw", 10], outlaw: ["greenwoodKing", 18],
   javelin: ["eliteJavelin", 10], eliteJavelin: ["flyingSpear", 18],
   axeman: ["greatBlade", 10], greatBlade: ["xianzhen", 18],
-  mountaineer: ["wudang", 12], xiliang: ["feixiong", 12],
+  mountaineer: ["wudang", 12], wudang: ["cliffWalker", 20], xiliang: ["feixiong", 12], feixiong: ["liangzhouIron", 20],
   qingzhou: ["danyang", 10], danyang: ["baier", 18],
-  jishi: ["daji", 12], shieldBow: ["xiandeng", 12],
-  drummer: ["warDrummer", 12], riderSage: ["swiftSage", 14],
-  jiangdong: ["bawang", 12], langzhong: ["yulin", 12],
+  jishi: ["daji", 12], daji: ["tianji", 20], shieldBow: ["xiandeng", 12], xiandeng: ["baizhan", 20],
+  drummer: ["warDrummer", 12], warDrummer: ["grandBand", 20], riderSage: ["swiftSage", 14], swiftSage: ["divineSage", 22],
+  jiangdong: ["bawang", 12], bawang: ["overlordGuard", 20], langzhong: ["yulin", 12], yulin: ["huben", 20],
+  engineer: ["sapper", 10], sapper: ["masterBuilder", 18], catapult: ["thunderCart", 10], thunderCart: ["greatTrebuchet", 18],
+  ram: ["ironRam", 10], ironRam: ["cloudRam", 18], navy: ["mengchong", 10], mengchong: ["louchuan", 18],
 };
 
 /** 이동·상성·그림의 기준이 되는 병종. 기존 병종은 자기 자신. */

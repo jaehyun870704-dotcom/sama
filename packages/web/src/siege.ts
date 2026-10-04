@@ -1,14 +1,14 @@
-import {makeUnit,manhattan,isHostile} from '../../core/src/index.ts';
+import {makeUnit,manhattan,isHostile,familyOf} from '../../core/src/index.ts';
 import type {BattleState,Coord,Unit} from '../../core/src/index.ts';
 import {structureKind} from './campaign-rules.ts';
 
 /** Engineers keep siege engines and works standing; a breached gate rallies the assault. */
 export const BARRICADES_PER_ENGINEER=2;
 const machines=['ram','catapult'];
-export function isSiegeWork(u:Unit){return machines.includes(u.unitClass)||!!structureKind(u.id)||u.id.startsWith('convoy_');}
+export function isSiegeWork(u:Unit){return machines.includes(familyOf(u.unitClass))||!!structureKind(u.id)||u.id.startsWith('convoy_');}
 export function repairAmount(engineer:Unit,target:Unit){return Math.min(target.stats.maxHp-target.hp,24+Math.floor(engineer.stats.intellect*.4));}
 export function repairError(state:BattleState,engineer:Unit,target:Unit|undefined){
-  if(engineer.unitClass!=='engineer')return '공병만 수리할 수 있습니다.';
+  if(familyOf(engineer.unitClass)!=='engineer')return '공병만 수리할 수 있습니다.';
   if(!target?.alive||isHostile(engineer.side,target.side)||!isSiegeWork(target))return '아군 충차·포차·방책·성문을 선택하세요.';
   if(manhattan(engineer.pos,target.pos)>1)return '인접한 대상만 수리할 수 있습니다.';
   if(target.hp>=target.stats.maxHp)return '이미 온전한 상태입니다.';
@@ -16,7 +16,7 @@ export function repairError(state:BattleState,engineer:Unit,target:Unit|undefine
 }
 export function parseCell(text:string|undefined):Coord|undefined{const m=/^(\d+),(\d+)$/.exec(text??'');return m?{x:Number(m[1]),y:Number(m[2])}:undefined;}
 export function fortifyError(state:BattleState,engineer:Unit,at:Coord|undefined,built:number){
-  if(engineer.unitClass!=='engineer')return '공병만 방책을 세울 수 있습니다.';
+  if(familyOf(engineer.unitClass)!=='engineer')return '공병만 방책을 세울 수 있습니다.';
   if(built>=BARRICADES_PER_ENGINEER)return '이 공병은 이번 전투의 방책 자재를 모두 썼습니다.';
   if(!at||!state.map.inBounds(at)||manhattan(engineer.pos,at)!==1)return '인접한 빈 칸을 선택하세요.';
   if(state.unitAt(at)||!['plain','road','hill','fort','bridge'].includes(state.map.tileAt(at).terrain))return '평지·길·구릉·성채·다리의 빈 칸에만 세울 수 있습니다.';

@@ -67,7 +67,7 @@ describe('천명의 원정 · 규칙',()=>{
  });
  it('gives every recruitable troop an evolution, drawn with its own lineage art',()=>{
   for(const c of [...RECRUITS,'strategist' as const])expect(nextEvolution(c),c).toBeDefined();
-  for(const line of evolutionLines())for(const [c] of line){expect(troopRoles[c]??(['infantry','spearman','cavalry','heavyCav','archer','crossbow','strategist','fengshui'].includes(c)?{}:undefined),c).toBeDefined();}
+  for(const line of evolutionLines())for(const [c] of line){expect(troopRoles[c]??(['infantry','spearman','cavalry','heavyCav','archer','crossbow','strategist','fengshui','engineer','catapult','ram','navy'].includes(c)?{}:undefined),c).toBeDefined();}
   for(const [c,base] of [['stormSage','taoist'],['warlock','shaman'],['warriorMonk','monk'],['outlaw','bandit'],['divineDoctor','physician'],['priestess','maiden']] as const){expect(artClass(c)).toBe(base);expect(troopArt[base]).toBeDefined();}
  });
  it('locks the run to the battle in progress and says why a run ended',()=>{
