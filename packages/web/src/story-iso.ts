@@ -9,7 +9,7 @@
 import type {At,Look} from './scenario-types.ts';
 import {drawPxFigure,type PxDir,type PxPose} from './story-pixel.ts';
 import {drawFigure} from './story-figure.ts';
-import {paintGround,loadGroundArt,GW,GH,C as GC,type GroundKind} from './story-ground.ts';
+import {paintGround,loadGroundArt,GW,GH,C as GC,type GroundKind,type GroundOpts} from './story-ground.ts';
 /** 배경 속 인물(병사 대열·백관): 무대 인물과 같은 기존 그림, 아직 못 읽었으면 도트 인물. */
 const person=(g:CanvasRenderingContext2D,x:number,y:number,name:string,look:Look,dir:PxDir,pose:PxPose,flip:boolean)=>{if(!drawFigure(g,x,y,name,look,pose,88,flip))drawPxFigure(g,x,y,name,look,dir,pose,PIXEL,flip);};
 
@@ -1126,10 +1126,24 @@ function buildPainted(p:Painted,kind:Kind,place:string):IsoScene{
 
 // ─────────────────────────────────────────────── 위에서 본 야외(채색 지도)
 const OUTDOOR=new Set<Kind>(['field','hill','valley','forest','river','bank','deck','camp','battlefield','town','fire','gatehouse','wall','fort','court']);
+/** 장소 이름이 더 자세히 말하면 같은 종류 안에서도 다른 땅을 그린다(정원·고갯길·늪·논밭·옛터·숲속 빈터·저자·나루). */
+export function groundVariant(kind:Kind,place:string):[GroundKind,GroundOpts]{
+  const d=place.split('·').map(p=>p.trim()).at(-1)??'',snow=moodOf(place,kind).weather==='snow',camp=/진영|군영|야영|진채|진$|본진|군막|영채|진지/.test(d),o:GroundOpts={...(snow?{snow}:{}),...(camp?{camp}:{})};
+  const v:GroundKind|undefined=
+    /나루|포구|선착/.test(d)&&kind!=='deck'?'ferry':
+    /갈대|늪|습지|소택|모래톱|여울목/.test(d)?'marsh':
+    /무너진|폐허|옛터|허물어진|잿더미/.test(d)&&kind!=='camp'&&kind!=='tent'?'ruins':
+    /정원|후원|연못|뒤뜰|사마가의 뜰|저택 뜰|불길이 지난 뜰/.test(d)?'garden':
+    /고갯길|고개|산길|령$|갈림길|내리막|벼랑 위|산마루/.test(d)&&kind!=='camp'?'pass':
+    /저자|시장|거리/.test(d)?'market':
+    /마을|고향|농가|논|밭|곡창|둔전|전원/.test(d)?'farm':
+    (kind==='forest'||kind==='camp')&&/숲|빈터/.test(d)||kind==='forest'&&/야영|진영|쉼터/.test(d)?'clearing':undefined;
+  return [v??kind as GroundKind,o];
+}
 function groundScene(kind:Kind,seed:number,place:string,clearPct:readonly At[]):IsoScene|undefined{
-  const mood=moodOf(place,kind);
+  const mood=moodOf(place,kind),[gk,gopts]=groundVariant(kind,place);
   const cellOf=([px,py]:At):[number,number]=>[Math.max(0,Math.min(GW-1,Math.floor(px/100*GW))),Math.max(0,Math.min(GH-1,Math.floor(py/100*GH-.3)))];
-  const ground=paintGround(kind as GroundKind,seed,mood.light==='night'?'night':mood.light==='dawn'?'dawn':mood.light==='dusk'?'dusk':'day',clearPct.map(cellOf));
+  const ground=paintGround(gk,seed,mood.light==='night'?'night':mood.light==='dawn'?'dawn':mood.light==='dusk'?'dusk':'day',clearPct.map(cellOf),gopts);
   if(!ground)return undefined;
   const standable=([x,y]:Cell)=>ground.standable(x,y);
   const toPct=([x,y]:Cell):At=>[(x+.5)/GW*100,(y+.8)/GH*100];
