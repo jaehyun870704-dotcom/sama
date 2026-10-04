@@ -804,3 +804,44 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
   .duel-talk{width:78%;min-height:84px}.duel-talk-face{width:70px}.duel-talk-body p{font-size:12px}.duel-model,.duel-model .battle-model{width:110px!important;height:110px!important}.duel-acts{grid-template-columns:1fr 1fr}.duel-act{grid-template-columns:44px 1fr}.duel-act .duel-ico{width:44px;height:44px}.duel-round-tile{width:38px;height:38px}}
 @media (prefers-reduced-motion:reduce){.vs-banner,.vs-emblem,.duel-fighter,.damage-number,.duel-result span{animation:none!important}}
 .ss-stage.iso .ss-actor.px.fig{width:calc(6.4% * var(--fig-scale,1))}
+/* 이름표 겹침: 뒤에 선 사람의 이름표는 머리 위로 */
+.ss-stage.iso .ss-actor.px.name-up .ss-name{top:auto;bottom:100%;transform:translate(-50%,2px)}
+/* 일기토·설전 v3: 더 큰 장수, 머리 위 체력·기합 막대 */
+.duel-model{width:270px;height:270px}
+.duel-model .battle-model{width:270px!important;height:270px!important}
+.duel-mini{position:absolute;left:50%;top:6%;transform:translateX(-50%);z-index:3;width:150px;display:grid;grid-template-columns:1fr auto;gap:2px 6px;align-items:center;padding:4px 7px 5px;background:rgba(14,10,8,.72);border:1px solid rgba(214,180,110,.55);border-radius:3px;font-size:11px;color:#fff3dc;text-shadow:0 1px 2px #000;pointer-events:none}
+.duel-mini b{grid-column:1/-1;font-size:12px;letter-spacing:.04em;text-align:center}
+.duel-mini.right b{color:#ffb0a0}.duel-mini.left b{color:#a8ccff}
+.duel-mini .duel-hp{height:8px;border-radius:4px}
+.duel-mini small{font-variant-numeric:tabular-nums;font-size:10px;color:#e8dcc0}
+.duel-mini em{grid-column:1/-1;font-style:normal;color:#ffd77a;font-size:10px;letter-spacing:2px;text-align:center;line-height:1}
+.duel-mini.mid .duel-hp i{background:linear-gradient(#f2d36a,#b88a1f)}
+.duel-mini.low .duel-hp i{background:linear-gradient(#f07a6a,#a8261a)}
+@media(max-width:700px){.duel-model,.duel-model .battle-model{width:170px!important;height:170px!important}.duel-mini{width:118px;font-size:10px}}
+.duel-talk{min-height:92px}
+.duel-mini{top:10%}
+/* ── 전투 v2(휴대폰): 전황은 덧창으로 접고, 제목을 줄여 지도가 화면 대부분을 쓴다 ── */
+@media (max-width:700px){
+  .left-panel{position:fixed!important;z-index:60;left:8px;top:72px;width:min(290px,86vw);max-height:calc(100dvh - 90px);overflow:auto;display:block!important;padding:14px!important;border:1px solid #5a6a58;border-radius:6px;background:rgba(16,26,27,.96);box-shadow:0 10px 30px #000a;transform:translateX(calc(-100% - 16px));transition:transform .28s ease}
+  body.left-open .left-panel{transform:none}
+  .left-panel .roster{display:grid!important;max-height:none!important}
+  .left-panel .mission,.left-panel>.rule{display:block!important}
+  .left-toggle{display:block;position:absolute;z-index:6;left:8px;top:8px;min-height:36px;padding:5px 10px;font-size:12px;background:#142520e6;border-color:#6a7a5c;color:#efe2c0}
+  .battle-heading{padding:8px 12px 2px!important}
+  .battle-heading .eyebrow{display:none}
+  .battle-heading h2{font-size:17px!important;margin:0}
+  #compact-objective{padding:0 12px 6px;font-size:11px!important;line-height:1.5!important}
+  .battle-panel .map{height:calc(100dvh - 260px)!important;min-height:360px!important}
+  .map .compass{display:none}
+}
+@media (max-width:580px){
+  .right-panel{grid-template-columns:1fr!important}
+  .right-panel #unit-detail{grid-row:auto!important}
+  .right-panel .stats{flex-wrap:nowrap!important;justify-content:space-between}
+  .right-panel .stats>div{min-width:0}
+}
+@media (max-width:580px){
+  dialog:has(.ss-root){width:calc(100vw - 8px);max-width:none}
+  .ss-root{padding:12px 6px!important}
+}
+@media (max-width:580px){.ss-stage.iso .ss-actor.px.fig{width:calc(9.6% * var(--fig-scale,1))}.ss-stage.iso .ss-actor.px .ss-name{font-size:8px;padding:0 2px}}
