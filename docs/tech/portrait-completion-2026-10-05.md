@@ -4,6 +4,14 @@
 
 제작 도구: 내장 image_gen (CLI/API 대체 경로 사용 없음).
 
+## 조희 — 완료
+
+파일: `packages/web/public/portraits/cao-xi.png`. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
+
+### 생성 프롬프트
+
+Historical-scene. ONE square finished portrait of Cao Xi (조희), younger brother of Cao Shuang and Wei palace guard commander. East Asian male in mid-thirties, broad brow and softly squared jaw suggesting Cao family resemblance, warmer tan complexion, straight eyebrows, vigilant thoughtful eyes, clean-shaven chin with only a fine restrained mustache, worried dutiful expression. Black hair in compact topknot under a low bronze military guan, navy silk guard uniform under fitted dark steel lamellar armor with understated bronze trim, dark terracotta red shoulder sash, cream crossed inner collar. No helmet, no imperial crown. Chest-up three-quarter turning right, large face, full topknot inside square with margin, shoulders visible. Premium semi-realistic digital oil portrait matching polished Sima Yi / Sima Fang collection, restrained natural brushwork, detailed skin and silk, warm focused side light against near-black cool gray atmospheric background. Original late Han / Wei character concept. No text, border, watermark, extra person, anime or flat vector. Single square image.
+
 ## 하안 — 완료
 
 파일: `packages/web/public/portraits/he-yan.png`. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
