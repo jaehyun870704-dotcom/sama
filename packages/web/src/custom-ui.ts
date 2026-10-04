@@ -11,7 +11,7 @@ import {classNames} from './troops.ts';
 import {spriteStyle} from './story-stage.ts';
 import type {Look} from './scenario-types.ts';
 import {PORTRAIT_PARTS,PORTRAIT_KEYS,portraitURL,suggestPortrait,type PortraitSpec} from './portrait.ts';
-const PART_NAMES:Record<string,string>={face:'얼굴형',skin:'피부',eyes:'눈매',brows:'눈썹',mouth:'입',beard:'수염',hair:'머리색',hat:'머리·관모',robe:'옷 색',armor:'갑옷',item:'소품',bg:'배경'};
+const PART_NAMES:Record<string,string>={face:'얼굴형',skin:'피부',eyes:'눈매',brows:'눈썹',mouth:'입',beard:'수염',hair:'머리색',hat:'머리·관모',robe:'옷 색',armor:'갑옷',item:'소품',bg:'배경',age:'나이',mark:'흉터'};
 
 export interface CustomHost {modal(html:string,closable?:boolean):void;toast(text:string):void}
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
