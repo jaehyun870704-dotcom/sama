@@ -4,6 +4,14 @@
 
 제작 도구: 내장 image_gen (CLI/API 대체 경로 사용 없음).
 
+## 장패 — 완료
+
+파일: `packages/web/public/portraits/zang-ba.png`. 거친 수염과 갈색 목도리, 실전 갑옷. 얼굴·복식 육안 확인, manifest 연결.
+
+### 생성 프롬프트
+
+Use case historical-scene. Paint ONE square finished portrait for a premium Three Kingdoms strategy game: Zang Ba (장패), rugged former Taishan warlord now Wei general. East Asian male mid-50s, broad weather-beaten square face, thick straight brows, deep brown watchful eyes, slightly flattened nose, thick dark beard with scattered gray hairs. Serious independent veteran, not a villain. Low dark iron helmet with practical brown leather cheek guards and a small short red tassel, worn dark steel lamellar armor, ochre-brown scarf and dark olive cloak, very restrained bronze fittings. Head and shoulders bust, three-quarter pose to right, face clear and prominent, entire helmet inside image with space above. Masterful semi-realistic digital oil painting consistent with polished Sima Yi / Sima Fang portraits, detailed natural skin, restrained visible brushwork, rich believable textile and metal, warm dramatic side lighting against near-black brown smoky background. Historically inspired late Han costume, natural human proportions. No text or frame or watermark, no anime or vector or 3D cartoon. Single square image.
+
 ## 왕릉 — 완료
 
 파일: `packages/web/public/portraits/wang-ling.png`. 백발의 노신, 긴 수염과 청록색 관복. 단독 인물·복식·얼굴 육안 확인, manifest 연결.
