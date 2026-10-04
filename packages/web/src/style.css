@@ -408,6 +408,9 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
 /* 도트 무대: 배경·인물 모두 픽셀 그대로(흐림 없이) */
 .ss-stage.iso{image-rendering:pixelated}
 .ss-stage.iso .ss-actor.px{width:5.625%;aspect-ratio:3/4;transform:translate(-50%,-94%)}
+/* 기존 그림(장수 일러스트·병종 그림)으로 세운 인물: 정사각 칸, 발끝이 칸 바닥에서 2px 위 */
+.ss-stage.iso .ss-actor.px.fig{width:7.5%;aspect-ratio:1/1;transform:translate(-50%,-97%)}
+.ss-stage.iso .ss-actor.px.fig .ss-shadow{bottom:1%;width:46%}
 .ss-stage.iso .ss-actor.px .ss-sprite.legs{display:none}
 .ss-stage.iso .ss-actor.px .ss-sprite.top{clip-path:none;image-rendering:pixelated;filter:none}
 .ss-stage.iso .ss-actor.px .ss-body{animation:px-idle 1.3s steps(1) infinite;animation-delay:var(--d,0s);rotate:none;scale:none}
@@ -418,7 +421,7 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
 .ss-stage.iso .ss-actor.px .ss-shadow{bottom:3%;width:70%;height:10%;background:rgba(0,0,0,.35);border-radius:50%;filter:none}
 .ss-stage.iso .ss-actor.px .ss-name{top:100%;font:700 11px/1.3 'Malgun Gothic',sans-serif;background:rgba(10,8,6,.7);border:1px solid rgba(220,190,120,.5);border-radius:0;padding:0 4px}
 .ss-stage.iso .ss-fx i{border-radius:0!important}
-@media(max-width:580px){.ss-stage.iso .ss-actor.px{width:5.625%}.ss-stage.iso .ss-actor.px .ss-name{font-size:8px}}
+@media(max-width:580px){.ss-stage.iso .ss-actor.px{width:5.625%}.ss-stage.iso .ss-actor.px.fig{width:7.5%}.ss-stage.iso .ss-actor.px .ss-name{font-size:8px}}
 /* 장을 여는 해설 화면(도트 무대를 어둡게 깔고 글을 한 줄씩) */
 .ss-narr{position:relative;aspect-ratio:2/1;width:100%;background-size:100% 100%;image-rendering:pixelated;border:1px solid #7e775a;cursor:pointer;overflow:hidden}
 .ss-narr-veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,6,10,.62),rgba(6,6,10,.86))}
