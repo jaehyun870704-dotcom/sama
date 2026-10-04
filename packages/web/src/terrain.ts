@@ -38,6 +38,7 @@ function paintBase(state:BattleState,biome:Biome){
   // 풀밭 무게(그린 풀밭 그림을 얹을 자리): 풀·언덕은 온전히, 숲 바닥은 반쯤, 길은 옅게
   const mc=document.createElement('canvas');mc.width=w;mc.height=h;const mg=mc.getContext('2d')!,mimg=mg.createImageData(w,h),md=mimg.data;
   const dc=document.createElement('canvas');dc.width=w;dc.height=h;const dg=dc.getContext('2d')!,dimg=dg.createImageData(w,h),dd=dimg.data;
+  const wc=document.createElement('canvas');wc.width=w;wc.height=h;const wg=wc.getContext('2d')!,wimg=wg.createImageData(w,h),wd=wimg.data;
   const GR=idx('grass'),HL=idx('hill'),FR=idx('forest'),DI=idx('dirt'),YA=idx('yard');
   for(let py=0;py<h;py++)for(let px=0;px<w;px++){
     const i=py*w+px,cN=sample(n.coarse,px*1.2*Q,py*1.2*Q),f=sample(n.fine,px*.9*Q,py*.9*Q);
@@ -53,9 +54,10 @@ function paintBase(state:BattleState,biome:Biome){
       acc[0]+=col[0]!*k;acc[1]+=col[1]!*k;acc[2]+=col[2]!*k;}
     d[i*4]=acc[0]!;d[i*4+1]=acc[1]!;d[i*4+2]=acc[2]!;d[i*4+3]=255;
     const gw=wgts[i*M+GR]!+wgts[i*M+HL]!+wgts[i*M+FR]!*.55+wgts[i*M+DI]!*.1+wgts[i*M+YA]!*.06;md[i*4+3]=Math.round(Math.min(1,gw)*255);
-    dd[i*4+3]=Math.round(Math.min(1,wgts[i*M+DI]!+wgts[i*M+YA]!*.6)*255);
+    dd[i*4+3]=Math.round(Math.min(1,wgts[i*M+DI]!)*255);
+    wd[i*4+3]=Math.round(smooth(.4,.6,raws[i*M+WA]!+raws[i*M+FO]!)*255);
   }
-  g.putImageData(img,0,0);mg.putImageData(mimg,0,0);dg.putImageData(dimg,0,0);return {base:c,grassMask:mc,dirtMask:dc};
+  g.putImageData(img,0,0);mg.putImageData(mimg,0,0);dg.putImageData(dimg,0,0);wg.putImageData(wimg,0,0);return {base:c,grassMask:mc,dirtMask:dc,waterMask:wc};
 }
 /** 그린 풀밭 그림(AI 채색): 있으면 풀·언덕 위에 깐다. 이음매가 보이지 않게 뒤집어 이어 붙인 판을 만든다. */
 let meadow:HTMLCanvasElement|undefined;
@@ -122,12 +124,23 @@ function sceneryThumb(atlas:Texture,frame:number,w:number,h:number,flip=false,da
 }
 const stroke=(ctx:CanvasRenderingContext2D,color:string,lw:number,pts:Array<[number,number]>,curve?:[number,number])=>{ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(...pts[0]!);if(curve&&pts[1])ctx.quadraticCurveTo(...curve,...pts[1]);else for(const p of pts.slice(1))ctx.lineTo(...p);ctx.stroke();};
 
+/** 물가: 바깥은 젖은 모래의 짙은 띠, 안쪽은 얕은 물빛과 흰 거품선. 물 마스크를 흐려서 띠를 만든다. */
+function paintShore(ctx:CanvasRenderingContext2D,mask:HTMLCanvasElement,w:number,h:number){
+  const layer=(fn:(g:CanvasRenderingContext2D)=>void)=>{const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d')!;fn(g);return c;};
+  const big=(g:CanvasRenderingContext2D)=>g.drawImage(mask,0,0,w,h);
+  const land=layer(g=>{g.fillStyle='#000';g.fillRect(0,0,w,h);g.globalCompositeOperation='destination-out';big(g);});
+  const band=(src:HTMLCanvasElement,blur:number,clip:'in'|'out',color:string)=>layer(g=>{g.filter=`blur(${blur}px)`;g.drawImage(src,0,0);g.filter='none';
+    g.globalCompositeOperation=clip==='in'?'destination-in':'destination-out';big(g);g.globalCompositeOperation='source-in';g.fillStyle=color;g.fillRect(0,0,w,h);});
+  ctx.drawImage(band(mask as HTMLCanvasElement,7,'out','rgba(70,58,34,.42)'),0,0);// 젖은 모래
+  ctx.drawImage(band(land,14,'in','rgba(120,176,168,.5)'),0,0);// 얕은 물
+  ctx.drawImage(band(land,3,'in','rgba(236,244,236,.55)'),0,0);// 거품선
+}
 /** 물결·여울·급류: 밝은 물결 붓질, 흰 물거품, 여울의 디딤돌. */
 function paintWaterDetail(ctx:CanvasRenderingContext2D,state:BattleState,biome:Biome){
   const foam=biome.ramps.water[4]!;
   for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){
     const t=terrainAt(state,x,y),px=x*T,py=y*T;
-    if(t==='water')for(let i=0;i<4;i++){if(hash(x,y,i+60)<.35)continue;const sx=px+hash(x,y,i+61)*T*.8,sy=py+4+hash(x,y,i+62)*T*.85,l=8+hash(x,y,i+63)*14;stroke(ctx,css(foam,.45),1.6,[[sx,sy],[sx+l,sy]],[sx+l/2,sy-3]);}
+    if(t==='water')for(let i=0;i<3;i++){if(hash(x,y,i+60)<.3)continue;const sx=px+hash(x,y,i+61)*T*.7-4,sy=py+4+hash(x,y,i+62)*T*.85,l=16+hash(x,y,i+63)*22,dk=hash(x,y,i+64)<.4;stroke(ctx,dk?'rgba(10,30,44,.22)':css(foam,.22+hash(x,y,i+65)*.12),dk?2.4:1.3,[[sx,sy],[sx+l,sy+(hash(x,y,i+66)-.5)*4]],[sx+l*.5,sy-1.5-hash(x,y,i+67)*2]);}
     if(t==='rapids')for(let i=0;i<9;i++){const sx=px+hash(x,y,i)*T*.8,sy=py+3+i*5+hash(x,y,i+9)*3,l=8+hash(x,y,i+3)*14;stroke(ctx,i%2?'rgba(240,248,245,.85)':css(foam,.7),2,[[sx,sy],[sx+l,sy+1]],[sx+l/2,sy-4]);}
     if(t==='ford')for(let i=0;i<5;i++){const sx=px+6+hash(x,y,i+20)*(T-12),sy=py+6+hash(x,y,i+21)*(T-12),r=3+hash(x,y,i+22)*3;ctx.fillStyle='rgba(235,245,240,.55)';ctx.beginPath();ctx.ellipse(sx,sy+2,r+3,r*.6+1,0,0,7);ctx.fill();ctx.fillStyle='rgb(128,124,110)';ctx.beginPath();ctx.ellipse(sx,sy,r,r*.7,0,0,7);ctx.fill();ctx.fillStyle='rgba(220,215,195,.8)';ctx.beginPath();ctx.ellipse(sx-1,sy-1,r*.5,r*.3,0,0,7);ctx.fill();}
   }
@@ -162,13 +175,71 @@ function paintRoads(ctx:CanvasRenderingContext2D,state:BattleState){
     for(let i=0;i<5;i++){const sx=px+hash(x,y,i+50)*T,sy=py+hash(x,y,i+51)*T;ctx.fillStyle=hash(x,y,i+52)<.5?'rgba(60,44,26,.45)':'rgba(236,222,190,.45)';ctx.beginPath();ctx.ellipse(sx,sy,1.6+hash(x,y,i+53)*1.5,1.2,0,0,7);ctx.fill();}
   }
 }
-/** 밭: 고랑 줄과 이삭. */
+/**
+ * 밭(보리밭): 칸 둘씩 묶은 다랑이마다 이랑 방향과 익은 빛깔을 달리한다. 이랑은 세계 좌표에 맞춰 칸을 넘어 이어지고,
+ * 다랑이 사이에는 흙두둑, 밭 바깥 가장자리는 둥글게 풀밭으로 번진다. 이삭은 밝은 점으로 성기게 찍는다.
+ */
 function paintFields(ctx:CanvasRenderingContext2D,state:BattleState){
-  for(const p of state.map.regions.get('fields')??[]){
-    if(state.map.tileAt(p).terrain!=='plain')continue;
-    const px=p.x*T,py=p.y*T;ctx.fillStyle='rgba(164,150,84,.85)';ctx.fillRect(px+2,py+2,T-4,T-4);
-    for(let j=0;j<7;j++){const yy=py+5+j*6;stroke(ctx,'rgba(98,108,58,.8)',2,[[px+3,yy],[px+T-3,yy]]);stroke(ctx,'rgba(214,198,124,.8)',1.2,[[px+3,yy-2],[px+T-3,yy-2]]);}
-  }
+  const cells=(state.map.regions.get('fields')??[]).filter(p=>state.map.tileAt(p).terrain==='plain');if(!cells.length)return;
+  const key=(x:number,y:number)=>x+','+y,set=new Set(cells.map(p=>key(p.x,p.y)));
+  // 다랑이: 두 줄 띠마다 2~4칸 너비로 끊는다(띠마다 끊는 자리가 엇갈린다)
+  const plots=new Map<string,{id:number;h:number}>();
+  for(let band=0;band*2<state.map.height;band++){let x=-Math.floor(hash(band,1,402)*3),n=0;
+    while(x<state.map.width){const w=2+Math.floor(hash(band,n,403)*3),id=band*997+n,h=hash(band,n,401);for(let i=0;i<w;i++)for(const dy of [0,1])plots.set(key(x+i,band*2+dy),{id,h});x+=w;n++;}}
+  const plot=(x:number,y:number)=>plots.get(key(x,y))??{id:-1,h:0};
+  const CROPS:Array<[string,string,string]>=[['rgb(190,162,86)','rgba(110,86,40,.26)','rgba(246,224,150,.3)'],['rgb(174,148,74)','rgba(100,76,34,.26)','rgba(236,212,136,.3)'],['rgb(150,150,82)','rgba(70,80,36,.26)','rgba(214,212,140,.28)'],['rgb(200,174,100)','rgba(120,92,44,.24)','rgba(250,232,166,.3)'],['rgb(182,160,96)','rgba(104,84,44,.24)','rgba(240,222,160,.3)']];
+  const crop=(x:number,y:number)=>CROPS[Math.floor(plot(x,y).h*CROPS.length)]!;
+  const W=state.map.width*T,H=state.map.height*T,f=document.createElement('canvas');f.width=W;f.height=H;const g=f.getContext('2d')!;
+  // 1) 다랑이 바탕(밭 바깥 모서리는 둥글게)
+  for(const {x,y} of cells){const px=x*T,py=y*T,L=set.has(key(x-1,y)),R=set.has(key(x+1,y)),U=set.has(key(x,y-1)),D=set.has(key(x,y+1)),r=12;
+    g.fillStyle=crop(x,y)[0];g.beginPath();g.roundRect(px-(L?.5:-2),py-(U?.5:-2),T+(L?.5:-2)+(R?.5:-2),T+(U?.5:-2)+(D?.5:-2),[!L&&!U?r:0,!R&&!U?r:0,!R&&!D?r:0,!L&&!D?r:0]);g.fill();}
+  // 2) 이랑: 세계 좌표에 맞춘 물결 줄(다랑이마다 방향이 다르다)
+  g.save();g.globalCompositeOperation='source-atop';g.lineCap='round';
+  for(const {x,y} of cells){const pl=plot(x,y),[,dark,light]=crop(x,y),vert=pl.h>.55,px=x*T,py=y*T;
+    g.save();g.beginPath();g.rect(px,py,T,T);g.clip();
+    for(let k=0;k<T;k+=7){const a=(hash(pl.id,k,503)-.5)*3,b=(hash(pl.id,k,504)-.5)*3;
+      g.strokeStyle=dark;g.lineWidth=3;g.beginPath();if(vert){g.moveTo(px+k,py);g.quadraticCurveTo(px+k+a,py+T/2,px+k,py+T);}else{g.moveTo(px,py+k);g.quadraticCurveTo(px+T/2,py+k+a,px+T,py+k);}g.stroke();
+      g.strokeStyle=light;g.lineWidth=1.6;g.beginPath();if(vert){g.moveTo(px+k+3,py);g.quadraticCurveTo(px+k+3+b,py+T/2,px+k+3,py+T);}else{g.moveTo(px,py+k+3);g.quadraticCurveTo(px+T/2,py+k+3+b,px+T,py+k+3);}g.stroke();}
+    // 이삭: 짧은 붓질 무더기
+    for(let i=0;i<14;i++){const sx=px+hash(x,y,i+520)*T,sy=py+hash(x,y,i+530)*T,l=2+hash(x,y,i+540)*2.5;g.strokeStyle=i%3?'rgba(250,236,184,.55)':'rgba(120,92,40,.4)';g.lineWidth=1.3;g.beginPath();g.moveTo(sx,sy);g.lineTo(sx+(vert?.6:l),sy-(vert?l:.6));g.stroke();}
+    g.restore();}
+  // 3) 바람 자국·햇빛 얼룩: 밭 전체에 걸친 큰 부드러운 얼룩(칸 경계를 지운다)
+  for(let i=0;i<cells.length*1.4;i++){const c=cells[Math.floor(hash(i,7,610)*cells.length)]!,cx=(c.x+hash(i,8,610))*T,cy=(c.y+hash(i,9,610))*T,r=T*(.6+hash(i,10,610)*.9);
+    const gr=g.createRadialGradient(cx,cy,0,cx,cy,r),lit=hash(i,11,610)<.55;gr.addColorStop(0,lit?'rgba(255,244,200,.22)':'rgba(70,52,20,.2)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(cx-r,cy-r,r*2,r*2);}
+  g.restore();
+  // 4) 다랑이 사이 흙두둑
+  g.lineCap='round';
+  for(const {x,y} of cells){const id=plot(x,y).id,px=x*T,py=y*T;
+    const ridge=(x0:number,y0:number,x1:number,y1:number)=>{stroke(g,'rgba(104,80,46,.75)',3.2,[[x0,y0],[x1,y1]]);stroke(g,'rgba(222,200,150,.55)',1.2,[[x0-1.2,y0-1.2],[x1-1.2,y1-1.2]]);};
+    if(set.has(key(x+1,y))&&plot(x+1,y).id!==id)ridge(px+T,py+1,px+T,py+T-1);
+    if(set.has(key(x,y+1))&&plot(x,y+1).id!==id)ridge(px+1,py+T,px+T-1,py+T);}
+  ctx.save();ctx.shadowColor='rgba(46,34,12,.55)';ctx.shadowBlur=7;ctx.shadowOffsetY=2;ctx.drawImage(f,0,0);ctx.restore();
+}
+/**
+ * 성 안 마당(fort): 엇갈려 깐 돌판. 돌마다 빛깔을 조금씩 달리하고, 위·왼쪽 모서리는 밝게, 아래·오른쪽은 어둡게,
+ * 줄눈에는 이끼, 가끔 금 간 돌. 마당 바깥 가장자리는 흐리게 번져 흙과 섞인다.
+ */
+function paintPaving(ctx:CanvasRenderingContext2D,state:BattleState){
+  const cells:Coord[]=[];for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++)if(terrainAt(state,x,y)==='fort')cells.push({x,y});
+  if(!cells.length)return;
+  const W=state.map.width*T,H=state.map.height*T,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d')!;
+  let x0=W,y0=H,x1=0,y1=0;for(const p of cells){x0=Math.min(x0,p.x*T);y0=Math.min(y0,p.y*T);x1=Math.max(x1,p.x*T+T);y1=Math.max(y1,p.y*T+T);}
+  g.fillStyle='rgb(118,110,96)';g.fillRect(x0,y0,x1-x0,y1-y0);
+  const RH=24;
+  for(let r=Math.floor(y0/RH);r*RH<y1;r++){let x=x0-Math.floor(hash(r,1,700)*20),n=0;
+    while(x<x1){const w=24+Math.floor(hash(r,n,701)*22),k=hash(r,n,702),sx=x+1,sy=r*RH+1,sw=w-2,sh=RH-2;
+      const v=Math.round((k-.5)*18),warm=hash(r,n,703)<.3?8:0;g.fillStyle=`rgb(${178+v+warm},${172+v+warm/2},${156+v})`;g.fillRect(sx,sy,sw,sh);
+      g.fillStyle='rgba(255,250,236,.16)';g.fillRect(sx,sy,sw,1.2);g.fillRect(sx,sy,1.2,sh);
+      g.fillStyle='rgba(40,34,26,.18)';g.fillRect(sx,sy+sh-1.2,sw,1.2);g.fillRect(sx+sw-1.2,sy,1.2,sh);
+      for(let q=0;q<3;q++){g.fillStyle=hash(r*7+q,n,707)<.5?'rgba(255,248,230,.1)':'rgba(60,50,36,.1)';g.beginPath();g.ellipse(sx+hash(r,n*3+q,708)*sw,sy+hash(r,n*3+q,709)*sh,3+hash(r,n+q,710)*5,2+hash(r,n+q,711)*3,0,0,7);g.fill();}
+      if(k>.95){g.strokeStyle='rgba(60,52,40,.55)';g.lineWidth=1;g.beginPath();g.moveTo(sx+sw*.2,sy+1);g.lineTo(sx+sw*.45,sy+sh*.55);g.lineTo(sx+sw*.4,sy+sh-1);g.stroke();}
+      if(hash(r,n,704)<.18){g.fillStyle='rgba(96,118,60,.55)';g.beginPath();g.ellipse(x+(hash(r,n,705)<.5?0:w),r*RH+RH,3+hash(r,n,706)*3,1.6,0,0,7);g.fill();}
+      x+=w;n++;}}
+  // 바깥 가장자리: 칸 모양 마스크를 흐려서 번지게
+  const m=document.createElement('canvas');m.width=W;m.height=H;const mg=m.getContext('2d')!;mg.filter='blur(3px)';mg.fillStyle='#000';
+  for(const p of cells)mg.fillRect(p.x*T-1,p.y*T-1,T+2,T+2);
+  g.globalCompositeOperation='destination-in';g.drawImage(m,0,0);
+  ctx.save();ctx.globalAlpha=.94;ctx.drawImage(c,0,0);ctx.restore();
 }
 /** 다리: 판자를 가로질러 깔고 난간 기둥, 물에 비친 그늘. */
 function paintBridges(ctx:CanvasRenderingContext2D,state:BattleState,stone:(at:Coord)=>boolean){
@@ -303,8 +374,10 @@ export function terrainLayer(state:BattleState,atlas:Texture){
   overlayMeadow(ctx,base.grassMask,canvas.width,canvas.height,state.stage.id.length*7+map.width);
   paintDirt(ctx,base.dirtMask,canvas.width,canvas.height,map.width*3+map.height);
   if(!meadow)brushGrain(ctx,canvas.width,canvas.height);
+  paintPaving(ctx,state);
   paintFields(ctx,state);
   paintRoads(ctx,state);
+  paintShore(ctx,base.waterMask,canvas.width,canvas.height);
   paintWaterDetail(ctx,state,biome);
   paintMarsh(ctx,state,biome);
   if(!meadow)paintGrass(ctx,state,biome);
