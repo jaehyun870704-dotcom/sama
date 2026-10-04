@@ -21,12 +21,14 @@ import {showHub,showQuests,finishRunBattle,finishRunStory,RUN_CHAPTER,type RunHo
 import {showScenario,campOf,finishIfBattle,finishStoryBattle,type ScenarioHost} from './scenario-ui.ts';
 import {scriptOf} from './scenario.ts';
 import {optionalOfficers,pickExtras,storySortieLimit} from './sortie.ts';
-import {isoBackdrop,loadIsoArt} from './story-iso.ts';
+import {isoBackdrop,loadIsoArt,loadPaintedScenes} from './story-iso.ts';
 import {loadFigures} from './story-figure.ts';
 import {registerCustoms} from './custom.ts';
 import {loadMeta as loadMetaForCustoms} from './meta.ts';
 import {loadPortraitImages} from './portrait-images.ts';
 import {renderHud,type CardOpts} from './unit-hud.ts';
+import {inkChoice} from './ink-choice.ts';
+import {duelSplash,duelArena,duelBackdrop} from './duel-ui.ts';
 // 플레이어가 만든 신장수를 장수록에 올린다(전투 능력·성격·무대 그림).
 registerCustoms(loadMetaForCustoms().customOfficers??[]);
 // 직접 넣은 초상 그림(저장소 public/portraits와 이 브라우저에 올린 것)을 먼저 읽어 둔다.
@@ -380,10 +382,20 @@ function showRefusal(){
   <div class="modal-actions"><button class="primary" id="refusal-ok">전장으로</button></div></div>`,false);
   $('#refusal-ok').onclick=()=>{$<HTMLDialogElement>('#modal').close();persist();render();pump();};
 }
+let duelSplashSeen:object|undefined;
 function showDuel(){
-  const d=session.activeDuel??session.lastDuel;if(!d)return;clearTimeout(aiTimer);const labels=duelActionNames(d.kind),energyName=d.kind==='debate'?'논거':'기합';
-  const a=session.state.get(d.player.id),b=session.state.get(d.enemy.id),last=d.history.at(-1);
-  modal(`<div class="duel-screen ${d.kind}"><div class="eyebrow">${d.kind==='duel'?'무력으로 겨루는 일기토':'지력으로 겨루는 설전'}</div><h2>${d.kind==='duel'?'일기토':'설전'} <small>${d.round} / 5합</small></h2>${session.lastAccept&&d.round===0?`<p class="duel-accept">${session.lastAccept.historic?'<b>연의의 대결</b> · ':''}${d.enemy.name}: “${session.lastAccept.line}”</p>`:''}<div class="duel-hud">${[d.player,d.enemy].map(u=>`<div><strong>${u.name}</strong><span>${d.kind==='duel'?'무력':'지력'} ${u.stat} · ${energyName} ${u.energy}/3</span><meter min="0" max="${u.maxHp}" value="${u.hp}"></meter><small>${u.hp} / ${u.maxHp}</small></div>`).join('')}</div><div class="duel-arena"><div class="duel-fighter player motion-${last?.action??'idle'}">${portraitFor(a,d.kind==='duel'&&last?.action==='guard')}${last?`<span class="duel-speech">${duelLine(d.kind,last.action)}</span>`:''}${last?`<b class="damage-number">−${last.taken}</b>`:''}</div><span class="duel-versus">${d.kind==='duel'?'대결':'설전'}</span><div class="duel-fighter enemy motion-${last?.enemyAction??'idle'}">${portraitFor(b,d.kind==='duel'&&last?.enemyAction==='guard')}${last?`<span class="duel-speech">${duelLine(d.kind,last.enemyAction)}</span>`:''}${last?`<b class="damage-number">−${last.dealt}</b>`:''}</div></div><p class="duel-report" aria-live="polite">${last?`${last.round}합 · ${labels[last.action]} 대 ${labels[last.enemyAction]} · 준 피해 ${last.dealt} / 받은 피해 ${last.taken}`:(d.kind==='debate'?'논박은 정신력 피해, 반론은 피해 감소와 논거 +1, 숙고는 논거 +2, 논파는 논거 2를 소비합니다.':'공격은 피해, 방어는 피해 감소와 기합 +1, 기합은 +2, 필살기는 기합 2를 소비합니다.')}</p>${d.result?`<h3>${d.result==='win'?'승리':d.result==='lose'?'패배':'무승부'}</h3><p>전투 체력: 승자 15% · 패자 45% · 무승부 양쪽 25% 피해 (최소 1 유지). 패자는 2턴 혼란. 행동 1회 소비.</p><button id="duel-return" class="primary">전장으로 돌아가기</button>`:`<div class="duel-actions">${(Object.keys(labels) as DuelAction[]).map(id=>`<button data-duel-action="${id}" ${id==='special'&&d.player.energy<2?'disabled':''}>${labels[id]}<small>${id==='attack'?'능력치 피해':id==='guard'?'피해 65% 감소':id==='rally'?energyName+' +2':'피해 ×1.8'}</small></button>`).join('')}</div>`}<details><summary>합별 기록</summary>${d.history.map(h=>`<p>${h.round}합 · ${labels[h.action]} / ${labels[h.enemyAction]} · ${h.dealt}:${h.taken}</p>`).join('')}</details></div>`,false);
+  const d=session.activeDuel??session.lastDuel;if(!d)return;clearTimeout(aiTimer);
+  const a=session.state.get(d.player.id),b=session.state.get(d.enemy.id);
+  const models={player:`<div class="duel-model face-right">${portraitFor(a,false)}</div>`,enemy:`<div class="duel-model face-left">${portraitFor(b,false)}</div>`};
+  if(d.round===0&&!d.history.length&&duelSplashSeen!==d){
+    modal(duelSplash(d,session.lastAccept?.line,!!session.lastAccept?.historic),false);
+    document.querySelectorAll<HTMLElement>('[data-vs-model]').forEach(el=>el.innerHTML=el.dataset.vsModel==='enemy'?models.enemy:models.player);
+    sound.event({kind:'duel',critical:true});
+    const go=()=>{if(duelSplashSeen===d)return;duelSplashSeen=d;showDuel();};
+    $('.vs-go').addEventListener('click',go);setTimeout(go,2600);return;
+  }
+  const indoor=session.state.map.tileAt(a.pos).terrain==='fort'||/궁|부$|청|막/.test(session.state.stage.subtitle??'');
+  modal(duelArena(d,{models,backdrop:duelBackdrop(d.kind,session.state.stage.id+d.enemy.id,indoor),...(session.lastAccept?.line?{openingLine:session.lastAccept.line}:{})}),false);
   document.querySelectorAll<HTMLButtonElement>('[data-duel-action]').forEach(el=>el.onclick=()=>{sound.event({kind:'duel',critical:el.dataset.duelAction==='special'});act({kind:'item',unit:d.player.id,item:'duel-round:'+el.dataset.duelAction});});
   $('#duel-return')?.addEventListener('click',()=>{duelPresented=true;$<HTMLDialogElement>('#modal').close();render();pump();});
 }
@@ -427,7 +439,8 @@ function checkModal(){
     $('#epilogue')?.addEventListener('click',showEpilogue);
     $('#next-chapter')?.addEventListener('click',()=>storyScene(campaignOrder[campaignOrder.indexOf(session.chapter)+1]!));return;
   }
-  if(s.activeDialogue){const node=session.battle.dialogue.node(s.activeDialogue);modal(`<div class="dialogue"><div class="eyebrow">${session.chapter===10?'설전 · 건업 궁정':'전장의 갈림길'}</div>${dialogueCaption(node.speaker?s.find(node.speaker)?.name??node.speaker:'해설',node.text)}${session.chapter===0?`<p>지참금 ${session.funds}전 · 남문 통행료 1,000전 확보</p>`:''}${session.chapter===10?`<p class="trust-line">신뢰 ${'●'.repeat(session.trust)}${'○'.repeat(session.trustLimit-session.trust)} · 틀리면 신뢰가 깎이고 같은 물음을 다시 받습니다</p>`:''}<div class="dialogue-options">${node.options.map((o,i)=>`<button data-choice="${o.id}"><span>0${i+1}</span>${esc(o.text)}</button>`).join('')}</div>${session.chapter===10?'':'<button id="dialogue-undo">직전 선택 무르기</button>'}</div>`,false);$('#dialogue-undo')?.addEventListener('click',undo);document.querySelectorAll<HTMLButtonElement>('[data-choice]').forEach(b=>b.onclick=()=>{$<HTMLDialogElement>('#modal').close();act({kind:'choose',nodeId:node.id,optionId:b.dataset.choice!});const last=[...session.state.log].reverse().find(e=>e.t==='choice');if(last&&last.t==='choice'&&last.correct===false)toast(session.chapter===10?`설득이 먹히지 않았습니다. 신뢰 ${session.trust}/${session.trustLimit}`:'선택의 대가를 치렀습니다.');});}
+  if(s.activeDialogue){const node=session.battle.dialogue.node(s.activeDialogue);{const who=node.speaker?s.find(node.speaker)?.name??node.speaker:'사마의',extra=`${session.chapter===0?`<p class="ink-extra">지참금 ${session.funds}전 · 남문 통행료 1,000전 확보</p>`:''}${session.chapter===10?'<p class="ink-extra">틀리면 신뢰가 깎이고 같은 물음을 다시 받습니다</p>':'<button id="dialogue-undo" class="ink-undo">직전 선택 무르기</button>'}`;
+    modal(`<div class="dialogue ink-mode"><div class="eyebrow">${session.chapter===10?'설전 · 건업 궁정':'전장의 갈림길'}</div>${inkChoice(who,node.text,node.options.map(o=>({text:o.text,id:o.id})),{attr:'data-choice',extra,...(session.chapter===10?{gauge:{label:'신뢰',value:session.trust/Math.max(1,session.trustLimit)}}:{})})}</div>`,false);}$('#dialogue-undo')?.addEventListener('click',undo);document.querySelectorAll<HTMLButtonElement>('[data-choice]').forEach(b=>b.onclick=()=>{$<HTMLDialogElement>('#modal').close();act({kind:'choose',nodeId:node.id,optionId:b.dataset.choice!});const last=[...session.state.log].reverse().find(e=>e.t==='choice');if(last&&last.t==='choice'&&last.correct===false)toast(session.chapter===10?`설득이 먹히지 않았습니다. 신뢰 ${session.trust}/${session.trustLimit}`:'선택의 대가를 치렀습니다.');});}
 }
 field.onSound=e=>sound.event(e);field.xpFor=e=>session.xpGains.get(e);field.onAnimationEnd=()=>{render();pump();setTimeout(()=>{hudLock=false;hudHover(hudAt);},900);};
 field.onCell=at=>{
@@ -474,7 +487,7 @@ document.addEventListener('keydown',e=>{if($<HTMLDialogElement>('#modal').open||
   else{const id=({1:'move',2:'attack',3:session.state.find(selected)?.strategies[0],w:'wait'} as Record<string,string|undefined>)[e.key.toLowerCase()];if(id)document.querySelector<HTMLButtonElement>(`[data-command="${id}"]`)?.click();}});
 // Story and gallery art reads the cut sheets through CSS; a blob URL avoids encoding megapixels into a string.
 const atlasUrl=(canvas:HTMLCanvasElement)=>new Promise<string>(resolve=>canvas.toBlob(blob=>resolve(blob?URL.createObjectURL(blob):canvas.toDataURL())));
-async function boot(){try{await Promise.all([...[['officer-story','officer-story-v1.png',2,4],['base','units-v3.png',6,4],['extra','units-extra-v1.png',4,4],['ram','ram-v1.png',2,2],...troopSheets.map(s=>[s.id,s.url,s.rows,4])].map(async([name,url,rows,columns])=>{const atlas=await spriteAtlas(String(url),Number(rows),Number(columns));document.documentElement.style.setProperty('--'+name+'-atlas','url('+await atlasUrl(atlas)+')');}),loadFigures(),loadIsoArt(),field.init($('#map'))]);field.load(session.state);render();showMenu();}catch(error){$('#map').innerHTML='<p class="render-error">전장 그래픽을 초기화하지 못했습니다. 새로고침해 주세요.</p>';console.error(error);}}
+async function boot(){try{await Promise.all([...[['officer-story','officer-story-v1.png',2,4],['base','units-v3.png',6,4],['extra','units-extra-v1.png',4,4],['ram','ram-v1.png',2,2],...troopSheets.map(s=>[s.id,s.url,s.rows,4])].map(async([name,url,rows,columns])=>{const atlas=await spriteAtlas(String(url),Number(rows),Number(columns));document.documentElement.style.setProperty('--'+name+'-atlas','url('+await atlasUrl(atlas)+')');}),loadFigures(),loadIsoArt(),loadPaintedScenes(),field.init($('#map'))]);field.load(session.state);render();showMenu();}catch(error){$('#map').innerHTML='<p class="render-error">전장 그래픽을 초기화하지 못했습니다. 새로고침해 주세요.</p>';console.error(error);}}
 // ?dev only: a handle for QA scripts to inspect or nudge the running battle.
 if(devMode)Object.assign(window,{__sama:{get session(){return session;},get field(){return field;},render,start(chapter:number){session=new Session(chapter,'normal',215,'survival',4,deployment(campaign,true));activate();},story(chapter:number){storyScene(chapter);},act(cmd:Command){act(cmd);}}});
 void boot();

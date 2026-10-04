@@ -44,6 +44,8 @@ export interface IsoScene {
   light:'day'|'night'|'dawn'|'dusk';
   /** 카메라가 늘 담아야 할 자리(화면 %): 성문·문루 같은 장면의 주인공 건물. */
   focus?:At[];
+  /** 인물 크기 배율(그린 원화마다 다르다). */
+  figScale?:number;
 }
 
 function rng(seed:number){let a=seed>>>0;return ()=>{a=(a+0x6d2b79f5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;};}
@@ -1015,8 +1017,59 @@ export const PIXEL=3;
 const SS=2;
 /** 이야기 장면 성벽의 높이(사람 키의 세 배쯤). */
 const CASTLE_H=230;
+
+// ─────────────────────────────────────────────── 그린 배경(AI 채색 원화)
+/**
+ * 장소 종류에 맞는 채색 원화가 있으면 그것을 쓴다. 원화마다 바닥 마름모(뒤 모서리·오른쪽 모서리)와
+ * 사람이 설 수 있는 바닥, 가구가 놓인 곳(못 서는 곳)을 원화 좌표로 적어 둔다.
+ * 원화는 가로 1280에 맞춰 줄이고 cropTop만큼 위를 잘라 무대(2:1)에 깐다.
+ */
+interface Painted {url:string;w:number;h:number;cropTop:number;kinds:Kind[];
+  /** 바닥 뒤 모서리와 오른쪽 모서리(원화 좌표): 격자 원점과 칸 크기를 맞춘다. */
+  back:[number,number];right:[number,number];
+  floor:Array<[number,number]>;blocks:Array<Array<[number,number]>>;
+  /** 이 원화에서 인물 크기 배율. */
+  figScale:number}
+const PAINTED:Painted[]=[
+  {url:'scenes/study.webp',w:1800,h:1004,cropTop:56,kinds:['study','home','hall'],back:[905,300],right:[1745,690],figScale:1.35,
+    floor:[[905,330],[1700,690],[905,1100],[110,690]],
+    blocks:[[[50,560],[490,450],[590,530],[150,740]],[[470,400],[770,370],[780,470],[560,560]],[[850,300],[960,300],[960,380],[850,380]],[[920,370],[1320,430],[1330,620],[1170,640],[910,480]],[[1330,540],[1760,600],[1760,720],[1500,800],[1330,650]]]},
+];
+const paintedImg=new Map<string,HTMLImageElement>();
+export async function loadPaintedScenes(){
+  if(typeof document==='undefined')return;
+  await Promise.all(PAINTED.map(async p=>{if(paintedImg.has(p.url))return;try{const img=new Image();img.src=new URL(p.url,document.baseURI).href;await img.decode();paintedImg.set(p.url,img);}catch{/* 없으면 그려서 쓴다 */}}));
+  cache.clear();
+}
+const inPoly=(x:number,y:number,poly:ReadonlyArray<readonly [number,number]>)=>{let inside=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const [xi,yi]=poly[i]!,[xj,yj]=poly[j]!;if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)inside=!inside;}return inside;};
+function paintedFor(kind:Kind){return PAINTED.find(p=>p.kinds.includes(kind)&&paintedImg.has(p.url));}
+function buildPainted(p:Painted,kind:Kind,place:string):IsoScene{
+  const img=paintedImg.get(p.url)!,mood=moodOf(place,kind),k=W/p.w;
+  const canvas=document.createElement('canvas');canvas.width=W*SS;canvas.height=H*SS;const g=canvas.getContext('2d')!;g.scale(SS,SS);g.imageSmoothingQuality='high';
+  g.fillStyle='#120c08';g.fillRect(0,0,W,H);g.drawImage(img,0,-p.cropTop*k,W,p.h*k);
+  const grade=(color:string,op:GlobalCompositeOperation)=>{g.save();g.globalCompositeOperation=op;g.fillStyle=color;g.fillRect(0,0,W,H);g.restore();};
+  if(mood.light==='night'){grade('rgba(40,60,120,.58)','multiply');grade('rgba(255,190,110,.10)','screen');}
+  if(mood.light==='dawn')grade('rgba(170,180,230,.3)','multiply');
+  if(mood.light==='dusk')grade('rgba(255,150,80,.28)','multiply');
+  // 원화 좌표 ↔ 무대 좌표
+  const toWorld=([x,y]:[number,number]):[number,number]=>[x*k,(y-p.cropTop)*k];
+  const B=toWorld(p.back),Rr=toWorld(p.right),n=(Rr[0]-B[0])/(TW/2),half=(Rr[1]-B[1])/n;
+  // 이 원화의 격자: 칸 가로 TW, 세로는 원화 바닥 기울기를 따른다
+  const ox=B[0],oy=B[1],th=half*2;
+  const ptP=(c:number,r:number):[number,number]=>[ox+(c-r)*TW/2,oy+(c+r)*th/2];
+  const toImg=([x,y]:[number,number]):[number,number]=>[x/k,y/k+p.cropTop];
+  const passable=([c,r]:Cell)=>{const [x,y]=toImg(ptP(c+0.5,r+0.5));return inPoly(x,y,p.floor)&&!p.blocks.some(b=>inPoly(x,y,b));};
+  const onScreen=([c,r]:Cell)=>{const [x,y]=ptP(c+0.5,r+0.5);return x>40&&x<W-40&&y>90&&y<H-20;};
+  const standable=(c:Cell)=>passable(c)&&onScreen(c);
+  const toPct=([c,r]:Cell):At=>{const [x,y]=ptP(c+0.5,r+0.5);return [x/W*100,y/H*100];};
+  const toCell=([px,py]:At):Cell=>{const sx=px/100*W,sy=py/100*H,u=(sx-ox)/(TW/2),v=(sy-oy)/(th/2);const want:Cell=[Math.round((u+v)/2-0.5),Math.round((v-u)/2-0.5)];
+    if(standable(want))return want;let best=want,bd=Infinity;for(let c=want[0]-10;c<=want[0]+10;c++)for(let r=want[1]-10;r<=want[1]+10;r++){if(!standable([c,r]))continue;const [x,y]=ptP(c+0.5,r+0.5),d=(x-sx)**2+(y-sy)**2*2;if(d<bd){bd=d;best=[c,r];}}return best;};
+  return {url:canvas.toDataURL('image/jpeg',0.9),toCell,toPct,standable,passable:(c:Cell)=>passable(c)||!onScreen(c),indoor:INDOOR.has(kind),fx:mood.fx,light:mood.light,figScale:p.figScale};
+}
+
 // ─────────────────────────────────────────────── 장면 조립
 function build(kind:Kind,seed:number,place='',clear:Set<string>=new Set()):IsoScene{
+  {const p=paintedFor(kind);if(p)return buildPainted(p,kind,place);}
   const R=rng(seed),indoor=INDOOR.has(kind),mood=moodOf(place,kind);
   LIGHTS=[];SHAFTS=[];
   // 두 배 크기로 그린다(화면에서 다가가 보아도 또렷하게). 그리는 좌표는 그대로 W×H.
