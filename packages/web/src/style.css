@@ -642,3 +642,38 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
   .right-panel{overflow:auto}
   .battle-heading .weather{margin-right:170px}
 }
+/* ── 전투 하단 정보창: 먹 붓 바탕 장수 카드(왼쪽 고른 쪽·오른쪽 상대) ── */
+.unit-hud{position:absolute;left:10px;right:10px;bottom:46px;z-index:5;display:grid;grid-template-columns:1fr 1fr;gap:6%;pointer-events:none;opacity:0;transform:translateY(12px);transition:opacity .22s,transform .22s}
+.unit-hud.show{opacity:1;transform:none}
+.map:has(.unit-hud.show) .map-legend{display:none}
+.hud-card{position:relative;display:flex;align-items:flex-end;max-width:410px;width:100%}
+.hud-card.right{flex-direction:row-reverse;justify-self:end}
+.hud-face{width:104px;height:118px;flex:none;z-index:2;filter:drop-shadow(0 4px 6px #000c);margin-bottom:2px}
+.hud-face .officer-face{width:100%!important;height:100%!important;border:0!important;border-radius:0!important;box-shadow:none!important;
+  -webkit-mask-image:radial-gradient(ellipse 60% 64% at 50% 44%,#000 66%,transparent 100%);mask-image:radial-gradient(ellipse 60% 64% at 50% 44%,#000 66%,transparent 100%)}
+.hud-body{flex:1;min-width:0;position:relative;padding:0 16px 10px 20px;background:rgba(10,8,6,.9);
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 120' preserveAspectRatio='none'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.035 .18' numOctaves='3' seed='4'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='14'/%3E%3C/filter%3E%3Crect x='8' y='8' width='384' height='104' filter='url(%23f)'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 120' preserveAspectRatio='none'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.035 .18' numOctaves='3' seed='4'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='14'/%3E%3C/filter%3E%3Crect x='8' y='8' width='384' height='104' filter='url(%23f)'/%3E%3C/svg%3E");
+  -webkit-mask-size:100% 100%;mask-size:100% 100%}
+.hud-card.left .hud-body{margin-left:-22px;padding-left:34px}
+.hud-card.right .hud-body{margin-right:-22px;padding-right:34px}
+.hud-band{display:flex;justify-content:space-between;align-items:center;height:32px;margin:0 -16px 4px -34px;padding:6px 18px 0 40px;background:linear-gradient(90deg,transparent,#1f4fa8 26%,#2c6ad6 70%,#1a3f86)}
+.hud-card.right .hud-band{margin:0 -34px 4px -20px;padding:6px 40px 0 18px}
+.hud-card.enemy .hud-band{background:linear-gradient(90deg,transparent,#9a3010 26%,#d8661c 70%,#8a2a0c)}
+.hud-card.npc .hud-band{background:linear-gradient(90deg,transparent,#1f7a3a 26%,#2fa354 70%,#1a5a2a)}
+.hud-glyph{font:700 24px/1 LocalSerif,'Batang',serif;color:#fff;text-shadow:0 2px 3px #000}
+.hud-aff{font:700 20px/1 Georgia,serif;color:#fff;text-shadow:0 2px 3px #000}
+.hud-name{display:flex;align-items:baseline;gap:8px;margin-bottom:2px;white-space:nowrap;overflow:hidden}
+.hud-name b{font:700 15px LocalSerif,'Batang',serif;color:#f6e4b8}
+.hud-name small{color:#c8b88e;font-size:11px}
+.hud-bar{display:flex;align-items:center;gap:6px;margin-top:4px}
+.hud-icon{font-style:normal;width:16px;text-align:center;color:#ff6b55;font-size:13px}
+.hud-bar.mp .hud-icon{color:#7ab4ff;font:700 11px LocalSerif,serif}
+.hud-track{position:relative;flex:1;height:12px;background:#1d1812;border:1px solid #6a5634;border-radius:2px;overflow:hidden;box-shadow:inset 0 1px 3px #000a}
+.hud-fill{position:absolute;inset:0 auto 0 0;background:linear-gradient(#7af08e,#1f9a3c);transition:width .7s cubic-bezier(.3,.7,.3,1)}
+.hud-bar.mp .hud-fill{background:linear-gradient(#7cc0ff,#2a5ad0)}
+.hud-cut{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,#ff6a4a 0 4px,#a01e10 4px 8px);animation:hud-blink .6s ease-in-out infinite alternate}
+@keyframes hud-blink{from{opacity:.55}to{opacity:1}}
+.hud-num{font:700 13px/1 'Malgun Gothic',sans-serif;color:#fff;min-width:64px;text-align:right;text-shadow:0 1px 2px #000}
+.hud-note{font-size:11px;color:#ffd88a;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:700px){.unit-hud{grid-template-columns:1fr 1fr;gap:4px;bottom:40px}.hud-face{width:58px;height:66px}.hud-name b{font-size:12px}.hud-name small{display:none}.hud-glyph{font-size:17px}.hud-aff{font-size:14px}.hud-band{height:24px}.hud-num{min-width:44px;font-size:11px}}
+@media (prefers-reduced-motion:reduce){.hud-fill{transition:none}.hud-cut{animation:none}}
