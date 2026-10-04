@@ -23,7 +23,7 @@ describe('five round duels and debates',()=>{
    }
    expect(started).toBe(true);expect(s.act({kind:'endPhase'}).ok).toBe(false);expect(s.act({kind:'item',unit:'sima_yi',item:'duel-round:rally'}).ok).toBe(true);const loaded=Session.load(s.save());expect(loaded.activeDuel).toEqual(s.activeDuel);expect(loaded.undo()).toBe(true);expect(loaded.activeDuel?.round).toBe(0);
  });
- it.each(['duel','debate'] as const)('resolves %s into battle HP and one action',kind=>{const s=new Session(7,'normal',215,'survival',4),u=s.state.get('sima_yi'),enemy=s.state.living('enemy')[0]!;enemy.pos={x:u.pos.x+1,y:u.pos.y};(enemy as {name:string}).name='여포';expect(s.act({kind:'item',unit:u.id,item:kind,target:enemy.id}).ok).toBe(true);expect(s.activeDuel?.player.stat).toBe(kind==='debate'?u.stats.intellect:romance.sima_yi!.war+u.level);for(const action of ['rally','special','guard','attack','attack'])expect(s.act({kind:'item',unit:u.id,item:'duel-round:'+action}).ok).toBe(true);expect(s.activeDuel).toBeNull();expect(s.lastDuel?.round).toBe(5);expect(u.hasActed).toBe(true);expect(u.hp).toBeLessThan(u.stats.maxHp);expect(enemy.hp).toBeLessThan(enemy.stats.maxHp);});
+ it.each(['duel','debate'] as const)('resolves %s into battle HP and one action',kind=>{const s=new Session(7,'normal',215,'survival',4),u=s.state.get('sima_yi'),enemy=s.state.living('enemy')[0]!;enemy.pos={x:u.pos.x+1,y:u.pos.y};(enemy as {name:string}).name='여포';expect(s.act({kind:'item',unit:u.id,item:kind,target:enemy.id}).ok).toBe(true);expect(s.activeDuel?.player.stat).toBe(kind==='debate'?romance.sima_yi!.int+u.level:romance.sima_yi!.war+u.level);for(const action of ['rally','special','guard','attack','attack'])expect(s.act({kind:'item',unit:u.id,item:'duel-round:'+action}).ok).toBe(true);expect(s.activeDuel).toBeNull();expect(s.lastDuel?.round).toBe(5);expect(u.hasActed).toBe(true);expect(u.hp).toBeLessThan(u.stats.maxHp);expect(enemy.hp).toBeLessThan(enemy.stats.maxHp);});
 });
 describe('equipment, traits, spells and castle siege',()=>{
  it('preserves the paid escape beside the new Luoyang gate',()=>{const s=new Session(0,'normal',215,'survival',4),st=s.state;st.get('sima_yi').pos={x:6,y:10};st.get('sima_lang').pos={x:7,y:10};expect(s.act({kind:'wait',unit:'sima_yi'}).ok).toBe(true);if(st.activeDialogue==='bribe')expect(s.act({kind:'choose',nodeId:'bribe',optionId:'pay'}).ok).toBe(true);expect(st.activeDialogue).toBe('gate_payment');expect(s.act({kind:'choose',nodeId:'gate_payment',optionId:'pay_gate'}).ok).toBe(true);expect(st.outcome).toBe('victory');expect(s.funds).toBe(1000);});
@@ -55,5 +55,13 @@ describe('equipment, traits, spells and castle siege',()=>{
  it('refuses to let a general challenge a nameless soldier without spending the turn',()=>{
   const s=new Session(7,'normal',215,'survival',4),u=s.state.get('sima_yi'),enemy=s.state.living('enemy')[0]!;enemy.pos={x:u.pos.x+1,y:u.pos.y};(enemy as {name:string}).name='보병';
   const r=s.act({kind:'item',unit:u.id,item:'duel',target:enemy.id});expect(r.ok).toBe(false);expect(r.error).toContain('이름 없는');expect(u.hasActed).toBe(false);
+ });
+});
+describe('duel damage is stat-centric',()=>{
+ it('scales strongly with 무력/지력 and favours the stronger side',()=>{
+  const hit=(a:number,b:number,kind:'duel'|'debate'='duel')=>{const d=newDuel(kind,{id:'a',name:'갑',stat:a},{id:'b',name:'을',stat:b});duelRound(d,'attack');return d.history[0]!;};
+  expect(hit(100,60).dealt).toBeGreaterThan(hit(60,60).dealt*1.4);
+  expect(hit(60,100).dealt).toBeLessThan(hit(60,60).dealt*.7);
+  expect(hit(96,70,'debate').dealt).toBeGreaterThan(hit(70,96,'debate').dealt*1.8);
  });
 });

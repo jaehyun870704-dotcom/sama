@@ -63,7 +63,7 @@ export function duelArena(d:DuelState,o:{models:{player:string;enemy:string};bac
   const pLine=last?duelLine(d.kind,last.action):d.kind==='duel'?'내가 상대해 주마!':'그 말, 내가 받아 주겠소.';
   const eLine=last?duelLine(d.kind,last.enemyAction):o.openingLine??'덤벼라!';
   /** 머리 위 작은 막대: 이름·체력(남은 만큼 초록→노랑→빨강)·기합(논거) 구슬. */
-  const hp=(u:DuelState['player'],side:string)=>{const k=u.hp/Math.max(1,u.maxHp);return `<div class="duel-mini ${side}${k<=.3?' low':k<=.6?' mid':''}"><b>${esc(displayName(u.name))}</b><div class="duel-hp"><i style="width:${(k*100).toFixed(1)}%"></i></div><small>${u.hp}/${u.maxHp}</small><em title="${energy}">${'●'.repeat(u.energy)}${'○'.repeat(Math.max(0,3-u.energy))}</em></div>`;};
+  const hp=(u:DuelState['player'],side:string)=>{const k=u.hp/Math.max(1,u.maxHp);return `<div class="duel-mini ${side}${k<=.3?' low':k<=.6?' mid':''}"><b>${esc(displayName(u.name))} <span>${d.kind==='duel'?'무력':'지력'} ${u.stat}</span></b><div class="duel-hp"><i style="width:${(k*100).toFixed(1)}%"></i></div><small>${u.hp}/${u.maxHp}</small><em title="${energy}">${'●'.repeat(u.energy)}${'○'.repeat(Math.max(0,3-u.energy))}</em></div>`;};
   const track=NUM.map((n,i)=>{const h=d.history[i];const cls=!h?'':h.dealt>h.taken?'won':h.dealt<h.taken?'lost':'even';
     return `<div class="duel-round ${cls}${i===d.round&&!d.result?' now':''}"><span class="duel-round-no">${n}</span><div class="duel-round-tile">${h?icon(d.kind,h.action):''}</div>${h?`<small>${h.dealt}:${h.taken}</small>`:''}</div>${i<4?'<i class="duel-arrow">➜</i>':''}`;}).join('');
   const actions=(Object.keys(labels) as DuelAction[]).map(a=>{const off=a==='special'&&d.player.energy<2;

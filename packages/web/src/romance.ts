@@ -209,6 +209,8 @@ export function applyRomance(u:Unit):boolean{
 
 /** 일기토 무력: 연의 무력에 레벨을 더한다(연의에 없는 장수는 공격력으로 어림). */
 export function romanceWar(u:Unit):number|undefined{const r=romanceOf(u);return r?r.war:undefined;}
+/** 설전 지력: 연의 지력(연의에 없는 장수는 undefined). */
+export function romanceInt(u:Unit):number|undefined{const r=romanceOf(u);return r?r.int:undefined;}
 
 /** 연의 속 성격(일기토·설전에 응하는 방식). 적어 두지 않은 장수는 능력으로 어림한다. */
 const TEMPERS:Record<string,Temper>={

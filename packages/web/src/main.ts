@@ -464,6 +464,8 @@ $('#end-phase').onclick=()=>act({kind:'endPhase'});
 $('#coach-close').onclick=finishCoach;
 $('#zoom-in').onclick=()=>field.zoomBy(.2);$('#zoom-out').onclick=()=>field.zoomBy(-.2);$('#zoom-reset').onclick=()=>field.reset();
 $('#left-toggle').onclick=()=>{const open=document.body.classList.toggle('left-open');$('#left-toggle').setAttribute('aria-expanded',String(open));};
+// 휴대폰: 장수 상세는 '장수 정보' 머리를 눌러 여닫는 덧창(지도·명령이 한 화면에 들어오게)
+{const head=document.querySelector<HTMLElement>('.right-panel>.section-label');if(head){head.setAttribute('role','button');head.tabIndex=0;const flip=()=>document.body.classList.toggle('unit-open');head.onclick=flip;head.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flip();}};$('#unit-detail').addEventListener('click',()=>{if(innerWidth<=700)document.body.classList.remove('unit-open');});}}
 $('#threat').onclick=()=>{threat=!threat;$('#threat').setAttribute('aria-pressed',String(threat));render();};
 function applySpeed(){field.playbackRate=speed;$('#speed').innerHTML=`▷ ${speed}× 속도`;}
 $('#speed').onclick=()=>{speed=speed===1?2:speed===2?3:1;applySpeed();storeSettings();};

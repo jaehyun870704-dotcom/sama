@@ -19,7 +19,10 @@ export function duelRound(s:DuelState,action:DuelAction){
   const enemyAction:DuelAction=s.enemy.energy>=2?'special':(['attack','rally','guard','attack','attack'] as const)[(s.round+s.enemy.stat%3)%5]!;
   const damage=(a:DuelFighter,b:DuelFighter,move:DuelAction,defend:DuelAction)=>{
     if(move==='guard'||move==='rally'||a.hp<=0)return 0;
-    const base=Math.max(8,22+(a.stat-b.stat)*.45);
+    // 능력치 중심: 일기토는 무력, 설전은 지력이 곧 피해다. 같은 능력이면 한 합에 능력의 ¼쯤,
+    // 상대보다 높을수록 (비율^0.9)만큼 더 세진다 — 무력 100이 60을 치면 약 39, 60이 100을 치면 약 9.
+    const ratio=Math.max(.35,Math.min(2.6,a.stat/Math.max(1,b.stat)));
+    const base=Math.max(4,a.stat*.25*ratio**.9);
     return Math.round(base*(move==='special'?1.8:1)*(1+a.energy*.12)*(defend==='guard'?.35:1));
   };
   const dealt=damage(s.player,s.enemy,action,enemyAction),taken=damage(s.enemy,s.player,enemyAction,action);

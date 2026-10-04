@@ -8,7 +8,7 @@ import {pickExtras} from './sortie.ts';
 import {applyRomance,temperOf} from './romance.ts';
 import {expeditionBattle,expeditions} from './expeditions.ts';
 import {newDuel,duelRound,duelResponse,type DuelState,type DuelAction} from './duel.ts';
-import {availableStrategies,learnedStrategies,allStrategies,applyOfficerFeatures,martialPower} from './officers.ts';
+import {availableStrategies,learnedStrategies,allStrategies,applyOfficerFeatures,martialPower,debatePower} from './officers.ts';
 import approachStage from '../../data/stages/S1-07.json';
 import approachMap from '../../data/maps/hanzhong-approach.json';
 import tongguanStage from '../../data/stages/S1-06.json';
@@ -293,7 +293,7 @@ export class Session {
       if(this.revision===4&&(cmd.item==='duel'||cmd.item==='debate')){
         const enemy=s.find(cmd.target??''),kind=cmd.item,range=kind==='duel'?1:3;
         if(!enemy?.alive||enemy.side!=='enemy'||/^(gate|tower)_/.test(enemy.id)||['ram','catapult','civilian'].includes(u.unitClass)||['ram','catapult','civilian'].includes(enemy.unitClass)||manhattan(u.pos,enemy.pos)>range||this.challenged.has(kind+':'+u.id+':'+enemy.id))return {ok:false,error:'대결 가능한 사거리 안의 적 장수를 선택하세요. 같은 상대와 같은 대결은 한 번만 가능합니다.'};
-        const stat=(x:typeof u)=>kind==='duel'?martialPower(x):x.stats.intellect;
+        const stat=(x:typeof u)=>kind==='duel'?martialPower(x):debatePower(x);
         const answer=this.challengeAnswer(u,enemy,kind);
         if(!answer.accept&&answer.reason==='nameless')return {ok:false,error:'이름 없는 병사는 장수의 도전에 응하지 않습니다. 이름 있는 적 장수를 고르세요.'};
         if(!answer.accept){
