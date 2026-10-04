@@ -1,5 +1,5 @@
 import {playbackEvents} from './battle-playback.ts';
-import {troopFacing,troopWalkPose,troopReaction,troopReactionPose,retreatMotion} from './troop-motion.ts';
+import {troopFacing,troopReaction,troopReactionPose,retreatMotion,battlePath,stepPose} from './troop-motion.ts';
 import {troopRoles,visualClass,troopArt,troopSheets,basicReactionArt,artClass} from './troops.ts';
 import {spriteAtlas,outlinedCanvas} from './sprite-atlas.ts';
 import {cryFor,reactions,isCrisis,type Emote} from './emotes.ts';
@@ -94,6 +94,8 @@ export class Battlefield {
   private dragged=false;
   private hover:Coord|undefined;
   private reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /** 숨쉬기의 기준 키(그림마다 처음 크기). */
+  private baseScaleY=new WeakMap<Sprite,number>();
   onCell:(c:Coord)=>void=()=>{};
   onHover:(c:Coord|undefined)=>void=()=>{};
   async init(privateHost:HTMLElement){
@@ -157,8 +159,14 @@ export class Battlefield {
       for(const [id,a] of this.actors)if(a.officer){const aura=a.piece.children.find(c=>c.label==='aura');if(aura){aura.alpha=.55+Math.sin(t*3+id.length)*.35;aura.scale.set(1+Math.sin(t*3+id.length)*.05);}}
       if(this.busy)return;
       for(const [id,a] of this.actors){const phase=id.length*.7;
-        if(a.unit.unitClass==='navy'){a.sprite.y=8+Math.sin(t*1.6+phase)*1.8;a.sprite.rotation=Math.sin(t*1.1+phase)*.035;}
-        else if(a.officer)a.sprite.y=8-(1+Math.sin(t*2.2+phase))*1.1;}});
+        if(a.unit.unitClass==='navy'){a.sprite.y=8+Math.sin(t*1.6+phase)*1.8;a.sprite.rotation=Math.sin(t*1.1+phase)*.035;continue;}
+        if(structureKind(a.unit.id)||a.unit.id.startsWith('convoy_')||['ram','catapult'].includes(artClass(a.unit.unitClass)))continue;
+        // 서 있어도 숨을 쉰다(발은 땅에 붙이고 몸만 살짝 오르내림), 사람마다 박자가 다르다.
+        let by=this.baseScaleY.get(a.sprite);if(by===undefined){by=a.sprite.scale.y;this.baseScaleY.set(a.sprite,by);}
+        a.sprite.scale.y=by*(1+Math.sin(t*(a.officer?2.2:1.8)+phase)*(a.officer?.016:.012));
+        if(a.officer)a.sprite.y=8-(1+Math.sin(t*2.2+phase))*1.1;
+        // 그림이 둘인 병종은 가끔 자세를 고쳐 선다(무게를 옮김)
+        const facing=this.facing.get(id)??0;if(facing===0&&!troopArt[artClass(a.unit.unitClass)]){const cyc=(t+phase*1.7)%(3.4+phase%1.3);a.sprite.texture=this.unitTexture(a.unit,cyc<.5?3:0);}}});
   }
   private fromPoint(x:number,y:number):Coord|undefined{
     const p=this.world.toLocal({x,y});const c={x:Math.floor(p.x/W),y:Math.floor(p.y/H)};
@@ -390,11 +398,33 @@ export class Battlefield {
       if(epoch===this.animationEpoch){protector.sprite.texture=this.unitTexture(protector.unit,facing);protector.sprite.scale.x=scale;}return;
     }
     if(e.t==='move'){
-      const actor=this.actors.get(e.unit);if(!actor)return;this.onSound({kind:'move',unitClass:actor.unit.unitClass,pan:this.panOf(e.from)});const from=iso(e.from),to=iso(e.to);this.focusUnit(e.to);const facing=troopFacing(to.x-from.x,to.y-from.y);if(troopArt[artClass(actor.unit.unitClass)]){this.facing.set(e.unit,facing.pose);actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*facing.flip;}else if(!structureKind(actor.unit.id)&&to.x!==from.x)actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*(to.x<from.x?-1:1);
-      // 장수는 병졸처럼 종종걸음하지 않는다: 몸을 앞으로 기울여 성큼 나아가고, 발밑에 흙먼지를 남긴다.
-      const stride=actor.officer,lean=(to.x>=from.x?1:-1)*.06;if(stride)this.sparks(e.from,{count:6,color:0xb8a27a,speed:40,life:500,gravity:40,size:3});
-      await this.tween(stride?480:420,epoch,p=>{const k=stride?p*p*(3-2*p):p;actor.piece.position.set(from.x+(to.x-from.x)*k,from.y+(to.y-from.y)*k);actor.sprite.y=stride?8-Math.abs(Math.sin(p*Math.PI*2))*2:8-Math.abs(Math.sin(p*Math.PI*4))*3;actor.sprite.rotation=stride?lean*Math.sin(p*Math.PI):Math.sin(p*Math.PI*4)*.025;if(troopArt[artClass(actor.unit.unitClass)])actor.sprite.texture=this.unitTexture(actor.unit,troopWalkPose(facing.pose,p));else if(actor.unit.id.startsWith('convoy_'))actor.sprite.texture=this.unitTexture(actor.unit,1+Math.floor(p*6)%2);else if(actor.unit.unitClass==='navy'){actor.sprite.texture=this.unitTexture(actor.unit,1+Math.floor(p*6)%2);actor.sprite.y=8-Math.sin(p*Math.PI*3)*2;}});
-      if(epoch===this.animationEpoch){if(stride)this.sparks(e.to,{count:8,color:0xb8a27a,speed:50,life:520,gravity:40,size:3});actor.sprite.y=8;actor.sprite.rotation=0;actor.sprite.texture=this.unitTexture(actor.unit,this.facing.get(e.unit)??0);}return;
+      const actor=this.actors.get(e.unit);if(!actor)return;this.onSound({kind:'move',unitClass:actor.unit.unitClass,pan:this.panOf(e.from)});this.focusUnit(e.to);
+      // 출발·도착만 기록되므로 지형을 따라 길을 다시 찾아 한 칸씩 걷는다(벽·물을 가로질러 미끄러지지 않게).
+      const st=this.state,mover=actor.unit,cls=mover.unitClass,hostile=(c:Coord)=>!!st?.living().some(o=>o.id!==mover.id&&o.pos.x===c.x&&o.pos.y===c.y&&(o.side==='enemy')!==(mover.side==='enemy'));
+      const path=battlePath(e.from,e.to,c=>st&&st.map.inBounds(c)?st.map.moveCost(cls,c,ignoresRough(mover)):Infinity,hostile);
+      const walkArt=!!troopArt[artClass(cls)],mounted=['cavalry','heavyCav','horseArcher'].includes(artClass(cls)),machine=['ram','catapult'].includes(artClass(cls))||!!structureKind(mover.id);
+      const stride=actor.officer,per=Math.min(mounted?150:stride?220:190,1500/Math.max(1,path.length));
+      if(stride)this.sparks(e.from,{count:6,color:0xb8a27a,speed:40,life:500,gravity:40,size:3});
+      let at=e.from;
+      for(let i=0;i<path.length;i++){
+        if(epoch!==this.animationEpoch)return;
+        const next=path[i]!,a=iso(at),b=iso(next),facing=troopFacing(b.x-a.x,b.y-a.y);
+        if(walkArt){this.facing.set(e.unit,facing.pose);actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*facing.flip;}else if(!machine&&b.x!==a.x)actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*(b.x<a.x?-1:1);
+        const first=i===0,last=i===path.length-1,lean=(b.x>=a.x?1:-1)*(stride?.05:.025);
+        await this.tween(per*(first||last?1.15:1),epoch,p=>{
+          // 처음 칸은 천천히 떼고 마지막 칸은 멈추듯 닿는다; 가운데는 고른 걸음
+          const k=first&&last?p*p*(3-2*p):first?p*p*(2-p)*.5+p*.5:last?1-(1-p)*(1-p)*.5-(1-p)*.5:p;
+          actor.piece.position.set(a.x+(b.x-a.x)*k,a.y+(b.y-a.y)*k);actor.piece.zIndex=k>.5?next.y:at.y;
+          if(mounted){actor.sprite.y=8-Math.abs(Math.sin(p*Math.PI))*4;actor.sprite.rotation=Math.sin(p*Math.PI*2)*.04;}
+          else if(machine){actor.sprite.y=8-Math.abs(Math.sin(p*Math.PI*2))*1;actor.sprite.rotation=Math.sin(p*Math.PI*2)*.015;}
+          else{actor.sprite.y=8-Math.abs(Math.sin(p*Math.PI*2))*(stride?2.5:2);actor.sprite.rotation=lean*Math.sin(p*Math.PI);}
+          if(!machine&&!actor.unit.id.startsWith('convoy_')&&actor.unit.unitClass!=='navy')actor.sprite.texture=this.unitTexture(actor.unit,stepPose(walkArt,walkArt?facing.pose:0,i,p>=.5));
+          else if(actor.unit.id.startsWith('convoy_'))actor.sprite.texture=this.unitTexture(actor.unit,1+(i*2+(p>=.5?1:0))%2);
+          else if(actor.unit.unitClass==='navy'){actor.sprite.texture=this.unitTexture(actor.unit,1+(i*2+(p>=.5?1:0))%2);actor.sprite.y=8-Math.sin(p*Math.PI)*2;}
+        });
+        at=next;
+      }
+      if(epoch===this.animationEpoch){actor.piece.position.set(iso(e.to).x,iso(e.to).y);actor.piece.zIndex=e.to.y;if(stride)this.sparks(e.to,{count:8,color:0xb8a27a,speed:50,life:520,gravity:40,size:3});actor.sprite.y=8;actor.sprite.rotation=0;actor.sprite.texture=this.unitTexture(actor.unit,this.facing.get(e.unit)??0);}return;
     }
     if(e.t==='strike'){
       // The warned blow lands: flash every marked cell, then damage numbers on whoever stayed.

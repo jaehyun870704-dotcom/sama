@@ -187,7 +187,7 @@ export class Stage {
     if(this.skipping){a.cell=path.at(-1)!;this.place(a,false);return;}
     // 먼 길(숲·진영을 돌아가는 길)은 걸음을 재촉해 4초 남짓에 닿게 한다
     const step=Math.max(120,Math.min(STEP_MS,Math.round(4200/path.length)));
-    a.el.classList.add('walking');a.el.style.transitionDuration=step+'ms';
+    a.el.classList.add('walking');a.el.style.transitionDuration=step+'ms';a.el.style.setProperty('--step',step*2+'ms');
     for(let i=0;i<path.length;i++){
       const next=path[i]!,[x0,y0]=this.scene.toPct(a.cell),[x1,y1]=this.scene.toPct(next);
       if(x1!==x0)a.face=x1>x0?'right':'left';
