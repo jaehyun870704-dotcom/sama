@@ -362,3 +362,24 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
 .ss-talk-body p{min-height:3.4em}
 .ss-talk-face .sprite-face{background-color:#2a2418;background-repeat:no-repeat;image-rendering:auto}
 .ss-talk.bottom .ss-talk-face .sprite-face{background-color:#e4d3a8}
+/* 무대 위에 흩날리는 것들 */
+.ss-fx{position:absolute;inset:0;z-index:190;pointer-events:none;overflow:hidden}
+.ss-fx i{position:absolute;left:var(--x);top:-6%;display:block;animation-delay:var(--d);animation-iteration-count:infinite;animation-timing-function:linear}
+.fx-petals i{width:7px;height:4px;border-radius:60% 0;background:#f6c4d2;opacity:.85;animation:fx-fall calc(9s*var(--t)) linear infinite;animation-delay:var(--d)}
+.fx-leaves i{width:8px;height:4px;border-radius:70% 0;background:#9ab04a;opacity:.8;animation:fx-fall calc(11s*var(--t)) linear infinite;animation-delay:var(--d)}
+.fx-leaves i:nth-child(3n){background:#c99a3a}
+@keyframes fx-fall{0%{transform:translate(0,0) rotate(0deg)}25%{transform:translate(4vw,28vh) rotate(160deg)}50%{transform:translate(-1vw,55vh) rotate(320deg)}75%{transform:translate(5vw,82vh) rotate(480deg)}100%{transform:translate(2vw,112vh) rotate(640deg)}}
+.fx-snow i{width:5px;height:5px;border-radius:50%;background:#fff;opacity:.85;scale:var(--s);animation:fx-snow calc(12s*var(--t)) linear infinite;animation-delay:var(--d)}
+@keyframes fx-snow{0%{transform:translate(0,0)}50%{transform:translate(3vw,55vh)}100%{transform:translate(-1vw,112vh)}}
+.fx-rain i{width:1.5px;height:22px;background:linear-gradient(transparent,rgba(210,225,240,.7));animation:fx-rain calc(.7s*var(--t)) linear infinite;animation-delay:var(--d)}
+@keyframes fx-rain{from{transform:translate(0,-10%) rotate(12deg)}to{transform:translate(-12vw,120vh) rotate(12deg)}}
+.fx-embers i{top:auto;bottom:-4%;width:4px;height:4px;border-radius:50%;background:#ffb14a;box-shadow:0 0 6px 2px rgba(255,140,40,.7);animation:fx-rise calc(7s*var(--t)) linear infinite,fx-flicker .4s ease-in-out infinite alternate;animation-delay:var(--d),0s}
+@keyframes fx-rise{0%{transform:translate(0,0);opacity:0}10%{opacity:1}100%{transform:translate(6vw,-115vh);opacity:0}}
+@keyframes fx-flicker{from{filter:brightness(1)}to{filter:brightness(1.6)}}
+.fx-fireflies i{top:var(--y);width:4px;height:4px;border-radius:50%;background:#e8ff8a;box-shadow:0 0 8px 3px rgba(210,255,120,.6);animation:fx-wander calc(8s*var(--t)) ease-in-out infinite alternate,fx-pulse 1.6s ease-in-out infinite alternate;animation-delay:var(--d),var(--d)}
+@keyframes fx-wander{0%{transform:translate(0,0)}33%{transform:translate(3vw,-2vh)}66%{transform:translate(-2vw,3vh)}100%{transform:translate(4vw,1vh)}}
+@keyframes fx-pulse{from{opacity:.15}to{opacity:1}}
+.fx-dust i{top:var(--y);width:3px;height:3px;border-radius:50%;background:rgba(255,236,190,.7);animation:fx-wander calc(14s*var(--t)) ease-in-out infinite alternate,fx-pulse 3s ease-in-out infinite alternate;animation-delay:var(--d),var(--d)}
+.fx-mist i{top:var(--y);width:40%;height:18%;border-radius:50%;background:radial-gradient(ellipse,rgba(230,236,240,.28),transparent 70%);animation:fx-drift calc(30s*var(--t)) linear infinite;animation-delay:var(--d)}
+@keyframes fx-drift{from{transform:translateX(-60%)}to{transform:translateX(160%)}}
+@media (prefers-reduced-motion:reduce){.ss-fx{display:none}}
