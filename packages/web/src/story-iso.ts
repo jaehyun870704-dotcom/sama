@@ -1136,7 +1136,7 @@ function groundScene(kind:Kind,seed:number,place:string,clearPct:readonly At[]):
   const toCell=(at:At):Cell=>{const want=cellOf(at);if(standable(want))return want;let best:Cell=want,bd=Infinity;
     for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){if(!standable([x,y]))continue;const d=(x-want[0])**2+((y-want[1])*1.5)**2;if(d<bd){bd=d;best=[x,y];}}return best;};
   void GC;
-  return {url:ground.canvas.toDataURL('image/jpeg',0.9),toCell,toPct,standable,passable:(c:Cell)=>{const [x,y]=c;return x<0||y<0||x>=GW||y>=GH||standable(c);},indoor:false,fx:mood.fx,light:mood.light,figScale:.85,maxZoom:1};
+  return {url:ground.canvas.toDataURL('image/jpeg',0.9),toCell,toPct,standable,passable:(c:Cell)=>{const [x,y]=c;return x<0||y<0||x>=GW||y>=GH||standable(c);},indoor:false,fx:mood.fx,light:mood.light,figScale:.8,maxZoom:1};
 }
 
 // ─────────────────────────────────────────────── 장면 조립
