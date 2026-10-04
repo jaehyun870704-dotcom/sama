@@ -114,6 +114,11 @@ export interface CampPerson {
 export interface Camp {place:string;art:number;people:CampPerson[]}
 
 export interface ChapterScript {
+  /**
+   * 장을 여는 해설(역사적 배경·시나리오 배경). 이야기 장면 앞에 해설 화면으로 한 줄씩 나온다.
+   * 연의 장은 그 해의 정세와 사마의의 처지, 가상 장은 역사와 어디서 갈라졌는지를 쓴다. 2~5줄, 줄마다 140자 이하.
+   */
+  history?:string[];
   /** 출진 전 진영(전투가 있는 장에만). */
   camp?:Camp;
   /** 가상 전장: 반드시 출진해야 하는 장수(부대에 있을 때만 적용). 사마의는 언제나 필수. */
@@ -177,6 +182,7 @@ export function checkPack(pack:ScenarioPack,known:{unitClasses:readonly string[]
         }
       }
     }
+    if(c.history){if(c.history.length<2||c.history.length>5)out.push(where(`해설 ${c.history.length}줄(2~5)`));for(const l of c.history)if(!l||l.length>140)out.push(where(`해설 길이 ${l.length}`));}
     if(c.camp){
       const cp=c.camp;if(!Number.isInteger(cp.art)||cp.art<0||cp.art>17)out.push(where(`진영 배경 번호 ${cp.art}`));
       if(cp.people.length<2||cp.people.length>7)out.push(where(`진영 인물 ${cp.people.length}명(2~7)`));

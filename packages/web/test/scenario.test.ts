@@ -33,6 +33,9 @@ describe('시나리오 대본',()=>{
    if(sc.required){expect(sc.required.length,step.id).toBeLessThanOrEqual(3);expect(sc.required,step.id).not.toContain('사마의');}}
   for(const t of EXTRA_TALES)expect(scriptOf(t.id)!.camp,t.id).toBeDefined();
  });
+ it('opens every chapter on every path with a narration of its historical and story background',()=>{
+  for(const r of allRoutes())for(const step of scenarioPath(walk(r))){const h=scriptOf(step.id)!.history;expect(h?.length,step.id).toBeGreaterThanOrEqual(2);}
+ });
  it('scripts every path-alternative tale and lets a choice in the route switch to it',()=>{
   for(const t of EXTRA_TALES){expect(scriptOf(t.id),t.id).toBeDefined();expect(routeById(t.route)!.tales.some(x=>x.id===t.replaces)).toBe(true);
    const opener=PACKS.flatMap(p=>p.chapters).some(c=>c.scenes.some(sc=>sc.steps.some(st=>'choice' in st&&st.options.some(o=>o.effects?.some(e=>e.kind==='path'&&e.tale===t.id)))));

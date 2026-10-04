@@ -405,3 +405,28 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
 .ss-stage.iso .ss-actor.fig{width:clamp(28px,5.2%,66px)}
 .ss-stage.iso .ss-actor:not(.fig){width:clamp(36px,7.4%,96px)}
 .ss-stage.iso .ss-actor .ss-sprite{filter:hue-rotate(var(--tint,0deg)) brightness(1.1) saturate(1.12) drop-shadow(0 0 1px rgba(20,12,6,.8)) drop-shadow(0 2px 1px rgba(0,0,0,.4))}
+/* 도트 무대: 배경·인물 모두 픽셀 그대로(흐림 없이) */
+.ss-stage.iso{image-rendering:pixelated}
+.ss-stage.iso .ss-actor.px{width:5.625%;aspect-ratio:3/4;transform:translate(-50%,-94%)}
+.ss-stage.iso .ss-actor.px .ss-sprite.legs{display:none}
+.ss-stage.iso .ss-actor.px .ss-sprite.top{clip-path:none;image-rendering:pixelated;filter:none}
+.ss-stage.iso .ss-actor.px .ss-body{animation:px-idle 1.3s steps(1) infinite;animation-delay:var(--d,0s);rotate:none;scale:none}
+@keyframes px-idle{0%{translate:0 0}50%{translate:0 -3.125%}}
+.ss-stage.iso .ss-actor.px.speaking .ss-body{animation:px-talk .3s steps(1) infinite}
+@keyframes px-talk{0%{translate:0 0}50%{translate:0 -3.125%}}
+.ss-stage.iso .ss-actor.px.walking .ss-body{animation:none}
+.ss-stage.iso .ss-actor.px .ss-shadow{bottom:3%;width:70%;height:10%;background:rgba(0,0,0,.35);border-radius:50%;filter:none}
+.ss-stage.iso .ss-actor.px .ss-name{top:100%;font:700 11px/1.3 'Malgun Gothic',sans-serif;background:rgba(10,8,6,.7);border:1px solid rgba(220,190,120,.5);border-radius:0;padding:0 4px}
+.ss-stage.iso .ss-fx i{border-radius:0!important}
+@media(max-width:580px){.ss-stage.iso .ss-actor.px{width:5.625%}.ss-stage.iso .ss-actor.px .ss-name{font-size:8px}}
+/* 장을 여는 해설 화면(도트 무대를 어둡게 깔고 글을 한 줄씩) */
+.ss-narr{position:relative;aspect-ratio:2/1;width:100%;background-size:100% 100%;image-rendering:pixelated;border:1px solid #7e775a;cursor:pointer;overflow:hidden}
+.ss-narr-veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,6,10,.62),rgba(6,6,10,.86))}
+.ss-narr-box{position:absolute;left:8%;right:8%;top:10%;bottom:10%;display:flex;flex-direction:column;gap:10px;padding:22px 28px;background:rgba(12,10,8,.72);
+  box-shadow:0 0 0 2px #2a2016,0 0 0 4px #c8a868,0 0 0 6px #2a2016,inset 0 0 0 2px #5a4428;image-rendering:pixelated}
+.ss-narr-year{font:700 13px/1 'Malgun Gothic',sans-serif;color:#e8c068;letter-spacing:2px}
+.ss-narr-title{font:700 22px/1.3 LocalSerif,'Batang','Noto Serif KR',serif;color:#fff2d0;margin:0;padding-bottom:8px;border-bottom:2px solid #6a5434}
+.ss-narr-lines{display:flex;flex-direction:column;gap:8px;overflow:auto}
+.ss-narr-lines p{margin:0;color:#efe6cf;font:16px/1.75 LocalSerif,'Batang','Noto Serif KR',serif;text-shadow:1px 1px 0 #000}
+.ss-narr-next{position:absolute;right:16px;bottom:10px;color:#e8c068;animation:ss-next .7s steps(2) infinite alternate}
+@media(max-width:580px){.ss-narr{aspect-ratio:4/5}.ss-narr-box{left:4%;right:4%;top:5%;bottom:5%;padding:14px 16px}.ss-narr-title{font-size:17px}.ss-narr-lines p{font-size:13px;line-height:1.65}}

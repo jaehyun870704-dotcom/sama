@@ -3,7 +3,7 @@
  * 규칙은 scenario.ts, 무대 연출은 story-stage.ts. 연의 장의 정비·전투·보상은 main.ts의 기존 흐름을 쓴다.
  */
 import {loadScenario,saveScenario,freshScenario,scenarioPath,winOver,currentStep,scriptOf,choose,finishStep,fateChoices,floorFor,scenarioParty,rewardOfficers,endingNotes,routeTales,COMPANIONS,type ScenarioState,type ScenarioStep} from './scenario.ts';
-import {playScenes,spriteStyle} from './story-stage.ts';
+import {playScenes,playNarration,spriteStyle} from './story-stage.ts';
 import {openCamp} from './story-camp.ts';
 import {isoBackdrop} from './story-iso.ts';
 import {routeById,fatePoint,endingFor,type Route} from './fate.ts';
@@ -124,15 +124,17 @@ function enemyBase(state:ScenarioState,heroLevel:number,step:ScenarioStep){
 
 // ─────────────────────────────────────────────── 이야기 → 정비 → 전투
 
-async function stage(host:ScenarioHost,state:ScenarioState,step:ScenarioStep,scenes:Scene[],heading:string,choosing:boolean){
+async function stage(host:ScenarioHost,state:ScenarioState,step:ScenarioStep,scenes:Scene[],heading:string,choosing:boolean,narration?:{year:string;title:string;lines:readonly string[]}){
   host.modal('<div class="ss-host"></div>',false);
   const root=document.querySelector<HTMLElement>('.ss-host')!;
+  // 장을 여는 해설(역사·시나리오 배경)
+  if(narration?.lines.length&&scenes[0])await playNarration(root,{heading,...narration,art:scenes[0].art,place:scenes[0].place});
   await playScenes(root,scenes,{heading,flags:()=>state.flags,onChoice:(o)=>{if(choosing){choose(state,step,o.id,o.effects??[],host.hero().level);saveScenario(state);}}});
 }
 /** 지금 장에 들어간다: 이야기 장면부터. */
 export async function enter(host:ScenarioHost,step:ScenarioStep){
   const state=loadScenario(),script=scriptOf(step.id)??fallbackScript(step,state);
-  await stage(host,state,step,script.scenes,`${kindTag[step.kind]} · ${script.title}`,true);
+  await stage(host,state,step,script.scenes,`${kindTag[step.kind]} · ${script.title}`,true,script.history?{year:script.year,title:script.title,lines:script.history}:undefined);
   if(step.kind==='fate'){
     if(!state.route[step.act])return showFateFallback(host,state,step);
     return afterFate(host,state,step);

@@ -9,6 +9,7 @@ import type {Scene,ScriptStep,ChoiceOption,Look,At,CastMember} from './scenario-
 import {isoScene,stepsBetween,offscreenCell,type Cell,type IsoScene} from './story-iso.ts';
 import {officerPortrait,officerLook} from './officer-art.ts';
 import {romanceByName} from './romance.ts';
+import {pxSheet,pxStyle,type PxDir,type PxPose} from './story-pixel.ts';
 
 /** 겉모습 → 병사 그림(시트·줄). 시트는 main.ts가 CSS 변수(--이름-atlas)로 올려 둔다. */
 const SPRITES:Record<Look,{sheet:string;rows:number;row:number;walk?:string}>={
@@ -68,7 +69,7 @@ export interface StageHooks {
   /** 표식(when/unless 판정) — 선택으로 늘어날 수 있어 매번 읽는다. */
   flags():readonly string[];
 }
-type Actor={el:HTMLElement;cell:Cell;face:'left'|'right';look:Look;art:Art;on:boolean;tick:number;posedUntil:number};
+type Actor={el:HTMLElement;cell:Cell;face:'left'|'right';look:Look;art:Art;on:boolean;tick:number;posedUntil:number;px:string;dir:PxDir;pose:PxPose};
 /** 서 있을 때 번갈아 쓰는 그림(숨쉬듯 자세가 바뀐다). 병종 그림의 0번은 기본, 3번은 같은 자세의 다른 그림이다. */
 const IDLE_FRAMES=(look:Look,art?:Art)=>{if(art?.kind==='fig')return [0];const s=SPRITES[look];return s.sheet==='base'||s.sheet==='extra'||look==='monk'||look==='horseArcher'?[0,3]:[0];};
 /** 말을 꺼낼 때의 몸짓(책사는 부채로 가리키고, 의원은 약초를 들고, 무장은 자세를 고친다). */
@@ -76,7 +77,7 @@ const TALK_FRAME=(look:Look)=>look==='strategist'||look==='civil'||look==='sage'
 /** 성낼 때(무장은 무기를 치켜든다). */
 const ANGER_FRAME=(look:Look)=>look==='bandit'||look==='assassin'||look==='physician'?3:look==='strategist'||look==='civil'?1:1;
 const REACTION:Array<[RegExp,string]>=[[/^!+$|놀람/,'jolt'],[/\?/,'tilt'],[/분노|怒|💢|화/,'shake'],[/땀|💧|…|\.\.\./,'droop'],[/♪|웃음|하하/,'bounce']];
-const STEP_MS=230;
+const STEP_MS=300;
 const same=(a:Cell,b:Cell)=>a[0]===b[0]&&a[1]===b[1];
 
 /** 무대 하나: 아이소메트릭 배경·인물·대화창·자막·선택지. 인물은 칸 위에 서고 한 칸씩 걷는다. */
@@ -98,7 +99,14 @@ export class Stage {
     this.talk=host.querySelector<HTMLElement>('.ss-talk-slot')!;this.caption=host.querySelector<HTMLElement>('.ss-caption')!;this.choices=host.querySelector<HTMLElement>('.ss-choices')!;
     // 대사·해설을 기다리는 중이면 어디를 눌러도(인물·대화창 위라도) 넘어간다. 기다리는 게 없을 때만 인물 누르기가 말 걸기다.
     this.el.addEventListener('click',e=>{if(!this.advance&&(e.target as HTMLElement).closest('.ss-actor.clickable'))return;this.next();});
-    for(const m of cast)this.addActor(m);
+    // 알현 장면: 황제(또는 그 자리의 군주)는 옥좌, 사마의(없으면 첫 사람)는 통로 앞, 나머지는 양옆 줄에
+    const seats=new Map<string,Cell>();const L=this.scene.layout;
+    if(L){const present=cast.filter(m=>m.at);
+      const ruler=present.find(m=>/헌제|황제|천자|폐하|조예|조방|조모|유선/.test(m.name))??present.find(m=>/^(조조|조비|손권|원소|유비)$/.test(m.name));
+      if(ruler)seats.set(ruler.name,L.seat);
+      const rest=present.filter(m=>m!==ruler),lead=rest.find(m=>m.name==='사마의')??rest[0];if(lead)seats.set(lead.name,L.front);
+      let k=0;for(const m of rest)if(m!==lead&&k<L.rows.length)seats.set(m.name,L.rows[k++]!);}
+    for(const m of cast)this.addActor(m,seats.get(m.name));
     // 인물은 서 있어도 멈추지 않는다: 자세 그림을 번갈아 바꾸고(숨쉬기는 CSS), 가끔 고개를 돌린다.
     const idle=setInterval(()=>{if(!document.contains(this.el)){clearInterval(idle);return;}this.idleTick();},620);
   }
@@ -108,18 +116,17 @@ export class Stage {
       if(!a.on||a.el.classList.contains('walking')||a.posedUntil>now)continue;
       a.tick++;const frames=IDLE_FRAMES(a.look,a.art);
       // 사람마다 박자가 다르게(넷 중 하나는 쉬고)
-      if(frames.length>1&&a.tick%4!==0)this.paint(a,frames[Math.floor(a.tick/2)%frames.length]!);
+      void frames;
     }
   }
   /** 잠시 한 자세를 취한다(말하는 몸짓·성냄). */
   gesture(name:string,frame:number,ms=900){
     const a=this.actors.get(name);if(!a||a.el.classList.contains('walking'))return;
-    if(a.art.kind==='fig'){this.react([...this.actors].find(([,o])=>o===a)![0],'nod');return;}
-    a.posedUntil=Date.now()+ms;this.paint(a,frame);
-    setTimeout(()=>{if(a.posedUntil<=Date.now()&&!a.el.classList.contains('walking'))this.paint(a);},ms+20);
+    this.posePx(a,frame===ANGER_FRAME(a.look)&&frame!==TALK_FRAME(a.look)?'surprise':(a.look==='strategist'||a.look==='civil'||a.look==='sage')?'point':'talk',ms);
   }
   /** 몸으로 하는 반응(펄쩍·갸웃·부들부들·축 처짐·들썩). */
-  react(name:string,kind:string){const a=this.actors.get(name);if(!a)return;a.el.classList.remove('jolt','tilt','shake','droop','bounce','nod');void a.el.offsetWidth;a.el.classList.add(kind);setTimeout(()=>a.el.classList.remove(kind),900);}
+  react(name:string,kind:string){const a=this.actors.get(name);if(!a)return;
+    if(kind==='jolt'||kind==='shake')this.posePx(a,'surprise',700);else if(kind==='droop'||kind==='nod')this.posePx(a,'bow',kind==='nod'?450:900);a.el.classList.remove('jolt','tilt','shake','droop','bounce','nod');void a.el.offsetWidth;a.el.classList.add(kind);setTimeout(()=>a.el.classList.remove(kind),900);}
   next(){this.advance?.();}
   /** 이 칸에 다른 사람이 서 있는가. */
   private taken(cell:Cell,except?:string){for(const [n,a] of this.actors)if(n!==except&&a.on&&same(a.cell,cell))return true;return false;}
@@ -129,19 +136,21 @@ export class Stage {
     for(let d=1;d<12;d++)for(let i=-d;i<=d;i++)for(const c of [[cell[0]+i,cell[1]+d-Math.abs(i)],[cell[0]+i,cell[1]-d+Math.abs(i)]] as Cell[])if(this.scene.standable(c)&&!this.taken(c,except))return c;
     return cell;
   }
-  addActor(m:CastMember){
+  addActor(m:CastMember,seat?:Cell){
     const art=artFor(m.name,m.look),look=art.kind==='sheet'?art.look:m.look;
-    const el=document.createElement('div');el.className=`ss-actor ${art.kind==='fig'?'fig':''}`;el.dataset.name=m.name;
+    const el=document.createElement('div');el.className='ss-actor px';el.dataset.name=m.name;
     if(art.kind==='fig'&&art.tint)el.style.setProperty('--tint',`${art.tint}deg`);
     // 윗몸과 다리를 나눠 그린다: 걸을 때 다리(옷자락)만 번갈아 흔들려 한 걸음씩 내딛는 것처럼 보인다.
     el.innerHTML=`<div class="ss-shadow"></div><div class="ss-body"><div class="ss-sprite top"></div><div class="ss-sprite legs"></div></div><span class="ss-name">${esc(m.name)}</span><div class="ss-bubble" hidden></div>`;
-    const cell=m.at?this.free(this.scene.toCell(m.at)):this.scene.toCell([-12,60]);
+    const cell=seat??(m.at?this.free(this.scene.toCell(m.at)):this.scene.toCell([-12,60]));
     const face=m.face??(this.scene.toPct(cell)[0]<50?'right':'left');
-    const a:Actor={el,cell,face,look,art,on:!!m.at,tick:Math.floor(Math.random()*4),posedUntil:0};this.actors.set(m.name,a);el.style.setProperty('--d',`${-(Math.random()*2.4).toFixed(2)}s`);
+    const a:Actor={el,cell,face,look,art,px:pxSheet(m.name,m.look),dir:'front',pose:'stand',on:!!m.at,tick:Math.floor(Math.random()*4),posedUntil:0};this.actors.set(m.name,a);el.style.setProperty('--d',`${-(Math.random()*2.4).toFixed(2)}s`);
     this.paint(a);this.place(a,false);if(!m.at)el.classList.add('off');this.el.appendChild(el);return a;
   }
   /** 인물 그림(윗몸·다리 두 겹에 같은 그림). */
-  private paint(a:Actor,frame=0,walking=false){const st=artStyle(a.art,frame,walking);for(const e of a.el.querySelectorAll<HTMLElement>('.ss-sprite'))e.setAttribute('style',st);}
+  private paint(a:Actor,pose:PxPose=a.pose){a.pose=pose;a.el.querySelector<HTMLElement>('.ss-sprite.top')!.setAttribute('style',pxStyle(a.px,a.dir,pose));}
+  /** 잠깐 한 자세(말하기·절·놀람 등)를 하고 돌아온다. */
+  private posePx(a:Actor,pose:PxPose,ms:number){if(a.el.classList.contains('walking'))return;a.posedUntil=Date.now()+ms;this.paint(a,pose);setTimeout(()=>{if(a.posedUntil<=Date.now()&&!a.el.classList.contains('walking'))this.paint(a,'stand');},ms+20);}
   /** 화면 위 자리(%). */
   at(name:string):At|undefined{const a=this.actors.get(name);return a?this.scene.toPct(a.cell):undefined;}
   cellOf(name:string){return this.actors.get(name)?.cell;}
@@ -150,7 +159,10 @@ export class Stage {
     a.el.classList.toggle('face-left',a.face==='left');if(!animate)a.el.style.transitionDuration='0ms';
   }
   /** 다른 사람 쪽을 본다. */
-  faceTo(name:string,other:string){const a=this.actors.get(name),b=this.actors.get(other);if(!a||!b||a===b)return;const ax=this.scene.toPct(a.cell)[0],bx=this.scene.toPct(b.cell)[0];if(ax!==bx){a.face=bx>ax?'right':'left';a.el.classList.toggle('face-left',a.face==='left');}}
+  faceTo(name:string,other:string){const a=this.actors.get(name),b=this.actors.get(other);if(!a||!b||a===b)return;const [ax,ay]=this.scene.toPct(a.cell),[bx,by]=this.scene.toPct(b.cell);
+    if(ax!==bx){a.face=bx>ax?'right':'left';a.el.classList.toggle('face-left',a.face==='left');}
+    // 상대가 아래(앞)에 있으면 앞모습, 위(뒤)에 있으면 뒷모습, 거의 같은 높이면 옆모습
+    const nd:PxDir=Math.abs(by-ay)<2.5?'side':by>ay?'front':'back';if(nd!==a.dir&&!a.el.classList.contains('walking')){a.dir=nd;this.paint(a);}}
   private waitClick(){return this.skipping?Promise.resolve():new Promise<void>(r=>{this.advance=()=>{this.advance=undefined;r();};});}
   bubble(name:string,text:string,kind:'emote'|'talk'){const a=this.actors.get(name);if(a)bubble(a.el,text,kind);}
   /** 화자가 말한다: 화자 쪽 반대편(위/아래)에 대화창. */
@@ -181,21 +193,20 @@ export class Stage {
   }
   async narrate(text:string){this.caption.hidden=false;this.caption.textContent=text;this.talk.innerHTML='';await this.waitClick();this.caption.hidden=true;}
   /** 칸을 하나씩 밟아 걷는다. 걸음마다 발을 떼고(들썩임) 방향을 바꾼다. */
-  private async stepAlong(a:Actor,path:readonly Cell[]){
+  private async stepAlong(a:Actor,path:readonly Cell[],sideways=false){
     if(!path.length)return;
     if(this.skipping){a.cell=path.at(-1)!;this.place(a,false);return;}
-    const walkSheet=a.art.kind==='sheet'&&!!SPRITES[a.look].walk;
     a.el.classList.add('walking');a.el.style.transitionDuration=STEP_MS+'ms';
     for(let i=0;i<path.length;i++){
       const next=path[i]!,[x0,y0]=this.scene.toPct(a.cell),[x1,y1]=this.scene.toPct(next);
       if(x1!==x0)a.face=x1>x0?'right':'left';
-      // 뒤로(화면 위쪽) 걸으면 뒷모습 그림이 있는 병종은 뒷모습으로
-      if(walkSheet)this.paint(a,(y1<y0?2:0)+(i%2),true);
-      a.el.classList.toggle('step-b',i%2===1);
+      // 아래로 걸으면 앞모습, 위로 걸으면 뒷모습, 화면 가로로 지나가면 옆모습
+      a.dir=sideways?'side':y1>y0?'front':y1<y0?'back':'side';
+      this.paint(a,i%2?'walkB':'walkA');
       a.cell=next;this.place(a,true);
-      await wait(STEP_MS);
+      await wait(STEP_MS/2);this.paint(a,'stand');await wait(STEP_MS/2);
     }
-    a.el.classList.remove('walking','step-b');a.el.style.transitionDuration='';this.paint(a);
+    a.el.classList.remove('walking','step-b');a.el.style.transitionDuration='';this.paint(a,'stand');
   }
   /** 대각으로 한 칸씩(화면 가로로 걸어 들어오고 나갈 때). */
   private stairs(from:Cell,to:Cell){const out:Cell[]=[];let [c,r]=from;let flip=false;
@@ -205,13 +216,13 @@ export class Stage {
     const a=this.actors.get(name);if(!a)return;
     if(mode==='exit'){
       const side=from??(this.scene.toPct(a.cell)[0]<50?'left':'right');
-      await this.stepAlong(a,this.stairs(a.cell,offscreenCell(a.cell,side)));a.el.classList.add('off');a.on=false;return;
+      await this.stepAlong(a,this.stairs(a.cell,offscreenCell(a.cell,side)),true);a.el.classList.add('off');a.on=false;return;
     }
     const target=this.free(this.scene.toCell(to),name);
     if(mode==='enter'){
       const side=from??(to[0]<50?'left':'right');a.cell=offscreenCell(target,side);a.face=side==='left'?'right':'left';
       this.place(a,false);a.el.classList.remove('off');a.on=true;await wait(30);
-      await this.stepAlong(a,this.stairs(a.cell,target));return;
+      await this.stepAlong(a,this.stairs(a.cell,target),true);a.dir='front';this.paint(a,'stand');return;
     }
     await this.stepAlong(a,stepsBetween(this.scene,a.cell,target,c=>this.taken(c,name)));
   }
@@ -263,6 +274,29 @@ export class Stage {
     }
   }
 }
+/**
+ * 장을 여는 해설 — 고전 조조전의 장 사이 화면처럼, 첫 장면의 배경을 어둡게 깔고 해와 장 이름, 역사·시나리오 배경을
+ * 한 줄씩 써 내려간다. 누르면 다음 줄(쓰는 중이면 한꺼번에), 건너뛰기로 끝.
+ */
+export async function playNarration(root:HTMLElement,o:{heading:string;year:string;title:string;lines:readonly string[];art:number;place:string}){
+  const scene=isoScene(o.art,o.place);
+  root.innerHTML=`<div class="ss-root"><div class="ss-head"><span class="eyebrow">${esc(o.heading)} · 해설</span></div>
+    <div class="ss-narr" style="background-image:url(${scene.url})"><div class="ss-narr-veil"></div><div class="ss-narr-box"><div class="ss-narr-year">${esc(o.year)}</div><h3 class="ss-narr-title">${esc(o.title)}</h3><div class="ss-narr-lines"></div><span class="ss-narr-next" aria-hidden="true">▼</span></div></div>
+    <div class="ss-controls"><button type="button" class="ss-skip">해설 건너뛰기 ⏭</button><button type="button" class="primary ss-next">다음 ▶</button></div></div>`;
+  const box=root.querySelector<HTMLElement>('.ss-narr-lines')!;let advance:(()=>void)|undefined,skip=false;
+  const next=()=>advance?.();
+  root.querySelector<HTMLElement>('.ss-narr')!.addEventListener('click',next);root.querySelector<HTMLButtonElement>('.ss-next')!.onclick=next;
+  root.querySelector<HTMLButtonElement>('.ss-skip')!.onclick=()=>{skip=true;next();};
+  const waitClick=()=>skip?Promise.resolve():new Promise<void>(r=>{advance=()=>{advance=undefined;r();};});
+  for(const line of o.lines){
+    const p=document.createElement('p');box.appendChild(p);const chars=[...line];
+    if(skip){p.textContent=line;continue;}
+    await new Promise<void>(done=>{let i=0;const fin=()=>{clearInterval(t);p.textContent=line;advance=undefined;done();};advance=fin;
+      const t=setInterval(()=>{if(!document.contains(p)){fin();return;}i++;p.textContent=chars.slice(0,i).join('');if(i>=chars.length)fin();},34);});
+    await waitClick();
+  }
+}
+
 /**
  * 장면들을 차례로 연출한다. root 안을 통째로 그린다. 끝나면(또는 건너뛰면) resolve.
  * 선택이 있는 장면은 건너뛰기를 눌러도 선택에서 멈춘다.
