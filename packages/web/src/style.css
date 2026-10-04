@@ -603,3 +603,4 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
 @media(max-width:580px){.ss-talk{padding-left:calc(var(--bust) * 1.0)}}
 .cx-tiers{display:inline-flex;flex-wrap:wrap;gap:3px 8px;font-size:11px;color:#a9a58f}.cx-tiers i{font-style:normal;opacity:.65}.cx-tiers i.now{opacity:1;color:#ffd77a;font-weight:700}
 .cx-evo{font-size:12px;margin:4px 0 8px;color:#d6cdb0}.cx-evo b{color:#ffd77a;letter-spacing:2px}.cx-evo small{color:#a9a58f}
+.talk-bust.image{-webkit-mask-image:radial-gradient(ellipse 54% 60% at 50% 42%,#000 62%,transparent 100%);mask-image:radial-gradient(ellipse 54% 60% at 50% 42%,#000 62%,transparent 100%);background-position:50% 18%}
