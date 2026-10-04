@@ -1,5 +1,5 @@
 import type {BattleState,Difficulty} from '../../core/src/index.ts';
-import {fireScripted} from '../../core/src/index.ts';
+import {fireScripted,familyOf} from '../../core/src/index.ts';
 
 /** Per-stage rules that live in the client layer (protected units, phase readouts,
  * custom seals). New stages register here instead of growing Session with branches. */
@@ -51,7 +51,7 @@ export const stageRules:Record<string,StageRules>={
     labels:[{region:'canal_label',text:'수로 · 수군만 지남'},{region:'gate_label',text:'수춘성'},{region:'keep',text:'왕릉'}],
     zones:[{region:'landing',color:0xffd27a}],
     tick:({state})=>{
-      if(!state.firedEvents.has('shouchun/gate')&&[...state.living('player'),...state.living('ally')].some(u=>u.unitClass==='navy'&&state.map.regionCoords('landing').some(c=>c.x===u.pos.x&&c.y===u.pos.y)))fireScripted(state,'shouchun/gate');
+      if(!state.firedEvents.has('shouchun/gate')&&[...state.living('player'),...state.living('ally')].some(u=>familyOf(u.unitClass)==='navy'&&state.map.regionCoords('landing').some(c=>c.x===u.pos.x&&c.y===u.pos.y)))fireScripted(state,'shouchun/gate');
       return undefined;
     },
     phase:({state})=>state.firedEvents.has('shouchun/gate')?'육상 진입 · 왕릉 격퇴 (3턴마다 안마당 낙뢰)':'수상 접근 · 수군을 수로 끝 수문 앞(노란 칸)으로 (짝수 턴 포격)',

@@ -8,6 +8,7 @@ import { makeUnit } from "./units.ts";
 import type { StageDef, Difficulty } from "./stage.ts";
 import type { Unit, UnitClass, AiBehavior, Coord } from "./types.ts";
 import { key } from "./grid.ts";
+import { familyOf } from "./classes.ts";
 
 /** 출진 장수 정의 (계보/육성 시스템에서 넘어오는 값). */
 export interface RosterEntry {
@@ -39,7 +40,7 @@ export function assemble(opts: AssembleOptions): BattleState {
   const place = (region: string, unitClass?: UnitClass): Coord => {
     // Only maps that define a class start use it; other maps keep their exact placement
     // so old saves replay unchanged.
-    const own = unitClass ? map.regions.get(`${unitClass}_start`) ?? [] : [];
+    const own = unitClass ? map.regions.get(`${unitClass}_start`) ?? map.regions.get(`${familyOf(unitClass)}_start`) ?? [] : [];
     const coords = own.length
       ? [...own, ...map.regionCoords(region)].filter((c) => Number.isFinite(map.moveCost(unitClass!, c)))
       : map.regionCoords(region);

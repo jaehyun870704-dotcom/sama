@@ -43,6 +43,11 @@ describe('새 병종과 진화 계통',()=>{
   expect(evolvedClass('javelin',9)).toBe('javelin');expect(evolvedClass('javelin',10)).toBe('eliteJavelin');expect(evolvedClass('javelin',30)).toBe('flyingSpear');
   expect(evolvedClass('heavyCav',20)).toBe('ironPagoda');expect(evolvedClass('elephant',21)).toBe('warElephant');expect(evolvedClass('elephant',22)).toBe('elephantKing');
  });
+ it('evolves every lineage in exactly three tiers (1→2→3), siege and navy included',()=>{
+  for(const line of evolutionLines())expect(line.map(([c])=>tierOf(c)),line.map(x=>x[0]).join('→')).toEqual([1,2,3]);
+  for(const c of ['engineer','catapult','ram','navy'] as const)expect(evolvedClass(c,30)).not.toBe(c);
+  for(const line of evolutionLines())for(const [c] of line)expect(classNames[c],c).toMatch(/[가-힣]/);
+ });
  it('makes each new tier 3 stronger than its tier 2 and keeps the tier 2 skills',()=>{
   for(const [c,,tier] of NEW_CLASSES){
    if(tier!==3)continue;

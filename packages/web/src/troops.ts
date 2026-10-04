@@ -79,6 +79,22 @@ export const troopRoles:Partial<Record<UnitClass,{name:string;role:string;base:U
  warDrummer:{name:'군악대',role:'고취수 2단계 · 진군의 북소리가 전장을 덮는다',base:'fengshui',tint:0xffc080,spells:['inspire','march','fortify','warCry','grandDrum','mend','burnBoats','backWater']},
  riderSage:{name:'기마책사',role:'이동 6 · 말 위에서 책략을 쓰는 기동 책사',base:'strategist',tint:0xa8d8f0,spells:['fire','embers','gust','windDragon','rumor','ambush']},
  swiftSage:{name:'질풍군사',role:'기마책사 2단계 · 이동 7, 바람처럼 와서 계책을 놓고 간다',base:'strategist',tint:0x88e0ff,spells:['fire','embers','gust','windDragon','rumor','ambush','whirlwind','breakArmor','secretPath','hongmen']},
+ cliffWalker:{name:'잔도귀병',role:'산악병 3단계 · 잔도와 벼랑을 달리는 촉의 귀신 같은 산병',base:'bandit',tint:0x7ee0b0,spells:[]},
+ liangzhouIron:{name:'서량철기',role:'서량기병 3단계 · 쇠를 두른 서쪽의 철기, 쓰러질수록 사납다',base:'cavalry',tint:0xff7a5a,spells:[]},
+ tianji:{name:'천극위',role:'극사 3단계 · 두 칸 앞을 꿰뚫고 몇 번이고 맞받는 극의 벽',base:'spearman',tint:0xd878ff,spells:[]},
+ baizhan:{name:'백전선등',role:'방패노병 3단계 · 백 번 싸운 선등의 결사대',base:'crossbow',tint:0xffe060,spells:[]},
+ grandBand:{name:'대고취대',role:'고취수 3단계 · 천 개의 북이 전군을 움직인다',base:'fengshui',tint:0xffd060,spells:['inspire','march','fortify','warCry','grandDrum','mend','burnBoats','backWater','swiftWind','ironWall','valor']},
+ divineSage:{name:'신기군사',role:'기마책사 3단계 · 귀신같은 계책을 말 위에서 놓는 군사',base:'strategist',tint:0x60f0ff,spells:['fire','embers','gust','windDragon','rumor','ambush','whirlwind','breakArmor','secretPath','hongmen','tempest','thunderbolt','tenAmbush']},
+ overlordGuard:{name:'패왕금위',role:'강동자제 3단계 · 패왕과 끝까지 함께한 마지막 팔천',base:'infantry',tint:0xff4030,spells:[]},
+ huben:{name:'호분위',role:'낭중기 3단계 · 황제를 지키는 호랑이 기병',base:'cavalry',tint:0x60a0ff,spells:[]},
+ sapper:{name:'축성병',role:'공병 2단계 · 방책을 세우고 성벽을 고치는 숙련 공병',base:'engineer',tint:0xd0b070,spells:[]},
+ masterBuilder:{name:'공성 장인',role:'공병 3단계 · 운제와 충차를 손보는 장인',base:'engineer',tint:0xffd070,spells:[]},
+ thunderCart:{name:'벽력거',role:'포차 2단계 · 관도에서 원소의 망루를 부순 돌수레',base:'catapult',tint:0xc8a070,spells:[]},
+ greatTrebuchet:{name:'천균거',role:'포차 3단계 · 다섯 칸 밖까지 돌을 던지는 큰 포차',base:'catapult',tint:0xffc060,spells:[]},
+ ironRam:{name:'철충차',role:'충차 2단계 · 쇠를 씌워 불화살을 견디는 충차',base:'ram',tint:0xb0b8c8,spells:[]},
+ cloudRam:{name:'파성충차',role:'충차 3단계 · 성문을 부수는 큰 망치 수레',base:'ram',tint:0xffd060,spells:[]},
+ mengchong:{name:'몽충',role:'수군 2단계 · 쇠가죽을 씌운 돌격선',base:'navy',tint:0x90c0e0,spells:[]},
+ louchuan:{name:'누선',role:'수군 3단계 · 여러 층 망루를 올린 큰 배',base:'navy',tint:0xffd070,spells:[]},
 };
 export const supportOptions:UnitClass[]=['infantry','fengshui','strategist','shaman','maiden','taoist','physician','monk','horseArcher','bandit','spearman','crossbow','archer','cavalry','heavyCav','catapult','ram','engineer'];
 export function troopStrategies(kind:UnitClass,level:number){const role=troopRoles[kind];return role?allStrategies.filter(s=>role.spells.includes(s.id)&&(s.level<=level||s.id==='mend')).map(s=>s.id):undefined;}

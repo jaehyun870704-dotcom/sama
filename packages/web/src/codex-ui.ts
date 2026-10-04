@@ -16,7 +16,10 @@ import {officerLook,officerPortrait} from './officer-art.ts';
 import {cardFace,displayName} from './faces.ts';
 import {isUploaded,setPortraitImage,removePortraitImage,importPortraitFiles} from './portrait-images.ts';
 import {bioOf} from './officer-bios.ts';
-import {classNames,troopRoles,troopArt,basicReactionArt,artClass,recruitPool,evolutionLines} from './troops.ts';
+import {classNames,troopRoles,troopArt,basicReactionArt,artClass,recruitPool,evolutionLines,troopSheets} from './troops.ts';
+import {spriteAtlas} from './sprite-atlas.ts';
+import {navalAtlas} from './naval-art.ts';
+import {armorFrame,MOUNTED_FAMILIES,ROBE_FAMILIES,MACHINE_FAMILIES,type ArmorTier} from './armor.ts';
 import {adviceFor} from './troop-tactics.ts';
 import {allStrategies,STATUS_NAMES,SHAPE_TEXT,familyAllows,schoolOf,SCHOOL_NAMES,type LearnedStrategy} from './officers.ts';
 import {officerFeatures} from './officers.ts';
@@ -101,8 +104,27 @@ function sprite(c:UnitClass){
   if(sheet){const pos=`0% ${sheet.row/(sheet.rows-1)*100}%`,size=`400% ${sheet.rows*100}%`,img=`var(--${sheet.sheet}-atlas)`;
     // 진화·확장 병종은 전장처럼 색조를 입힌다(그림 모양대로만 물들도록 같은 그림을 가면으로 쓴다).
     const dye=hex&&VARIANTS[c]?`<i class="cx-dye" style="background:${hex};-webkit-mask-image:${img};mask-image:${img};-webkit-mask-size:${size};mask-size:${size};-webkit-mask-position:${pos};mask-position:${pos}"></i>`:'';
-    return `<div class="cx-sprite" style="background-image:${img};background-size:${size};background-position:${pos}${glow}">${dye}</div>`;}
+    return `<div class="cx-sprite" style="background-image:${img};background-size:${size};background-position:${pos}${glow}">${armorCanvas(c)}${dye}</div>`;}
+  if(fam==='ram')return `<div class="cx-sprite" style="background-image:var(--ram-atlas);background-size:200% 200%;background-position:0 0${glow}">${armorCanvas(c)}</div>`;
+  if(fam==='navy')return `<div class="cx-sprite" style="background-image:var(--naval-atlas);background-size:400% 400%;background-position:0 ${(tierOf(c)===3?3:tierOf(c)===2?1:0)/3*100}%${glow}">${armorCanvas(c)}</div>`;
   return `<div class="cx-sprite empty" style="${glow.slice(1)}"><span>${esc((classNames[c]??c).slice(0,1))}</span></div>`;
+}
+/** 진화 2·3단은 단계 장비(망토·금갑·깃발·마갑)를 입힌 그림을 덧그린다(paintArmor가 채운다). */
+const armorCanvas=(c:UnitClass)=>tierOf(c)>=2?`<canvas class="cx-armor" data-armor="${c}"></canvas>`:'';
+function sheetFor(c:UnitClass):{load:()=>Promise<HTMLCanvasElement>;rows:number;cols:number;row:number}|undefined{
+  const base=artClass(c),fam=familyOf(base),art=troopArt[base]??troopArt[fam],react=basicReactionArt[base]??basicReactionArt[fam];
+  if(fam==='ram')return {load:()=>spriteAtlas('ram-v1.png',2,2),rows:2,cols:2,row:0};
+  if(fam==='navy')return {load:navalAtlas,rows:4,cols:4,row:tierOf(c)===3?3:1};
+  const sh=art??react;if(!sh)return undefined;const url=troopSheets.find(s=>s.id===sh.sheet)?.url;if(!url)return undefined;
+  return {load:()=>spriteAtlas(url,sh.rows,4),rows:sh.rows,cols:4,row:sh.row};
+}
+export async function paintArmor(){
+  for(const el of [...document.querySelectorAll<HTMLCanvasElement>('canvas[data-armor]')]){
+    const c=el.dataset.armor as UnitClass,info=sheetFor(c),t=tierOf(c);if(!info||t<2)continue;
+    try{const atlas=await info.load(),w=atlas.width/info.cols,h=atlas.height/info.rows,fam=familyOf(artClass(c));
+      const f=armorFrame(atlas,0,info.row*h,w,h,{tier:t as ArmorTier,mounted:MOUNTED_FAMILIES.has(fam),dye:'blue',robe:ROBE_FAMILIES.has(fam),machine:MACHINE_FAMILIES.has(fam)});
+      el.width=f.width;el.height=f.height;el.getContext('2d')!.drawImage(f,0,0);el.classList.add('on');}catch{/* 그림을 못 읽으면 원래 그림 그대로 */}
+  }
 }
 const PROFILE_ROWS:Array<[keyof ReturnType<typeof profileOf>,string]>=[['hp','체력'],['attack','공격'],['defense','방어'],['intellect','지력'],['spirit','정신'],['agility','순발'],['mp','책략']];
 function classesTab(pick:string){
@@ -194,6 +216,7 @@ export function showCodex(host:CodexHost,view:CodexView={tab:'people'}){
   all('[data-cx-person]').forEach(b=>b.onclick=()=>showCodex(host,{...v,person:b.dataset.cxPerson!}));
   all('[data-cx-class]').forEach(b=>b.onclick=()=>showCodex(host,{...v,tab:'classes',cls:b.dataset.cxClass!}));
   all('[data-cx-spell]').forEach(b=>b.onclick=()=>showCodex(host,{...v,tab:'strategies',spell:b.dataset.cxSpell!,tier:1}));
+  void paintArmor();
   all('[data-cx-tier]').forEach(b=>b.onclick=()=>showCodex(host,{...v,tier:Number(b.dataset.cxTier) as StrategyTier}));
   const who=people?.name??'';
   all('[data-cx-learn]').forEach(b=>b.onclick=()=>{const m=loadMeta();if(learnPerk(m,who,b.dataset.cxLearn!)){saveMeta(m);host.toast('장수 효과를 익혔다.');}showCodex(host,{...v,person:who});});

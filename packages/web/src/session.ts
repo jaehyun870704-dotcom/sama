@@ -225,7 +225,7 @@ export class Session {
       if(!this.deployment)addFortifications(state);
       applyOfficerFeatures(state.living(),this.deployment?.growth);
       for(const u of state.living()){
-        if(u.unitClass==='ram'){for(const trait of ['siegeRam','noCounterAttack'])if(!u.traits.includes(trait))u.traits.push(trait);}
+        if(familyOf(u.unitClass)==='ram'){for(const trait of ['siegeRam','noCounterAttack'])if(!u.traits.includes(trait))u.traits.push(trait);}
         const officer=(OFFICERS as readonly string[]).includes(u.id)&&u.side==='player',specialty=officer?undefined:troopStrategies(u.unitClass,u.level);if(specialty)u.strategies=specialty;else if(['strategist','fengshui'].includes(familyOf(u.unitClass)))u.strategies=availableStrategies(u.level,!!this.deployment?.growth,officer?undefined:familyOf(u.unitClass));
       }
       addSiegeCompany(state);

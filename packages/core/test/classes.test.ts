@@ -12,7 +12,8 @@ describe("병종 계통과 진화", () => {
     expect(evolvedClass("infantry", 7)).toBe("infantry");
     expect(evolvedClass("infantry", 8)).toBe("shieldGuard");
     expect(evolvedClass("infantry", 20)).toBe("royalGuard");
-    expect(evolvedClass("navy", 30)).toBe("navy");
+    expect(evolvedClass("navy", 30)).toBe("louchuan");
+    expect(evolvedClass("navy", 12)).toBe("mengchong");
     expect(nextEvolution("archer")).toEqual({ to: "longbow", level: 8 });
     expect(nextEvolution("royalGuard")).toBeUndefined();
   });

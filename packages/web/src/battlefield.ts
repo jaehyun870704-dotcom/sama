@@ -14,6 +14,7 @@ import {factionOf,officerLook} from './officer-art.ts';
 import {romanceOf} from './romance.ts';
 import {crispZoom,groundScaleMode,unitTint} from './pixel-look.ts';
 import {dyeOfSide,dyePixels,clothBand,needsDye,type Dye} from './dye.ts';
+import {armorFrame,MOUNTED_FAMILIES,ROBE_FAMILIES,MACHINE_FAMILIES,type ArmorTier} from './armor.ts';
 import type {LogEntry} from '../../core/src/index.ts';
 import { key, manhattan, ignoresRough, tierOf, familyOf, strategyArea } from '../../core/src/index.ts';
 import type { BattleState, Coord, Unit, TerrainKind } from '../../core/src/index.ts';
@@ -39,7 +40,7 @@ interface HitStyle {kind:'slash'|'pierce'|'charge'|'arrow'|'bolt'|'blunt'|'spell
 export function hitStyle(family:string,unitClass:string,strategy?:string):HitStyle{
   if(strategy!==undefined){if(['heal','calm','mend','greatMend','repair'].includes(strategy))return {kind:'heal',shake:0,stop:0,knock:0,reach:0};
     return /fire|inferno|blaze/.test(strategy)?{kind:'fire',shake:4,stop:80,knock:6,reach:0}:{kind:'spell',shake:3,stop:65,knock:5,reach:0};}
-  if(unitClass==='catapult'||unitClass==='ram')return {kind:'blunt',shake:6,stop:100,knock:8,reach:14};
+  if(family==='catapult'||family==='ram')return {kind:'blunt',shake:6,stop:100,knock:8,reach:14};
   switch(family){
     case 'cavalry':return {kind:'charge',shake:5,stop:90,knock:12,reach:26};
     case 'heavyCav':return {kind:'charge',shake:7,stop:115,knock:14,reach:24};
@@ -166,7 +167,7 @@ export class Battlefield {
       for(const [id,a] of this.actors)if(a.officer){const aura=a.piece.children.find(c=>c.label==='aura');if(aura){aura.alpha=.55+Math.sin(t*3+id.length)*.35;aura.scale.set(1+Math.sin(t*3+id.length)*.05);}}
       if(this.busy)return;
       for(const [id,a] of this.actors){const phase=id.length*.7;
-        if(a.unit.unitClass==='navy'){a.sprite.y=8+Math.sin(t*1.6+phase)*1.8;a.sprite.rotation=Math.sin(t*1.1+phase)*.035;continue;}
+        if(familyOf(a.unit.unitClass)==='navy'){a.sprite.y=8+Math.sin(t*1.6+phase)*1.8;a.sprite.rotation=Math.sin(t*1.1+phase)*.035;continue;}
         if(structureKind(a.unit.id)||a.unit.id.startsWith('convoy_')||['ram','catapult'].includes(artClass(a.unit.unitClass)))continue;
         // 서 있어도 숨을 쉰다(발은 땅에 붙이고 몸만 살짝 오르내림), 사람마다 박자가 다르다.
         let by=this.baseScaleY.get(a.sprite);if(by===undefined){by=a.sprite.scale.y;this.baseScaleY.set(a.sprite,by);}
@@ -303,7 +304,7 @@ export class Battlefield {
       const c={x,y};if(state.living('enemy').some(e=>manhattan(e.pos,c)<=(e.visionRange??e.range[1]))){const p=iso(c);diamond(this.ranges,p.x,p.y,0xd36a5e,.22);}
     }
     if(u?.alive&&u.side===state.currentSide&&!u.hasActed){
-      if((mode==='repair'||mode==='fortify')&&u.unitClass==='engineer')for(const d of [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}]){const at={x:u.pos.x+d.x,y:u.pos.y+d.y};if(!state.map.inBounds(at))continue;const occupant=state.unitAt(at),ok=mode==='repair'?!!occupant&&occupant.side!=='enemy':!occupant;if(ok){const p=iso(at);diamond(this.ranges,p.x,p.y,mode==='repair'?0x9fe0a8:0xe0c27a,.28).stroke({color:mode==='repair'?0xb9f2c0:0xf2d79a,width:1.4});}}
+      if((mode==='repair'||mode==='fortify')&&familyOf(u.unitClass)==='engineer')for(const d of [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}]){const at={x:u.pos.x+d.x,y:u.pos.y+d.y};if(!state.map.inBounds(at))continue;const occupant=state.unitAt(at),ok=mode==='repair'?!!occupant&&occupant.side!=='enemy':!occupant;if(ok){const p=iso(at);diamond(this.ranges,p.x,p.y,mode==='repair'?0x9fe0a8:0xe0c27a,.28).stroke({color:mode==='repair'?0xb9f2c0:0xf2d79a,width:1.4});}}
       if(mode==='heal'&&familyOf(u.unitClass)==='fengshui')for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){if(manhattan(u.pos,{x,y})<=3){const p=iso({x,y});diamond(this.ranges,p.x,p.y,0x83e8b2,.22);}}
       if(mode==='move'&&!u.hasMoved){const reach=state.map.reachable(u,state.occupancy(),ignoresRough(u));for(const k of reach.keys()){const [x,y]=k.split(',').map(Number);const p=iso({x:x!,y:y!});tileMark(this.ranges,p.x,p.y,0x2f86d8,0x9fd4ff);}}
       else if(mode==='attack'||mode==='duel'||mode==='debate'||state.strategies.has(mode)){
@@ -351,11 +352,15 @@ export class Battlefield {
   }
   private hasReaction(u:Unit){const k=artClass(u.unitClass);return !structureKind(u.id)&&!u.id.startsWith('convoy_')&&!!(troopArt[k]||basicReactionArt[k]);}
   private unitTexture(u:Unit,pose=0){
+    // 진화 단계는 그림을 바꾸기 전에 읽는다(2단: 강철·망토·마의, 3단: 금갑·등 깃발·마갑).
+    const tier=structureKind(u.id)||u.id.startsWith('convoy_')?1:tierOf(u.unitClass),fam=familyOf(u.unitClass);
     if(artClass(u.unitClass)!==u.unitClass)u={...u,unitClass:artClass(u.unitClass)};
     const dye=dyeOfSide(u.side);
     // 진영 색으로 물든 시트에서 한 칸을 잘라 쓴다(sheet가 없으면 물들이지 않는다: 배·충차·성채·수송대).
-    const cut=(id:string,atlas:Texture,rect:Rectangle,sheet?:string)=>{const key=(sheet&&needsDye(sheet,dye)?dye+':':'')+id,old=this.textures.get(key);if(old)return old;
-      const t=new Texture({source:sheet&&needsDye(sheet,dye)?this.dyedSource(atlas,sheet,dye):atlas.source,frame:rect});this.textures.set(key,t);return t;};
+    const cut=(id:string,atlas:Texture,rect:Rectangle,sheet?:string)=>{const dyed=!!sheet&&needsDye(sheet,dye),armored=tier>=2&&(!!sheet||MACHINE_FAMILIES.has(fam)),key=(armored?`a${tier}:${dye}:${fam}:`:'')+(dyed?dye+':':'')+id,old=this.textures.get(key);if(old)return old;
+      const source=dyed?this.dyedSource(atlas,sheet!,dye):atlas.source;
+      const t=armored?new Texture({source:new CanvasSource({resource:armorFrame(source.resource as HTMLCanvasElement,rect.x,rect.y,rect.width,rect.height,{tier:tier as ArmorTier,mounted:MOUNTED_FAMILIES.has(fam),dye,robe:ROBE_FAMILIES.has(fam),machine:MACHINE_FAMILIES.has(fam)}),autoGenerateMipmaps:true,scaleMode:'linear'})})
+        :new Texture({source,frame:rect});this.textures.set(key,t);return t;};
     const basic=basicReactionArt[u.unitClass];if(pose>=8&&basic&&!structureKind(u.id)&&!u.id.startsWith('convoy_')){const frame=pose%4,atlas=this.troopTextures.get(basic.sheet)!,w=atlas.width/4,h=atlas.height/basic.rows;return cut(basic.sheet+':'+basic.row+':'+frame,atlas,new Rectangle(frame*w,basic.row*h,w,h),basic.sheet);}
     const art=troopArt[u.unitClass];if(art){const sheet=art.sheet+(pose>=8?'-reaction':pose>=4?'-walk':''),frame=pose%4,atlas=this.troopTextures.get(sheet)!,w=atlas.width/4,h=atlas.height/art.rows;return cut(sheet+':'+art.row+':'+frame,atlas,new Rectangle(frame*w,art.row*h,w,h),sheet);}
     if(u.unitClass==='navy'){const row=navalCrewRow(u.id,u.name),frame=pose%4,a=this.naval!,w=a.width/4,h=a.height/4;return cut('naval:'+row+':'+frame,a,new Rectangle(frame*w,row*h,w,h));}
@@ -390,7 +395,7 @@ export class Battlefield {
   private async animateEvent(e:LogEntry,epoch:number){
     if(e.t==='retreat'){
       const actor=this.actors.get(e.unit);if(!actor)return;
-      const mechanical=!!structureKind(e.unit)||['ram','catapult'].includes(actor.unit.unitClass)||e.unit.startsWith('convoy_');
+      const mechanical=!!structureKind(e.unit)||['ram','catapult'].includes(familyOf(actor.unit.unitClass))||e.unit.startsWith('convoy_');
       this.focusUnit(actor.unit.pos);const kind=structureKind(e.unit);this.burst(actor.unit.pos,kind==='gate'?'성문 돌파!':kind?'파괴':'퇴각',kind==='gate'?0xffd27a:0xd4c2a2);
       if(kind){this.debris(actor.unit.pos,kind==='gate'?26:16);if(kind==='gate'){this.onSound({kind:'breach',pan:this.panOf(actor.unit.pos)});this.emote(actor.unit.pos,reactions.breach!);}void this.shake(kind==='gate'?9:5,520,epoch);}
       this.onSound({kind:'retreat',unitClass:actor.unit.unitClass,structure:!!kind&&kind!=='gate',pan:this.panOf(actor.unit.pos)});
@@ -427,9 +432,9 @@ export class Battlefield {
           if(mounted){actor.sprite.y=8-Math.abs(Math.sin(p*Math.PI))*4;actor.sprite.rotation=Math.sin(p*Math.PI*2)*.04;}
           else if(machine){actor.sprite.y=8-Math.abs(Math.sin(p*Math.PI*2))*1;actor.sprite.rotation=Math.sin(p*Math.PI*2)*.015;}
           else{actor.sprite.y=8-Math.abs(Math.sin(p*Math.PI*2))*(stride?2.5:2);actor.sprite.rotation=lean*Math.sin(p*Math.PI);}
-          if(!machine&&!actor.unit.id.startsWith('convoy_')&&actor.unit.unitClass!=='navy')actor.sprite.texture=this.unitTexture(actor.unit,stepPose(walkArt,walkArt?facing.pose:0,i,p>=.5));
+          if(!machine&&!actor.unit.id.startsWith('convoy_')&&familyOf(actor.unit.unitClass)!=='navy')actor.sprite.texture=this.unitTexture(actor.unit,stepPose(walkArt,walkArt?facing.pose:0,i,p>=.5));
           else if(actor.unit.id.startsWith('convoy_'))actor.sprite.texture=this.unitTexture(actor.unit,1+(i*2+(p>=.5?1:0))%2);
-          else if(actor.unit.unitClass==='navy'){actor.sprite.texture=this.unitTexture(actor.unit,1+(i*2+(p>=.5?1:0))%2);actor.sprite.y=8-Math.sin(p*Math.PI)*2;}
+          else if(familyOf(actor.unit.unitClass)==='navy'){actor.sprite.texture=this.unitTexture(actor.unit,1+(i*2+(p>=.5?1:0))%2);actor.sprite.y=8-Math.sin(p*Math.PI)*2;}
         });
         at=next;
       }
@@ -451,7 +456,7 @@ export class Battlefield {
     const from=iso(actor.unit.pos),to=iso(target.pos),dx=to.x-from.x,dy=to.y-from.y,len=Math.max(1,Math.hypot(dx,dy));
     this.focusUnit({x:(actor.unit.pos.x+target.pos.x)/2,y:(actor.unit.pos.y+target.pos.y)/2});
     if(troopArt[artClass(actor.unit.unitClass)]){this.facing.set(actor.unit.id,0);actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*(dx<0?-1:1);}else if(!structureKind(actor.unit.id)&&dx!==0)actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*(dx<0?-1:1);
-    const ranged=e.t==='strategy'||['archer','crossbow','catapult','horseArcher'].includes(artClass(actor.unit.unitClass))||(actor.unit.unitClass==='navy'&&manhattan(actor.unit.pos,target.pos)>1),fx=new Graphics();this.effects.addChild(fx);
+    const ranged=e.t==='strategy'||['archer','crossbow','catapult','horseArcher'].includes(artClass(actor.unit.unitClass))||(familyOf(actor.unit.unitClass)==='navy'&&manhattan(actor.unit.pos,target.pos)>1),fx=new Graphics();this.effects.addChild(fx);
     const reactions_=(e.t==='strategy'?e.targets:[e.defender]).map((id,i)=>{
       const victim=this.actors.get(id),damage=e.t==='strategy'?(e.damage[i]??0):e.damage;
       const kind=troopReaction(e.t==='strategy'||e.hit,damage,!!victim&&!!this.state?.hasStatus(victim.unit,'guard'));
@@ -481,7 +486,7 @@ export class Battlefield {
       fx.clear();
       if(ranged&&p>.2&&p<.6){const q=(p-.2)/.4,x=from.x+dx*q,y=from.y+dy*q-Math.sin(q*Math.PI)*22;
         if(e.t==='strategy')fx.circle(x,y-20,7+q*8).stroke({color:e.strategy==='fire'?0xffae60:e.strategy==='repair'?0xe8c27a:0xb1f1ed,width:3});
-        else if(actor.unit.unitClass==='catapult'){for(let k=1;k<=4;k++){const b=Math.max(0,q-k*.06),tx=from.x+dx*b,ty=from.y+dy*b-Math.sin(b*Math.PI)*46;fx.circle(tx,ty-20,6-k).fill({color:0xd8cdb0,alpha:.5-k*.1});}fx.circle(x,y-20-Math.sin(q*Math.PI)*24,7).fill(0xb9ad8f).stroke({color:0x4b4235,width:1.5});}
+        else if(familyOf(actor.unit.unitClass)==='catapult'){for(let k=1;k<=4;k++){const b=Math.max(0,q-k*.06),tx=from.x+dx*b,ty=from.y+dy*b-Math.sin(b*Math.PI)*46;fx.circle(tx,ty-20,6-k).fill({color:0xd8cdb0,alpha:.5-k*.1});}fx.circle(x,y-20-Math.sin(q*Math.PI)*24,7).fill(0xb9ad8f).stroke({color:0x4b4235,width:1.5});}
         else fx.moveTo(x-dx/len*16,y-dy/len*16-20).lineTo(x,y-20).stroke({color:0xffedba,width:2});
       }
       if(e.t==='strategy'&&(e.strategy==='heal'||e.strategy==='calm'||e.damage.some(d=>d<0))&&p>=.6&&p<.88){fx.circle(to.x,to.y-15,18+(p-.6)*50).stroke({color:0xb1f1bd,width:3,alpha:1-(p-.6)/.28});}
