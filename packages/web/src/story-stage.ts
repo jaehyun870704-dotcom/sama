@@ -72,7 +72,6 @@ const TALK_FRAME=(look:Look)=>look==='strategist'||look==='civil'||look==='sage'
 /** 성낼 때(무장은 무기를 치켜든다). */
 const ANGER_FRAME=(look:Look)=>look==='bandit'||look==='assassin'||look==='physician'?3:look==='strategist'||look==='civil'?1:1;
 const REACTION:Array<[RegExp,string]>=[[/^!+$|놀람/,'jolt'],[/\?/,'tilt'],[/분노|怒|💢|화/,'shake'],[/땀|💧|…|\.\.\./,'droop'],[/♪|웃음|하하/,'bounce']];
-const STEP_MS=300;
 const same=(a:Cell,b:Cell)=>a[0]===b[0]&&a[1]===b[1];
 
 /** 무대 하나: 아이소메트릭 배경·인물·대화창·자막·선택지. 인물은 칸 위에 서고 한 칸씩 걷는다. */
@@ -80,6 +79,9 @@ export class Stage {
   readonly el:HTMLElement;
   readonly actors=new Map<string,Actor>();
   readonly scene:IsoScene;
+  /** 배경과 인물을 담은 판(카메라가 이것을 당기고 민다). */
+  readonly world:HTMLElement;
+  private cam={z:1,tx:0,ty:0};
   private talk:HTMLElement;private caption:HTMLElement;private choices:HTMLElement;
   private advance:(()=>void)|undefined;
   skipping=false;
@@ -88,8 +90,8 @@ export class Stage {
   constructor(host:HTMLElement,art:number,place:string,cast:CastMember[],spots:readonly At[]=[]){
     // 사람이 설 자리(처음 자리·걸어갈 자리)에는 소품을 놓지 않는다
     this.scene=isoScene(art,place,[...cast.flatMap(m=>m.at?[m.at]:[]),...spots]);
-    host.innerHTML=`<div class="ss-stage iso"><div class="ss-shade"></div><span class="ss-place">${esc(place)}</span><div class="ss-caption" hidden></div><div class="ss-talk-slot"></div></div><div class="ss-choices"></div>`;
-    this.el=host.querySelector<HTMLElement>('.ss-stage')!;this.el.style.backgroundImage=`url(${this.scene.url})`;
+    host.innerHTML=`<div class="ss-stage iso light-${this.scene.light}${this.scene.indoor?' indoor':''}"><div class="ss-cam"><div class="ss-world"></div></div><div class="ss-shade"></div><span class="ss-place">${esc(place)}</span><div class="ss-caption" hidden></div><div class="ss-talk-slot"></div></div><div class="ss-choices"></div>`;
+    this.el=host.querySelector<HTMLElement>('.ss-stage')!;this.world=host.querySelector<HTMLElement>('.ss-world')!;this.world.style.backgroundImage=`url(${this.scene.url})`;
     // 흩날리는 것들(꽃잎·불티·비·눈·반딧불·낙엽·먼지·물안개)
     if(this.scene.fx){const fx=document.createElement('div');fx.className=`ss-fx fx-${this.scene.fx}`;const n=this.scene.fx==='rain'?70:this.scene.fx==='mist'?6:26;
       for(let i=0;i<n;i++){const p=document.createElement('i');p.style.cssText=`--x:${(Math.random()*110-5).toFixed(1)}%;--y:${(Math.random()*100).toFixed(1)}%;--d:${(-Math.random()*12).toFixed(2)}s;--s:${(0.6+Math.random()*0.8).toFixed(2)};--t:${(0.8+Math.random()*0.6).toFixed(2)}`;fx.appendChild(p);}
@@ -105,6 +107,8 @@ export class Stage {
       const rest=present.filter(m=>m!==ruler),lead=rest.find(m=>m.name==='사마의')??rest[0];if(lead)seats.set(lead.name,L.front);
       let k=0;for(const m of rest)if(m!==lead&&k<L.rows.length)seats.set(m.name,L.rows[k++]!);}
     for(const m of cast)this.addActor(m,seats.get(m.name));
+    // 처음 화면: 서 있는 사람들과 이 장면에서 걸어갈 자리를 함께 담도록 다가간다
+    this.frame([...[...this.actors.values()].filter(a=>a.on).map(a=>a.cell),...spots.map(at=>this.scene.toCell(at))],false);
     // 인물은 서 있어도 멈추지 않는다: 자세 그림을 번갈아 바꾸고(숨쉬기는 CSS), 가끔 고개를 돌린다.
     const idle=setInterval(()=>{if(!document.contains(this.el)){clearInterval(idle);return;}this.idleTick();},620);
   }
@@ -143,7 +147,7 @@ export class Stage {
     const cell=seat??(m.at?this.free(this.scene.toCell(m.at)):this.scene.toCell([-12,60]));
     const face=m.face??(this.scene.toPct(cell)[0]<50?'right':'left');
     const a:Actor={el,cell,face,look,art,px:figSheet(m.name,m.look)??'',dir:'front',pose:'stand',on:!!m.at,tick:Math.floor(Math.random()*4),posedUntil:0};this.actors.set(m.name,a);el.style.setProperty('--d',`${-(Math.random()*2.4).toFixed(2)}s`);
-    this.paint(a);this.place(a,false);if(!m.at)el.classList.add('off');this.el.appendChild(el);
+    this.paint(a);this.place(a,false);if(!m.at)el.classList.add('off');this.world.appendChild(el);
     // 그림을 아직 읽는 중이면 다 읽은 뒤에 칠한다
     if(!a.px)void loadFigures().then(()=>{a.px=figSheet(m.name,m.look)??'';this.paint(a);});
     return a;
@@ -156,7 +160,7 @@ export class Stage {
   at(name:string):At|undefined{const a=this.actors.get(name);return a?this.scene.toPct(a.cell):undefined;}
   cellOf(name:string){return this.actors.get(name)?.cell;}
   private place(a:Actor,animate:boolean){
-    const [x,y]=this.scene.toPct(a.cell);a.el.style.left=x+'%';a.el.style.top=y+'%';a.el.style.zIndex=String(100+a.cell[0]+a.cell[1]);
+    const [x,y]=this.scene.toPct(a.cell);this.moveTo(a,x,y);
     a.el.classList.toggle('face-left',a.face==='left');if(!animate)a.el.style.transitionDuration='0ms';
   }
   /** 다른 사람 쪽을 본다. */
@@ -193,41 +197,91 @@ export class Stage {
     });
   }
   async narrate(text:string){this.caption.hidden=false;this.caption.textContent=text;this.talk.innerHTML='';await this.waitClick();this.caption.hidden=true;}
-  /** 칸을 하나씩 밟아 걷는다. 걸음마다 발을 떼고(들썩임) 방향을 바꾼다. */
-  private async stepAlong(a:Actor,path:readonly Cell[],sideways=false){
-    if(!path.length)return;
-    if(this.skipping){a.cell=path.at(-1)!;this.place(a,false);return;}
-    // 먼 길(숲·진영을 돌아가는 길)은 걸음을 재촉해 4초 남짓에 닿게 한다
-    const step=Math.max(120,Math.min(STEP_MS,Math.round(4200/path.length)));
-    a.el.classList.add('walking');a.el.style.transitionDuration=step+'ms';a.el.style.setProperty('--step',step*2+'ms');
-    for(let i=0;i<path.length;i++){
-      const next=path[i]!,[x0,y0]=this.scene.toPct(a.cell),[x1,y1]=this.scene.toPct(next);
-      if(x1!==x0)a.face=x1>x0?'right':'left';
-      // 아래로 걸으면 앞모습, 위로 걸으면 뒷모습, 화면 가로로 지나가면 옆모습
-      a.dir=sideways?'side':y1>y0?'front':y1<y0?'back':'side';
-      this.paint(a,i%2?'walkB':'walkA');
-      a.cell=next;this.place(a,true);
-      await wait(step/2);this.paint(a,'stand');await wait(step/2);
-    }
-    a.el.classList.remove('walking','step-b');a.el.style.transitionDuration='';this.paint(a,'stand');
+  /** 화면 위 자리(%)에 세운다. 앞(아래)에 선 사람이 위에 그려진다. */
+  private moveTo(a:Actor,x:number,y:number){a.el.style.left=x+'%';a.el.style.top=y+'%';a.el.style.zIndex=String(100+Math.round(y*3));}
+  /**
+   * 카메라: 이 칸들이 모두 들어오도록 다가가거나 물러난다(배경과 인물이 함께 커진다).
+   * 너무 가까이는 가지 않고(방 하나가 화면을 채울 만큼), 사람들은 대화창에 가리지 않게 화면 위쪽 가운데에 둔다.
+   */
+  frame(cells:readonly Cell[],animate=true){
+    if(!cells.length)return;
+    const pts=[...cells.map(c=>this.scene.toPct(c)),...(this.scene.focus??[]).map(([x,y]):At=>[x,y+20])];
+    let x0=Math.min(...pts.map(p=>p[0]))-9,x1=Math.max(...pts.map(p=>p[0]))+9,y0=Math.min(...pts.map(p=>p[1]))-24,y1=Math.max(...pts.map(p=>p[1]))+8;
+    const grow=(lo:number,hi:number,min:number):[number,number]=>hi-lo>=min?[lo,hi]:[(lo+hi)/2-min/2,(lo+hi)/2+min/2];
+    [x0,x1]=grow(x0,x1,60);[y0,y1]=grow(y0,y1,58);
+    const z=Math.max(1,Math.min(1.65,100/(x1-x0),100/(y1-y0))),cx=(x0+x1)/2,cy=(y0+y1)/2;
+    const clamp=(v:number)=>Math.max(100-100*z,Math.min(0,v));
+    const tx=clamp(50-z*cx),ty=clamp(46-z*cy);
+    if(Math.abs(z-this.cam.z)<0.03&&Math.abs(tx-this.cam.tx)<2&&Math.abs(ty-this.cam.ty)<2&&animate)return;
+    this.cam={z,tx,ty};
+    this.world.style.transition=animate&&!this.skipping?'transform 1.2s cubic-bezier(.45,.05,.3,1)':'none';
+    this.world.style.transform=`translate(${tx.toFixed(2)}%,${ty.toFixed(2)}%) scale(${z.toFixed(3)})`;
   }
-  /** 대각으로 한 칸씩(화면 가로로 걸어 들어오고 나갈 때). */
-  private stairs(from:Cell,to:Cell){const out:Cell[]=[];let [c,r]=from;let flip=false;
-    while(c!==to[0]||r!==to[1]){const mc=c!==to[0],mr=r!==to[1];if(mc&&(!mr||flip))c+=Math.sign(to[0]-c);else r+=Math.sign(to[1]-r);flip=!flip;out.push([c,r]);}
-    return out;}
+  /** 이 칸들 가운데 화면 밖(가장자리 가까이)인 것이 있으면, 무대 위 사람들과 함께 다시 담는다. */
+  private keepInView(cells:readonly Cell[]){
+    const {z,tx,ty}=this.cam,vx0=-tx/z,vx1=(100-tx)/z,vy0=-ty/z,vy1=(100-ty)/z;
+    const out=cells.some(c=>{const [x,y]=this.scene.toPct(c);return x<vx0+6||x>vx1-6||y<vy0+18||y>vy1-6;});
+    if(out)this.frame([...[...this.actors.values()].filter(a=>a.on).map(a=>a.cell),...cells]);
+  }
+  /** 두 칸 사이를 곧게 걸어갈 수 있는가(소품·다른 사람에 걸리지 않고). */
+  private clearLine(a:Cell,b:Cell,name:string){
+    const n=Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])*5);
+    for(let k=1;k<n;k++){const t=k/n,u=a[0]+0.5+(b[0]-a[0])*t,v=a[1]+0.5+(b[1]-a[1])*t;
+      for(const [du,dv] of [[0.2,-0.2],[-0.2,0.2]] as const){const c:Cell=[Math.floor(u+du),Math.floor(v+dv)];if(!this.scene.passable(c)||this.taken(c,name))return false;}}
+    return true;
+  }
+  /** 칸 길(격자를 따라 꺾이는 길)을 곧은 몇 토막으로 편다. */
+  private straighten(from:Cell,path:readonly Cell[],name:string):Cell[]{
+    const out:Cell[]=[];let cur=from,i=0;
+    while(i<path.length){let j=path.length-1;for(;j>i;j--)if(this.clearLine(cur,path[j]!,name))break;out.push(path[j]!);cur=path[j]!;i=j+1;}
+    return out;
+  }
+  /**
+   * 걷기: 꺾이는 곳마다 방향을 틀며 일정한 빠르기로 미끄러지듯 걷는다(칸마다 서지 않는다).
+   * 출발과 도착에서만 살짝 느려지고, 발 그림은 걸은 거리에 맞춰 번갈아 바뀐다(발이 미끄러지지 않게).
+   */
+  private glide(a:Actor,way:readonly Cell[],sideways=false):Promise<void>{
+    if(!way.length)return Promise.resolve();
+    const end=way.at(-1)!;
+    if(this.skipping){a.cell=end;this.place(a,false);return Promise.resolve();}
+    // 화면 단위(가로·세로 같은 길이): x%×2, y%
+    const pts=[this.scene.toPct(a.cell),...way.map(c=>this.scene.toPct(c))].map(([x,y])=>[x*2,y] as [number,number]);
+    const seg:number[]=[];let D=0;for(let i=1;i<pts.length;i++){const d=Math.hypot(pts[i]![0]-pts[i-1]![0],pts[i]![1]-pts[i-1]![1]);seg.push(d);D+=d;}
+    if(D<0.01){a.cell=end;this.place(a,false);return Promise.resolve();}
+    const speed=Math.max(17,D/4.2),T=D/speed*1000,q=Math.min(0.22,260/T),stride=2.9;
+    // 사다리꼴 빠르기: 처음 q만큼 빨라지고 끝 q만큼 느려진다
+    const prog=(p:number)=>p<q?p*p/(2*q*(1-q)):p>1-q?1-(1-p)**2/(2*q*(1-q)):(p-q/2)/(1-q);
+    a.el.classList.add('walking');a.el.style.setProperty('--step',Math.round(stride/speed*2000)+'ms');
+    let lastPose:PxPose|undefined,lastSeg=-1;const t0=performance.now();
+    return new Promise<void>(done=>{
+      const tick=(now:number)=>{
+        const p=Math.min(1,(now-t0)/T);
+        if(this.skipping||!document.contains(this.el))return finish();
+        let s=prog(p)*D,i=0;while(i<seg.length-1&&s>seg[i]!){s-=seg[i]!;i++;}
+        const A=pts[i]!,B=pts[i+1]!,f=seg[i]?Math.min(1,s/seg[i]!):1,x=A[0]+(B[0]-A[0])*f,y=A[1]+(B[1]-A[1])*f;
+        this.moveTo(a,x/2,y);
+        if(i!==lastSeg){lastSeg=i;const dx=B[0]-A[0],dy=B[1]-A[1];if(Math.abs(dx)>0.3)a.face=dx>0?'right':'left';a.el.classList.toggle('face-left',a.face==='left');
+          a.dir=sideways||Math.abs(dy)<Math.abs(dx)*0.18?'side':dy>0?'front':'back';lastPose=undefined;}
+        const pose:PxPose=Math.floor(prog(p)*D/stride)%2?'walkB':'walkA';if(pose!==lastPose){lastPose=pose;this.paint(a,pose);}
+        if(p>=1)return finish();requestAnimationFrame(tick);
+      };
+      const finish=()=>{a.cell=end;this.place(a,false);a.el.classList.remove('walking','step-b');if(sideways)a.dir='front';this.paint(a,'stand');done();};
+      requestAnimationFrame(tick);
+    });
+  }
   async walk(name:string,to:At,mode:'move'|'enter'|'exit'='move',from?:'left'|'right'){
     const a=this.actors.get(name);if(!a)return;
     if(mode==='exit'){
       const side=from??(this.scene.toPct(a.cell)[0]<50?'left':'right');
-      await this.stepAlong(a,this.stairs(a.cell,offscreenCell(a.cell,side)),true);a.el.classList.add('off');a.on=false;return;
+      await this.glide(a,[offscreenCell(a.cell,side)],true);a.el.classList.add('off');a.on=false;return;
     }
     const target=this.free(this.scene.toCell(to),name);
     if(mode==='enter'){
       const side=from??(to[0]<50?'left':'right');a.cell=offscreenCell(target,side);a.face=side==='left'?'right':'left';
       this.place(a,false);a.el.classList.remove('off');a.on=true;await wait(30);
-      await this.stepAlong(a,this.stairs(a.cell,target),true);a.dir='front';this.paint(a,'stand');return;
+      await this.glide(a,[target],true);return;
     }
-    await this.stepAlong(a,stepsBetween(this.scene,a.cell,target,c=>this.taken(c,name)));
+    await this.glide(a,this.straighten(a.cell,stepsBetween(this.scene,a.cell,target,c=>this.taken(c,name)),name));
   }
   /** 다른 사람 곁(앞·옆 빈 칸)으로 걸어가 마주 본다. */
   async approach(name:string,other:string){
@@ -235,7 +289,7 @@ export class Stage {
     // 나란히 서서 마주 보는 자리(화면 가로 옆)가 먼저, 그다음 앞뒤 칸.
     const near=([[1,-1],[-1,1],[1,0],[0,1],[-1,0],[0,-1]] as const).map(([dc,dr]):Cell=>[b.cell[0]+dc,b.cell[1]+dr]).filter(c=>this.scene.standable(c)&&(!this.taken(c,name)||same(c,a.cell)));
     near.sort((p,q)=>(Math.abs(p[0]-a.cell[0])+Math.abs(p[1]-a.cell[1])+(Math.abs(p[0]-b.cell[0])+Math.abs(p[1]-b.cell[1])===2?0:3))-(Math.abs(q[0]-a.cell[0])+Math.abs(q[1]-a.cell[1])+(Math.abs(q[0]-b.cell[0])+Math.abs(q[1]-b.cell[1])===2?0:3)));
-    const spot=near[0];if(spot&&!same(spot,a.cell))await this.stepAlong(a,stepsBetween(this.scene,a.cell,spot,c=>this.taken(c,name)));
+    const spot=near[0];if(spot&&!same(spot,a.cell))await this.glide(a,this.straighten(a.cell,stepsBetween(this.scene,a.cell,spot,c=>this.taken(c,name)),name));
     this.faceTo(name,other);this.faceTo(other,name);
   }
   /** 제자리 근처의 빈 칸으로 몇 걸음. */
@@ -243,7 +297,7 @@ export class Stage {
     const a=this.actors.get(name);if(!a||a.el.classList.contains('walking'))return;
     const options:Cell[]=[];for(let dc=-radius;dc<=radius;dc++)for(let dr=-radius;dr<=radius;dr++){const c:Cell=[home[0]+dc,home[1]+dr];if(Math.abs(dc)+Math.abs(dr)<=radius&&this.scene.standable(c)&&!this.taken(c,name))options.push(c);}
     const pick=options[Math.floor(Math.random()*options.length)];if(!pick||same(pick,a.cell))return;
-    await this.stepAlong(a,stepsBetween(this.scene,a.cell,pick,c=>this.taken(c,name)));
+    await this.glide(a,this.straighten(a.cell,stepsBetween(this.scene,a.cell,pick,c=>this.taken(c,name)),name));
   }
   /** 대본의 단계들을 차례로. 이어진 걷기·등장·퇴장은 함께 움직인다. */
   async run(steps:ScriptStep[],hooks:StageHooks){
@@ -253,6 +307,7 @@ export class Stage {
       if('move' in st||'enter' in st||'exit' in st){
         const group:ScriptStep[]=[st];
         while(i+1<steps.length){const n=steps[i+1]!;if(!('move' in n||'enter' in n||'exit' in n))break;i++;if((n.when&&!flags.includes(n.when))||(n.unless&&flags.includes(n.unless)))continue;group.push(n);}
+        this.keepInView(group.flatMap(g=>'enter' in g?[this.scene.toCell(g.at)]:'move' in g?[this.scene.toCell((g as {to:At}).to)]:[]));
         await Promise.all(group.map(g=>'enter' in g?this.walk(g.enter,g.at,'enter',g.from):'exit' in g?this.walk(g.exit,[0,0],'exit',g.to):this.walk((g as {move:string}).move,(g as {to:At}).to)));continue;
       }
       if('emote' in st){
