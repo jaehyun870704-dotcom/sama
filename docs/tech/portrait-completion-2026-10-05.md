@@ -4,6 +4,14 @@
 
 제작 도구: 내장 image_gen (CLI/API 대체 경로 사용 없음).
 
+## 가규 — 완료
+
+파일: packages/web/public/portraits/jia-kui.png. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
+
+### 생성 프롬프트
+
+Historical-scene. ONE square premium Three Kingdoms strategy-game officer bust portrait. Masterful semi-realistic digital oil painting matching polished dark Sima Yi / Sima Fang portraits: natural facial anatomy, detailed skin, fine silk and worn metal texture, restrained painterly brushwork. Chest-up three-quarter pose, face large and readable at 60px, entire headgear inside square with margin. Warm soft directional chiaroscuro, deep near-black smoky background. Historically inspired late Han/Wei clothes. Single East Asian adult character. No text, border, watermark, extra people, anime, vector, exaggerated fantasy armor. Subject: Jia Kui, wise practical Wei administrator mid-50s, gentle broad forehead, lean cheekbones, watchful eyes, gray-flecked mustache and beard. Modest black cloth scholar cap, muted olive gray robes, brown patterned collar, no armor; resolute thoughtful civil governor.
+
 ## 문흠 — 완료
 
 파일: packages/web/public/portraits/wen-qin.png. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
