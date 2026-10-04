@@ -12,16 +12,19 @@ import {allRomanceNames,romanceByName,temperOf} from './romance.ts';
 import {temperNames} from './duel.ts';
 import {customNames,customList} from './custom.ts';
 import {officerLook,officerPortrait} from './officer-art.ts';
-import {suggestPortrait,portraitURL} from './portrait.ts';
+import {cardFace,displayName} from './faces.ts';
+import {isUploaded,setPortraitImage,removePortraitImage,importPortraitFiles} from './portrait-images.ts';
 import {bioOf} from './officer-bios.ts';
 import {classNames,troopRoles,troopArt,basicReactionArt,artClass,recruitPool,evolutionLines} from './troops.ts';
 import {adviceFor} from './troop-tactics.ts';
 import {allStrategies,strategyHint,STATUS_NAMES,SHAPE_TEXT,type LearnedStrategy} from './officers.ts';
 import {officerFeatures} from './officers.ts';
 import {loadMeta,saveMeta} from './meta.ts';
-import {perksFor,perkLine,perkState,bestLevel,learnPerk,togglePerk,officerClass} from './officer-perks.ts';
+import {perksFor,perkState,bestLevel,learnPerk,togglePerk,officerClass,perkAt,officerTier,PERK_TIERS} from './officer-perks.ts';
+import {perkText} from './perks.ts';
+import {skillParam} from './romance.ts';
 import {perkSlots,gateText} from './research.ts';
-import {CHU,HAN,CHUHAN_FACES,isChuHan,legacyOf,legacyState,legacyText,unlockLegacy,chooseHeir} from './chuhan.ts';
+import {CHU,HAN,isChuHan,legacyOf,legacyState,legacyText,unlockLegacy,chooseHeir} from './chuhan.ts';
 
 export interface CodexHost {modal(html:string,closable?:boolean):void;toast(text:string):void;back():void;research?():void}
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -33,17 +36,11 @@ const SIDE_NAMES:Record<Side,string>={wei:'위',shu:'촉',wu:'오',other:'군웅
 const SHU=new Set('마초 황충 조운 마속 왕평 위연 고상 맹염 강유 제갈량 방통 유비 관우 장비 서서 관평 유봉 마대 관색 황권 하후패 이엄'.split(' '));
 const WU=new Set('주유 손권 장소 제갈근 여몽 여범 손소 육손 주연 제갈각 고수 황개 감녕 노숙 정봉 전종 서성'.split(' '));
 const OTHER=new Set('여포 진궁 양앙 공손연 비연 안량 원담 고람 맹획 축융 올돌골 봉기 원상 심배 고간 답돈 문추 저수 채모 전풍 타사대왕 원희'.split(' '));
-const WOMEN=new Set(['축융','우희']);
 export function sideOf(name:string):Side{if(customNames().includes(name))return 'custom';if((CHU as readonly string[]).includes(name))return 'chu';if((HAN as readonly string[]).includes(name))return 'han';return SHU.has(name)?'shu':WU.has(name)?'wu':OTHER.has(name)?'other':'wei';}
 /** 열전에 오르는 모든 장수(위·촉·오·군웅·신장수 순, 같은 세력 안에서는 장수록 순). */
 export function codexNames(){const order:Side[]=['wei','shu','wu','other','chu','han','custom'];const names=allRomanceNames();return order.flatMap(s=>names.filter(n=>sideOf(n)===s));}
-/** 얼굴: 전용 원화 → 신장수 초상 → 초상 생성기로 지은 얼굴. */
-export function codexFace(name:string){
-  if(officerLook(name)||customNames().includes(name))return officerPortrait(name);
-  const spec={...suggestPortrait(name,officerClass(name),temperOf(name)??'calm'),...CHUHAN_FACES[name]};if(WOMEN.has(name)){spec.hat=5;spec.beard=0;}
-  const url=portraitURL(spec,name);
-  return url?`<div class="officer-face custom-face" role="img" aria-label="${esc(name)} 초상" style="background-image:url(${url});background-size:cover;background-position:center"></div>`:officerPortrait(name);
-}
+/** 얼굴: 넣은 그림 → 전용 원화 → 신장수 초상 → 초상 생성기로 지은 얼굴(faces.ts). */
+export const codexFace=cardFace;
 /** 열전 본문(신장수는 능력과 성격으로 짓는다). */
 export function biography(name:string){
   const b=bioOf(name);if(b)return b;
@@ -56,18 +53,20 @@ const STAT_ROWS:Array<[keyof NonNullable<ReturnType<typeof romanceByName>>,strin
 function peopleTab(pick:string,side:Side|'all'){
   const meta=loadMeta(),names=codexNames().filter(n=>side==='all'||sideOf(n)===side),name=names.includes(pick)?pick:names[0]??'';
   const r=romanceByName(name),cls=officerClass(name),temper=temperOf(name),skill=r?.skill??officerFeatures[name];
-  const st=perkState(meta,name),best=bestLevel(meta,name),slots=perkSlots(meta),perks=perksFor(name);
-  const list=`<div class="cx-filter">${(['all','wei','shu','wu','other','chu','han','custom'] as const).map(s=>`<button data-cx-side="${s}" class="${side===s?'active':''}">${s==='all'?'전체':SIDE_NAMES[s]}</button>`).join('')}</div>
+  const st=perkState(meta,name),best=bestLevel(meta,name),tier=officerTier(meta,name),slots=perkSlots(meta),perks=perksFor(name);
+  const list=`<div class="cx-filter"><label class="cx-upload" title="파일 이름을 장수 이름으로 봅니다(조조.png → 조조)">🖼 여러 장 넣기<input type="file" accept="image/*" multiple data-cx-bulk hidden></label>${(['all','wei','shu','wu','other','chu','han','custom'] as const).map(s=>`<button data-cx-side="${s}" class="${side===s?'active':''}">${s==='all'?'전체':SIDE_NAMES[s]}</button>`).join('')}</div>
     <div class="cx-people">${names.map(n=>`<button data-cx-person="${esc(n)}" class="cx-person side-${sideOf(n)} ${n===name?'chosen':''}" aria-label="${esc(n)}"><span class="cx-face">${codexFace(n)}</span><b>${esc(n)}</b></button>`).join('')||'<p class="muted">이 세력에는 아직 장수가 없다.</p>'}</div>`;
   const detail=!name?'':`<div class="cx-detail cx-person-detail">
-    <div class="cx-head"><span class="cx-big-face">${codexFace(name)}</span><div><small class="cx-side side-${sideOf(name)}">${SIDE_NAMES[sideOf(name)]}</small><h3>${esc(name)}</h3><p class="cx-epithet">${esc(r?.epithet??'')}</p>
-      <p class="cx-tags"><span>${esc(classNames[cls]??cls)}</span>${temper?`<span>성격 ${temperNames[temper]}</span>`:''}${best?`<span>최고 Lv.${best}</span>`:''}</p></div></div>
+    <div class="cx-head"><span class="cx-big-face">${codexFace(name)}</span><div><small class="cx-side side-${sideOf(name)}">${SIDE_NAMES[sideOf(name)]}</small><h3>${esc(displayName(name))}</h3><p class="cx-epithet">${esc(r?.epithet??'')}</p>
+      <p class="cx-tags"><span>${esc(classNames[cls]??cls)}</span>${temper?`<span>성격 ${temperNames[temper]}</span>`:''}${best?`<span>최고 Lv.${best}</span>`:''}</p>
+      <p class="cx-img-tools"><label class="cx-upload">🖼 초상 이미지 넣기<input type="file" accept="image/*" data-cx-upload hidden></label>${isUploaded(name)?'<button data-cx-unimg>넣은 그림 지우기</button>':''}</p></div></div>
     ${r?`<div class="cx-stats">${STAT_ROWS.map(([k,label])=>{const v=r[k] as number;return `<div class="cx-stat"><span>${label}</span><i><i style="width:${v}%" class="${v>=90?'hi':v<40?'lo':''}"></i></i><b>${v}</b></div>`;}).join('')}</div>`:''}
-    ${skill?`<p class="cx-unique"><b>고유능력 「${esc(skill.name)}」</b> ${esc(skill.description)}</p>`:''}
+    ${skill?`<p class="cx-unique"><b>고유능력 「${esc(skill.name)}」</b> ${esc(skill.description)}${'param' in skill&&skill.param!==undefined?`<br><span class="cx-tiers">${[1,2,3].map(t=>`<i class="${t===tier?'now':''}">${PERK_TIERS[t-1]!.mark} ${esc(perkText(skill.trait,skillParam(skill.param!,t)))}</i>`).join('')}</span>`:''}</p>`:''}
+    <p class="cx-evo">진화 단계 <b>${'◆'.repeat(tier)}${'◇'.repeat(3-tier)}</b> <small>병종이 진화할수록 장수 효과와 고유능력이 Ⅰ→Ⅱ→Ⅲ으로 강해진다${best?` · 최고 Lv.${best} 기준`:''}</small></p>
     <div class="cx-bio"><h4>열전</h4><p>${esc(biography(name))}</p></div>
     ${isChuHan(name)?legacyBlock(meta,name):`    <div class="cx-perks"><h4>장수 효과 <small>장착 ${st.equipped.length}/${slots} · 천명 ${meta.mandate}</small></h4>
       ${perks.map(p=>{const learned=st.learned.includes(p.id),on=st.equipped.includes(p.id),reach=best>=p.level;
-        return `<div class="cx-perk ${learned?'learned':''} ${on?'equipped':''} ${!learned&&!reach?'locked':''}"><span class="cx-perk-glyph">${on?'◆':learned?'◇':'🔒'}</span><div><b>${esc(p.name)}</b> <small>${p.source}</small><br><span>${esc(perkLine(p))}</span><br><small>필요 Lv.${p.level} · 천명 ${p.cost}</small></div>
+        return `<div class="cx-perk ${learned?'learned':''} ${on?'equipped':''} ${!learned&&!reach?'locked':''}"><span class="cx-perk-glyph">${on?'◆':learned?'◇':'🔒'}</span><div><b>${esc(perkAt(p,tier).name)}</b> <small>${p.source}</small><br><span class="cx-tiers">${[1,2,3].map(t=>`<i class="${t===tier?'now':''}">${PERK_TIERS[t-1]!.mark} ${esc(perkText(p.trait,perkAt(p,t).param))}</i>`).join('')}</span><br><small>필요 Lv.${p.level} · 천명 ${p.cost}</small></div>
         ${learned?`<button data-cx-toggle="${p.id}">${on?'해제':'장착'}</button>`:`<button data-cx-learn="${p.id}" ${reach&&meta.mandate>=p.cost?'':'disabled'}>${reach?'습득':'Lv.'+p.level+' 필요'}</button>`}</div>`;}).join('')}
       <p class="muted">필요 레벨은 이 장수가 어느 회차에서든 닿은 가장 높은 레벨입니다. 장착한 효과는 이 장수가 천명의 길에서 출진할 때 적용되고, 교체는 무료입니다.</p></div>`}
   </div>`;
@@ -204,6 +203,11 @@ export function showCodex(host:CodexHost,view:CodexView={tab:'people'}){
   all('[data-cx-toggle]').forEach(b=>b.onclick=()=>{const m=loadMeta();if(togglePerk(m,who,b.dataset.cxToggle!))saveMeta(m);else host.toast('장착 칸이 가득 찼다. 연구 「장수 효과 칸」으로 늘릴 수 있다.');showCodex(host,{...v,person:who});});
   all('[data-cx-legacy]').forEach(b=>b.onclick=()=>{const m=loadMeta();if(unlockLegacy(m,b.dataset.cxLegacy!)){saveMeta(m);host.toast(`「${legacyOf(b.dataset.cxLegacy!)!.name}」의 유산을 열었다.`);}showCodex(host,{...v,person:who});});
   all('[data-cx-heir]').forEach(b=>b.onclick=()=>{const m=loadMeta();if(chooseHeir(m,b.dataset.cxHeir!))saveMeta(m);showCodex(host,{...v,person:who});});
+  document.querySelector<HTMLInputElement>('[data-cx-upload]')?.addEventListener('change',e=>{const f=(e.target as HTMLInputElement).files?.[0];if(!f)return;
+    void setPortraitImage(who,f).then(()=>{host.toast(`${who}의 초상을 넣었다.`);showCodex(host,{...v,person:who});},()=>host.toast('그림을 읽지 못했다.'));});
+  document.querySelector<HTMLButtonElement>('[data-cx-unimg]')?.addEventListener('click',()=>{void removePortraitImage(who).then(()=>showCodex(host,{...v,person:who}));});
+  document.querySelector<HTMLInputElement>('[data-cx-bulk]')?.addEventListener('change',e=>{const fs=(e.target as HTMLInputElement).files;if(!fs?.length)return;
+    void importPortraitFiles([...fs],n=>codexNames().includes(n)).then(r=>{host.toast(`초상 ${r.done.length}장을 넣었다.${r.skipped.length?` 이름을 모르는 파일 ${r.skipped.length}개는 건너뛰었다.`:''}`);showCodex(host,{...v,...(r.done[0]?{person:r.done[0]}:{})});});});
   document.getElementById('cx-research')?.addEventListener('click',()=>host.research!());
   document.getElementById('cx-back')!.onclick=host.back;
   document.querySelector('.cx-list .chosen')?.scrollIntoView?.({block:'nearest'});

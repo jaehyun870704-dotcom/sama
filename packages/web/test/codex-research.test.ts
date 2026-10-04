@@ -1,7 +1,8 @@
 import {describe,it,expect} from 'vitest';
 import {freshMeta,readMeta,recordOfficerLevels} from '../src/meta.ts';
 import {RESEARCH,buyResearch,nodeState,researchGrants,xpMult,perkSlots,mandateBonus,nodeById} from '../src/research.ts';
-import {perksFor,learnPerk,togglePerk,officerGrants,deploymentPerks} from '../src/officer-perks.ts';
+import {perksFor,learnPerk,togglePerk,officerGrants,deploymentPerks,perkAt,officerTier} from '../src/officer-perks.ts';
+import {applyRomance,skillParam} from '../src/romance.ts';
 import {validGrants,grantPerk} from '../src/perks.ts';
 import {allStrategies} from '../src/officers.ts';
 import {troopRoles,recruitPool,classNames} from '../src/troops.ts';
@@ -15,7 +16,7 @@ import {freshScenario,scenarioPath,choose,scenarioParty,floorFor} from '../src/s
 import type {RunBattleRef} from '../src/roguelike.ts';
 import {Session} from '../src/session.ts';
 import {RUN_CHAPTER} from '../src/run-ui.ts';
-import {strategyArea,makeUnit,profileOf,EVOLUTION,estimatePhysical,allTraitIds,effectiveMovement} from '../../core/src/index.ts';
+import {strategyArea,makeUnit,profileOf,EVOLUTION,VARIANTS,estimatePhysical,allTraitIds,effectiveMovement} from '../../core/src/index.ts';
 
 const rich=()=>{const m=freshMeta();m.mandate=500;m.runs=10;m.chronicle=['S1-01','S1-02','S1-03','S1-04','S1-05','S1-06','S1-07','S1-08','S1-09','S1-10','S1-11'];m.endings=['a'];m.officerBest={관우:30};return m;};
 
@@ -58,7 +59,17 @@ describe('장수 효과',()=>{
   expect(m.officerPerks!['관우']!.equipped).toHaveLength(2);
   expect(togglePerk(m,'관우',list[2]!.id)).toBe(false);// 칸이 가득
   expect(togglePerk(m,'관우',list[0]!.id)).toBe(true);expect(togglePerk(m,'관우',list[2]!.id)).toBe(true);
-  expect(officerGrants(m,['관우'])['관우']).toEqual([[list[1]!.trait,list[1]!.param],[list[2]!.trait,list[2]!.param]]);
+  const t=officerTier(m,'관우');expect(officerGrants(m,['관우'])['관우']).toEqual([[list[1]!.trait,perkAt(list[1]!,t).param],[list[2]!.trait,perkAt(list[2]!,t).param]]);
+ });
+ it('grows stronger as the officer evolves (Ⅰ → Ⅱ → Ⅲ)',()=>{
+  const m=rich(),list=perksFor('장합');m.officerBest={장합:30};learnPerk(m,'장합',list[0]!.id);
+  const p=list[0]!,at=(c:'spearman'|'pikeman'|'halberdier')=>officerGrants(m,[{name:'장합',unitClass:c}])['장합']![0]![1];
+  expect(at('spearman')).toBe(p.param);expect(at('pikeman')).toBe(Math.round(p.param*1.5));expect(at('halberdier')).toBe(p.param*2);
+  expect(perkAt(p,3).name).toContain('극의');expect(officerTier(m,'장합')).toBe(3);m.officerBest={장합:3};expect(officerTier(m,'장합')).toBe(1);
+  // 고유능력도 진화 단계를 따라 강해진다
+  const u1=makeUnit({id:'zh1',unitClass:'spearman',level:5,side:'player',pos:{x:0,y:0}}),u3=makeUnit({id:'zh3',unitClass:'halberdier',level:20,side:'player',pos:{x:0,y:0}});
+  (u1 as {name:string}).name='장합';(u3 as {name:string}).name='장합';applyRomance(u1);applyRomance(u3);
+  expect(u3.traitParams.counterBoost!-(VARIANTS.halberdier?.traits?.counterBoost??0)).toBeGreaterThanOrEqual(0);expect(skillParam(20,1)).toBe(20);expect(skillParam(20,3)).toBe(30);
  });
  it('records the best level each officer reached',()=>{const m=freshMeta();recordOfficerLevels(m,[{name:'장합',level:7}]);recordOfficerLevels(m,[{name:'장합',level:5}]);expect(m.officerBest).toEqual({장합:7});});
  it('adds up the same trait from two sources',()=>{const u=makeUnit({id:'a',unitClass:'longbow',level:5,side:'player',pos:{x:0,y:0}});const c=u.traitParams.critical!;grantPerk(u,'critical',5);expect(u.traitParams.critical).toBe(c+5);expect(u.traits.filter(t=>t==='critical')).toHaveLength(1);});

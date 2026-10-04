@@ -8,6 +8,7 @@
 import type {Scene,ScriptStep,ChoiceOption,Look,At,CastMember} from './scenario-types.ts';
 import {isoScene,stepsBetween,offscreenCell,type Cell,type IsoScene} from './story-iso.ts';
 import {officerPortrait,officerLook} from './officer-art.ts';
+import {bustFace,displayName} from './faces.ts';
 import {pxStyle,type PxDir,type PxPose} from './story-pixel.ts';
 import {figSheet,figArtFor,loadFigures,type FigArt} from './story-figure.ts';
 
@@ -43,11 +44,19 @@ function spriteFace(look:Look){
   const s=SPRITES[look]??SPRITES.infantry,y=s.rows>1?(s.row*2+0.42)/(s.rows*2-1)*100:0;
   return `<div class="officer-face sprite-face" role="img" style="background-image:var(--${s.sheet}-atlas);background-size:800% ${s.rows*200}%;background-position:${0.5/7*100}% ${y}%"></div>`;
 }
-export function talkBox(speaker:string,line:string,place:'top'|'bottom',stageLook?:Look){
-  const look=officerLook(speaker),name=look?.name??speaker;
-  let face=officerPortrait(speaker);
-  if(stageLook&&(face.includes('unknown-face')||face.includes('troop-face'))){const art=artFor(speaker,stageLook);face=art.kind==='fig'?figFace(art):face.includes('unknown-face')?spriteFace(art.look):face;}
-  return `<div class="ss-talk ${place}"><div class="ss-talk-face">${face}</div><div class="ss-talk-body"><b>${esc(name)}</b><p>${esc(line)}</p></div><span class="ss-talk-next" aria-hidden="true">▼</span></div>`;
+/**
+ * 대화창: 조조전 리메이크처럼 화자의 흉상이 상자 왼쪽에서 크게 솟아 걸치고, 이름 옆에 자(字)를 붙인다.
+ * 먹 상자(이야기 장면)와 양피지 상자(진영 대화) 두 가지. 흉상은 넣은 그림 → 원화 → 지은 초상 순이고,
+ * 이름 없는 인물(척후·병사)은 무대 그림의 윗몸을 쓴다.
+ */
+export function talkBox(speaker:string,line:string,place:'top'|'bottom',stageLook?:Look,skin:'ink'|'paper'='ink'){
+  const look=officerLook(speaker),base=look?.name??speaker;
+  let face=bustFace(base);
+  if(!face){let f=officerPortrait(speaker);
+    if(stageLook&&(f.includes('unknown-face')||f.includes('troop-face'))){const art=artFor(speaker,stageLook);f=art.kind==='fig'?figFace(art):f.includes('unknown-face')?spriteFace(art.look):f;}
+    face=`<div class="talk-bust sprite">${f}</div>`;}
+  void place;
+  return `<div class="ss-talk bottom ${skin}"><div class="ss-talk-face">${face}</div><div class="ss-talk-body"><b>${esc(displayName(base))}</b><p>${esc(line)}</p></div><span class="ss-talk-next" aria-hidden="true">⚔</span></div>`;
 }
 
 export interface StageHooks {
@@ -74,6 +83,8 @@ export class Stage {
   private talk:HTMLElement;private caption:HTMLElement;private choices:HTMLElement;
   private advance:(()=>void)|undefined;
   skipping=false;
+  /** 대화 상자: 먹(이야기 장면) · 양피지(진영) */
+  skin:'ink'|'paper'='ink';
   constructor(host:HTMLElement,art:number,place:string,cast:CastMember[],spots:readonly At[]=[]){
     // 사람이 설 자리(처음 자리·걸어갈 자리)에는 소품을 놓지 않는다
     this.scene=isoScene(art,place,[...cast.flatMap(m=>m.at?[m.at]:[]),...spots]);
@@ -165,7 +176,7 @@ export class Stage {
       if(!to){const near=[...this.actors.entries()].filter(([n,o])=>n!==speaker&&o.on).sort((p,q)=>Math.abs(p[1].cell[0]-a.cell[0])+Math.abs(p[1].cell[1]-a.cell[1])-Math.abs(q[1].cell[0]-a.cell[0])-Math.abs(q[1].cell[1]-a.cell[1]))[0];if(near)this.faceTo(speaker,near[0]);}
       this.gesture(speaker,/[!！]{1}$|이놈|닥쳐|물러서/.test(line)?ANGER_FRAME(a.look):TALK_FRAME(a.look),1000);
     }
-    this.talk.innerHTML=talkBox(speaker,'',a&&this.scene.toPct(a.cell)[1]>58?'top':'bottom',a?.look);
+    this.talk.innerHTML=talkBox(speaker,'',a&&this.scene.toPct(a.cell)[1]>58?'top':'bottom',a?.look,this.skin);
     await this.typeLine(this.talk.querySelector<HTMLElement>('.ss-talk-body p')!,line,a);
     await this.waitClick();if(a)a.el.classList.remove('speaking');this.talk.innerHTML='';
   }
@@ -255,7 +266,7 @@ export class Stage {
       if('choice' in st){
         this.skipping=false;this.el.classList.add('choosing');
         const hero=this.actors.get(st.choice);if(hero){hero.el.classList.add('speaking');bubble(hero.el,'?','emote');}
-        this.talk.innerHTML=talkBox(st.choice,'…어떻게 할 것인가.',hero&&this.scene.toPct(hero.cell)[1]>58?'top':'bottom',hero?.look);
+        this.talk.innerHTML=talkBox(st.choice,'…어떻게 할 것인가.',hero&&this.scene.toPct(hero.cell)[1]>58?'top':'bottom',hero?.look,this.skin);
         const picked=await new Promise<ChoiceOption>(r=>{this.choices.innerHTML=st.options.map((o,k)=>`<button type="button" data-k="${k}"><span class="ss-choice-no">${k+1}</span><strong>${esc(o.text)}</strong>${o.note?`<small>${esc(o.note)}</small>`:''}</button>`).join('');
           this.choices.querySelectorAll<HTMLButtonElement>('[data-k]').forEach(b=>b.onclick=()=>r(st.options[Number(b.dataset.k)]!));});
         this.choices.innerHTML='';this.talk.innerHTML='';this.el.classList.remove('choosing');hero?.el.classList.remove('speaking');

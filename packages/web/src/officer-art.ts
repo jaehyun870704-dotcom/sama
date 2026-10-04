@@ -1,3 +1,5 @@
+import {displayName} from './courtesy.ts';
+import {portraitImage} from './portrait-images.ts';
 export const officerLooks=[
  {id:'sima_yi',name:'사마의',title:'중달 · 깊은 계책',slot:0},
  {id:'sima_yi_young',name:'소년 사마의',title:'난세를 배우는 소년',slot:1},
@@ -31,8 +33,9 @@ function nameHash(name:string){let h=0;for(const ch of name)h=(h*31+ch.charCodeA
 const customFaces=new Map<string,()=>string>();
 export function registerFace(name:string,url:()=>string){customFaces.set(name,url);}
 export function clearFaces(){customFaces.clear();}
-export function customFace(name:string){const f=customFaces.get(name);return f?f():undefined;}
+export function customFace(name:string){const img=portraitImage(name);if(img)return img;const f=customFaces.get(name);return f?f():undefined;}
 export function officerPortrait(name:string){
+  const img=portraitImage(name);if(img)return `<div class="officer-face image-face" role="img" aria-label="${escape(name)} 초상" style="background-image:url('${img}');background-size:cover;background-position:50% 12%"></div>`;
   const cf=customFaces.get(name);if(cf){const url=cf();if(url)return `<div class="officer-face custom-face" role="img" aria-label="${escape(name)} 초상" style="background-image:url(${url});background-size:cover;background-position:center"></div>`;}const p=officerLook(name),row=p?undefined:troopFaceRow(name);if(row!==undefined){
   // A named officer without painted art: the troop face, nudged in hue per person and marked with
   // the first syllable of the name on a seal in the colour of their side.
@@ -41,6 +44,6 @@ export function officerPortrait(name:string){
   const y=((2*row+.62)/11*100).toFixed(2);
   if(!named)return `<div class="officer-face troop-face" role="img" aria-label="${escape(name)} 병종 초상" style="background-position:9% ${y}%"></div>`;
   return `<div class="officer-face troop-face named-face faction-${f}" role="img" aria-label="${escape(name)} 병종 초상"><i class="face-img" style="background-position:9% ${y}%${tint}"></i><span class="face-mark">${escape([...name][0]!)}</span></div>`;}return p?`<div class="officer-face" role="img" aria-label="${p.name} 초상" data-officer="${p.id}" style="background-position:${p.slot%4/3*100}% ${Math.floor(p.slot/4)/2*100}%"></div>`:`<div class="officer-face unknown-face" role="img" aria-label="${escape(name)} · 전용 초상 미등록"><span>${name==='꿈속의 목소리'?'夢':'言'}</span></div>`;}
-export function dialogueCaption(speaker:string,line:string){const p=officerLook(speaker);return `<div class="story-caption with-officer" aria-live="polite">${officerPortrait(speaker)}<div class="dialogue-copy"><small>${p?.title??'이야기'}</small><strong>${escape(p?.name??speaker)}</strong><p>${escape(line)}</p></div></div>`;}
+export function dialogueCaption(speaker:string,line:string){const p=officerLook(speaker);return `<div class="story-caption with-officer" aria-live="polite">${officerPortrait(speaker)}<div class="dialogue-copy"><small>${p?.title??'이야기'}</small><strong>${escape(displayName(p?.name??speaker))}</strong><p>${escape(line)}</p></div></div>`;}
 export function splitSpokenLine(line:string){const at=line.indexOf(':');return at>0&&at<20?{speaker:line.slice(0,at).trim(),line:line.slice(at+1).trim()}:{speaker:'해설',line};}
 export function storyActorStyle(name:string,fallbackRow=0){const p=officerLook(name);return p&&p.slot<8?`background-image:var(--officer-story-atlas);background-size:400% 200%;background-position:${p.slot%4/3*100}% ${Math.floor(p.slot/4)*100}%`:`--row:${fallbackRow*20}%`;}

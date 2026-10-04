@@ -7,7 +7,7 @@
  * 장착 칸 수(기본 2, 연구로 늘어난다)만큼 골라 끼우면, 그 장수가 출진할 때 적용된다.
  */
 import type {UnitClass} from '../../core/src/index.ts';
-import {familyOf,profileOf} from '../../core/src/index.ts';
+import {familyOf,profileOf,tierOf,evolvedClass} from '../../core/src/index.ts';
 import {romanceByName,temperOf} from './romance.ts';
 import {customList} from './custom.ts';
 import {OFFICER_RECRUITS} from './roguelike.ts';
@@ -91,17 +91,28 @@ export function togglePerk(m:MetaState,name:string,id:string){
   const on=st.equipped.includes(id);if(!on&&st.equipped.length>=perkSlots(m))return false;
   (m.officerPerks??={})[name]={learned:[...st.learned],equipped:on?st.equipped.filter(x=>x!==id):[...st.equipped,id]};return true;
 }
-/** 출진하는 장수들의 장착 효과(이름 → 특성). 칸 수를 넘는 장착은 앞에서부터만. */
-export function officerGrants(m:MetaState,names:readonly string[]):Record<string,PerkGrant[]>{
+// ─────────────────────────────────────────────── 진화: 장수 효과는 병종이 진화할수록 강해진다
+
+/** 진화 단계(병종 단계 1·2·3)마다 효과 수치 배율과 이름 꼬리. */
+export const PERK_TIERS=[{mul:1,suffix:'',mark:'Ⅰ'},{mul:1.5,suffix:'·정예',mark:'Ⅱ'},{mul:2,suffix:'·극의',mark:'Ⅲ'}] as const;
+/** 단계에 맞춘 효과(이름·수치). */
+export function perkAt(p:OfficerPerk,tier:number){const t=PERK_TIERS[Math.max(1,Math.min(3,tier))-1]!;return {name:p.name+t.suffix,param:Math.round(p.param*t.mul),mark:t.mark};}
+/** 장수가 지금 닿아 있는 진화 단계: 출진 병종이 있으면 그 단계, 없으면 기록된 최고 레벨로 진화했을 병종의 단계. */
+export function officerTier(m:MetaState,name:string,unitClass?:UnitClass){
+  return unitClass?tierOf(unitClass):tierOf(evolvedClass(officerClass(name),Math.max(1,bestLevel(m,name))));
+}
+type Sortie=string|{name:string;unitClass?:UnitClass};
+/** 출진하는 장수들의 장착 효과(이름 → 특성). 칸 수를 넘는 장착은 앞에서부터만. 수치는 그 장수의 진화 단계를 따른다. */
+export function officerGrants(m:MetaState,party:readonly Sortie[]):Record<string,PerkGrant[]>{
   const out:Record<string,PerkGrant[]>={};
-  for(const n of names){const st=perkState(m,n);if(!st.equipped.length)continue;const list=perksFor(n);
-    const g=st.equipped.slice(0,perkSlots(m)).map(id=>list.find(p=>p.id===id)).filter((p):p is OfficerPerk=>!!p).map(p=>[p.trait,p.param] as PerkGrant);
+  for(const u of party){const n=typeof u==='string'?u:u.name,cls=typeof u==='string'?undefined:u.unitClass;const st=perkState(m,n);if(!st.equipped.length)continue;const list=perksFor(n),tier=officerTier(m,n,cls);
+    const g=st.equipped.slice(0,perkSlots(m)).map(id=>list.find(p=>p.id===id)).filter((p):p is OfficerPerk=>!!p).map(p=>[p.trait,perkAt(p,tier).param] as PerkGrant);
     if(g.length)out[n]=g;}
   return out;
 }
-/** 출진할 때 배치에 적어 둘 보정: 연구(전원·사마의) + 출진 장수들의 장착 효과. */
-export function deploymentPerks(m:MetaState,names:readonly string[]):PerkGrants|undefined{
+/** 출진할 때 배치에 적어 둘 보정: 연구(전원·사마의) + 계승 + 출진 장수들의 장착 효과(진화 단계 반영). */
+export function deploymentPerks(m:MetaState,party:readonly Sortie[]):PerkGrants|undefined{
   const r=researchGrants(m),byName:Record<string,PerkGrant[]>={...r.byName};r.all=[...r.all,...heirGrants(m)];
-  for(const [n,g] of Object.entries(officerGrants(m,names)))byName[n]=[...(byName[n]??[]),...g];
+  for(const [n,g] of Object.entries(officerGrants(m,party)))byName[n]=[...(byName[n]??[]),...g];
   return r.all.length||Object.keys(byName).length?{all:r.all,byName}:undefined;
 }
