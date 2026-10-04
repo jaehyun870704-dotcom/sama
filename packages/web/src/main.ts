@@ -463,9 +463,14 @@ $('#menu').onclick=showMenu;$('#brand').onclick=showMenu;$('#undo').onclick=undo
 $('#end-phase').onclick=()=>act({kind:'endPhase'});
 $('#coach-close').onclick=finishCoach;
 $('#zoom-in').onclick=()=>field.zoomBy(.2);$('#zoom-out').onclick=()=>field.zoomBy(-.2);$('#zoom-reset').onclick=()=>field.reset();
+// 가로 모드 전용: 세로로 들면 회전 안내를 덮는다. 전체 화면을 지원하는 기기는 버튼 한 번으로 가로 고정.
+{const gate=document.createElement('div');gate.id='rotate-gate';gate.setAttribute('role','dialog');gate.setAttribute('aria-label','가로 화면 안내');
+  gate.innerHTML='<div class="rg-phone" aria-hidden="true"></div><b>가로로 돌려 주세요</b><p>사마의전은 가로 화면으로 진행합니다.<br>휴대폰을 옆으로 눕히면 바로 이어집니다.</p>'+(document.fullscreenEnabled?'<button type="button" class="primary" id="rg-full">전체 화면 · 가로로 시작</button>':'');
+  document.body.appendChild(gate);
+  gate.querySelector<HTMLButtonElement>('#rg-full')?.addEventListener('click',async()=>{try{await document.documentElement.requestFullscreen({navigationUI:'hide'});await (screen.orientation as ScreenOrientation&{lock?:(o:string)=>Promise<void>}).lock?.('landscape');}catch{/* 지원하지 않는 기기는 직접 돌린다 */}});}
 $('#left-toggle').onclick=()=>{const open=document.body.classList.toggle('left-open');$('#left-toggle').setAttribute('aria-expanded',String(open));};
 // 휴대폰: 장수 상세는 '장수 정보' 머리를 눌러 여닫는 덧창(지도·명령이 한 화면에 들어오게)
-{const head=document.querySelector<HTMLElement>('.right-panel>.section-label');if(head){head.setAttribute('role','button');head.tabIndex=0;const flip=()=>document.body.classList.toggle('unit-open');head.onclick=flip;head.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flip();}};$('#unit-detail').addEventListener('click',()=>{if(innerWidth<=700)document.body.classList.remove('unit-open');});}}
+{const head=document.querySelector<HTMLElement>('.right-panel>.section-label');if(head){head.setAttribute('role','button');head.tabIndex=0;const flip=()=>document.body.classList.toggle('unit-open');head.onclick=flip;head.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flip();}};$('#unit-detail').addEventListener('click',()=>{if(matchMedia('(max-width:700px),(orientation:landscape) and (max-height:520px)').matches)document.body.classList.remove('unit-open');});}}
 $('#threat').onclick=()=>{threat=!threat;$('#threat').setAttribute('aria-pressed',String(threat));render();};
 function applySpeed(){field.playbackRate=speed;$('#speed').innerHTML=`▷ ${speed}× 속도`;}
 $('#speed').onclick=()=>{speed=speed===1?2:speed===2?3:1;applySpeed();storeSettings();};
