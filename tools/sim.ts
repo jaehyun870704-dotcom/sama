@@ -300,9 +300,9 @@ function play(chapter: number, difficulty: Difficulty, seed: number) {
       for (const cmd of decide(asView(), unit)) {
         // 제자리 이동은 Session이 거절한다 — 결정에서 걸러 낸다.
         if (cmd.kind === "move" && key(cmd.to) === key(unit.pos)) continue;
-        // 충차가 아니면 성문·망루를 두드리지 않는다 — 흠집만 내고 반격에 쓰러진다.
+        // 충차가 없는 싸움(탈출·수성)에서는 성문·망루를 두드리지 않는다 — 흠집만 내고 반격에 쓰러진다.
         // (공성병기는 우리가 성을 칠 때만 나온다. 탈출·수성전에서는 피해 가는 것이 사람의 판단이다.)
-        if (cmd.kind === "attack" && /^(gate|tower)_/.test(cmd.target) && !unit.traits.includes("siegeRam")) continue;
+        if (cmd.kind === "attack" && /^(gate|tower)_/.test(cmd.target) && !state.find("siege_crew")) continue;
         if (cmd.kind === "wait" && holdGround(session, unit)) { accepted = true; continue; }
         if (session.act(cmd).ok) accepted = true;
         if (state.outcome !== "ongoing") break;
