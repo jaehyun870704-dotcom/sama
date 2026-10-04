@@ -185,7 +185,9 @@ export class Stage {
   private async stepAlong(a:Actor,path:readonly Cell[],sideways=false){
     if(!path.length)return;
     if(this.skipping){a.cell=path.at(-1)!;this.place(a,false);return;}
-    a.el.classList.add('walking');a.el.style.transitionDuration=STEP_MS+'ms';
+    // 먼 길(숲·진영을 돌아가는 길)은 걸음을 재촉해 4초 남짓에 닿게 한다
+    const step=Math.max(120,Math.min(STEP_MS,Math.round(4200/path.length)));
+    a.el.classList.add('walking');a.el.style.transitionDuration=step+'ms';
     for(let i=0;i<path.length;i++){
       const next=path[i]!,[x0,y0]=this.scene.toPct(a.cell),[x1,y1]=this.scene.toPct(next);
       if(x1!==x0)a.face=x1>x0?'right':'left';
@@ -193,7 +195,7 @@ export class Stage {
       a.dir=sideways?'side':y1>y0?'front':y1<y0?'back':'side';
       this.paint(a,i%2?'walkB':'walkA');
       a.cell=next;this.place(a,true);
-      await wait(STEP_MS/2);this.paint(a,'stand');await wait(STEP_MS/2);
+      await wait(step/2);this.paint(a,'stand');await wait(step/2);
     }
     a.el.classList.remove('walking','step-b');a.el.style.transitionDuration='';this.paint(a,'stand');
   }
