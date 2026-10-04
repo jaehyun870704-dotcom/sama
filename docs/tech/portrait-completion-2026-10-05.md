@@ -4,6 +4,14 @@
 
 제작 도구: 내장 image_gen (CLI/API 대체 경로 사용 없음).
 
+## 하안 — 완료
+
+파일: `packages/web/public/portraits/he-yan.png`. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
+
+### 생성 프롬프트
+
+Historical-scene. ONE square finished portrait of He Yan (하안), elegant Wei philosopher and court official, East Asian adult man about 40 with notably fair porcelain-pale natural skin, refined beautiful long oval face, delicate straight nose, thoughtful narrow eyes and long fine eyebrows, clean-shaven, poised subtle confident expression. Black hair in a scholarly topknot under a modest small black guan secured by simple jade hairpin. Ivory silk crossed robes with muted slate-blue patterned borders and light gray outer robe, no armor, no weapons, no modern cosmetics. Upper chest and head bust, three-quarter looking left, head completely inside frame, face prominently readable. Premium Three Kingdoms strategy game semi-realistic digital oil painting, matched to dark polished Sima Yi / Sima Fang portrait quality, nuanced natural facial planes and luxurious believable silk, soft warm face lighting, deep smoky charcoal teal background, restrained painterly brush texture, serene sophisticated mood. No text, border, watermark, extra person, anime, vector, photographic fashion aesthetic. Single square image.
+
 ## 환범 — 완료
 
 파일: `packages/web/public/portraits/huan-fan.png`. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
