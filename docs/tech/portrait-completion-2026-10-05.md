@@ -4,6 +4,14 @@
 
 제작 도구: 내장 image_gen (CLI/API 대체 경로 사용 없음).
 
+## 조인 — 완료
+
+파일: `packages/web/public/portraits/cao-ren.png`. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
+
+### 생성 프롬프트
+
+Historical-scene. ONE square finished premium game portrait of Cao Ren (조인), formidable Wei general and castle defender. Distinct East Asian man late 40s, heavy broad jaw, wide face, thick straight brows, deep-set stern eyes, broad nose, dense cropped black beard and mustache, powerful stocky shoulders. Rounded black steel helmet with a broad bronze brow band and short dark red plume, sturdy well-maintained lamellar armor with bronze rectangular plates, dark navy collar and wine red cloak. Calm intimidating determination rather than rage. Front three-quarter bust looking slightly left, headgear fits fully with margin, face large and lit clearly for small thumbnails. Exquisite semi-realistic digital oil painting consistent with polished Sima Yi / Sima Fang Three Kingdoms portraits, tactile metal and cloth, warm realistic skin, dramatic controlled side light, near-black blue-gray smoky background. Late Han inspired costume, no fantasy spikes, no other people, no writing or frame or watermark, no anime or flat vector. Single square portrait.
+
 ## 학소 — 완료
 
 파일: `packages/web/public/portraits/hao-zhao.png`. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
