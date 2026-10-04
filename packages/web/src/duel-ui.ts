@@ -62,7 +62,8 @@ export function duelArena(d:DuelState,o:{models:{player:string;enemy:string};bac
   const labels=duelActionNames(d.kind),last=d.history.at(-1),energy=d.kind==='debate'?'논거':'기합';
   const pLine=last?duelLine(d.kind,last.action):d.kind==='duel'?'내가 상대해 주마!':'그 말, 내가 받아 주겠소.';
   const eLine=last?duelLine(d.kind,last.enemyAction):o.openingLine??'덤벼라!';
-  const hp=(u:DuelState['player'],side:string)=>`<div class="duel-gauge ${side}"><span>${esc(u.name)}</span><div class="duel-hp"><i style="width:${(u.hp/Math.max(1,u.maxHp)*100).toFixed(1)}%"></i></div><small>${u.hp}/${u.maxHp}</small><em>${energy} ${'●'.repeat(u.energy)}${'○'.repeat(Math.max(0,3-u.energy))}</em></div>`;
+  /** 머리 위 작은 막대: 이름·체력(남은 만큼 초록→노랑→빨강)·기합(논거) 구슬. */
+  const hp=(u:DuelState['player'],side:string)=>{const k=u.hp/Math.max(1,u.maxHp);return `<div class="duel-mini ${side}${k<=.3?' low':k<=.6?' mid':''}"><b>${esc(displayName(u.name))}</b><div class="duel-hp"><i style="width:${(k*100).toFixed(1)}%"></i></div><small>${u.hp}/${u.maxHp}</small><em title="${energy}">${'●'.repeat(u.energy)}${'○'.repeat(Math.max(0,3-u.energy))}</em></div>`;};
   const track=NUM.map((n,i)=>{const h=d.history[i];const cls=!h?'':h.dealt>h.taken?'won':h.dealt<h.taken?'lost':'even';
     return `<div class="duel-round ${cls}${i===d.round&&!d.result?' now':''}"><span class="duel-round-no">${n}</span><div class="duel-round-tile">${h?icon(d.kind,h.action):''}</div>${h?`<small>${h.dealt}:${h.taken}</small>`:''}</div>${i<4?'<i class="duel-arrow">➜</i>':''}`;}).join('');
   const actions=(Object.keys(labels) as DuelAction[]).map(a=>{const off=a==='special'&&d.player.energy<2;
@@ -71,10 +72,9 @@ export function duelArena(d:DuelState,o:{models:{player:string;enemy:string};bac
   return `<div class="duel-stage ${d.kind}">
     <div class="duel-view" style="${o.backdrop}">
       <div class="duel-sun"></div>
-      ${hp(d.player,'left')}${hp(d.enemy,'right')}
       <div class="duel-ground">
-        <div class="duel-fighter player motion-${last?.action??'idle'}">${o.models.player}${last?.taken?`<b class="damage-number">−${last.taken}</b>`:''}</div>
-        <div class="duel-fighter enemy motion-${last?.enemyAction??'idle'}">${o.models.enemy}${last?.dealt?`<b class="damage-number">−${last.dealt}</b>`:''}</div>
+        <div class="duel-fighter player motion-${last?.action??'idle'}">${hp(d.player,'left')}${o.models.player}${last?.taken?`<b class="damage-number">−${last.taken}</b>`:''}</div>
+        <div class="duel-fighter enemy motion-${last?.enemyAction??'idle'}">${hp(d.enemy,'right')}${o.models.enemy}${last?.dealt?`<b class="damage-number">−${last.dealt}</b>`:''}</div>
       </div>
       ${inkLine(d.player.name,pLine,'top')}${inkLine(d.enemy.name,eLine,'bottom')}
       ${result}

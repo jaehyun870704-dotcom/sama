@@ -571,7 +571,13 @@ function rock(c:number,r:number,R:()=>number,s=1):Prop{return P(c,r,s,s,g=>{
   const [x,y]=pt(c+s/2,r+s/2),pts:Array<[number,number]>=[];for(let i=0;i<7;i++){const a=Math.PI+i/6*Math.PI;pts.push([x+Math.cos(a)*30*s*(0.8+R()*0.3),y+Math.sin(a)*34*s*(0.7+R()*0.4)-4]);}
   poly(g,pts,jitter('#7d7a72',R,0.1),'#2a2824');poly(g,[pts[0]!,pts[1]!,pts[2]!,[x,y-6]],'rgba(255,255,255,.12)');
 });}
-function bush(c:number,r:number,R:()=>number):Prop{return P(c,r,0.5,0.5,g=>{const [x,y]=pt(c+0.25,r+0.25);for(let i=0;i<4;i++){g.fillStyle=shade('#4d7a32',0.75+R()*0.4);g.beginPath();g.arc(x+(R()-0.5)*30,y-10-R()*12,12+R()*6,0,7);g.fill();}},false);}
+/** 덤불: 그늘진 밑동 위에 잎 무더기를 어두운 것부터 밝은 것 순으로 겹치고, 왼쪽 위에 빛 받은 잎, 가끔 작은 꽃. */
+function bush(c:number,r:number,R:()=>number):Prop{return P(c,r,0.5,0.5,g=>{const [x,y]=pt(c+0.25,r+0.25);
+  g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.ellipse(x+4,y,26,9,0,0,7);g.fill();
+  for(const [k,n,lift] of [[0.62,9,0],[0.85,12,4],[1.12,9,8]] as const)for(let i=0;i<n;i++){const a=R()*Math.PI*2,rr=Math.sqrt(R())*20;
+    g.fillStyle=shade('#4d7a32',k*(0.92+R()*0.16));g.beginPath();g.ellipse(x+Math.cos(a)*rr*1.2-lift*0.5,y-14+Math.sin(a)*rr*0.6-lift,5+R()*4,4+R()*3,R()*3,0,7);g.fill();}
+  if(R()<0.5)for(let i=0;i<5;i++){g.fillStyle=R()<0.5?'rgba(250,240,230,.9)':'rgba(230,150,170,.9)';g.beginPath();g.arc(x+(R()-0.5)*34,y-12-R()*16,1.6,0,7);g.fill();}
+},false);}
 function stoneLantern(c:number,r:number):Prop{return P(c,r,0.5,0.5,g=>{prism(g,c+0.1,r+0.1,0.3,0.3,40,'#8e8b82');prism(g,c,r,0.5,0.5,18,'#a9a59a',40);prism(g,c-0.05,r-0.05,0.6,0.6,8,'#7a776e',58);const [x,y]=pt(c+0.25,r+0.25);glow(g,x,y-50,60,'rgba(255,200,120,A)',0.35);});}
 function campfire(c:number,r:number,R:()=>number):Prop{return P(c,r,0.7,0.7,g=>{const [x,y]=pt(c+0.35,r+0.35);g.fillStyle='#3a2a1a';for(let i=0;i<5;i++){g.save();g.translate(x,y-4);g.rotate(i*1.25);g.fillRect(-16,-3,32,6);g.restore();}flame(g,x,y-6,16,R);});}
 function boat(c:number,r:number):Prop{return P(c,r,3,1,g=>{
@@ -765,14 +771,25 @@ function stele(c:number,r:number):Prop{return P(c,r,1,1,g=>{
   g.fillStyle='#8e8a7e';g.beginPath();g.moveTo(x-20,y-116);g.quadraticCurveTo(x,y-142,x+20,y-116);g.closePath();g.fill();g.stroke();
   g.fillStyle='rgba(30,28,22,.55)';for(let col=0;col<4;col++)for(let k=0;k<9;k++)g.fillRect(x-11+col*7,y-106+k*9,4,5);
   g.fillStyle='rgba(255,255,255,.12)';g.fillRect(x-17,y-118,5,100);});}
-/** 태호석: 구멍이 숭숭 난 기암(뜰의 장식돌). */
+/** 태호석: 울퉁불퉁한 덩어리를 아래에서 위로 쌓은 기암. 구멍은 안쪽 그늘과 아래쪽 밝은 테두리로, 겉에는 세로 주름과 이끼. */
 function rockery(c:number,r:number,R:()=>number,s=1):Prop{return P(c,r,s,s,g=>{
-  const [x,y]=pt(c+s/2,r+s/2),hgt=(90+R()*40)*s;g.fillStyle='rgba(0,0,0,.28)';g.beginPath();g.ellipse(x,y,34*s,12*s,0,0,7);g.fill();
-  const pts:Array<[number,number]>=[];for(let i=0;i<=16;i++){const t=i/16,side=t<0.5?-1:1,tt=t<0.5?t*2:(1-t)*2;pts.push([x+side*(16+R()*14)*s*(0.6+Math.sin(tt*3)*0.4),y-tt*hgt]);}
-  const grd=g.createLinearGradient(x-30,0,x+30,0);grd.addColorStop(0,'#c8c4b8');grd.addColorStop(0.6,'#8e8a80');grd.addColorStop(1,'#5e5a52');
-  g.fillStyle=grd;g.strokeStyle='#2e2c26';g.lineWidth=1.5;g.beginPath();pts.forEach((p,i)=>i?g.lineTo(...p):g.moveTo(...p));g.closePath();g.fill();g.stroke();
-  for(let i=0;i<6;i++){g.fillStyle='rgba(30,28,24,.75)';g.beginPath();g.ellipse(x+(R()-0.5)*20*s,y-hgt*(0.2+R()*0.65),(3+R()*5)*s,(4+R()*7)*s,R(),0,7);g.fill();}
-  for(let i=0;i<5;i++){g.fillStyle='rgba(80,120,60,.7)';g.beginPath();g.ellipse(x+(R()-0.5)*30*s,y-4-R()*10,6,3,0,0,7);g.fill();}});}
+  const [x,y]=pt(c+s/2,r+s/2),hgt=(96+R()*36)*s;g.fillStyle='rgba(0,0,0,.28)';g.beginPath();g.ellipse(x+6*s,y,36*s,12*s,0,0,7);g.fill();
+  const lobes:Array<{cx:number;cy:number;rx:number;ry:number;rot:number}>=[];const n=9;
+  for(let i=0;i<n;i++){const t=i/(n-1),w=(1-Math.abs(t-0.4)*0.8)*17*s;lobes.push({cx:x+(R()-0.5)*22*s+Math.sin(t*4+R())*8*s,cy:y-12*s-t*(hgt-22*s),rx:w*(0.7+R()*0.5),ry:(13+R()*9)*s,rot:(R()-0.5)*1.1});}
+  // 덩어리: 어두운 테두리 → 한 방향(왼쪽)에서 빛을 받는 면
+  for(const L of lobes){g.fillStyle='#34322c';g.beginPath();g.ellipse(L.cx,L.cy,L.rx+2,L.ry+2,L.rot,0,7);g.fill();}
+  const lin=g.createLinearGradient(x-34*s,0,x+30*s,0);lin.addColorStop(0,'#cfcabc');lin.addColorStop(0.45,'#a29d90');lin.addColorStop(1,'#5c5850');
+  g.fillStyle=lin;for(const L of lobes){g.beginPath();g.ellipse(L.cx,L.cy,L.rx,L.ry,L.rot,0,7);g.fill();}
+  g.fillStyle='rgba(40,36,30,.18)';for(const L of lobes){g.beginPath();g.ellipse(L.cx+L.rx*0.25,L.cy+L.ry*0.35,L.rx*0.8,L.ry*0.45,L.rot,0,7);g.fill();}
+  // 세로 주름
+  g.strokeStyle='rgba(50,46,40,.35)';g.lineWidth=1.2;for(let i=0;i<10;i++){const L=lobes[Math.floor(R()*n)]!,sx=L.cx+(R()-0.5)*L.rx*1.4;g.beginPath();g.moveTo(sx,L.cy-L.ry*0.6);g.quadraticCurveTo(sx+(R()-0.5)*6,L.cy,sx+(R()-0.5)*4,L.cy+L.ry*0.6);g.stroke();}
+  // 구멍: 짙은 속 + 아래쪽 밝은 테
+  for(let i=0;i<5;i++){const L=lobes[1+Math.floor(R()*(n-1))]!,hx=L.cx+(R()-0.5)*L.rx*0.8,hy=L.cy+(R()-0.5)*L.ry*0.6,hr=(3+R()*4)*s,hv=hr*(1.2+R()*0.5);
+    const hg=g.createRadialGradient(hx,hy-hv*0.3,0,hx,hy,hv);hg.addColorStop(0,'#1c1a16');hg.addColorStop(1,'#4a463e');g.fillStyle=hg;g.beginPath();g.ellipse(hx,hy,hr,hv,(R()-0.5)*0.6,0,7);g.fill();
+    g.strokeStyle='rgba(235,230,215,.55)';g.lineWidth=1.4;g.beginPath();g.ellipse(hx,hy,hr+1,hv+1,0,0.25*Math.PI,0.85*Math.PI);g.stroke();}
+  // 밑동 이끼·풀
+  for(let i=0;i<6;i++){g.fillStyle=i%2?'rgba(80,118,58,.75)':'rgba(110,148,72,.6)';g.beginPath();g.ellipse(x+(R()-0.5)*40*s,y-3-R()*8*s,(4+R()*4)*s,(2+R()*2)*s,0,0,7);g.fill();}
+  void up;});}
 /** 횃대: 쇠 바구니에 장작불. */
 function torch(c:number,r:number,R:()=>number):Prop{return P(c,r,0.3,0.3,g=>{
   const [x,y]=pt(c+0.15,r+0.15);g.strokeStyle='#2a1a0c';g.lineWidth=4;g.beginPath();g.moveTo(x,y);g.lineTo(x,y-78);g.moveTo(x-10,y);g.lineTo(x,y-20);g.lineTo(x+10,y);g.stroke();

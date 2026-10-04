@@ -202,7 +202,16 @@ export class Stage {
   }
   async narrate(text:string){this.caption.hidden=false;this.caption.textContent=text;this.talk.innerHTML='';await this.waitClick();this.caption.hidden=true;}
   /** 화면 위 자리(%)에 세운다. 앞(아래)에 선 사람이 위에 그려진다. */
-  private moveTo(a:Actor,x:number,y:number){a.el.style.left=x+'%';a.el.style.top=y+'%';a.el.style.zIndex=String(100+Math.round(y*3));}
+  private moveTo(a:Actor,x:number,y:number){a.el.style.left=x+'%';a.el.style.top=y+'%';a.el.style.zIndex=String(100+Math.round(y*3));this.queueDeclutter();}
+  /** 이름표가 겹치면 뒤(위쪽)에 선 사람의 이름표를 머리 위로 올린다. */
+  private declutterQueued=false;
+  private queueDeclutter(){if(this.declutterQueued)return;this.declutterQueued=true;requestAnimationFrame(()=>{this.declutterQueued=false;this.declutter();});}
+  private declutter(){
+    const on=[...this.actors.values()].filter(a=>a.on);for(const a of on)a.el.classList.remove('name-up');
+    const box=on.map(a=>({a,r:a.el.querySelector('.ss-name')?.getBoundingClientRect(),z:Number(a.el.style.zIndex)||0}));
+    for(let i=0;i<box.length;i++)for(let j=i+1;j<box.length;j++){const p=box[i]!,q=box[j]!;if(!p.r||!q.r)continue;
+      if(p.r.left<q.r.right+2&&q.r.left<p.r.right+2&&p.r.top<q.r.bottom+2&&q.r.top<p.r.bottom+2)(p.z<q.z?p:q).a.el.classList.add('name-up');}
+  }
   /**
    * 카메라: 이 칸들이 모두 들어오도록 다가가거나 물러난다(배경과 인물이 함께 커진다).
    * 너무 가까이는 가지 않고(방 하나가 화면을 채울 만큼), 사람들은 대화창에 가리지 않게 화면 위쪽 가운데에 둔다.
@@ -213,7 +222,9 @@ export class Stage {
     let x0=Math.min(...pts.map(p=>p[0]))-9,x1=Math.max(...pts.map(p=>p[0]))+9,y0=Math.min(...pts.map(p=>p[1]))-24,y1=Math.max(...pts.map(p=>p[1]))+8;
     const grow=(lo:number,hi:number,min:number):[number,number]=>hi-lo>=min?[lo,hi]:[(lo+hi)/2-min/2,(lo+hi)/2+min/2];
     [x0,x1]=grow(x0,x1,60);[y0,y1]=grow(y0,y1,58);
-    const z=Math.max(1,Math.min(1.65,100/(x1-x0),100/(y1-y0))),cx=(x0+x1)/2,cy=(y0+y1)/2;
+    // 좁은 화면(휴대폰)에서는 무대가 작아 인물이 콩알만 해지므로 더 당겨서 본다
+    const narrow=(this.el.clientWidth||window.innerWidth)<600,zMin=narrow?1.15:1,zMax=narrow?2:1.65;
+    const z=Math.max(zMin,Math.min(zMax,100/(x1-x0),100/(y1-y0))),cx=(x0+x1)/2,cy=(y0+y1)/2;
     const clamp=(v:number)=>Math.max(100-100*z,Math.min(0,v));
     const tx=clamp(50-z*cx),ty=clamp(46-z*cy);
     if(Math.abs(z-this.cam.z)<0.03&&Math.abs(tx-this.cam.tx)<2&&Math.abs(ty-this.cam.ty)<2&&animate)return;
