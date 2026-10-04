@@ -4,6 +4,22 @@
 
 제작 도구: 내장 image_gen (CLI/API 대체 경로 사용 없음).
 
+## 진태 — 완료
+
+파일: `packages/web/public/portraits/chen-tai.png`. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
+
+### 생성 프롬프트
+
+Historical-scene. ONE square premium Three Kingdoms strategy-game officer bust portrait. Masterful semi-realistic digital oil painting matching polished dark Sima Yi / Sima Fang portraits: natural facial anatomy, detailed skin, fine silk and worn metal texture, restrained painterly brushwork. Chest-up three-quarter pose, face large and readable at 60px, entire headgear inside square with margin. Warm soft directional chiaroscuro, deep near-black smoky background. Historically inspired late Han/Wei clothes. Single East Asian adult character. No text, border, watermark, extra people, anime, vector, exaggerated fantasy armor. Subject: Chen Tai, composed Wei commander around 45, slender oval face, arched straight brows, reserved analytical eyes, fine mustache and neat small beard. Modest black military guan, indigo scholar robe over steel lamellar shoulders, gray collar, no helmet; poised scholarly general.
+
+## 조희 — 완료
+
+파일: `packages/web/public/portraits/cao-xi.png`. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
+
+### 생성 프롬프트
+
+Historical-scene. ONE square finished portrait of Cao Xi (조희), younger brother of Cao Shuang and Wei palace guard commander. East Asian male in mid-thirties, broad brow and softly squared jaw suggesting Cao family resemblance, warmer tan complexion, straight eyebrows, vigilant thoughtful eyes, clean-shaven chin with only a fine restrained mustache, worried dutiful expression. Black hair in compact topknot under a low bronze military guan, navy silk guard uniform under fitted dark steel lamellar armor with understated bronze trim, dark terracotta red shoulder sash, cream crossed inner collar. No helmet, no imperial crown. Chest-up three-quarter turning right, large face, full topknot inside square with margin, shoulders visible. Premium semi-realistic digital oil portrait matching polished Sima Yi / Sima Fang collection, restrained natural brushwork, detailed skin and silk, warm focused side light against near-black cool gray atmospheric background. Original late Han / Wei character concept. No text, border, watermark, extra person, anime or flat vector. Single square image.
+
 ## 하안 — 완료
 
 파일: `packages/web/public/portraits/he-yan.png`. 단독 인물·얼굴·복식 육안 확인, manifest 연결.
