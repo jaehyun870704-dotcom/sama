@@ -1299,3 +1299,30 @@ body.left-open .left-close{display:block;position:absolute;right:8px;top:8px;z-i
 .tt-special{font-style:normal;font-size:10px;color:#9fd4ff;display:block;text-align:center}
 .treasure-special{border-left:3px solid #6a92e8;padding:4px 8px;background:#1c2a4a55;font-size:13px}.treasure-special b{color:#bfe0ff}
 .battle-relics span.trial{color:#ffb0a0;border-color:#c0342a}
+/* ── 보물 도감(본영 패널 + 전체 목록) */
+.hub-treasure{margin:12px 0 4px;border:1px solid #5a5c50;background:#171e2033;padding:8px 10px}.hub-treasure .section-label{margin:0 0 6px}
+.hub-treasure-row{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start}.hub-treasure-row .muted{margin:2px 0;font-size:12px}
+.hub-treasure-item{display:inline-flex;flex-direction:column;align-items:center;gap:2px;width:62px;padding:4px 2px;border:1px solid #4d5b4f;background:#0f1516;color:#dcd2b8;font:inherit;cursor:pointer}
+.hub-treasure-item b{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:58px}.hub-treasure-item .treasure-icon{width:36px;height:36px}
+.hub-treasure-item.g4{border-color:#c9a24f}.hub-treasure-item.g3{border-color:#8a6fb0}.hub-treasure-item.relic{border-color:#7fa8c9;cursor:default}
+.hub-treasure-more{margin-top:8px;padding:5px 12px;font-size:12px}
+.tc-relic{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;border:1px solid #7fa8c9;background:#1b2a36;color:#cfe3f5;font:16px LocalSerif,'Batang',serif;flex:none}
+.tc-tabs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0}.tc-tabs button{padding:5px 14px}.tc-tabs .active{border-color:#cbad69;background:#79603355;color:#f0d79c}.tc-tabs .muted{margin-left:auto;font-size:12px}
+.tc-help{font-size:12px;line-height:1.6;margin:0 0 10px}
+.tc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
+.tc-card{display:flex;gap:10px;border:1px solid #4d5b4f;background:#151d1e88;padding:9px 10px;min-width:0}.tc-card.missing{opacity:.62}.tc-card.g4{border-color:#c9a24f}.tc-card.g3{border-color:#8a6fb0}.tc-card.relic{border-color:#7fa8c9}
+.tc-card .treasure-icon{width:44px;height:44px;flex:none}.tc-body{min-width:0}.tc-body h4{margin:0 0 3px;font-size:14px;color:#ead7af}.tc-body h4 small{font-weight:400;color:#9aa58f;font-size:11px;margin-left:4px}
+.tc-body p{margin:2px 0;font-size:12px;line-height:1.5}.tc-effect{color:#d8e3c9}.tc-power{color:#cfe3f5}.tc-special{color:#f0d79c}.tc-where{color:#9aa58f}
+/* ── 갈림길 지도 */
+.fate-map .fm-lead{line-height:1.75;font-size:14px}.fm-track{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 14px}.fm-track span{font-size:11px;padding:4px 10px;border:1px solid #4d5a4c;border-radius:12px;color:#b8c2ae}
+.fm-fate{border:1px solid #4d5b4f;background:#151d1e88;padding:12px 14px;margin:10px 0}.fm-fate.done{border-color:#7d8f6f}.fm-fate h3{margin:0 0 4px;font-size:17px;color:#e8d8b0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}.fm-fate h3 small{font-weight:400;font-size:11px;color:#9aa58f}
+.fm-no{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;border:1px solid #c2a36b;color:#f0d79c;font:14px Georgia,serif}
+.fm-when{margin:4px 0 10px;font-size:12px;color:#b8c2ae}
+.fm-routes{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px}
+.fm-route{border:1px solid #4d5b4f;padding:9px 11px;display:flex;flex-direction:column;gap:3px;min-width:0}.fm-route.history{border-color:#7d8f6f}.fm-route.what-if{border-color:#8a6fb0;background:#6d4f9a14}.fm-route.custom{border-color:#c2a36b}.fm-route.mine{box-shadow:0 0 0 2px #f0d79c66}
+.fm-route b{font-size:14px;color:#ead7af}.fm-route.what-if b{color:#e2d0ff}.fm-route em{font-style:normal;color:#f0d79c;font-size:11px}.fm-route small{font-size:12px;line-height:1.5;color:#b8c2ae}.fm-how{color:#9aa58f}
+.fm-tales{margin:4px 0 0;padding-left:18px;font-size:12px;color:#cdbf98}.fm-tales i{font-style:normal;color:#9aa58f}
+.fm-rules{margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.65}.fm-rules li{margin:4px 0}
+.route-tag.history{border-color:#7d8f6f;color:#c9d8bb}.route-tag.what-if{border-color:#8a6fb0;color:#e2d0ff}
+@media(max-width:580px){.tc-grid,.fm-routes{grid-template-columns:1fr}.hub-treasure-item{width:54px}}
+.fm-group{margin:10px 0 6px;font-size:12px;font-weight:600;color:#cdbf98}

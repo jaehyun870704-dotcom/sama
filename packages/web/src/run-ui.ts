@@ -6,6 +6,8 @@ import {newRun,startingOfficers,departingOfficers,floorChoices,visitNode,finishB
 import {romanceStats,romanceByName} from './romance.ts';
 import {scenarioSummary} from './scenario-ui.ts';
 import {showCustomEditor} from './custom-ui.ts';
+import {treasurePanel,treasureCodex,type TreasureTab} from './treasure-codex.ts';
+import {fateMap} from './fate-map.ts';
 import {classTactics} from '../../core/src/index.ts';
 import {loadMeta,saveMeta,buyUnlock,recordStory,settleRun,UNLOCKS,type MetaState} from './meta.ts';
 import {deploymentPerks} from './officer-perks.ts';
@@ -76,16 +78,29 @@ export function showHub(host:RunHost){
   <div class="campaign-copy"><div class="eyebrow">삼국지 · 전략 연대기</div><p class="chapter-pretitle">사마의전 · 연의와 가상의 천하</p><h2>사마의전</h2><p class="tagline">칼을 거두고, 때를 기다린다.</p>
   <div class="hub-stats"><span><b>${done}</b><small>마친 장</small></span><span><b>${esc(sc.tag)}</b><small>지금</small></span><span><b>${meta.endings.length}/${ALL_ENDINGS.length}</b><small>본 결말</small></span><span><b>${meta.mandate}</b><small>천명</small></span></div>
   <p class="intro">로그라이크 『천명의 길』 — 회차마다 『삼국지연의』의 첫 장(189년 하내)에서 사마의의 일생을 다시 시작한다. 장마다 이야기 → 출진 전 정비 → 전투, 장과 장 사이엔 무작위 행군로(전투·정예·모병·의원·보물고·수련) 세 갈래. 쓰러진 장수는 중상으로 물러났다 돌아오고, 체력과 보물은 다음 싸움으로 이어진다. 가상 시나리오에서는 장수를 설득해 들이고, 꺾은 적장도 설득할 수 있다. 지면 회차가 끝나고, 얻은 천명으로 해금해 다음 회차를 강하게. 세 번의 갈림길에서 다른 길을 고르면 일어나지 않은 역사가 결말까지 펼쳐진다(결말 17종). 직접 만든 신장수와 함께 신세력을 세워 진행할 수도 있다.</p>
+  ${treasurePanel()}
   <div class="hub-actions"><button id="hub-scenario" class="primary">${done?'천명의 길 이어하기':'천명의 길 시작'}${sc.state.run?` · 제${sc.state.run.no}회차`:''} · ${esc(sc.tag)} 「${esc(sc.title)}」</button>
-  <button id="hub-quests">반복 퀘스트 <small>원정 · 수련 · 회상</small></button>${host.resumeSaved?'<button id="hub-resume">전투 이어하기</button>':''}<button id="hub-codex">삼국지 인물열전 <small>장수 · 병종 · 책략</small></button><button id="hub-research">연구 <small>전투 · 내정 · 편성</small></button><button id="hub-custom">신장수 · 신세력</button><button id="hub-slots">저장 칸</button><button id="hub-troops">병종 진화표 <small>1→2→3단</small></button><button id="hub-officers">장수 · 연의 장수록</button></div>
+  <button id="hub-quests">반복 퀘스트 <small>원정 · 수련 · 회상</small></button>${host.resumeSaved?'<button id="hub-resume">전투 이어하기</button>':''}<button id="hub-codex">삼국지 인물열전 <small>장수 · 병종 · 책략</small></button><button id="hub-research">연구 <small>전투 · 내정 · 편성</small></button><button id="hub-custom">신장수 · 신세력</button><button id="hub-slots">저장 칸</button><button id="hub-troops">병종 진화표 <small>1→2→3단</small></button><button id="hub-officers">장수 · 연의 장수록</button><button id="hub-fate">갈림길 지도 <small>정사 · 가상 · 신세력</small></button></div>
   <p class="prototype-note">기록은 이 브라우저에 저장됩니다.</p></div></div>`,false);
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
   on('hub-scenario',host.showScenario);on('hub-quests',()=>showQuests(host));on('hub-custom',()=>showCustomEditor(host,()=>showHub(host)));
   const codex=()=>showCodex({modal:host.modal,toast:host.toast,back:()=>showHub(host),research:()=>research()}),research=()=>showResearch({modal:host.modal,toast:host.toast,back:()=>showHub(host),codex});
   on('hub-codex',codex);on('hub-research',research);
+  on('hub-treasures',()=>showTreasures(host));document.querySelectorAll<HTMLButtonElement>('[data-treasure]').forEach(b=>b.onclick=()=>showTreasures(host,'owned'));on('hub-fate',()=>showFateMap(host,()=>showHub(host)));
   on('hub-resume',()=>host.resumeSaved?.());on('hub-slots',host.showSlots);on('hub-troops',host.showTroops);on('hub-officers',host.showOfficers);
 }
 
+/** 보물 도감: 가진 것·얻는 곳·효과·특기·장착한 장수. */
+export function showTreasures(host:RunHost,tab:TreasureTab='all'){
+  host.modal(`<div class="briefing treasure-screen"><div class="eyebrow">보물 · 도감</div><h2>천하의 보물</h2>${treasureCodex(tab)}<div class="run-actions"><button id="tc-back">← 본영</button></div></div>`,false);
+  document.querySelectorAll<HTMLButtonElement>('[data-tc-tab]').forEach(b=>b.onclick=()=>showTreasures(host,b.dataset.tcTab as TreasureTab));
+  document.getElementById('tc-back')!.onclick=host.showMenu;
+}
+/** 갈림길 지도: 연의에서 가상으로 갈라지는 자리와 진행 방식. */
+export function showFateMap(host:Pick<RunHost,'modal'>,back:()=>void){
+  host.modal(`<div class="briefing fate-map-screen"><div class="eyebrow">천명의 길 · 갈림길 지도</div><h2>정사와 가상, 어디서 갈라지는가</h2>${fateMap()}<div class="run-actions"><button id="fm-back">← 돌아가기</button></div></div>`,false);
+  document.getElementById('fm-back')!.onclick=back;
+}
 /** 반복 퀘스트: 본편(시나리오)과 따로 레벨을 올리고 보물을 모으는 곳. */
 export function showQuests(host:RunHost){
   const meta=loadMeta(),run=loadRun(),told=meta.chronicle.length;

@@ -7,6 +7,7 @@
 import {loadMeta,saveMeta} from './meta.ts';
 import {portraitOf,checkCustom,checkFaction,registerCustoms,statTotal,STAT_KEYS,STAT_NAMES,STAT_MIN,STAT_MAX,STAT_BUDGET,CUSTOM_LIMIT,CUSTOM_CLASSES,TEMPERS,FACTION_COLORS,type CustomOfficer,type Faction} from './custom.ts';
 import {temperNames} from './duel.ts';
+import {showFateMap} from './run-ui.ts';
 import {classNames} from './troops.ts';
 import {spriteStyle} from './story-stage.ts';
 import type {Look} from './scenario-types.ts';
@@ -66,7 +67,8 @@ export function showCustomEditor(host:CustomHost,back:()=>void,editing?:number,d
 export function pickFaction(host:CustomHost,onPick:(faction?:Faction,companions?:CustomOfficer[])=>void,onCancel:()=>void,draft?:{faction:Faction;picked:string[]}){
   const list=customs(),f=draft?.faction??{name:'',emblem:'',color:FACTION_COLORS[0]!},picked=new Set(draft?.picked??list.slice(0,4).map(o=>o.name));
   host.modal(`<div class="briefing run-screen faction-screen"><div class="eyebrow">새 회차 · 어느 깃발 아래서 시작하는가</div><h2>세력 고르기</h2>
-  <div class="run-choices"><button id="fa-history" class="history"><strong><span class="route-tag">정통</span>연의대로 — 위의 신하로</strong><small>사마랑·조진과 함께 연의의 길을 따른다. 갈림길에서 정사·가상을 고를 수 있다.</small></button></div>
+  <div class="run-choices"><button id="fa-history" class="history"><strong><span class="route-tag">정통</span>연의대로 — 위의 신하로</strong><small>사마랑·조진과 함께 연의의 길을 따른다. 상편 4장 뒤(201년)·중편 첫머리(220년)·하편 첫머리(234년) 세 갈림길에서 정사·가상을 고를 수 있다.</small></button></div>
+  <p class="muted">어느 장에서 가상으로 갈라지고 그 뒤가 어떻게 이어지는지는 <button type="button" id="fa-map" class="link">갈림길 지도</button>에서 미리 볼 수 있다.</p>
   <form id="fa-form" class="custom-form faction-form"><h3>신세력 — 사마의가 새 깃발을 든다</h3>
     <p class="muted">첫 갈림길(201년)에서 '스스로 기치를 든다'를 고르면 신세력의 길(형주·관중 → 천하 통일 또는 네 번째 나라)로 간다. 가상 시나리오라 장수는 설득해서 들인다.</p>
     <label>세력 이름 <input name="name" maxlength="4" value="${esc(f.name)}" placeholder="예: 진, 하내" required></label>
@@ -80,6 +82,7 @@ export function pickFaction(host:CustomHost,onPick:(faction?:Faction,companions?
   const read=()=>{const d=new FormData(form),name=String(d.get('name')??'').trim(),emblem=[...String(d.get('emblem')??'').trim()][0]??[...name][0]??'';
     return {faction:{name,emblem,color:String(d.get('color')??FACTION_COLORS[0])} as Faction,picked:d.getAll('mate').map(String)};};
   document.getElementById('fa-history')!.onclick=()=>onPick();
+  document.getElementById('fa-map')!.onclick=()=>showFateMap(host,()=>pickFaction(host,onPick,onCancel,read()));
   document.getElementById('fa-cancel')!.onclick=onCancel;
   document.getElementById('fa-custom')!.onclick=()=>{const d=read();showCustomEditor(host,()=>pickFaction(host,onPick,onCancel,d));};
   form.addEventListener('submit',e=>{e.preventDefault();const d=read(),bad=checkFaction(d.faction);if(bad){err.textContent=bad;return;}
