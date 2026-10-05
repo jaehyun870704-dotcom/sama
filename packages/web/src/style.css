@@ -1339,3 +1339,7 @@ body.left-open .left-close{display:block;position:absolute;right:8px;top:8px;z-i
 .route-tag.history{border-color:#7d8f6f;color:#c9d8bb}.route-tag.what-if{border-color:#8a6fb0;color:#e2d0ff}
 @media(max-width:580px){.tc-grid,.fm-routes{grid-template-columns:1fr}.hub-treasure-item{width:54px}}
 .fm-group{margin:10px 0 6px;font-size:12px;font-weight:600;color:#cdbf98}
+
+/* 넣은 초상: 전투 장수 카드·정비·출진 준비에서 병종 그림 대신 */
+.battle-model.officer-photo{display:block;background:none}.battle-model.officer-photo .officer-face{width:100%;height:100%;min-height:0;margin:0}
+.prep-sprite.prep-face{background:none;overflow:hidden;border-radius:4px}.prep-sprite.prep-face .officer-face{width:100%;height:100%;min-height:0;margin:0}

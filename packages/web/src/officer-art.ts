@@ -35,7 +35,8 @@ export function registerFace(name:string,url:()=>string){customFaces.set(name,ur
 export function clearFaces(){customFaces.clear();}
 export function customFace(name:string){const img=portraitImage(name);if(img)return img;const f=customFaces.get(name);return f?f():undefined;}
 export function officerPortrait(name:string){
-  const img=portraitImage(name);if(img)return `<div class="officer-face image-face" role="img" aria-label="${escape(name)} 초상" style="background-image:url('${img}');background-size:cover;background-position:50% 12%"></div>`;
+  // 원화 id(cao_zhen)로 불러도 넣은 초상(이름 「조진」으로 저장)을 먼저 찾는다.
+  const img=portraitImage(name)??portraitImage(officerLook(name)?.name??'');if(img)return `<div class="officer-face image-face" role="img" aria-label="${escape(name)} 초상" style="background-image:url('${img}');background-size:cover;background-position:50% 12%"></div>`;
   const cf=customFaces.get(name);if(cf){const url=cf();if(url)return `<div class="officer-face custom-face" role="img" aria-label="${escape(name)} 초상" style="background-image:url(${url});background-size:cover;background-position:center"></div>`;}const p=officerLook(name),row=p?undefined:troopFaceRow(name);if(row!==undefined){
   // A named officer without painted art: the troop face, nudged in hue per person and marked with
   // the first syllable of the name on a seal in the colour of their side.

@@ -4,7 +4,7 @@ import {DOCK_ICONS} from './dock-icons.ts';
 import {navalAtlas} from './naval-art.ts';
 import {evolutionChart,paintArmor,type EvoGroup} from './troop-evolution.ts';
 import {troopAdvice,adviceFor,recommendExpeditionSupport,supportWarnings,physicalMatchup} from './troop-tactics.ts';
-import {officerLooks,officerPortrait,dialogueCaption,splitSpokenLine,storyActorStyle,customFace} from './officer-art.ts';
+import {officerLooks,officerLook,officerPortrait,dialogueCaption,splitSpokenLine,storyActorStyle,customFace} from './officer-art.ts';
 import {troopRoles,supportOptions,visualClass,troopArt,troopSheets,basicReactionArt,evolutionLines,classSheets,loadClassSheets} from './troops.ts';
 import {growthMilestones} from './growth-milestones.ts';
 import {trialStory,trialTactics,layoutName} from './expedition-scenes.ts';
@@ -30,7 +30,8 @@ import {isoBackdrop,loadIsoArt,loadPaintedScenes} from './story-iso.ts';
 import {loadFigures} from './story-figure.ts';
 import {registerCustoms} from './custom.ts';
 import {loadMeta as loadMetaForCustoms} from './meta.ts';
-import {loadPortraitImages} from './portrait-images.ts';
+import {loadPortraitImages,portraitImage} from './portrait-images.ts';
+import {cardFace} from './faces.ts';
 import {renderHud,type CardOpts} from './unit-hud.ts';
 import {inkChoice} from './ink-choice.ts';
 import {duelSplash,duelArena,duelBackdrop} from './duel-ui.ts';
@@ -218,7 +219,7 @@ function briefing(chapter:number,expeditionId?:string,scenario?:ScenarioDeployme
     const previousScroll=$('#modal-content .camp-screen')?$<HTMLDialogElement>('#modal').scrollTop:0;
     const preview=new Session(chapter,difficulty,215,prep,RULES,dispatch(true));
     const units=preview.state.living().filter(u=>u.side==='player'||u.side==='ally');
-    modal(`<div class="briefing camp-screen"><div class="prep-backdrop" style="${isoBackdrop(expedition?6:16)}"></div><div class="eyebrow">${c.year} · 출진 전 정비</div><h2>${c.stage.subtitle}</h2><p class="camp-mission">${expedition?trialGoalText(expedition.id):mission}</p>${expedition?`<fieldset class="support-picker"><legend>지원 병종 편성 · 두 부대 선택</legend>${supports.map((kind,i)=>`<label>지원 ${i+1}<select data-support="${i}">${supportOptions.map(k=>`<option value="${k}" ${kind===k?'selected':''}>${classNames[k]}</option>`).join('')}</select><small>${troopAdvice[kind]}</small></label>`).join('')}<div class="support-recommendation"><b>목표·지형에 맞는 편성</b><p>${recommendation!.classes.map(k=>classNames[k]).join(' + ')} · ${recommendation!.reason}</p><button id="recommend-support" type="button">추천 병종으로 편성</button><small>추천은 선택 사항입니다. 병종은 전투마다 다시 고를 수 있습니다.</small></div>${supportWarnings(units).map(t=>`<p class="composition-note">${t}</p>`).join('')}</fieldset>`:''}${expedition?`<p class="trial-objective">${growthAdvice(campaign,expedition.level)}<br>지원 부대는 권장 레벨과 사마의 레벨 +1 중 낮은 레벨로 출진합니다.</p>`:''}${expedition?'':sortieMarkup()}${campMarkup(campaign,units,officer,filter,inspect,portraitFor,scenario?.relics)}<details><summary>작전·지형 정보</summary><p>${expedition?trialTactics(expedition.id)+' '+trialGoalText(expedition.id)+' · 사마의·조진 생존 필수. 수련은 반복 경험치, 보물 외전은 첫 승리 보상을 지급합니다.':rule}</p></details><div class="preparations">${[['survival','생존','체력 +25'],['strategy','책략','MP +18'],['command','지휘','이동 +1']].map(([id,name,desc])=>`<label><input type="radio" name="preparation" value="${id}" ${prep===id?'checked':''}>${name} · ${desc}</label>`).join('')}</div><div class="difficulty"><label><input type="radio" name="difficulty" value="normal" ${difficulty==='normal'?'checked':''}> 일반</label><label><input type="radio" name="difficulty" value="extreme" ${difficulty==='extreme'?'checked':''} ${!expedition&&cleared(chapter)?'':'disabled'}> 극한 · 일반 완료 후</label></div><div class="modal-actions"><button id="brief-back">← ${scenario?'장 목록':expedition?'수련 · 보물 인연':'연의 회상'}</button>${scenario?'<button id="brief-camp">← 진영으로</button>':''}<span>구급약 2 · ${growthText()}</span><button id="deploy" class="primary">출진한다 →</button></div></div>`,false);
+    modal(`<div class="briefing camp-screen"><div class="prep-backdrop" style="${isoBackdrop(expedition?6:16)}"></div><div class="eyebrow">${c.year} · 출진 전 정비</div><h2>${c.stage.subtitle}</h2><p class="camp-mission">${expedition?trialGoalText(expedition.id):mission}</p>${expedition?`<fieldset class="support-picker"><legend>지원 병종 편성 · 두 부대 선택</legend>${supports.map((kind,i)=>`<label>지원 ${i+1}<select data-support="${i}">${supportOptions.map(k=>`<option value="${k}" ${kind===k?'selected':''}>${classNames[k]}</option>`).join('')}</select><small>${troopAdvice[kind]}</small></label>`).join('')}<div class="support-recommendation"><b>목표·지형에 맞는 편성</b><p>${recommendation!.classes.map(k=>classNames[k]).join(' + ')} · ${recommendation!.reason}</p><button id="recommend-support" type="button">추천 병종으로 편성</button><small>추천은 선택 사항입니다. 병종은 전투마다 다시 고를 수 있습니다.</small></div>${supportWarnings(units).map(t=>`<p class="composition-note">${t}</p>`).join('')}</fieldset>`:''}${expedition?`<p class="trial-objective">${growthAdvice(campaign,expedition.level)}<br>지원 부대는 권장 레벨과 사마의 레벨 +1 중 낮은 레벨로 출진합니다.</p>`:''}${expedition?'':sortieMarkup()}${campMarkup(campaign,units,officer,filter,inspect,faceFor,scenario?.relics)}<details><summary>작전·지형 정보</summary><p>${expedition?trialTactics(expedition.id)+' '+trialGoalText(expedition.id)+' · 사마의·조진 생존 필수. 수련은 반복 경험치, 보물 외전은 첫 승리 보상을 지급합니다.':rule}</p></details><div class="preparations">${[['survival','생존','체력 +25'],['strategy','책략','MP +18'],['command','지휘','이동 +1']].map(([id,name,desc])=>`<label><input type="radio" name="preparation" value="${id}" ${prep===id?'checked':''}>${name} · ${desc}</label>`).join('')}</div><div class="difficulty"><label><input type="radio" name="difficulty" value="normal" ${difficulty==='normal'?'checked':''}> 일반</label><label><input type="radio" name="difficulty" value="extreme" ${difficulty==='extreme'?'checked':''} ${!expedition&&cleared(chapter)?'':'disabled'}> 극한 · 일반 완료 후</label></div><div class="modal-actions"><button id="brief-back">← ${scenario?'장 목록':expedition?'수련 · 보물 인연':'연의 회상'}</button>${scenario?'<button id="brief-camp">← 진영으로</button>':''}<span>구급약 2 · ${growthText()}</span><button id="deploy" class="primary">출진한다 →</button></div></div>`,false);
     document.querySelectorAll<HTMLButtonElement>('[data-officer]').forEach(b=>b.onclick=()=>{officer=b.dataset.officer!;draw();});
     document.querySelectorAll<HTMLButtonElement>('[data-gear-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.gearFilter!;draw();});
     document.querySelectorAll<HTMLButtonElement>('[data-treasure]').forEach(b=>b.onclick=()=>{inspect=b.dataset.treasure!;draw();});
@@ -240,13 +241,15 @@ function briefing(chapter:number,expeditionId?:string,scenario?:ScenarioDeployme
 let duelPresented=false;
 /** 장수 열전: 얼굴을 고르면 그 장수의 무력·능력과 고유특성만 보인다(전체 표는 두지 않는다). */
 function showOfficerGallery(pick?:string){menuOpen=true;clearTimeout(aiTimer);
-  const entries=Object.entries(romance),looks=new Set<string>(officerLooks.map(p=>p.name));
+  const entries=Object.entries(romance);
+  // 초상이 있는 장수(넣은 그림·원화)는 얼굴로, 나머지는 이름 단추로 보인다.
+  const hasFace=(n:string)=>!!(portraitImage(n)||officerLook(n)),faced=entries.filter(([,x])=>hasFace(x.name));
   const id=pick&&romance[pick]?pick:entries.find(([,r])=>r.name==='사마의')?.[0]??entries[0]![0],r=romance[id]!,sk=r.skill??officerFeatures[id],look=officerLooks.find(p=>p.name===r.name);
   const bar=(k:string,v:number,main=false)=>`<div class="og-stat${main?' main':''}"><span>${k}</span><i><i style="width:${v}%" class="${v>=90?'hi':v<40?'lo':''}"></i></i><b>${v}</b></div>`;
   modal(`<div class="briefing officer-gallery"><div class="eyebrow">인물 · 장수 열전</div><h2>난세를 살아가는 얼굴들</h2>
-  <div class="og-split"><div class="og-list"><div class="officer-look-grid">${officerLooks.map(p=>{const e=entries.find(([,x])=>x.name===p.name);return `<button class="og-face ${e?.[0]===id?'chosen':''}" ${e?`data-og="${e[0]}"`:'disabled'}>${officerPortrait(p.id)}<b>${p.name}</b></button>`;}).join('')}</div>
-    <div class="og-names">${entries.filter(([,x])=>!looks.has(x.name)).map(([k,x])=>`<button data-og="${k}" class="${k===id?'chosen':''}">${x.name}<small>무 ${x.war}</small></button>`).join('')}</div></div>
-  <aside class="og-detail">${look?officerPortrait(look.id):''}<h3>${r.name} <small>${r.epithet}</small></h3>
+  <div class="og-split"><div class="og-list"><div class="officer-look-grid">${faced.map(([k,x])=>`<button class="og-face ${k===id?'chosen':''}" data-og="${k}">${cardFace(x.name)}<b>${x.name}</b></button>`).join('')}</div>
+    <div class="og-names">${entries.filter(([,x])=>!hasFace(x.name)).map(([k,x])=>`<button data-og="${k}" class="${k===id?'chosen':''}">${x.name}<small>무 ${x.war}</small></button>`).join('')}</div></div>
+  <aside class="og-detail">${cardFace(r.name)}<h3>${r.name} <small>${r.epithet}</small></h3>
     <div class="og-war"><span>무력</span><b>${r.war}</b><small>일기토·물리 공격</small></div>
     ${bar('지력',r.int)}${bar('통솔',r.lead)}${bar('정치',r.pol)}${bar('매력',r.cha)}
     <div class="og-skill">${sk?`<b>고유특성 「${sk.name}」</b><p>${sk.description}</p>`:'<p class="muted">고유특성 없음</p>'}</div></aside></div>
@@ -317,6 +320,12 @@ function portraitFor(u:Unit,reaction=false):string{
   const structure=structureKind(u.id);if(structure){const f=structureFrame(structure);return `<span class="battle-model" role="img" aria-label="${unitName(u)}" style="background-image:url(scenery-v3.png);background-size:400% 200%;background-position:${f%4/3*100}% ${Math.floor(f/4)*100}%"></span>`;}
   const extra=['crossbow','heavyCav','engineer','fengshui'].indexOf(u.unitClass),row=extra>=0?extra:['strategist','civilian'].includes(u.unitClass)?4:u.unitClass==='spearman'?1:u.unitClass==='archer'?2:u.unitClass==='cavalry'?3:u.unitClass==='catapult'?5:0;
   return `<span class="battle-model" role="img" aria-label="${unitName(u)}" style="background-image:var(--${extra>=0?'extra':'base'}-atlas);background-size:400% ${extra>=0?400:600}%;background-position:0 ${row/(extra>=0?3:5)*100}%"></span>`;
+}
+/** 장수 카드의 얼굴: 넣은 초상이 있는 이름난 장수는 초상, 아니면 병종 그림. */
+function faceFor(u:Unit):string{
+  const name=romanceOf(u)?.name??(u.id==='sima_yi'?'사마의':u.name);
+  if(!u.name.endsWith('환영')&&(portraitImage(name)||officerLook(name)))return `<span class="battle-model officer-photo">${officerPortrait(name)}</span>`;
+  return portraitFor(u);
 }
 function raceLabel(s:BattleState){const g=raceGap(s);if(!g||g.ally===undefined)return '우군 선점 저지';return `경쟁 우군 성채까지 ${g.ally}칸 · 사마의 ${g.hero??'-'}칸${g.hero!==undefined&&g.ally<g.hero?' ⚠ 우군이 앞섬':''}`;}
 const ARCS:Record<string,[string,string,string]>={upper:['Ⅰ','상편','살아남는 자'],middle:['Ⅱ','중편','맞서는 자'],lower:['Ⅲ','하편','거머쥐는 자']};
@@ -402,7 +411,7 @@ function renderUnit(u:Unit|undefined){
   const statCells=ab?[['무력',ab.war],['지력',ab.int],['통솔',ab.lead],['민첩',ab.agi],['운',ab.luck],['공격',u.stats.attack],['방어',u.stats.defense],['이동',u.stats.movement]] as Array<[string,number]>:[...(r&&!u.name.endsWith('환영')?[['무력',r.war],['지력',r.int],['통솔',r.lead],['정치',r.pol],['매력',r.cha]]:[['무력',martialPower(u)],['지력',u.stats.intellect]]),['공격',u.stats.attack],['방어',u.stats.defense],['이동',u.stats.movement]] as Array<[string,number]>;
   const strategyChips=u.strategies.map(id=>{const d=s.strategyFor(u,id)!,tier=d.tier??1;const off=!can||u.mp<d.mpCost||s.hasStatus(u,'seal');return `<button class="uc-strat t${tier}${mode===id?' active':''}" data-uc-strat="${id}" ${off?'disabled':''} title="${d.name} · ${STRATEGY_TIER_NAMES[tier]} · 위력 ${d.power} · ${strategyHint(id)}"><img src="${strategyIconUrl(id,tier)}" alt=""><b>${d.name}</b><small>${d.mpCost}</small></button>`;}).join('');
   const traits=[...(sk?[{n:sk.name,d:sk.description,on:true}]:[]),...talents.map(t=>({n:t.name,d:t.ready?t.description:t.requirement,on:t.ready}))].filter((t,i,a)=>a.findIndex(x=>x.n===t.n)===i);
-  $('#unit-detail').innerHTML=`<div class="uc"><div class="uc-head"><div class="portrait uc-face"><div>${portraitFor(u)}</div><span class="portrait-tag">${sideNames[u.side]}</span></div><div class="uc-id"><h2>${unitName(u)}</h2><small>${classNames[u.unitClass]} · Lv.${u.level}${r?.epithet?` · ${r.epithet}`:''}</small>${[['hp','체력',u.hp,u.stats.maxHp],['mp','책략',u.mp,u.stats.maxMp],...xpBar(u).map(([k,,v,m])=>[k,'경험',v,m] as [string,string,number,number])].map(([kind,name,value,max])=>`<div class="uc-bar ${kind}"><span>${name}</span><i><i style="width:${Number(value)/Math.max(1,Number(max))*100}%"></i></i><b>${value}<small>/${max}</small></b></div>`).join('')}</div></div>
+  $('#unit-detail').innerHTML=`<div class="uc"><div class="uc-head"><div class="portrait uc-face"><div>${faceFor(u)}</div><span class="portrait-tag">${sideNames[u.side]}</span></div><div class="uc-id"><h2>${unitName(u)}</h2><small>${classNames[u.unitClass]} · Lv.${u.level}${r?.epithet?` · ${r.epithet}`:''}</small>${[['hp','체력',u.hp,u.stats.maxHp],['mp','책략',u.mp,u.stats.maxMp],...xpBar(u).map(([k,,v,m])=>[k,'경험',v,m] as [string,string,number,number])].map(([kind,name,value,max])=>`<div class="uc-bar ${kind}"><span>${name}</span><i><i style="width:${Number(value)/Math.max(1,Number(max))*100}%"></i></i><b>${value}<small>/${max}</small></b></div>`).join('')}</div></div>
     <div class="uc-stats"${ab?` title="순발력 ${u.stats.agility} · 사기 ${u.stats.morale} · 정신력 ${u.stats.spirit}"`:''}>${statCells.map(([k,v])=>`<div><small>${k}</small><b>${v}</b></div>`).join('')}</div>
     ${temper||traits.length?`<div class="uc-traits">${temper?`<span class="uc-chip temper" title="일기토·설전에 응하는 방식">성격 · ${temperNames[temper]}</span>`:''}${traits.map(t=>`<span class="uc-chip${t.on?'':' locked'}" title="${t.d.replace(/"/g,'&quot;')}">${t.on?'◆':'◇'} ${t.n}</span>`).join('')}</div>`:''}
     ${u.strategies.length?`<div class="uc-strats"><div class="uc-label">책략 <small>눌러서 고른 뒤 지도에서 대상을 누르세요</small></div><div class="uc-strat-list">${strategyChips}</div></div>`:''}
@@ -490,7 +499,7 @@ function encounterCheck(){
 }
 function showEncounter(u:Unit,e:Unit,d:number){
   const el=$('#encounter'),s=session.state;
-  el.innerHTML=`<div class="enc-faces"><span>${portraitFor(u)}</span><b>VS</b><span>${portraitFor(e)}</span></div><p><b>${unitName(e)}</b>와(과) 마주쳤다!<small>${unitName(u)} · 무력 ${martialPower(u)} 지력 ${debatePower(u)} ↔ ${unitName(e)} · 무력 ${martialPower(e)} 지력 ${debatePower(e)}</small></p>
+  el.innerHTML=`<div class="enc-faces"><span>${faceFor(u)}</span><b>VS</b><span>${faceFor(e)}</span></div><p><b>${unitName(e)}</b>와(과) 마주쳤다!<small>${unitName(u)} · 무력 ${martialPower(u)} 지력 ${debatePower(u)} ↔ ${unitName(e)} · 무력 ${martialPower(e)} 지력 ${debatePower(e)}</small></p>
     <div class="enc-acts"><button data-enc="duel" ${d>1?'disabled title="붙어 서야 일기토를 청할 수 있다"':''}>⚔ 일기토${d>1?' (붙어서)':''}</button><button data-enc="debate">✒ 설전</button><button data-enc="pass">지나간다</button></div>`;
   el.hidden=false;sound.event({kind:'duel',critical:false});
   el.querySelectorAll<HTMLButtonElement>('[data-enc]').forEach(b=>b.onclick=()=>{el.hidden=true;const k=b.dataset.enc!;if(k==='pass'){render();return;}
