@@ -16,7 +16,7 @@ import {officerLook,officerPortrait} from './officer-art.ts';
 import {cardFace,displayName} from './faces.ts';
 import {isUploaded,setPortraitImage,removePortraitImage,importPortraitFiles} from './portrait-images.ts';
 import {bioOf} from './officer-bios.ts';
-import {classNames,troopRoles,troopArt,basicReactionArt,artClass,recruitPool,evolutionLines,troopSheets} from './troops.ts';
+import {classNames,troopRoles,troopArt,basicReactionArt,artClass,recruitPool,evolutionLines,troopSheets,classSheets} from './troops.ts';
 import {spriteAtlas} from './sprite-atlas.ts';
 import {navalAtlas} from './naval-art.ts';
 import {armorFrame,MOUNTED_FAMILIES,ROBE_FAMILIES,MACHINE_FAMILIES,type ArmorTier} from './armor.ts';
@@ -99,6 +99,8 @@ export function codexClasses():UnitClass[]{
 }
 export function classSprite(c:UnitClass){return sprite(c);}
 function sprite(c:UnitClass){
+  // 병종 전용 채색 시트가 있으면 그 첫 칸(대기)을 그대로 쓴다.
+  if(classSheets.has(c))return `<div class="cx-sprite" style="background-image:var(--own-${c}-atlas);background-size:400% 300%;background-position:0 0"></div>`;
   const base=artClass(c),fam=familyOf(base),art=troopArt[base]??troopArt[fam],react=basicReactionArt[base]??basicReactionArt[fam],tint=troopRoles[c]?.tint;
   const hex=tint!==undefined?'#'+tint.toString(16).padStart(6,'0'):'',glow=hex?`;--cx-tint:${hex}`:'';
   const sheet=art??react;
@@ -111,7 +113,7 @@ function sprite(c:UnitClass){
   return `<div class="cx-sprite empty" style="${glow.slice(1)}"><span>${esc((classNames[c]??c).slice(0,1))}</span></div>`;
 }
 /** 진화 2·3단은 단계 장비(망토·금갑·깃발·마갑)를 입힌 그림을 덧그린다(paintArmor가 채운다). */
-const armorCanvas=(c:UnitClass)=>tierOf(c)>=2?`<canvas class="cx-armor" data-armor="${c}"></canvas>`:'';
+const armorCanvas=(c:UnitClass)=>tierOf(c)>=2&&!classSheets.has(c)?`<canvas class="cx-armor" data-armor="${c}"></canvas>`:'';
 function sheetFor(c:UnitClass):{load:()=>Promise<HTMLCanvasElement>;rows:number;cols:number;row:number}|undefined{
   const base=artClass(c),fam=familyOf(base),art=troopArt[base]??troopArt[fam],react=basicReactionArt[base]??basicReactionArt[fam];
   if(fam==='ram')return {load:()=>spriteAtlas('ram-v1.png',2,2),rows:2,cols:2,row:0};
