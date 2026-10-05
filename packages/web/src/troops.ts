@@ -121,3 +121,18 @@ export function evolutionLines():Array<Array<[UnitClass,number]>>{
     return line;
   });
 }
+
+/**
+ * 병종 전용 채색 시트 — public/troops/manifest.json에 {"병종 id":"파일"}로 적힌 그림.
+ * 한 장은 4칸×3줄(기존 시트와 같은 화풍·크기): 0줄 행동(대기·걸음·공격·특기), 1줄 걷기(앞A·앞B·뒤A·뒤B), 2줄 반응(막기A·막기B·맞음A·맞음B).
+ * 옷의 주색은 기본 병사 시트처럼 파랑으로 그린다(진영 색으로 물들인다). 시트가 없는 병종은 지금처럼 계열 그림을 쓴다.
+ */
+export const classSheets=new Map<UnitClass,string>();
+let classSheetsReady:Promise<void>|null=null;
+export function loadClassSheets(base=''){
+  classSheetsReady??=(async()=>{try{const r=await fetch(base+'troops/manifest.json',{cache:'no-cache'});if(!r.ok)return;const m=await r.json() as Record<string,unknown>;
+    for(const [k,v] of Object.entries(m))if(typeof v==='string'&&/^[\w.-]+\.(png|webp)$/i.test(v)&&k in classNames)classSheets.set(k as UnitClass,base+'troops/'+v);}catch{/* 목록이 없어도 된다 */}})();
+  return classSheetsReady;
+}
+/** 행동·걷기·반응 그림이 따로 있는 병종(전용 시트 또는 술사·특수병 시트) */
+export const hasPaintedMotion=(c:UnitClass)=>classSheets.has(c)||!!troopArt[artClass(c)];

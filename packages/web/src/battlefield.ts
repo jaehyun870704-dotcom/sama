@@ -1,6 +1,6 @@
 import {playbackEvents} from './battle-playback.ts';
 import {troopFacing,troopReaction,troopReactionPose,retreatMotion,battlePath,stepPose} from './troop-motion.ts';
-import {troopRoles,visualClass,troopArt,troopSheets,basicReactionArt,artClass} from './troops.ts';
+import {troopRoles,visualClass,troopArt,troopSheets,basicReactionArt,artClass,classSheets,loadClassSheets,hasPaintedMotion} from './troops.ts';
 import {spriteAtlas,outlinedCanvas} from './sprite-atlas.ts';
 import {cryFor,reactions,isCrisis,type Emote} from './emotes.ts';
 import type {SoundEvent} from './sound-events.ts';
@@ -113,6 +113,8 @@ export class Battlefield {
     // Every sheet is requested at once so the worker pool cuts them in parallel.
     const [troops,ram,naval,convoys,extra,atlas,scenery]=await Promise.all([loadBattleTextures().then(()=>Promise.all(troopSheets.map(sheet=>spriteAtlas(sheet.url,sheet.rows)))),spriteAtlas('ram-v1.png',2,2),navalAtlas(),imageCanvas('convoys-v1.png'),spriteAtlas('units-extra-v1.png',4),spriteAtlas('units-v3.png',6),imageCanvas('scenery-v3.png')]);
     troopSheets.forEach((sheet,i)=>this.troopTextures.set(sheet.id,smooth(troops[i]!)));
+    // 병종 전용 채색 시트(있는 것만): 계열 그림 대신 쓴다.
+    await loadClassSheets();await Promise.all([...classSheets].map(async([c,url])=>{try{this.troopTextures.set('own:'+c,smooth(await spriteAtlas(url,3)));}catch{/* 못 읽으면 계열 그림 */}}));
     this.ram=smooth(ram);this.naval=smooth(naval);this.convoys=smooth(convoys);this.extra=smooth(extra);this.atlas=smooth(atlas);this.scenery=smooth(scenery,false);
     privateHost.appendChild(this.app.canvas);
     this.minimap=document.createElement('canvas');this.minimap.className='tactical-minimap';this.minimap.width=192;this.minimap.height=144;this.minimap.setAttribute('aria-label','전체 전황 지도. 클릭하면 해당 위치로 이동합니다.');privateHost.appendChild(this.minimap);
@@ -174,7 +176,7 @@ export class Battlefield {
         a.sprite.scale.y=by*(1+Math.sin(t*(a.officer?2.2:1.8)+phase)*(a.officer?.016:.012));
         if(a.officer)a.sprite.y=8-(1+Math.sin(t*2.2+phase))*1.1;
         // 그림이 둘인 병종은 가끔 자세를 고쳐 선다(무게를 옮김)
-        const facing=this.facing.get(id)??0;if(facing===0&&!troopArt[artClass(a.unit.unitClass)]){const cyc=(t+phase*1.7)%(3.4+phase%1.3);a.sprite.texture=this.unitTexture(a.unit,cyc<.5?3:0);}}});
+        const facing=this.facing.get(id)??0;if(facing===0&&!hasPaintedMotion(a.unit.unitClass)){const cyc=(t+phase*1.7)%(3.4+phase%1.3);a.sprite.texture=this.unitTexture(a.unit,cyc<.5?3:0);}}});
   }
   private fromPoint(x:number,y:number):Coord|undefined{
     const p=this.world.toLocal({x,y});const c={x:Math.floor(p.x/W),y:Math.floor(p.y/H)};
@@ -350,8 +352,13 @@ export class Battlefield {
     }
     this.drawMinimap();
   }
-  private hasReaction(u:Unit){const k=artClass(u.unitClass);return !structureKind(u.id)&&!u.id.startsWith('convoy_')&&!!(troopArt[k]||basicReactionArt[k]);}
+  private ownSheet(u:Unit){return structureKind(u.id)||u.id.startsWith('convoy_')?undefined:this.troopTextures.get('own:'+u.unitClass);}
+  private hasReaction(u:Unit){if(this.ownSheet(u))return true;const k=artClass(u.unitClass);return !structureKind(u.id)&&!u.id.startsWith('convoy_')&&!!(troopArt[k]||basicReactionArt[k]);}
   private unitTexture(u:Unit,pose=0){
+    // 병종 전용 채색 시트: 0줄 행동, 1줄 걷기, 2줄 반응. 단계 장비는 그림에 이미 그려져 있다.
+    const own=this.ownSheet(u);
+    if(own){const row=pose>=8?2:pose>=4?1:0,frame=pose%4,dye=dyeOfSide(u.side),sheet='base-own-'+u.unitClass,dyed=needsDye('base',dye),key='own:'+u.unitClass+':'+(dyed?dye:'')+':'+row+':'+frame,old=this.textures.get(key);if(old)return old;
+      const w=own.width/4,h=own.height/3,t=new Texture({source:dyed?this.dyedSource(own,sheet,dye):own.source,frame:new Rectangle(frame*w,row*h,w,h)});this.textures.set(key,t);return t;}
     // 진화 단계는 그림을 바꾸기 전에 읽는다(2단: 강철·망토·마의, 3단: 금갑·등 깃발·마갑).
     const tier=structureKind(u.id)||u.id.startsWith('convoy_')?1:tierOf(u.unitClass),fam=familyOf(u.unitClass);
     if(artClass(u.unitClass)!==u.unitClass)u={...u,unitClass:artClass(u.unitClass)};
@@ -416,7 +423,7 @@ export class Battlefield {
       // 출발·도착만 기록되므로 지형을 따라 길을 다시 찾아 한 칸씩 걷는다(벽·물을 가로질러 미끄러지지 않게).
       const st=this.state,mover=actor.unit,cls=mover.unitClass,hostile=(c:Coord)=>!!st?.living().some(o=>o.id!==mover.id&&o.pos.x===c.x&&o.pos.y===c.y&&(o.side==='enemy')!==(mover.side==='enemy'));
       const path=battlePath(e.from,e.to,c=>st&&st.map.inBounds(c)?st.map.moveCost(cls,c,ignoresRough(mover)):Infinity,hostile);
-      const walkArt=!!troopArt[artClass(cls)],mounted=['cavalry','heavyCav','horseArcher'].includes(artClass(cls)),machine=['ram','catapult'].includes(artClass(cls))||!!structureKind(mover.id);
+      const walkArt=hasPaintedMotion(cls),mounted=['cavalry','heavyCav','horseArcher'].includes(artClass(cls)),machine=['ram','catapult'].includes(artClass(cls))||!!structureKind(mover.id);
       const stride=actor.officer,per=Math.min(mounted?150:stride?220:190,1500/Math.max(1,path.length));
       if(stride)this.sparks(e.from,{count:6,color:0xb8a27a,speed:40,life:500,gravity:40,size:3});
       let at=e.from;
@@ -455,7 +462,7 @@ export class Battlefield {
     const targetId=e.t==='strategy'?e.targets[0]:e.defender,target=this.state?.find(targetId??'');if(!target)return;
     const from=iso(actor.unit.pos),to=iso(target.pos),dx=to.x-from.x,dy=to.y-from.y,len=Math.max(1,Math.hypot(dx,dy));
     this.focusUnit({x:(actor.unit.pos.x+target.pos.x)/2,y:(actor.unit.pos.y+target.pos.y)/2});
-    if(troopArt[artClass(actor.unit.unitClass)]){this.facing.set(actor.unit.id,0);actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*(dx<0?-1:1);}else if(!structureKind(actor.unit.id)&&dx!==0)actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*(dx<0?-1:1);
+    if(hasPaintedMotion(actor.unit.unitClass)){this.facing.set(actor.unit.id,0);actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*(dx<0?-1:1);}else if(!structureKind(actor.unit.id)&&dx!==0)actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*(dx<0?-1:1);
     const ranged=e.t==='strategy'||['archer','crossbow','catapult','horseArcher'].includes(artClass(actor.unit.unitClass))||(familyOf(actor.unit.unitClass)==='navy'&&manhattan(actor.unit.pos,target.pos)>1),fx=new Graphics();this.effects.addChild(fx);
     const reactions_=(e.t==='strategy'?e.targets:[e.defender]).map((id,i)=>{
       const victim=this.actors.get(id),damage=e.t==='strategy'?(e.damage[i]??0):e.damage;
@@ -481,7 +488,7 @@ export class Battlefield {
       if(p<.72)return reach;
       return reach*(1-(p-.72)/.28);};
     const frame=(p:number)=>{
-      const pose=troopArt[artClass(actor.unit.unitClass)]?(p<.2||p>.9?0:e.t==='strategy'?3:2):(p<.22?1:p<.65?2:p<.92?3:0);actor.sprite.texture=this.unitTexture(actor.unit,pose);
+      const pose=hasPaintedMotion(actor.unit.unitClass)?(p<.2||p>.9?0:e.t==='strategy'?3:2):(p<.22?1:p<.65?2:p<.92?3:0);actor.sprite.texture=this.unitTexture(actor.unit,pose);
       const lunge=lungeAt(p),jump=leap&&p>=.4&&p<.6?Math.sin((p-.4)/.2*Math.PI)*16:0;actor.sprite.x=dx/len*lunge;actor.sprite.y=8+dy/len*lunge-jump;
       fx.clear();
       if(ranged&&p>.2&&p<.6){const q=(p-.2)/.4,x=from.x+dx*q,y=from.y+dy*q-Math.sin(q*Math.PI)*22;
