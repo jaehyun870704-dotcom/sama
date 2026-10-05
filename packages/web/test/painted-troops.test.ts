@@ -15,3 +15,13 @@ describe('dedicated troop art',()=>{
     expect([8,9,10,11].map(paintedTroopFrame)).toEqual([3,0,3,0]);
   });
 });
+import {lookText} from '../src/troop-evolution.ts';
+import {hasPaintedMotion} from '../src/troops.ts';
+describe('dedicated art replaces armor-overlay rules',()=>{
+  it('describes each rattan tier by its own painted look, not steel or gold armor',()=>{
+    for(const c of ['rattan','rattanElite','wuguoRattan'] as const){const t=lookText(c);expect(t).toContain('등');expect(t).not.toMatch(/강철|금빛|기본 차림/);}
+  });
+  it('lets the battlefield use the painted walk and facing frames',()=>{
+    expect(hasPaintedMotion('rattan')).toBe(true);expect(hasPaintedMotion('wuguoRattan')).toBe(true);
+  });
+});
