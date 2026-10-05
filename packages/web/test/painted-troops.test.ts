@@ -1,7 +1,18 @@
 import {describe,it,expect} from 'vitest';
 import {paintedTroopArt,paintedTroopFrame} from '../src/painted-troops.ts';
 import {classSprite} from '../src/codex-ui.ts';
+import {lookText} from '../src/troop-evolution.ts';
 describe('dedicated troop art',()=>{
+  it('uses separate elephant and harness designs, never horse armor overlays',()=>{
+    for(const [row,c] of (['elephant','warElephant','elephantKing'] as const).entries()){
+      expect(paintedTroopArt[c]?.row).toBe(row);
+      expect(classSprite(c)).toContain('--elephant-v1-atlas');
+      expect(classSprite(c)).not.toContain('cx-armor');
+      expect(lookText(c)).toContain('하네스');
+      expect(lookText(c)).not.toContain('깃발');
+    }
+    expect(new Set(['elephant','warElephant','elephantKing'].map(c=>lookText(c as 'elephant'))).size).toBe(3);
+  });
   it('retains distinct rattan evolution rows without metal armor overlays',()=>{
     for(const [row,c] of (['rattan','rattanElite','wuguoRattan'] as const).entries()){
       expect(paintedTroopArt[c]?.row).toBe(row);
