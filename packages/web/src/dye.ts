@@ -18,20 +18,21 @@ export function clothBand(sheet:string):[number,number]{
 }
 const inBand=(h:number,[a,b]:[number,number])=>a<=b?h>=a&&h<=b:h>=a||h<=b;
 
-/** RGBA 점들에서 옷 색 띠의 선명한 점을 목표 색상으로 돌린다(채도·밝기는 유지, 초록은 조금 어둡게). */
-export function dyePixels(data:Uint8ClampedArray,band:[number,number],dye:Dye){
+/** RGBA 점들에서 옷 색 띠의 선명한 점을 목표 색상으로 돌린다(채도·밝기는 유지, 초록은 조금 어둡게).
+ * 채색 원화 시트는 천 색이 탁해(채도 0.1~0.2) minSat를 낮추고 boost로 채도를 조금 올려 부른다. */
+export function dyePixels(data:Uint8ClampedArray,band:[number,number],dye:Dye,minSat=.22,boost=1){
   const target=DYE_HUE[dye];
   for(let i=0;i<data.length;i+=4){
     if(data[i+3]!<8)continue;
     const r=data[i]!/255,g=data[i+1]!/255,b=data[i+2]!/255,mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;
     if(d<.06)continue;
     const l=(mx+mn)/2,s=d/(1-Math.abs(2*l-1));
-    if(s<.22||l<.06||l>.94)continue;
+    if(s<minSat||l<.06||l>.94)continue;
     let h=mx===r?((g-b)/d)%6:mx===g?(b-r)/d+2:(r-g)/d+4;h=(h*60+360)%360;
     if(!inBand(h,band))continue;
     // 띠 끝자락은 덜 돌려 경계가 번지지 않게 한다.
     const L=dye==='green'?l*.92:dye==='red'?Math.min(.9,l*1.04):l;
-    const [nr,ng,nb]=hsl(target,Math.min(1,s*(dye==='blue'?1:1.05)),L);
+    const [nr,ng,nb]=hsl(target,Math.min(1,s*(dye==='blue'?1:1.05)*boost),L);
     data[i]=Math.round(nr*255);data[i+1]=Math.round(ng*255);data[i+2]=Math.round(nb*255);
   }
   return data;

@@ -2,7 +2,7 @@ import {playbackEvents} from './battle-playback.ts';
 import {troopFacing,troopReaction,troopReactionPose,retreatMotion,battlePath,stepPose} from './troop-motion.ts';
 import {troopRoles,visualClass,troopArt,troopSheets,basicReactionArt,artClass,classSheets,loadClassSheets,hasPaintedMotion} from './troops.ts';
 import {spriteAtlas,outlinedCanvas} from './sprite-atlas.ts';
-import {paintedTroopArt,paintedTroopFrame} from './painted-troops.ts';
+import {paintedTroopArt,paintedTroopFrame,paintedFrames} from './painted-troops.ts';
 import {cryFor,reactions,isCrisis,type Emote} from './emotes.ts';
 import type {SoundEvent} from './sound-events.ts';
 import {navalAtlas,navalCrewRow,NAVAL_WATERLINE} from './naval-art.ts';
@@ -366,10 +366,11 @@ export class Battlefield {
     if(painted&&!structureKind(u.id)&&!u.id.startsWith('convoy_')){
       const atlas=this.troopTextures.get(painted.sheet);
       if(atlas){
-        const frame=paintedTroopFrame(pose),key=`painted:${painted.sheet}:${painted.row}:${frame}`;
+        // 파란 옷은 진영 색으로 염색한다(아군 파랑 · 적 빨강 · 우군 초록). 등갑·코끼리처럼 파란 천이 없으면 그대로다.
+        const frame=paintedTroopFrame(pose,paintedFrames(painted.sheet)),dye=dyeOfSide(u.side),sheet='base-painted-'+painted.sheet,dyed=needsDye('base',dye),key=`painted:${painted.sheet}:${dyed?dye:''}:${painted.row}:${frame}`;
         const old=this.textures.get(key);if(old)return old;
         const w=atlas.width/4,h=atlas.height/painted.rows;
-        const texture=new Texture({source:atlas.source,frame:new Rectangle(frame*w,painted.row*h,w,h)});
+        const texture=new Texture({source:dyed?this.dyedSource(atlas,sheet,dye):atlas.source,frame:new Rectangle(frame*w,painted.row*h,w,h)});
         this.textures.set(key,texture);return texture;
       }
     }
@@ -400,7 +401,7 @@ export class Battlefield {
   private dyedSource(atlas:Texture,sheet:string,dye:Dye){
     const key=sheet+':'+dye,old=this.dyed.get(key);if(old)return old;
     const from=atlas.source.resource as HTMLCanvasElement,c=document.createElement('canvas');c.width=from.width;c.height=from.height;
-    const g=c.getContext('2d',{willReadFrequently:true})!;g.drawImage(from,0,0);const img=g.getImageData(0,0,c.width,c.height);dyePixels(img.data,clothBand(sheet),dye);g.putImageData(img,0,0);
+    const g=c.getContext('2d',{willReadFrequently:true})!;g.drawImage(from,0,0);const img=g.getImageData(0,0,c.width,c.height);const painted=sheet.startsWith('base-painted');dyePixels(img.data,clothBand(sheet),dye,painted?.12:.22,painted?1.6:1);g.putImageData(img,0,0);
     const src=new CanvasSource({resource:c,autoGenerateMipmaps:true,scaleMode:'linear'});this.dyed.set(key,src);return src;
   }
   /** Sequential log playback keeps attack, impact and counterattack visibly separate. */
@@ -502,7 +503,7 @@ export class Battlefield {
       if(p<.72)return reach;
       return reach*(1-(p-.72)/.28);};
     const frame=(p:number)=>{
-      const pose=hasPaintedMotion(actor.unit.unitClass)?(p<.2||p>.9?0:e.t==='strategy'?3:2):(p<.22?1:p<.65?2:p<.92?3:0);actor.sprite.texture=this.unitTexture(actor.unit,pose);
+      const pose=hasPaintedMotion(actor.unit.unitClass)?(p<.2||p>.9?0:e.t==='strategy'?3:p<.5?1:2):(p<.22?1:p<.65?2:p<.92?3:0);actor.sprite.texture=this.unitTexture(actor.unit,pose);
       const lunge=lungeAt(p),jump=leap&&p>=.4&&p<.6?Math.sin((p-.4)/.2*Math.PI)*16:0;actor.sprite.x=dx/len*lunge;actor.sprite.y=8+dy/len*lunge-jump;
       fx.clear();
       if(ranged&&p>.2&&p<.6){const q=(p-.2)/.4,x=from.x+dx*q,y=from.y+dy*q-Math.sin(q*Math.PI)*22;
