@@ -112,7 +112,7 @@ export class Battlefield {
     // every stroke instead of dropping random pixels, and the dark rim keeps the dot look.
     const smooth=(canvas:HTMLCanvasElement,rim=true)=>new Texture({source:new CanvasSource({resource:rim?outlinedCanvas(canvas):canvas,autoGenerateMipmaps:true,scaleMode:'linear'})});
     // Every sheet is requested at once so the worker pool cuts them in parallel.
-    const [troops,ram,naval,convoys,extra,atlas,scenery]=await Promise.all([loadBattleTextures().then(()=>Promise.all(troopSheets.map(sheet=>spriteAtlas(sheet.url,sheet.rows,4,!!(sheet as {union?:boolean}).union)))),spriteAtlas('ram-v1.png',2,2),navalAtlas(),imageCanvas('convoys-v1.png'),spriteAtlas('units-extra-v1.png',4),spriteAtlas('units-v3.png',6),imageCanvas('scenery-v3.png')]);
+    const [troops,ram,naval,convoys,extra,atlas,scenery]=await Promise.all([loadBattleTextures().then(()=>Promise.all(troopSheets.map(sheet=>spriteAtlas(sheet.url,sheet.rows,4,!!(sheet as {union?:boolean}).union,(sheet as {alphaCutoff?:number}).alphaCutoff??8,!!(sheet as {strictGrid?:boolean}).strictGrid)))),spriteAtlas('ram-v1.png',2,2),navalAtlas(),imageCanvas('convoys-v1.png'),spriteAtlas('units-extra-v1.png',4),spriteAtlas('units-v3.png',6),imageCanvas('scenery-v3.png')]);
     troopSheets.forEach((sheet,i)=>this.troopTextures.set(sheet.id,smooth(troops[i]!)));
     // 병종 전용 채색 시트(있는 것만): 계열 그림 대신 쓴다.
     await loadClassSheets();await Promise.all([...classSheets].map(async([c,url])=>{try{this.troopTextures.set('own:'+c,smooth(await spriteAtlas(url,3)));}catch{/* 못 읽으면 계열 그림 */}}));

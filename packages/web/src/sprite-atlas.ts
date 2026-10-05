@@ -4,20 +4,46 @@ export interface AtlasPixels {width:number;height:number;data:Uint8ClampedArray}
 /** Generated sheets have uneven gutters. Find connected silhouettes before assigning
  * frames, so a spear crossing a nominal cell boundary stays with its owner. */
 /** union=true: 같은 칸에 든 실루엣 조각(투석기와 병사, 떠도는 부적)을 한 프레임으로 합친다. 기본은 칸마다 가장 큰 조각만 쓴다. */
-export function isolateFrames(source:AtlasPixels,rows:number,columns=4,union=false):AtlasPixels {
+export function isolateFrames(source:AtlasPixels,rows:number,columns=4,union=false,alphaCutoff=8,strictGrid=false):AtlasPixels {
   const {width,height,data}=source,labels=new Int32Array(width*height);
+  if(strictGrid){
+    type Box={left:number;top:number;right:number;bottom:number};
+    const boxes:Box[]=[];
+    for(let row=0;row<rows;row++)for(let col=0;col<columns;col++){
+      const x0=Math.floor(col*width/columns),x1=Math.floor((col+1)*width/columns)-1;
+      const y0=Math.floor(row*height/rows),y1=Math.floor((row+1)*height/rows)-1;
+      let left=x1,top=y1,right=x0,bottom=y0,found=false;
+      for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(data[(y*width+x)*4+3]!>=alphaCutoff){
+        found=true;left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);
+      }
+      if(!found)throw new Error(`Sprite atlas: empty strict-grid cell ${row},${col}`);
+      boxes.push({left,top,right,bottom});
+    }
+    const outWidth=SPRITE_CELL*columns,outHeight=SPRITE_CELL*rows,out=new Uint8ClampedArray(outWidth*outHeight*4);
+    const scale=Math.min(...boxes.map(b=>(SPRITE_CELL-28)/Math.max(b.right-b.left+1,b.bottom-b.top+1)));
+    boxes.forEach((b,slot)=>{
+      const w=Math.round((b.right-b.left+1)*scale),h=Math.round((b.bottom-b.top+1)*scale);
+      const ox=(slot%columns)*SPRITE_CELL+Math.floor((SPRITE_CELL-w)/2),oy=Math.floor(slot/columns)*SPRITE_CELL+SPRITE_CELL-14-h;
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+        const sx=b.left+Math.min(b.right-b.left,Math.floor(x/scale)),sy=b.top+Math.min(b.bottom-b.top,Math.floor(y/scale)),p=sy*width+sx;
+        if(data[p*4+3]!<alphaCutoff)continue;
+        out.set(data.subarray(p*4,p*4+4),((oy+y)*outWidth+ox+x)*4);
+      }
+    });
+    return {width:outWidth,height:outHeight,data:out};
+  }
   const queue=new Int32Array(width*height);
   const groups:Array<{id:number;size:number;left:number;top:number;right:number;bottom:number}>=[];
   let id=0;
   for(let start=0;start<labels.length;start++){
-    if(labels[start]||data[start*4+3]!<8)continue;
+    if(labels[start]||data[start*4+3]!<alphaCutoff)continue;
     id++;let head=0,tail=1;queue[0]=start;labels[start]=id;
     let left=width,top=height,right=0,bottom=0;
     while(head<tail){
       const p=queue[head++]!,x=p%width,y=Math.floor(p/width);
       left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);
       for(const n of [x>0?p-1:-1,x+1<width?p+1:-1,y>0?p-width:-1,y+1<height?p+width:-1]){
-        if(n>=0&&!labels[n]&&data[n*4+3]!>=8){labels[n]=id;queue[tail++]=n;}
+        if(n>=0&&!labels[n]&&data[n*4+3]!>=alphaCutoff){labels[n]=id;queue[tail++]=n;}
       }
     }
     if(tail>=100)groups.push({id,size:tail,left,top,right,bottom});
@@ -55,7 +81,7 @@ function toCanvas(p:AtlasPixels){
   const g=canvas.getContext('2d',{willReadFrequently:true})!,img=g.createImageData(p.width,p.height);img.data.set(p.data);g.putImageData(img,0,0);return canvas;
 }
 /** Small worker pool: every sheet is cut in parallel, away from the main thread. */
-type Job={url:string;rows:number;columns:number;union:boolean;resolve:(c:HTMLCanvasElement)=>void;reject:(e:unknown)=>void};
+type Job={url:string;rows:number;columns:number;union:boolean;alphaCutoff:number;strictGrid:boolean;resolve:(c:HTMLCanvasElement)=>void;reject:(e:unknown)=>void};
 const queue:Job[]=[],idle:Worker[]=[],pending=new Map<number,Job>(),running=new Map<Worker,number>();let workers=0,jobs=0;
 /** 작업자 파일을 못 불러오면(배포 누락·차단) 다시 쓰지 않고 메인 스레드에서 자른다. 대기가 끝나지 않아 화면이 멈추는 일을 막는다. */
 let workerBroken=false;
@@ -81,21 +107,21 @@ function dispatch(){
     const job=queue.shift()!,id=++jobs;pending.set(id,job);running.set(w,id);
     // 답이 오지 않는 작업은 메인 스레드로 넘긴다(작업자가 조용히 죽은 경우).
     setTimeout(()=>{const j=pending.get(id);if(j){pending.delete(id);j.reject(new Error('atlas worker timed out'));}},JOB_TIMEOUT);
-    w.postMessage({id,url:new URL(job.url,location.href).href,rows:job.rows,columns:job.columns,union:job.union});
+    w.postMessage({id,url:new URL(job.url,location.href).href,rows:job.rows,columns:job.columns,union:job.union,alphaCutoff:job.alphaCutoff,strictGrid:job.strictGrid});
   }
 }
-async function onMainThread(url:string,rows:number,columns:number,union=false){
+async function onMainThread(url:string,rows:number,columns:number,union=false,alphaCutoff=8,strictGrid=false){
   const img=new Image();img.src=url;await img.decode();
   const canvas=document.createElement('canvas');canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
   const context=canvas.getContext('2d',{willReadFrequently:true})!;context.drawImage(img,0,0);
-  return toCanvas(isolateFrames(context.getImageData(0,0,canvas.width,canvas.height),rows,columns,union));
+  return toCanvas(isolateFrames(context.getImageData(0,0,canvas.width,canvas.height),rows,columns,union,alphaCutoff,strictGrid));
 }
-export function spriteAtlas(url:string,rows:number,columns=4,union=false){
+export function spriteAtlas(url:string,rows:number,columns=4,union=false,alphaCutoff=8,strictGrid=false){
   // 문서 기준 상대 경로를 완전한 주소로: 워커는 자기 스크립트 위치를 기준으로 경로를 풀기 때문이다.
   url=typeof document!=='undefined'?new URL(url,document.baseURI).href:url;
-  const key=url+':'+rows+':'+columns+(union?':u':'');
-  if(!cache.has(key))cache.set(key,workerBroken||typeof Worker==='undefined'||typeof OffscreenCanvas==='undefined'?onMainThread(url,rows,columns,union):
-    new Promise<HTMLCanvasElement>((resolve,reject)=>{queue.push({url,rows,columns,union,resolve,reject});dispatch();}).catch(()=>onMainThread(url,rows,columns,union)));
+  const key=url+':'+rows+':'+columns+(union?':u':'')+':a'+alphaCutoff+(strictGrid?':g':'');
+  if(!cache.has(key))cache.set(key,workerBroken||typeof Worker==='undefined'||typeof OffscreenCanvas==='undefined'?onMainThread(url,rows,columns,union,alphaCutoff,strictGrid):
+    new Promise<HTMLCanvasElement>((resolve,reject)=>{queue.push({url,rows,columns,union,alphaCutoff,strictGrid,resolve,reject});dispatch();}).catch(()=>onMainThread(url,rows,columns,union,alphaCutoff,strictGrid)));
   return cache.get(key)!;
 }
 
