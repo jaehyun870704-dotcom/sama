@@ -8,7 +8,8 @@ import {officerLooks,officerLook,officerPortrait,dialogueCaption,splitSpokenLine
 import {troopRoles,supportOptions,visualClass,troopArt,troopSheets,basicReactionArt,evolutionLines,classSheets,loadClassSheets} from './troops.ts';
 import {growthMilestones} from './growth-milestones.ts';
 import {trialStory,trialTactics,layoutName} from './expedition-scenes.ts';
-import {expeditions,expeditionReward,canExpedition,storyWins,trainingXp,growthAdvice} from './expeditions.ts';
+import {expeditions,expeditionReward,canExpedition,storyWins,trainingXp,growthAdvice,type Expedition} from './expeditions.ts';
+const KIND_LABEL:Record<Expedition['kind'],string>={training:'반복 수련',quest:'보물 인연',bounty:'보물 사냥',challenge:'도전 퀘스트'};
 import {campMarkup} from './camp.ts';
 import {officerFeatures,talentTree,strategyHint,martialPower,debatePower,STATUS_NAMES} from './officers.ts';
 import {deploymentPerks} from './officer-perks.ts';
@@ -128,7 +129,7 @@ let menuArc=1;
 const resumeSaved=()=>{try{session=Session.load(JSON.parse(localStorage.getItem(SAVE_KEY)??'null'));activate();toast('저장한 전투를 불러왔습니다.');}catch{toast('현재 버전의 저장 기록을 읽지 못했습니다.');}};
 const runHost:RunHost={modal:(html,closable)=>modal(html,closable),showMenu:()=>showMenu(),toast:t=>toast(t),startBattle:(dep,seed)=>{session=new Session(RUN_CHAPTER,'normal',seed,'survival',RULES,dep);activate();persist();},
   startStory:(chapter,dep,seed)=>{session=new Session(chapter,'normal',seed,'survival',RULES,dep);activate();persist();},
-  showChronicle:()=>showChronicle(),showScenario:()=>showScenario(scenarioHost),showExpeditions:()=>showExpeditions(),showTroops:()=>showTroopGallery(),showOfficers:()=>showOfficerGallery(),showSlots:()=>showSlots(),
+  showChronicle:()=>showChronicle(),showScenario:()=>showScenario(scenarioHost),showExpeditions:(tab?:Expedition['kind'])=>showExpeditions(tab),showTroops:()=>showTroopGallery(),showOfficers:()=>showOfficerGallery(),showSlots:()=>showSlots(),
   get resumeSaved(){return saveAvailable&&!openRunSession()?resumeSaved:undefined;},
   liveRunBattle:()=>{const s=openRunSession();if(!s)return undefined;const d=s.deployment!;return d.run?{seed:d.run.seed,floor:d.run.floor,kind:d.run.kind}:{seed:d.runStory!.seed,floor:d.runStory!.floor,kind:'story'};},
   backToBattle:()=>{const s=openRunSession();if(s&&s!==session){session=s;activate();return;}menuOpen=false;closeModal();}};
@@ -161,7 +162,7 @@ function showChronicle(){
   }).join('')}</div><div class="menu-actions"><button id="run-open" class="primary">← 원정 본영</button>${saveAvailable?'<button id="resume" class="primary">전투 이어하기 →</button>':''}${hasStarted?'<button id="back-battle">현재 전장</button>':''}${devMode?'<button id="art-preview">개발 · 한중 바로 체험</button>':''}<button id="save-slots">저장 칸</button><button id="expeditions">수련 · 보물 인연</button><button id="troop-gallery">병종 도감</button><button id="officer-gallery">장수 외형</button><button id="chronicle">연의 기록</button></div><p class="prototype-note">${['상편 11전장: 하내의 밤부터 동오 설득까지, 살아남는 법을 배운다.','중편 14전장: 무위 반란부터 오장원까지, 제갈량과 맞선다.','하편 7전장: 요동 원정부터 고평릉의 변과 마지막 출정까지, 권력을 거머쥔다.'][menuArc-1]??''}<br>기록은 이 브라우저에 저장됩니다.</p></div></div>`,false);
   document.querySelectorAll<HTMLButtonElement>('[data-chapter]').forEach(b=>b.onclick=()=>storyScene(Number(b.dataset.chapter)));
   document.querySelectorAll<HTMLButtonElement>('[data-arc]').forEach(b=>b.onclick=()=>{menuArc=Number(b.dataset.arc);showChronicle();});
-  $('#expeditions').onclick=showExpeditions;
+  $('#expeditions').onclick=()=>showExpeditions();
   $('#run-open').onclick=showMenu;
   $('#troop-gallery').onclick=()=>showTroopGallery();$('#officer-gallery').onclick=()=>showOfficerGallery();
   $('#art-preview')?.addEventListener('click',()=>{session=new Session(1,'normal',215,'survival',RULES,deployment(campaign,true));activate();});
@@ -229,7 +230,7 @@ function briefing(chapter:number,expeditionId?:string,scenario?:ScenarioDeployme
     document.querySelectorAll<HTMLInputElement>('[name=preparation]').forEach(el=>el.onchange=()=>{prep=el.value as Preparation;draw();});
     document.querySelectorAll<HTMLInputElement>('[name=difficulty]').forEach(el=>el.onchange=()=>{difficulty=el.value as 'normal'|'extreme';extras=pickExtras(c.stage,c.map,extras,difficulty);draw();});
     document.querySelectorAll<HTMLInputElement>('[data-extra]').forEach(el=>el.onchange=()=>{const id=el.dataset.extra!;const next=el.checked?[...extras,id]:extras.filter(x=>x!==id);const ok=pickExtras(c.stage,c.map,next,difficulty);if(el.checked&&!ok.includes(id)){el.checked=false;toast(`이 장에는 ${storySortieLimit(difficulty)}명까지(남은 출진 칸 ${optionalOfficers(c.stage,c.map).capacity})만 더 데려갈 수 있습니다.`);return;}extras=ok;draw();});
-    $('#brief-back').onclick=scenario?()=>showScenario(scenarioHost,scenario.chapter):expedition?showExpeditions:showChronicle;
+    $('#brief-back').onclick=scenario?()=>showScenario(scenarioHost,scenario.chapter):expedition?()=>showExpeditions(expedition.kind):showChronicle;
     if(scenario)$('#brief-camp').onclick=()=>campOf(scenarioHost,scenario.chapter);
     document.querySelectorAll<HTMLSelectElement>('[data-support]').forEach(el=>el.onchange=()=>{const k=supportOptions.find(k=>k===el.value);if(k){supports[Number(el.dataset.support)]=k;draw();}});
     $('#recommend-support')?.addEventListener('click',()=>{if(recommendation){supports=[...recommendation.classes];draw();}});
@@ -262,14 +263,28 @@ function showTroopGallery(group:EvoGroup='all'){
  document.querySelectorAll<HTMLButtonElement>('[data-evo-group]').forEach(b=>b.onclick=()=>showTroopGallery(b.dataset.evoGroup as EvoGroup));
  void paintArmor();$('#troop-back').onclick=showMenu;
 }
-function showExpeditions(){
+function showExpeditions(tab:Expedition['kind']='challenge'){
  menuOpen=true;clearTimeout(aiTimer);
- modal(`<div class="briefing expedition-hub"><div class="eyebrow">연무장 · 보물 인연</div><h2>다음 승리를 준비하다</h2><p>연의의 보물과 장수 일화를 바탕으로 구성한 게임 창작 외전입니다.</p><p>${growthText()} · 수련 ${campaign.trainingWins??0}승 · 보물 외전 ${campaign.quests?.length??0}/11</p><p>수련은 반복 경험치를 줍니다. 권장 레벨보다 4레벨 이상 높으면 경험치가 단계적으로 감소합니다. 보물 외전의 경험치와 보물은 첫 승리 보상입니다.</p>${['training','quest'].map(kind=>`<h3>${kind==='training'?'반복 수련':'보물 인연 · 첫 승리마다 보물 4종'}</h3><div class="expedition-grid">${expeditions.filter(m=>m.kind===kind).map(m=>`<button data-expedition="${m.id}" ${canExpedition(campaign,m.id)?'':'disabled'}><strong>${m.name} · ${trialGoals[m.id]!.name}</strong><small>권장 Lv.${m.level} · ${kind==='training'?'승리 경험치 +'+trainingXp(campaign,m):(campaign.quests??[]).includes(m.id)?'인연 완료':'보물 4종'} · ${layoutName(m.id)}<br>${canExpedition(campaign,m.id)?'도전 가능':'본편 '+m.requires+'승 필요 ('+storyWins(campaign)+'/'+m.requires+')'}</small></button>`).join('')}</div>`).join('')}<button id="expedition-back">← 반복 퀘스트</button></div>`,false);
+ const done=(m:Expedition)=>m.kind==='quest'?(campaign.quests??[]).includes(m.id):m.kind==='challenge'?(campaign.challenges??[]).includes(m.id):false;
+ const left=(m:Expedition)=>treasures.filter(t=>t.quest===m.id&&!campaign.treasures.includes(t.id)).length;
+ const reward=(m:Expedition)=>m.kind==='training'?'승리 경험치 +'+trainingXp(campaign,m):m.kind==='bounty'?(left(m)?'승리마다 보물 1점 · 남은 보물 '+left(m):'보물을 모두 모음 · 경험치만'):done(m)?(m.kind==='challenge'?'돌파 완료':'인연 완료'):m.kind==='challenge'?'첫 돌파 보물 '+treasures.filter(t=>t.quest===m.id).map(t=>t.name).join('·'):'보물 4종';
+ const lock=(m:Expedition)=>m.kind==='challenge'&&m.step!>1&&!(campaign.challenges??[]).includes('C'+String(m.step!-1).padStart(2,'0'))?(m.step!-1)+'단계를 먼저 넘으세요':'본편 '+m.requires+'승 필요 ('+storyWins(campaign)+'/'+m.requires+')';
+ const card=(m:Expedition)=>`<button data-expedition="${m.id}" class="${m.kind}${done(m)?' done':''}" ${canExpedition(campaign,m.id)?'':'disabled'}><strong>${m.kind==='challenge'?`<em class="step">${m.step}</em>${m.name}`:`${m.name} · ${trialGoals[m.id]!.name}`}</strong><small>권장 Lv.${m.level} · ${reward(m)} · ${layoutName(m.id)}<br>${canExpedition(campaign,m.id)?'도전 가능':lock(m)}</small></button>`;
+ const cleared=(campaign.challenges??[]).length;
+ const sections:Array<[Expedition['kind'],string,string]>=[
+  ['challenge','도전 퀘스트 · 10단계',`앞 단계를 넘어야 다음 단계가 열립니다. 단계마다 적이 늘고 강해지며 증원이 몰려옵니다. 5·10단계에는 수문장이 기다립니다. 돌파 ${cleared}/10`],
+  ['bounty','반복 퀘스트 · 보물 사냥','이길 때마다 그 사냥터의 보물 중 아직 없는 것 하나를 얻습니다. 몇 번이든 다시 할 수 있습니다.'],
+  ['quest','보물 인연 · 첫 승리마다 보물 4종',''],
+  ['training','반복 수련','승리마다 경험치를 얻고, 수련장마다 첫 승리에 보물 2종을 줍니다.'],
+ ];
+ const [,title,note]=sections.find(x=>x[0]===tab)!;
+ modal(`<div class="briefing expedition-hub"><div class="eyebrow">연무장 · 반복·도전 퀘스트</div><h2>다음 승리를 준비하다</h2><p>${growthText()} · 도전 ${cleared}/10 · 보물 사냥 ${campaign.bountyWins??0}승 · 보물 외전 ${campaign.quests?.length??0}/11 · 수련 ${campaign.trainingWins??0}승</p><div class="expedition-tabs" role="tablist">${sections.map(([kind,label])=>`<button role="tab" data-exp-tab="${kind}" class="${kind===tab?'on':''}" aria-selected="${kind===tab}">${label.split(' · ')[0]}</button>`).join('')}</div><h3>${title}</h3>${note?`<p class="muted">${note}</p>`:''}<div class="expedition-grid${tab==='challenge'?' challenge-ladder':''}">${expeditions.filter(m=>m.kind===tab).map(card).join('')}</div><p class="muted">권장 레벨보다 4레벨 이상 높으면 수련 경험치가 단계적으로 줄어듭니다. 보물 외전과 도전의 경험치·보물은 첫 승리 보상입니다.</p><button id="expedition-back">← 반복 퀘스트</button></div>`,false);
+ document.querySelectorAll<HTMLButtonElement>('[data-exp-tab]').forEach(el=>el.onclick=()=>showExpeditions(el.dataset.expTab as Expedition['kind']));
  document.querySelectorAll<HTMLButtonElement>('[data-expedition]').forEach(el=>el.onclick=()=>expeditionStory(el.dataset.expedition!));$('#expedition-back').onclick=()=>showQuests(runHost);
 }
 function expeditionStory(id:string,beat=0){const m=expeditions.find(x=>x.id===id);if(!m||!canExpedition(campaign,id))return;const scenes=trialStory(m.id,m.name,m.art,m.lines),scene=scenes[beat]!,spoken=splitSpokenLine(scene.line),heroSpeaking=spoken.speaker==='사마의',other=heroSpeaking?'조진':spoken.speaker;
- modal(`<div class="story-scene"><div class="eyebrow">${m.kind==='training'?'반복 수련':'보물 인연'} · ${beat+1}/${scenes.length} · ${scene.place}</div><h2>${m.name}</h2><p class="trial-objective">${trialGoalText(id)}</p><div class="story-stage"><div class="story-backdrop incoming" style="${storyBackdrop(scene.art)}"></div><div class="story-actor hero ${heroSpeaking?'speaking':''}" style="${storyActorStyle('사마의',4)}"></div><div class="story-actor companion ${!heroSpeaking?'speaking':''}" style="${storyActorStyle(other,0)}"></div></div>${dialogueCaption(spoken.speaker,spoken.line)}<div class="modal-actions"><button id="expedition-cancel">의뢰 목록</button><button id="expedition-next" class="primary">${beat<scenes.length-1?'다음 이야기':'출진 정비'} →</button></div></div>`,false);
- $('#expedition-cancel').onclick=showExpeditions;$('#expedition-next').onclick=()=>beat<scenes.length-1?expeditionStory(id,beat+1):briefing(7,id);
+ modal(`<div class="story-scene"><div class="eyebrow">${KIND_LABEL[m.kind]} · ${beat+1}/${scenes.length} · ${scene.place}</div><h2>${m.name}</h2><p class="trial-objective">${trialGoalText(id)}</p><div class="story-stage"><div class="story-backdrop incoming" style="${storyBackdrop(scene.art)}"></div><div class="story-actor hero ${heroSpeaking?'speaking':''}" style="${storyActorStyle('사마의',4)}"></div><div class="story-actor companion ${!heroSpeaking?'speaking':''}" style="${storyActorStyle(other,0)}"></div></div>${dialogueCaption(spoken.speaker,spoken.line)}<div class="modal-actions"><button id="expedition-cancel">의뢰 목록</button><button id="expedition-next" class="primary">${beat<scenes.length-1?'다음 이야기':'출진 정비'} →</button></div></div>`,false);
+ $('#expedition-cancel').onclick=()=>showExpeditions(m.kind);$('#expedition-next').onclick=()=>beat<scenes.length-1?expeditionStory(id,beat+1):briefing(7,id);
 }
 /** 연의 장수록: 별호 · 다섯 능력 · 고유능력. 연의에 없는 졸병은 표시하지 않는다. */
 function romanceCard(u:Unit){
@@ -282,8 +297,8 @@ function milestoneMarkup(items:ReturnType<typeof growthMilestones>){return items
 function showExpeditionResult(){if(resultShown)return;resultShown=true;const run=session.deployment!.mission!,m=expeditions.find(x=>x.id===run.id)!,win=session.state.outcome==='victory';const before=structuredClone(campaign);
  const reward=expeditionReward(campaign,m.id,run.runId,win);saveCampaign();
  const milestones=growthMilestones(before,campaign);
- modal(`<div class="result"><div class="result-character">${win?'승':'련'}</div><h2>${win?'성장의 한 걸음':'다시 준비할 시간'}</h2><p>${m.name} · ${session.state.turn}턴</p>${win?`<div class="story-stage reward-scene"><div class="story-backdrop incoming" style="${storyBackdrop(m.art)}"></div><div class="story-actor hero speaking" style="${storyActorStyle('사마의',4)}"></div><div class="story-actor companion" style="${storyActorStyle('조진',0)}"></div></div>`:''}${win?dialogueCaption(splitSpokenLine(m.lines[2]!).speaker,splitSpokenLine(m.lines[2]!).line):`<p class="battle-aftermath">${esc(session.failure)}<br>패배해도 경험치와 보물은 잃지 않습니다. 정비 후 다시 도전하세요.</p>`}<p>${win&&!reward.xp?'이미 보상을 받은 전투입니다. · ':'경험치 +'+reward.xp+' · '}${growthText()}</p>${reward.items.length?`<p class="treasure-reward">보물 해금: ${reward.items.map(id=>treasures.find(t=>t.id===id)!.name).join(' · ')}</p>`:''}${milestoneMarkup(milestones)}<div class="modal-actions"><button id="expedition-again">${m.kind==='training'?'다시 수련':'다시 도전'}</button><button id="expedition-list">수련 · 보물 인연</button><button id="expedition-menu">연의 회상</button></div></div>`,false);
- $('#expedition-again').onclick=()=>briefing(7,m.id);$('#expedition-list').onclick=showExpeditions;$('#expedition-menu').onclick=showChronicle;
+ modal(`<div class="result"><div class="result-character">${win?'승':'련'}</div><h2>${win?'성장의 한 걸음':'다시 준비할 시간'}</h2><p>${m.name} · ${session.state.turn}턴</p>${win?`<div class="story-stage reward-scene"><div class="story-backdrop incoming" style="${storyBackdrop(m.art)}"></div><div class="story-actor hero speaking" style="${storyActorStyle('사마의',4)}"></div><div class="story-actor companion" style="${storyActorStyle('조진',0)}"></div></div>`:''}${win?dialogueCaption(splitSpokenLine(m.lines[2]!).speaker,splitSpokenLine(m.lines[2]!).line):`<p class="battle-aftermath">${esc(session.failure)}<br>패배해도 경험치와 보물은 잃지 않습니다. 정비 후 다시 도전하세요.</p>`}<p>${win&&!reward.xp?'이미 보상을 받은 전투입니다. · ':'경험치 +'+reward.xp+' · '}${growthText()}</p>${reward.items.length?`<p class="treasure-reward">보물 해금: ${reward.items.map(id=>treasures.find(t=>t.id===id)!.name).join(' · ')}</p>`:''}${milestoneMarkup(milestones)}<div class="modal-actions"><button id="expedition-again">${m.kind==='training'?'다시 수련':'다시 도전'}</button>${m.kind==='challenge'&&win&&m.step!<10?'<button id="expedition-next-step" class="primary">다음 단계 →</button>':''}<button id="expedition-list">연무장 목록</button><button id="expedition-menu">연의 회상</button></div></div>`,false);
+ $('#expedition-again').onclick=()=>briefing(7,m.id);const nextStep=document.getElementById('expedition-next-step');if(nextStep)nextStep.onclick=()=>expeditionStory('C'+String(m.step!+1).padStart(2,'0'));$('#expedition-list').onclick=()=>showExpeditions(m.kind);$('#expedition-menu').onclick=showChronicle;
 }
 function activate(){
   hasStarted=true;menuOpen=false;resultShown=false;duelPresented=false;mode='move';

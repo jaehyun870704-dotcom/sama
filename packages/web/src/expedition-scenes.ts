@@ -2,11 +2,11 @@ import type {MapFile} from '../../core/src/index.ts';
 import {trialLayouts,layoutMap,type TrialLayout} from './expedition-maps-data.ts';
 
 export type TrialLandscape='field'|'forest'|'river'|'pass'|'court'|'fort'|'naval';
-const landscapes:Record<string,TrialLandscape>={T01:'field',T02:'forest',T03:'court',T04:'river',T05:'pass',T06:'court',Q01:'river',Q02:'fort',Q03:'pass',Q04:'forest',Q05:'court',Q06:'pass',Q07:'field',Q08:'river',Q09:'forest',Q10:'court',Q11:'pass',T07:'naval'};
+const landscapes:Record<string,TrialLandscape>={T01:'field',T02:'forest',T03:'court',T04:'river',T05:'pass',T06:'court',Q01:'river',Q02:'fort',Q03:'pass',Q04:'forest',Q05:'court',Q06:'pass',Q07:'field',Q08:'river',Q09:'forest',Q10:'court',Q11:'pass',T07:'naval',R01:'pass',R02:'field',R03:'court',R04:'pass',R05:'forest',C01:'field',C02:'forest',C03:'river',C04:'pass',C05:'fort',C06:'court',C07:'pass',C08:'river',C09:'forest',C10:'fort'};
 export const landscapeNames:Record<TrialLandscape,string>={field:'연무 들판',forest:'숲속 보급로',river:'강변 교량',pass:'산악 협로',court:'사당 앞뜰',fort:'군수고 성문',naval:'장강 수채'};
 export function expeditionLandscape(id:string){return landscapes[id]??'field';}
 /** Which hand-drawn map an expedition uses from mission version 4 on. */
-const layoutKeys:Record<string,string>={T01:'field',Q07:'field',T02:'forest',Q04:'forest',Q09:'forest',T04:'river',Q01:'river',Q08:'ford',T05:'pass',Q06:'pass',Q03:'gorge',Q11:'gorge',T03:'court',T06:'court',Q05:'court',Q10:'court',Q02:'fort',T07:'naval'};
+const layoutKeys:Record<string,string>={T01:'field',Q07:'field',T02:'forest',Q04:'forest',Q09:'forest',T04:'river',Q01:'river',Q08:'ford',T05:'pass',Q06:'pass',Q03:'gorge',Q11:'gorge',T03:'court',T06:'court',Q05:'court',Q10:'court',Q02:'fort',T07:'naval',R01:'gorge',R02:'field',R03:'court',R04:'pass',R05:'forest',C01:'field',C02:'forest',C03:'river',C04:'pass',C05:'fort',C06:'court',C07:'gorge',C08:'ford',C09:'forest',C10:'fort'};
 export function trialLayout(id:string):TrialLayout{return trialLayouts[layoutKeys[id]??'field']!;}
 export function layoutName(id:string){return trialLayout(id).name;}
 export function trialMap(id:string,name:string,version=4):MapFile{

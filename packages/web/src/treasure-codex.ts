@@ -29,7 +29,7 @@ export const defaultFilter=(tab:TreasureTab='all'):CodexFilter=>({kind:tab==='ow
 /** 보물을 얻는 곳(연의 장 제목 또는 보물 외전·연무장 이름) */
 export function treasureSource(stage:string){
   const ch=chapters.find(c=>c.stage.id===stage);if(ch)return `연의 「${ch.stage.title}」 (${ch.label})`;
-  const q=expeditions.find(e=>e.id===stage);if(q)return q.kind==='training'?`연무장 「${q.name}」 첫 승리`:`보물 외전 「${q.name}」`;
+  const q=expeditions.find(e=>e.id===stage);if(q)return q.kind==='training'?`연무장 「${q.name}」 첫 승리`:q.kind==='bounty'?`보물 사냥 「${q.name}」 승리마다 하나씩`:q.kind==='challenge'?`도전 ${q.step}단계 첫 돌파`:`보물 외전 「${q.name}」`;
   return stage;
 }
 /** 지금 가진 보물과 장착 상태(영구 보관 + 이번 회차) */

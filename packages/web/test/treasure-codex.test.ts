@@ -12,8 +12,8 @@ describe("보물 도감 필터", () => {
   });
   it("종류·형태·등급·보유로 거른다", () => {
     const shields = filterTreasures({ kind: "armor", form: "shield", grade: 0, own: "all" }, h).map((e) => e.id);
-    expect(shields).toEqual(expect.arrayContaining(["rattanShield", "phoenixHelm", "tigerShield", "lionHelm"]));
-    expect(shields).toHaveLength(4);
+    expect(shields).toEqual(expect.arrayContaining(["rattanShield", "phoenixHelm", "tigerShield", "lionHelm", "hideShield", "wolfHelm", "riverShield", "rattanHelm"]));
+    expect(shields).toHaveLength(8);
     const legend = filterTreasures({ kind: "weapon", form: "all", grade: 4, own: "all" }, h);
     expect(legend.length).toBeGreaterThan(0);
     expect(legend.every((e) => e.kind === "weapon" && e.grade === 4)).toBe(true);

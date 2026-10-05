@@ -72,7 +72,8 @@ function carefulPlay(s:Session){for(let i=0;i<1500&&s.state.outcome==='ongoing';
 }}
 describe('hand-drawn expedition maps',()=>{
  function v4(id:string,level:number,seed=215){const d=deployment(freshCampaign(),true);for(const who of Object.keys(d.levels))d.levels[who]=Math.max(d.levels[who]!,level);d.mission={id,runId:'map-'+id,version:4,balance:1,supportClasses:['infantry','fengshui']};return new Session(7,'normal',seed,'survival',4,d);}
- it.each(expeditions.map(m=>[m.id,m.level] as const))('%s scatters starts and can be won in a straight fight',(id,level)=>{
+ // 도전 4단계부터는 권장 레벨보다 높게 단련한 부대로 넘도록 설계했다(이 봇은 보물·연구 없이 싸운다).
+ it.each(expeditions.map(m=>[m.id,m.kind==='challenge'&&m.step!>3?m.level+(m.step!>=10?15:m.step!>=9?12:8):m.level] as const))('%s scatters starts and can be won in a straight fight',(id,level)=>{
   const s=v4(id,level),st=s.state,heroes=st.living('player'),enemies=st.living('enemy').filter(u=>!structureKind(u.id));
   // Starts are spread: the two support units do not stand in the heroes' column.
   const support=st.living('ally').filter(u=>u.id.startsWith('granted_')&&u.unitClass!=='navy');

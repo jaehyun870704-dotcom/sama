@@ -37,7 +37,7 @@ export interface RunHost {
   /** 시나리오 모드(본편: 연의 + 가상) */
   showScenario():void;
   /** 수련·보물 인연(반복 퀘스트) */
-  showExpeditions():void;
+  showExpeditions(tab?:'training'|'quest'|'bounty'|'challenge'):void;
   /** 자동 저장된 전투가 있으면 이어 하기 */
   resumeSaved?:(()=>void)|undefined;
 }
@@ -115,14 +115,16 @@ export function showQuests(host:RunHost){
     <article><h3>천명의 원정 <small>로그라이크</small></h3><p>3편 18층을 오르는 한 번뿐인 원정. 쓰러진 장수는 돌아오지 않는다. 원정이 끝나면 천명을 얻어 영구 해금에 쓴다.</p>
       <p class="muted">천명 ${meta.mandate} · 최고 ${meta.best}층 · 원정 ${meta.runs}회</p>
       <div class="run-actions">${ongoing(run)?`<button id="q-run-continue" class="primary">원정 이어하기 · ${run.floor}층</button>`:''}<button id="q-run-new" class="${ongoing(run)?'':'primary'}">${ongoing(run)?'새 원정 (지금 원정은 포기)':'새 원정'}</button><button id="q-shop">천명 해금 ${meta.unlocks.length}/${UNLOCKS.length}</button></div></article>
-    <article><h3>수련 · 보물 인연 <small>외전</small></h3><p>연무장의 수련 전투와 보물 인연 외전. 이기면 사마의와 장수들이 경험치를 얻고 보물을 모은다.</p>
-      <div class="run-actions"><button id="q-exp" class="primary">수련장으로</button></div></article>
+    <article><h3>도전 퀘스트 <small>10단계</small></h3><p>단계를 넘을 때마다 적이 늘고 강해진다. 5·10단계에는 수문장. 처음 넘는 단계마다 보물을 준다.</p>
+      <div class="run-actions"><button id="q-challenge" class="primary">도전의 문으로</button></div></article>
+    <article><h3>보물 사냥 · 수련 <small>반복</small></h3><p>보물 사냥은 이길 때마다 아직 없는 보물 하나를 준다. 수련과 보물 인연 외전으로 경험치와 보물을 모은다.</p>
+      <div class="run-actions"><button id="q-exp">연무장으로</button></div></article>
     <article><h3>연의 회상</h3><p>이긴 연의 전장을 다시 치른다(일반 · 극한). 원정의 연의 기록 ${told}개.</p>
       <div class="run-actions"><button id="q-chronicle">연의 기록 · 회상</button></div></article>
   </div>
   <div class="run-actions"><button id="q-back">← 본영</button></div></div>`,false);
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
-  on('q-run-continue',()=>showRun(host,run!));on('q-shop',()=>showShop(host));on('q-exp',host.showExpeditions);on('q-chronicle',()=>showChronicleSummary(host));on('q-back',host.showMenu);
+  on('q-run-continue',()=>showRun(host,run!));on('q-shop',()=>showShop(host));on('q-exp',()=>host.showExpeditions('bounty'));on('q-challenge',()=>host.showExpeditions('challenge'));on('q-chronicle',()=>showChronicleSummary(host));on('q-back',host.showMenu);
   on('q-run-new',()=>{if(ongoing(run)){const b=document.getElementById('q-run-new')!;if(b.dataset.armed!=='1'){b.dataset.armed='1';b.textContent='정말 포기하고 새로 시작';b.classList.add('danger');return;}run.status='lost';run.news=['원정을 포기했다.'];saveRun(run);return showEnd(host,run);}showStart(host);});
 }
 

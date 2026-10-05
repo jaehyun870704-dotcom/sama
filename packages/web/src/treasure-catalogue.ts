@@ -39,6 +39,56 @@ const trainingEntries:Array<[string,string,GearSlot,number,string,Treasure['bonu
  ['lionHelm','사자투구','armor',4,'T06',{defense:4,maxHp:12},'금빛 사자 머리 투구. 장수의 위용을 드러낸다.'],
  ['tortoiseToken','현무영패','accessory',4,'T06',{defense:2,spirit:4},'북방 현무를 새긴 영패. 진을 지키는 장수에게 내린다.'],
 ];
+/**
+ * 반복 퀘스트(보물 사냥 R01~R05)의 보물 꾸러미와 도전 퀘스트(C01~C10) 돌파 보물.
+ * 보물 사냥은 이길 때마다 꾸러미에서 아직 없는 보물 하나, 도전은 단계를 처음 넘을 때 받는다(5·10단계는 둘).
+ */
+const questEntries:Array<[string,string,GearSlot,number,string,Treasure['bonus'],string]>=[
+ ['bronzeSword','청동 고검','weapon',1,'R01',{attack:3,agility:1},'오래된 무덤에서 나온 청동검. 날은 무디지만 손에 익는다.'],
+ ['hornBowSmall','각궁','weapon',2,'R01',{attack:4,agility:2},'소뿔과 힘줄을 겹쳐 만든 작은 활. 산적들이 즐겨 쓴다.'],
+ ['hideShield','피패','armor',1,'R01',{defense:2,maxHp:5},'소가죽을 씌운 나무 방패. 칼날이 미끄러진다.'],
+ ['strawCape','도롱이','armor',1,'R01',{defense:1,maxHp:6,agility:1},'짚으로 엮은 비옷. 화살이 엉켜 힘을 잃는다.'],
+ ['copperBell','구리 방울','accessory',1,'R01',{spirit:2,maxMp:2},'군막 입구에 다는 방울. 밤의 기척을 알린다.'],
+ ['travelPouch','행낭','accessory',2,'R01',{maxHp:6,agility:1},'말린 고기와 약초를 넣어 다니는 가죽 주머니.'],
+ ['ringBlade','환수도','weapon',2,'R02',{attack:5,maxHp:3},'자루 끝에 고리를 단 한나라 군도.'],
+ ['ironRod','철곤','weapon',2,'R02',{attack:5,defense:1},'쇠를 씌운 몽둥이. 갑옷 위로 뼈를 울린다.'],
+ ['lamellarVest','찰갑 조끼','armor',2,'R02',{defense:3,maxHp:6},'쇠미늘을 가죽끈으로 엮은 짧은 갑옷.'],
+ ['wolfHelm','낭두 투구','armor',2,'R02',{defense:3,maxHp:4,spirit:1},'이리 머리 장식을 단 투구. 요술에 흔들리지 않는다.'],
+ ['bambooSlips','죽간 병법','accessory',2,'R02',{intellect:3,maxMp:3},'대쪽에 옮겨 적은 병법 한 권.'],
+ ['ponyBridle','청총마 굴레','accessory',3,'R02',{agility:3,maxHp:4},'푸른 털 말에 씌우던 은장 굴레.'],
+ ['snakeBlade','사검','weapon',3,'R03',{attack:6,agility:2},'뱀처럼 굽은 칼날. 막아도 비집고 들어온다.'],
+ ['armorPiercer','파갑추','weapon',3,'R03',{attack:6,maxHp:4},'끝이 뾰족한 쇠망치. 갑옷을 뚫으려고 만들었다.'],
+ ['boltQuiver','노전통','weapon',3,'R03',{attack:5,agility:3},'짧은 쇠뇌 살을 가득 담은 통과 손쇠뇌.'],
+ ['mountainArmor','산문갑','armor',3,'R03',{defense:4,maxHp:9},'산(山) 자 무늬로 미늘을 맞춘 갑옷.'],
+ ['fireproofRobe','화완포','armor',3,'R03',{defense:3,maxHp:6,spirit:2},'불에 넣으면 때만 타고 깨끗해진다는 옷감.'],
+ ['beaconToken','봉화 영전','accessory',3,'R03',{spirit:3,defense:1},'봉화대 수장이 차는 화살 모양 영패.'],
+ ['wuhuanBow','오환 각궁','weapon',4,'R04',{attack:7,agility:3},'북방 기마민의 큰 각궁. 달리며 쏘아도 곧게 날아간다.'],
+ ['cavalrySaber','기병 환도','weapon',3,'R04',{attack:6,agility:2,maxHp:3},'말 위에서 휘두르기 좋게 휜 칼.'],
+ ['feltArmor','모전갑','armor',3,'R04',{defense:4,maxHp:10},'두껍게 누빈 양털 갑옷. 화살이 박혀도 들어오지 않는다.'],
+ ['horseBarding','마갑','armor',4,'R04',{defense:5,maxHp:10},'말과 기수를 함께 감싸는 쇠비늘 갑주.'],
+ ['eagleFeather','해동청 깃','accessory',4,'R04',{agility:4,spirit:2},'북방 매의 깃을 꽂은 장식. 몸놀림이 가벼워진다.'],
+ ['nomadSteed','오환 준마','accessory',4,'R04',{agility:4,maxHp:6},'초원에서 길들인 준마. 험한 길도 가리지 않는다.'],
+ ['poisonDarts','독침 통','weapon',4,'R05',{attack:7,agility:4},'남만 사냥꾼의 대롱과 독침.'],
+ ['tuskSpear','상아 창','weapon',4,'R05',{attack:8,maxHp:6},'코끼리 상아로 날을 세운 창.'],
+ ['rattanHelm','등나무 투구','armor',4,'R05',{defense:5,maxHp:8},'기름 먹인 등나무로 짠 투구. 가볍고 단단하다.'],
+ ['shuBrocade','촉금 전포','armor',4,'R05',{defense:5,maxHp:12,spirit:2},'촉의 비단으로 지은 전포. 피와 먼지가 스미지 않는다.'],
+ ['bronzeDrum','남만 동고','accessory',4,'R05',{spirit:3,maxHp:8},'남만 추장이 싸움을 알리던 청동 북.'],
+ ['spiritBead','벽사 구슬','accessory',4,'R05',{spirit:5,maxMp:6},'사악한 기운을 물리친다는 검은 옥구슬.'],
+ ['initiateBadge','초입패','accessory',2,'C01',{attack:2,defense:2},'도전의 첫 문을 넘은 이에게 주는 나무패.'],
+ ['sharpSpearhead','예창두','weapon',3,'C02',{attack:6},'숲속 대장간에서 갈아 낸 날카로운 창끝.'],
+ ['riverShield','강패','armor',3,'C03',{defense:4,maxHp:8},'다리를 지키던 병사의 큰 방패. 화살 자국이 빽빽하다.'],
+ ['summitBanner','등봉기','accessory',3,'C04',{spirit:3,agility:3},'산 정상에 꽂던 깃발. 멀리서도 보인다.'],
+ ['gatekeeperHalberd','수문장 방천극','weapon',4,'C05',{attack:9,maxHp:8},'군수고 수문장이 들던 방천극. 5단계 수문장을 꺾은 증표.'],
+ ['gatekeeperArmor','수문장 흑갑','armor',4,'C05',{defense:6,maxHp:14},'수문장의 검은 판갑. 정면에서 무너지지 않는다.'],
+ ['courtSeal','정위의 인','accessory',4,'C06',{intellect:4,spirit:3},'궁궐의 법을 맡던 정위의 도장.'],
+ ['cliffSandals','잔도 짚신','accessory',4,'C07',{agility:5,maxHp:5},'벼랑길을 걷던 짐꾼의 짚신. 어떤 길도 미끄러지지 않는다.'],
+ ['fordHorse','도하마','accessory',4,'C08',{agility:4,maxHp:8},'여울을 건너도 걸음이 흐트러지지 않는 말.'],
+ ['hundredPaceBow','백보 신궁','weapon',4,'C09',{attack:9,agility:3},'백 걸음 밖의 버들잎을 맞혔다는 활.'],
+ ['peerlessSword','천하제일검','weapon',4,'C10',{attack:11,agility:3,maxHp:6},'도전 10단계를 모두 넘은 이에게만 주어지는 검.'],
+ ['overlordArmor','패왕갑','armor',4,'C10',{defense:8,maxHp:18},'천하를 다투던 패왕의 갑옷. 마지막 수문장을 꺾은 증표.'],
+];
 const STAT_KO:Record<string,string>={attack:'공격',defense:'방어',maxHp:'최대 체력',maxMp:'최대 MP',intellect:'지력',spirit:'정신',agility:'민첩'};
 export const trainingTreasures:Treasure[]=trainingEntries.map(([id,name,slot,grade,quest,bonus,description])=>({id,name,slot,grade,quest,stage:quest,glyph:name.slice(0,1),bonus,description,
+ effect:Object.entries(bonus).map(([k,v])=>STAT_KO[k]+' +'+v).join(' · ')}));
+export const questTreasures:Treasure[]=questEntries.map(([id,name,slot,grade,quest,bonus,description])=>({id,name,slot,grade,quest,stage:quest,glyph:name.slice(0,1),bonus,description,
  effect:Object.entries(bonus).map(([k,v])=>STAT_KO[k]+' +'+v).join(' · ')}));

@@ -19,18 +19,19 @@ export const FORMS:Array<{id:TreasureForm;name:string;slot:GearSlot}>=[
 ];
 const FORM_OF:Record<string,TreasureForm>={
   yitian:'sword',qinggang:'sword',doubleSwords:'sword',moonSword:'sword',jadeSword:'sword',
-  sevenstar:'blade',greenDragon:'blade',ancientBlade:'blade',phoenixSpear:'blade',threePointBlade:'blade',zhanmaDao:'blade',
-  serpentSpear:'spear',ironSpear:'spear',dragonSpear:'spear',tigerSpear:'spear',hookSpear:'spear',
-  halberd:'polearm',crescentBlade:'polearm',twinHalberds:'polearm',ironAxe:'polearm',
-  bow:'bow',ironBow:'bow',repeatingCrossbow:'bow',longbow:'bow',
-  flyingBlade:'hidden',steelWhip:'hidden',goldHammer:'hidden',meteorHammer:'hidden',
-  craneRobe:'robe',cloudRobe:'robe',strategistRobe:'robe',bearCloak:'robe',
-  rattanShield:'shield',phoenixHelm:'shield',tigerShield:'shield',lionHelm:'shield',
-  dilu:'mount',redHare:'mount',swiftSaddle:'mount',shadowHorse:'mount',yellowHorse:'mount',
-  dunjia:'book',taiping:'book',mengde:'book',sunzi:'book',sixTeachings:'book',threeStrategies:'book',qingshu:'book',formationScroll:'book',springAutumn:'book',
-  seal:'seal',militarySeal:'seal',tigerTally:'seal',tortoiseToken:'seal',
-  fan:'relicItem',warDrum:'relicItem',sevenStarFlag:'relicItem',hujia:'relicItem',baguaMirror:'relicItem',purpleGourd:'relicItem',
-  jadePendant:'ornament',phoenixHairpin:'ornament',swiftBoots:'ornament',
+  bronzeSword:'sword',snakeBlade:'sword',peerlessSword:'sword',
+  sevenstar:'blade',ringBlade:'blade',cavalrySaber:'blade',greenDragon:'blade',ancientBlade:'blade',phoenixSpear:'blade',threePointBlade:'blade',zhanmaDao:'blade',
+  serpentSpear:'spear',sharpSpearhead:'spear',tuskSpear:'spear',ironSpear:'spear',dragonSpear:'spear',tigerSpear:'spear',hookSpear:'spear',
+  halberd:'polearm',gatekeeperHalberd:'polearm',crescentBlade:'polearm',twinHalberds:'polearm',ironAxe:'polearm',
+  bow:'bow',hornBowSmall:'bow',boltQuiver:'bow',wuhuanBow:'bow',hundredPaceBow:'bow',ironBow:'bow',repeatingCrossbow:'bow',longbow:'bow',
+  flyingBlade:'hidden',ironRod:'hidden',armorPiercer:'hidden',poisonDarts:'hidden',steelWhip:'hidden',goldHammer:'hidden',meteorHammer:'hidden',
+  craneRobe:'robe',strawCape:'robe',fireproofRobe:'robe',shuBrocade:'robe',cloudRobe:'robe',strategistRobe:'robe',bearCloak:'robe',
+  rattanShield:'shield',hideShield:'shield',wolfHelm:'shield',riverShield:'shield',rattanHelm:'shield',phoenixHelm:'shield',tigerShield:'shield',lionHelm:'shield',
+  dilu:'mount',ponyBridle:'mount',nomadSteed:'mount',fordHorse:'mount',redHare:'mount',swiftSaddle:'mount',shadowHorse:'mount',yellowHorse:'mount',
+  dunjia:'book',bambooSlips:'book',taiping:'book',mengde:'book',sunzi:'book',sixTeachings:'book',threeStrategies:'book',qingshu:'book',formationScroll:'book',springAutumn:'book',
+  seal:'seal',beaconToken:'seal',initiateBadge:'seal',courtSeal:'seal',militarySeal:'seal',tigerTally:'seal',tortoiseToken:'seal',
+  fan:'relicItem',copperBell:'relicItem',bronzeDrum:'relicItem',summitBanner:'relicItem',warDrum:'relicItem',sevenStarFlag:'relicItem',hujia:'relicItem',baguaMirror:'relicItem',purpleGourd:'relicItem',
+  jadePendant:'ornament',travelPouch:'ornament',eagleFeather:'ornament',spiritBead:'ornament',cliffSandals:'ornament',phoenixHairpin:'ornament',swiftBoots:'ornament',
 };
 /** 보물의 형태(따로 적지 않은 방어구는 갑옷, 무기는 검, 보조구는 기물). */
 export function formOf(id:string):TreasureForm{

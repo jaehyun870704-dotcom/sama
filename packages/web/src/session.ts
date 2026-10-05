@@ -9,7 +9,7 @@ import './scenario.ts';
 import {pickExtras} from './sortie.ts';
 import {applyRomance,temperOf} from './romance.ts';
 import {applyCC} from './cc-apply.ts';
-import {expeditionBattle,expeditions} from './expeditions.ts';
+import {expeditionBattle,expeditions,missionEnemyScale} from './expeditions.ts';
 import {newDuel,duelRound,duelResponse,type DuelState,type DuelAction} from './duel.ts';
 import {availableStrategies,learnedStrategies,allStrategies,applyOfficerFeatures,martialPower,debatePower} from './officers.ts';
 import approachStage from '../../data/stages/S1-07.json';
@@ -219,8 +219,8 @@ export class Session {
       for(const u of state.living('enemy'))if(u.goalRegion==='trial_defense')u.stats.movement=3;
     }
     if(this.deployment?.mission){
-      const practice=this.deployment.mission.id.startsWith('T');
-      for(const enemy of state.living('enemy')){enemy.stats.attack=Math.round(enemy.stats.attack*(practice?.6:.75));this.balancedEnemies.add(enemy.id);}
+      const scale=missionEnemyScale(this.deployment.mission.id);
+      for(const enemy of state.living('enemy')){enemy.stats.attack=Math.round(enemy.stats.attack*scale.attack);if(scale.hp!==1){enemy.stats.maxHp=Math.round(enemy.stats.maxHp*scale.hp);enemy.hp=enemy.stats.maxHp;}this.balancedEnemies.add(enemy.id);}
     }
     if(this.chapter===6){const commander=state.get('cao_cao');commander.stats.maxHp=180;commander.hp=180;commander.stats.movement=0;for(const id of ['ma_chao','pass_bow'])state.get(id).stats.movement=0;}
     // S1-09: Cao Cao rides with the baggage; he cannot fight and keeps to the road.
@@ -431,7 +431,7 @@ export class Session {
     this.applyBattleXp();
     this.applyRomanceToNew(s);
     if(this.deployment?.mission?.balance===1)for(const enemy of s.living('enemy'))if(!this.balancedEnemies.has(enemy.id)){
-      enemy.stats.attack=Math.round(enemy.stats.attack*(this.deployment.mission.id.startsWith('T')?.6:.75));this.balancedEnemies.add(enemy.id);
+      const scale=missionEnemyScale(this.deployment.mission.id);enemy.stats.attack=Math.round(enemy.stats.attack*scale.attack);if(scale.hp!==1&&enemy.hp===enemy.stats.maxHp){enemy.stats.maxHp=Math.round(enemy.stats.maxHp*scale.hp);enemy.hp=enemy.stats.maxHp;}this.balancedEnemies.add(enemy.id);
     }
     if((this.deployment?.mission?.version??1)>=3)for(const u of s.living('enemy'))if(u.goalRegion==='trial_defense')u.stats.movement=3;
     if(this.revision>=4)applyOfficerFeatures(s.living(),this.deployment?.growth);

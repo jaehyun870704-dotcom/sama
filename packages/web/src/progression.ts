@@ -1,10 +1,10 @@
 import type {RunBattleRef,RunStoryRef} from './roguelike.ts';
 import {treasurePowers,treasurePowerText} from '../../core/src/treasure-traits.ts';
-import {extraTreasures,trainingTreasures} from './treasure-catalogue.ts';
+import {extraTreasures,trainingTreasures,questTreasures} from './treasure-catalogue.ts';
 import type {Difficulty,Unit,UnitClass} from '../../core/src/index.ts';
 
 export const OFFICERS=['sima_yi','sima_lang','sima_fang','cao_zhen'] as const;
-export interface Campaign {version:1; xp:Record<string,number>; rewards:string[]; treasures:string[]; equipped:Record<string,string>;loadouts?:Record<string,Partial<Record<GearSlot,string>>>;completedRuns?:string[];trainingWins?:number;quests?:string[]}
+export interface Campaign {version:1; xp:Record<string,number>; rewards:string[]; treasures:string[]; equipped:Record<string,string>;loadouts?:Record<string,Partial<Record<GearSlot,string>>>;completedRuns?:string[];trainingWins?:number;quests?:string[];/** 넘은 도전 단계(C01~C10) */challenges?:string[];/** 반복 퀘스트(보물 사냥) 승리 수 */bountyWins?:number}
 export interface Growth {storyWins:number;trainingWins:number;questWins:number}
 /** 시나리오 모드의 장: 장 id와 대사 선택이 남긴 전투 효과. */
 export interface ScenarioDeployment {chapter:string;mods?:import('./roguelike.ts').BattleMods;/** 가상 전장을 극한으로 */difficulty?:'extreme';/** 로그라이크 회차: 연의 장에 들고 가는 보물과 사마의의 남은 체력 */relics?:string[];heroHp?:number;/** 회차에서 영입한 장수(연의 장에 함께 나선다, 최대 3) */recruits?:import('./roguelike.ts').RunUnit[]}
@@ -32,7 +32,7 @@ const extraItems=[
  ['ironArmor','철제 갑주','S1-01','철','방어 +2',{defense:2},'연의의 장수 갑주'],
 ] as const;
 for(const [id,name,stage,glyph,effect,bonus,motif] of extraItems)treasures.push({id,name,stage,glyph,effect,bonus,description:motif+'에 얽힌 보물. 전장에서 쌓은 공로로 그 인연을 이어받습니다.'});
-treasures.push(...extraTreasures,...trainingTreasures);
+treasures.push(...extraTreasures,...trainingTreasures,...questTreasures);
 export const gearNames:Record<GearSlot,string>={weapon:'무기',armor:'방어구',accessory:'보조구'};
 export function treasureInfo(id:string){const i=treasures.findIndex(t=>t.id===id),item=treasures[i];const slot:GearSlot=['silverarmor','ironArmor'].includes(id)?'armor':['dunjia','taiping','dilu','mengde','redHare','fan','seal'].includes(id)?'accessory':'weapon';const grade=['ironArmor','taiping'].includes(id)?1:['sevenstar','bow','dilu'].includes(id)?2:['yitian','qinggang','greenDragon','halberd','seal','redHare'].includes(id)?4:3;return {slot:item?.slot??slot,grade:item?.grade??grade,rarity:['일반','희귀','영웅','전설'][(item?.grade??grade)-1]!,icon:atlasCell(id)};}
 /** 그림 판(6×10)의 칸. 판 밖의 보물은 -1(낱장 그림을 쓴다). */
@@ -80,7 +80,7 @@ export function readCampaign():Campaign{
     if(Object.values(value.xp).some(n=>!Number.isFinite(n)||n<0)||value.rewards.some(n=>typeof n!=='string'))return freshCampaign();
     const clean=freshCampaign();for(const id of OFFICERS)clean.xp[id]=Math.min(100000,Math.floor(value.xp[id]??clean.xp[id]!));
     clean.rewards=[...new Set(value.rewards.filter(id=>/^S[123]-\d{2}:(normal|extreme)$/.test(id)))];clean.treasures=[...new Set(value.treasures.filter(id=>treasures.some(t=>t.id===id)))];
-    clean.completedRuns=Array.isArray(value.completedRuns)?[...new Set(value.completedRuns.filter(x=>typeof x==='string'&&x.length<100))]:[];clean.trainingWins=Number.isSafeInteger(value.trainingWins)?Math.max(0,value.trainingWins!):0;clean.quests=Array.isArray(value.quests)?[...new Set(value.quests.filter(x=>typeof x==='string'&&/^Q\d{2}$/.test(x)))]:[];
+    clean.completedRuns=Array.isArray(value.completedRuns)?[...new Set(value.completedRuns.filter(x=>typeof x==='string'&&x.length<100))]:[];clean.trainingWins=Number.isSafeInteger(value.trainingWins)?Math.max(0,value.trainingWins!):0;clean.quests=Array.isArray(value.quests)?[...new Set(value.quests.filter(x=>typeof x==='string'&&/^Q\d{2}$/.test(x)))]:[];clean.challenges=Array.isArray(value.challenges)?[...new Set(value.challenges.filter(x=>typeof x==='string'&&/^C\d{2}$/.test(x)))]:[];clean.bountyWins=Number.isSafeInteger(value.bountyWins)?Math.max(0,value.bountyWins!):0;
     for(const item of treasures)if(!item.quest&&clean.rewards.some(r=>r.startsWith(item.stage+':'))&&!clean.treasures.includes(item.id))clean.treasures.push(item.id);
     for(const id of OFFICERS)if(typeof value.equipped[id]==='string')equip(clean,id,value.equipped[id]!);
     if(value.loadouts&&typeof value.loadouts==='object')for(const id of OFFICERS){const gear=value.loadouts[id];if(!gear||typeof gear!=='object')continue;for(const slot of Object.keys(gearNames) as GearSlot[])equipSlot(clean,id,slot,typeof gear[slot]==='string'?gear[slot]!:'');}

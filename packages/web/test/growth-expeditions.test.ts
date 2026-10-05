@@ -3,7 +3,7 @@ import {trialMap,trialStory} from '../src/expedition-scenes.ts';
 import {describe,it,expect,vi} from 'vitest';
 import {Session} from '../src/session.ts';
 import {freshCampaign,deployment,award,treasures,readCampaign,writeCampaign,levelInfo} from '../src/progression.ts';
-import {expeditions,expeditionReward,canExpedition} from '../src/expeditions.ts';
+import {expeditions,expeditionReward,canExpedition,challengePlan,expeditionBattle} from '../src/expeditions.ts';
 import {allStrategies,talentTree} from '../src/officers.ts';
 import {duelActionNames} from '../src/duel.ts';
 import {CONTROLLABLE,decide,key,estimatePhysical,manhattan} from '../../core/src/index.ts';
@@ -17,12 +17,12 @@ function play(s:Session){for(let i=0;i<900&&s.state.outcome==='ongoing';i++){
  for(const cmd of decide(st,u)){if(cmd.kind==='move'&&key(cmd.to)===key(u.pos))continue;const r=s.act(cmd);expect(r.ok,r.error).toBe(true);if(st.outcome!=='ongoing')break;}if(!u.hasActed&&st.outcome==='ongoing')s.act({kind:'wait',unit:u.id});
 }}
 describe('treasure stories and repeatable growth',()=>{
- it('has 74 unique usable treasures, 11 four-item stories and two per training ground',()=>{expect(treasures).toHaveLength(74);expect(new Set(treasures.map(t=>t.id)).size).toBe(74);for(const m of expeditions.filter(m=>m.kind==='training'))expect(treasures.filter(t=>t.quest===m.id)).toHaveLength(2);expect(treasures.some(t=>/모사품|모조품|재현품/.test(t.name+t.description))).toBe(false);for(const m of expeditions.filter(m=>m.kind==='quest'))expect(treasures.filter(t=>t.quest===m.id)).toHaveLength(4);});
+ it('has 116 unique usable treasures, 11 four-item stories and two per training ground',()=>{expect(treasures).toHaveLength(116);expect(new Set(treasures.map(t=>t.id)).size).toBe(116);for(const m of expeditions.filter(m=>m.kind==='training'))expect(treasures.filter(t=>t.quest===m.id)).toHaveLength(2);expect(treasures.some(t=>/모사품|모조품|재현품/.test(t.name+t.description))).toBe(false);for(const m of expeditions.filter(m=>m.kind==='quest'))expect(treasures.filter(t=>t.quest===m.id)).toHaveLength(4);});
  it('gates quests by story progress, not an unfulfillable payment',()=>{const c=freshCampaign();expect(canExpedition(c,'T01')).toBe(true);expect(canExpedition(c,'Q01')).toBe(false);expect(expeditionReward(c,'Q01','locked',true).xp).toBe(0);award(c,'S1-01','normal',[],[1]);expect(canExpedition(c,'Q01')).toBe(true);});
  it('grants training XP for new wins but never for defeat, reload or undo of a claimed run',()=>{const c=freshCampaign(),xp=c.xp.sima_yi!;expect(expeditionReward(c,'T01','one',false).xp).toBe(0);expect(expeditionReward(c,'T01','one',true).xp).toBe(52);expect(expeditionReward(c,'T01','one',true).xp).toBe(0);expect(expeditionReward(c,'T01','two',true).xp).toBe(52);expect(c.xp.sima_yi).toBe(xp+104);expect(c.trainingWins).toBe(2);expect(c.rewards).toEqual([]);});
  it('unlocks all quest treasures once and never re-awards quest XP',()=>{const c=campaign();for(const m of expeditions.filter(m=>m.kind==='quest')){expect(expeditionReward(c,m.id,'run-'+m.id,true).items).toHaveLength(4);expect(expeditionReward(c,m.id,'again-'+m.id,true).xp).toBe(0);}expect(c.treasures).toHaveLength(60);expect(c.quests).toHaveLength(11);});
  it('preserves repeat claims, story completion and earned treasures on reload',()=>{const c=campaign();expeditionReward(c,'T01','saved-run',true);expeditionReward(c,'Q01','quest-run',true);const memory=new Map<string,string>();vi.stubGlobal('localStorage',{getItem:(k:string)=>memory.get(k),setItem:(k:string,v:string)=>memory.set(k,v)});writeCampaign(c);const loaded=readCampaign();expect(loaded.completedRuns).toEqual(c.completedRuns);expect(loaded.quests).toEqual(c.quests);expect(loaded.treasures).toEqual(c.treasures);expect(expeditionReward(loaded,'T01','saved-run',true).xp).toBe(0);vi.unstubAllGlobals();});
- it.each(expeditions.map(m=>[m.id,m.level] as const))('can clear %s at its recommended level and replay the result',(id,level)=>{const s=trial(id,level);play(s);expect(s.state.outcome,JSON.stringify({id,turn:s.state.turn,failure:s.failure})).toBe('victory');expect(Session.load(s.save()).state.snapshot()).toEqual(s.state.snapshot());expect(s.undo()).toBe(true);expect(s.state.outcome).toBe('ongoing');});
+ it.each(expeditions.filter(m=>m.kind!=='challenge'||m.step!<=3).map(m=>[m.id,m.level] as const))('can clear %s at its recommended level and replay the result',(id,level)=>{const s=trial(id,level);play(s);expect(s.state.outcome,JSON.stringify({id,turn:s.state.turn,failure:s.failure})).toBe('victory');expect(Session.load(s.save()).state.snapshot()).toEqual(s.state.snapshot());expect(s.undo()).toBe(true);expect(s.state.outcome).toBe('ongoing');});
 });
 describe('progressive talents and tactical variety',()=>{
  it('uses debate vocabulary while retaining martial choices',()=>{expect(Object.values(duelActionNames('debate'))).toEqual(['논박','반론','숙고','논파']);expect(duelActionNames('duel').attack).toBe('공격');});
@@ -39,3 +39,33 @@ describe('complete growth journey',()=>{
  it('gives castle expeditions a destructible gate, attacking tower and ram',()=>{const s=trial('Q02',3);expect(s.state.living().some(u=>u.unitClass==='ram')).toBe(true);expect(s.state.living('enemy').filter(u=>u.id.startsWith('gate_')).every(u=>u.hp>0)).toBe(true);expect(s.state.living('enemy').some(u=>u.id.startsWith('tower_')&&u.stats.attack>0)).toBe(true);});
  it('restores old expedition maps without changing their command replay',()=>{const d=deployment(freshCampaign(),true);d.mission={id:'Q02',runId:'legacy'};const s=new Session(7,'normal',215,'survival',4,d);expect(s.state.map.width).toBe(12);expect(Session.load(s.save()).state.snapshot()).toEqual(s.state.snapshot());});
 });
+
+describe('반복 퀘스트(보물 사냥)와 도전 퀘스트(10단계)',()=>{
+ it('opens challenge steps one by one and pays the first clear only',()=>{
+  const c=campaign();expect(canExpedition(c,'C01')).toBe(true);expect(canExpedition(c,'C02')).toBe(false);
+  const first=expeditionReward(c,'C01','c1',true);expect(first.items).toEqual(['initiateBadge']);expect(first.xp).toBeGreaterThan(0);
+  expect(canExpedition(c,'C02')).toBe(true);expect(expeditionReward(c,'C01','c1-again',true)).toEqual({xp:0,items:[]});
+  for(let i=2;i<=10;i++)expeditionReward(c,'C'+String(i).padStart(2,'0'),'c'+i,true);
+  expect(c.challenges).toHaveLength(10);expect(c.treasures).toEqual(expect.arrayContaining(['gatekeeperHalberd','gatekeeperArmor','peerlessSword','overlordArmor']));
+ });
+ it('gives one new treasure from the bounty pool per win until the pool is empty, then XP only',()=>{
+  const c=campaign(),pool=treasures.filter(t=>t.quest==='R01').map(t=>t.id),got:string[]=[];
+  expect(pool).toHaveLength(6);
+  for(let i=0;i<6;i++){const r=expeditionReward(c,'R01','b'+i,true);expect(r.items).toHaveLength(1);got.push(r.items[0]!);}
+  expect(new Set(got)).toEqual(new Set(pool));const after=expeditionReward(c,'R01','b6',true);expect(after.items).toEqual([]);expect(after.xp).toBeGreaterThan(0);expect(c.bountyWins).toBe(7);
+  expect(expeditionReward(c,'R01','b6',true).xp).toBe(0);
+ });
+ it('raises enemy count, waves and strength with every challenge step, with gatekeepers at 5 and 10',()=>{
+  const enemies=(step:number)=>{const {stage}=expeditionBattle('C'+String(step).padStart(2,'0'),215,4);return stage.events!.flatMap(e=>e.actions).filter(a=>a.type==='spawn_units'&&a.side==='enemy').reduce((n,a)=>n+a.units!.filter(u=>u.id!=='challenge_boss').length,0);};
+  for(let step=2;step<=10;step++){expect(enemies(step)).toBeGreaterThanOrEqual(enemies(step-1));expect(challengePlan(step).attack).toBeGreaterThan(challengePlan(step-1).attack);}
+  expect(enemies(10)).toBeGreaterThan(enemies(1)*2);
+  expect([1,2,3,4,5,6,7,8,9,10].filter(s=>challengePlan(s).boss)).toEqual([5,10]);
+  expect(expeditionBattle('C05',215,4).stage.events![0]!.actions.flatMap(a=>a.units??[]).some(u=>u.id==='challenge_boss')).toBe(true);
+ });
+ it('keeps cleared challenge steps and bounty wins on reload',()=>{
+  const c=campaign();expeditionReward(c,'C01','x',true);expeditionReward(c,'R01','y',true);
+  const memory=new Map<string,string>();vi.stubGlobal('localStorage',{getItem:(k:string)=>memory.get(k),setItem:(k:string,v:string)=>memory.set(k,v)});writeCampaign(c);const loaded=readCampaign();
+  expect(loaded.challenges).toEqual(['C01']);expect(loaded.bountyWins).toBe(1);vi.unstubAllGlobals();
+ });
+});
+
