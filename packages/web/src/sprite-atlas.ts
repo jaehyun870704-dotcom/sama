@@ -8,16 +8,26 @@ export function isolateFrames(source:AtlasPixels,rows:number,columns=4,union=fal
   const {width,height,data}=source,labels=new Int32Array(width*height);
   if(strictGrid){
     type Box={left:number;top:number;right:number;bottom:number};
-    const boxes:Box[]=[];
+    const boxes:Box[]=[],keep=new Uint8Array(width*height),edgeRadius=3;
     for(let row=0;row<rows;row++)for(let col=0;col<columns;col++){
       const x0=Math.floor(col*width/columns),x1=Math.floor((col+1)*width/columns)-1;
       const y0=Math.floor(row*height/rows),y1=Math.floor((row+1)*height/rows)-1;
       let left=x1,top=y1,right=x0,bottom=y0,found=false;
       for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(data[(y*width+x)*4+3]!>=alphaCutoff){
-        found=true;left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);
+        keep[y*width+x]=1;found=true;left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);
       }
       if(!found)throw new Error(`Sprite atlas: empty strict-grid cell ${row},${col}`);
-      boxes.push({left,top,right,bottom});
+      boxes.push({left:Math.max(x0,left-edgeRadius),top:Math.max(y0,top-edgeRadius),right:Math.min(x1,right+edgeRadius),bottom:Math.min(y1,bottom+edgeRadius)});
+    }
+    // 높은 알파의 몸체를 씨앗으로 삼고 가까운 원래 픽셀만 되살린다.
+    // 따라서 배경 안개는 버리되 머리술·무기 끝·옷자락의 반투명 안티앨리어싱은 보존된다.
+    for(let pass=0;pass<edgeRadius;pass++){
+      const next=new Uint8Array(keep);
+      for(let y=1;y<height-1;y++)for(let x=1;x<width-1;x++){
+        const p=y*width+x;if(keep[p]||data[p*4+3]!<8)continue;
+        for(let dy=-1;dy<=1&&!next[p];dy++)for(let dx=-1;dx<=1;dx++)if(keep[p+dy*width+dx]){next[p]=1;break;}
+      }
+      keep.set(next);
     }
     const outWidth=SPRITE_CELL*columns,outHeight=SPRITE_CELL*rows,out=new Uint8ClampedArray(outWidth*outHeight*4);
     const scale=Math.min(...boxes.map(b=>(SPRITE_CELL-28)/Math.max(b.right-b.left+1,b.bottom-b.top+1)));
@@ -26,7 +36,7 @@ export function isolateFrames(source:AtlasPixels,rows:number,columns=4,union=fal
       const ox=(slot%columns)*SPRITE_CELL+Math.floor((SPRITE_CELL-w)/2),oy=Math.floor(slot/columns)*SPRITE_CELL+SPRITE_CELL-14-h;
       for(let y=0;y<h;y++)for(let x=0;x<w;x++){
         const sx=b.left+Math.min(b.right-b.left,Math.floor(x/scale)),sy=b.top+Math.min(b.bottom-b.top,Math.floor(y/scale)),p=sy*width+sx;
-        if(data[p*4+3]!<alphaCutoff)continue;
+        if(!keep[p])continue;
         out.set(data.subarray(p*4,p*4+4),((oy+y)*outWidth+ox+x)*4);
       }
     });

@@ -22,7 +22,10 @@ describe('isolateFrames union',()=>{
 
   it('cuts regular generated grids cell-by-cell and removes translucent background haze',()=>{
     const width=400,height=200,data=new Uint8ClampedArray(width*height*4);
-    for(let p=0;p<width*height;p++){data[p*4]=40;data[p*4+1]=30;data[p*4+2]=20;data[p*4+3]=180;}
+    for(let p=0;p<width*height;p++){data[p*4]=40;data[p*4+1]=30;data[p*4+2]=20;data[p*4+3]=30;}
+    for(let row=0;row<2;row++)for(let col=0;col<4;col++)for(let y=row*100+18;y<row*100+82;y++)for(let x=col*100+23;x<col*100+77;x++){
+      const p=(y*width+x)*4;data[p]=30;data[p+1]=90;data[p+2]=180;data[p+3]=120;
+    }
     for(let row=0;row<2;row++)for(let col=0;col<4;col++)for(let y=row*100+20;y<row*100+80;y++)for(let x=col*100+25;x<col*100+75;x++){
       const p=(y*width+x)*4;data[p]=30;data[p+1]=90;data[p+2]=180;data[p+3]=255;
     }
@@ -30,6 +33,7 @@ describe('isolateFrames union',()=>{
     const clean=isolateFrames({width,height,data},2,4,true,240,true),alphas=[] as number[];
     for(let p=0;p<clean.width*clean.height;p++)alphas.push(clean.data[p*4+3]!);
     expect(clean.width).toBe(1024);expect(clean.height).toBe(512);
-    expect(alphas).toContain(255);expect(alphas).not.toContain(180);
+    expect(alphas).toContain(255);expect(alphas).toContain(120);
+    expect(clean.data[3]).toBe(0); // 먼 배경 안개는 남지 않는다.
   });
 });

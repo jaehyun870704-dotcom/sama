@@ -20,11 +20,12 @@ describe('새 화풍 전체 병종 원화',()=>{
     expect(completeTroopSheets).toHaveLength(17);
     for(const sheet of completeTroopSheets){
       expect(sheet.rows).toBe(8);
-      expect(sheet.url).toMatch(/^troops-complete-\d{2}-v1\.png$/);
+      expect(sheet.url).toMatch(/^troops-complete-\d{2}-v[12]\.png$/);
       const loaded=paintedTroopSheets.find(x=>x.id===sheet.id);
       expect(loaded?.frames).toBe(POSE);
       expect(loaded).toHaveProperty('union',true);
     }
+    expect(completeTroopSheets[9]?.url).toBe('troops-complete-10-v2.png');
   });
 
   it('예전 manifest 전용 그림이 있어도 신규 전체 원화를 우선한다',()=>{
