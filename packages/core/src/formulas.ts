@@ -39,14 +39,13 @@ const MATCHUP: Partial<Record<UnitClass, Partial<Record<UnitClass, number>>>> = 
   shaman: { infantry: 1.1, spearman: 1.1, heavyCav: 1.2 },
   maiden:   { infantry: 1.1, spearman: 1.1, heavyCav: 1.2 },
   taoist: { infantry: 1.1, spearman: 1.1, heavyCav: 1.2 },
-  physician:   { infantry: 1.1, spearman: 1.1, heavyCav: 1.2 },
   monk:   { spearman: 1.3, catapult: 1.3, engineer: 1.5, cavalry: 0.8, heavyCav: 0.7 },
   horseArcher:    { archer: 1.4, crossbow: 1.4, strategist: 1.4, fengshui: 1.4, catapult: 1.3, spearman: 0.6 },
   bandit:   { spearman: 1.3, catapult: 1.3, engineer: 1.5, cavalry: 0.8, heavyCav: 0.7 },
 };
 
 // New troop families inherit the established defensive counters.
-for(const row of Object.values(MATCHUP))for(const [kind,base] of Object.entries({shaman:'strategist',maiden:'fengshui',taoist:'strategist',physician:'fengshui',monk:'infantry',horseArcher:'cavalry',bandit:'infantry'}))if(row[base as UnitClass]!==undefined)row[kind as UnitClass]=row[base as UnitClass]!;
+for(const row of Object.values(MATCHUP))for(const [kind,base] of Object.entries({shaman:'strategist',maiden:'fengshui',taoist:'strategist',monk:'infantry',horseArcher:'cavalry',bandit:'infantry'}))if(row[base as UnitClass]!==undefined)row[kind as UnitClass]=row[base as UnitClass]!;
 
 export function matchupMultiplier(attacker: UnitClass, defender: UnitClass): number {
   const row = MATCHUP[attacker] ?? MATCHUP[familyOf(attacker)] ?? {};

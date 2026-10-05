@@ -41,11 +41,10 @@ export interface Tile {
 // ─────────────────────────────────────────────────────────── 병종
 
 export type UnitClass =
-  | "warlock" | "priestess" | "stormSage" | "divineDoctor" | "warriorMonk" | "outlaw"
+  | "warlock" | "priestess" | "stormSage" | "warriorMonk" | "outlaw"
   | "shaman"
   | "maiden"
   | "taoist"
-  | "physician"
   | "monk"
   | "horseArcher"
   | "bandit"
@@ -68,16 +67,12 @@ export type UnitClass =
   | "nomad" | "whiteHorse" | "slinger" | "hurler" | "assassin" | "phantom" | "rattan" | "rattanElite"
   | "elephant" | "warElephant"
   | "ironPagoda" | "elephantKing" | "boulderCorps" | "wraith" | "wuguoRattan" | "greenwoodKing" | "arhat"
-  | "demonKing" | "celestial" | "thunderGod" | "medicineSaint" | "javelin" | "eliteJavelin" | "flyingSpear"
+  | "demonKing" | "celestial" | "thunderGod"
   // v41: 모든 계통 3단 진화
-  | "cliffWalker" | "liangzhouIron" | "tianji" | "baizhan" | "grandBand" | "divineSage" | "overlordGuard" | "huben"
-  | "sapper" | "masterBuilder" | "thunderCart" | "greatTrebuchet" | "ironRam" | "cloudRam" | "mengchong" | "louchuan"
+  | "liangzhouIron"
+  | "ironRam" | "cloudRam" | "mengchong" | "louchuan"
   // 명부대(이름난 부대) 계통
-  | "axeman" | "greatBlade" | "xianzhen" | "mountaineer" | "wudang" | "xiliang" | "feixiong"
-  | "qingzhou" | "danyang" | "baier" | "jishi" | "daji" | "shieldBow" | "xiandeng"
-  | "drummer" | "warDrummer" | "riderSage" | "swiftSage"
-  // 초한(楚漢)의 이름난 부대
-  | "jiangdong" | "bawang" | "langzhong" | "yulin"
+  | "xiliang" | "feixiong"
   // 병종 차트로 늘린 계통·4단계·모병 특수 병과 (chart-classes.ts)
   | "admiral" | "assaultChariot" | "baggageTrain" | "baguaChariot" | "bashuRepeater" | "beauty" | "chieftain" | "commander" | "crownPrince" | "dancer" | "divineChariot" | "divineJinglan" | "divineOx" | "divineSpear" | "divineStrategist" | "dragonCav" | "dragonRam" | "emperor" | "fanSage" | "fistSaint" | "flyingBlade" | "gaemaCaptain" | "gaemaWarrior" | "grandCommander" | "halberdCav" | "heavenCav" | "heavenCommander" | "heavenDancer" | "heavenEmperor" | "heavenTaoist" | "heavyChariot" | "heavyHalberdCav" | "heavyJinglan" | "hegemon" | "ironInfantry" | "jinglan" | "knightErrant" | "lightChariot" | "lord" | "marshal" | "mountainCav" | "nanmanBeast" | "nanmanFoot" | "nanmanRider" | "northFoot" | "northRider" | "palanquin" | "pegasusCav" | "raidCav" | "royalPrince" | "scoutCav" | "siegeTower" | "sonOfHeaven" | "songstress" | "sovereign" | "stormCav" | "swordArtist" | "swordMaster" | "swordSaint" | "swordsman" | "transport" | "valiantCav" | "wheelSage" | "whiteTigerCav" | "woodenOx" | "wujiHeavyCav" | "yellowTurban" | "ytArcher" | "ytBrawler" | "ytSpear";
 

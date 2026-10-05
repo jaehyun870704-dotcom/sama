@@ -92,4 +92,4 @@ export function armorFrame(src:CanvasImageSource,sx:number,sy:number,fw:number,f
 export const MOUNTED_FAMILIES=new Set(['cavalry','heavyCav','horseArcher']);
 /** 갑옷 대신 옷차림이 진화하는 계열(책사·술사·의원). */
 export const MACHINE_FAMILIES=new Set(['ram','catapult','navy']);
-export const ROBE_FAMILIES=new Set(['strategist','fengshui','shaman','maiden','taoist','physician','civilian']);
+export const ROBE_FAMILIES=new Set(['strategist','fengshui','shaman','maiden','taoist','civilian']);

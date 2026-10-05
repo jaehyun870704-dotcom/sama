@@ -112,7 +112,7 @@ const CORPS:Array<[ResearchTab,string,string,readonly string[],[string,number,st
   ['arms','sge','공성·수군',['engineer','catapult','ram','navy'],['stat:maxHp',3,'보강 목재',v=>`공성·수군 최대 체력 +${v}%`]],
   ['mind','stg','책사',['strategist'],['manaRegen',1,'정심',v=>`책사 차례 시작에 MP +${v}`],'mind'],
   ['mind','fsh','풍수사',['fengshui'],['strategyEvasion',1,'간파',v=>`풍수사 적 책략 명중 -${v}%p`],'heal'],
-  ['mind','cst','술사',['shaman','maiden','taoist','physician'],['strategyEvasion',1,'호신부',v=>`술사 적 책략 명중 -${v}%p`],'mind'],
+  ['mind','cst','술사',['shaman','maiden','taoist'],['strategyEvasion',1,'호신부',v=>`술사 적 책략 명중 -${v}%p`],'mind'],
 ];
 CORPS.forEach(([tab,key,name,fams,[sp,spPer,spName,spText],kind],i)=>{
   const col=CORPS.filter(c=>c[0]===tab).findIndex(c=>c[1]===key);void i;

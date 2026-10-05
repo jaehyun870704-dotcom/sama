@@ -23,7 +23,6 @@ export const classCries:Record<string,Emote>={
   shaman:{text:'저주!',color:PURPLE,shape:'balloon'},
   maiden:{text:'기원!',color:GREEN,shape:'balloon'},
   taoist:{text:'도술!',color:BLUE,shape:'balloon'},
-  physician:{text:'의술!',color:GREEN,shape:'balloon'},
   monk:{text:'권격!',color:RED,shape:'balloon'},
   bandit:{text:'급습!',color:BROWN,shape:'balloon'},
   civilian:{text:'으악!',color:GREY,shape:'balloon'},
@@ -54,7 +53,7 @@ export function cryFor(kind:string,isStrategy=false,strategy=''){
   if(strategy==='heal'||strategy==='calm'||strategy==='mend'||strategy==='greatMend')return reactions.heal!;
   if(strategy==='repair')return reactions.repair!;
   const cry=classCries[unitClass];
-  if(isStrategy&&cry&&!['strategist','fengshui','shaman','maiden','taoist','physician','monk'].includes(unitClass))return classCries.strategist!;
+  if(isStrategy&&cry&&!['strategist','fengshui','shaman','maiden','taoist','monk'].includes(unitClass))return classCries.strategist!;
   return cry??classCries.infantry!;
 }
 /** Heavy hits that leave a unit standing below a third of its strength. */

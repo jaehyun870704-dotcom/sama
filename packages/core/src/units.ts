@@ -24,7 +24,6 @@ const PROFILES: Partial<Record<UnitClass, ClassProfile>> = {
   shaman: { hp: 0.75, mp: 1.5, attack: 0.60, defense: 0.60, intellect: 1.3, spirit: 1.2, agility: 1.0, movement: 5, range: [1, 1], canUseStrategy: true },
   maiden:   { hp: 0.80, mp: 1.4, attack: 0.60, defense: 0.75, intellect: 1.0, spirit: 1.5, agility: 1.0, movement: 5, range: [1, 1], canUseStrategy: true },
   taoist: { hp: 0.75, mp: 1.2, attack: 0.60, defense: 0.70, intellect: 1.3, spirit: 1.2, agility: 1.3, movement: 5, range: [1, 1], canUseStrategy: true },
-  physician:   { hp: 0.80, mp: 1.6, attack: 0.40, defense: 0.75, intellect: 1.2, spirit: 1.3, agility: 1.0, movement: 5, range: [1, 1], canUseStrategy: true },
   monk:   { hp: 1.10, mp: 0.4, attack: 1.15, defense: 1.10, intellect: 0.6, spirit: 0.9, agility: 1.3, movement: 5, range: [1, 1], canUseStrategy: true },
   horseArcher:    { hp: 1.00, mp: 0.4, attack: 0.90, defense: 0.90, intellect: 0.6, spirit: 0.8, agility: 1.2, movement: 6, range: [2, 3], canUseStrategy: false },
   bandit:   { hp: 1.10, mp: 0.4, attack: 1.20, defense: 0.80, intellect: 0.6, spirit: 0.9, agility: 0.9, movement: 5, range: [1, 1], canUseStrategy: false },

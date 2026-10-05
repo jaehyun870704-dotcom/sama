@@ -73,7 +73,7 @@ export const SCHOOL_NAMES:Record<StrategySchool,string>={attack:'공격 책략',
 export function schoolOf(s:LearnedStrategy):StrategySchool{return s.support?(s.support==='heal'||s.support==='cleanse'||s.support==='mana'?'heal':'buff'):s.element==='support'?'mind':'attack';}
 const LEGEND_IDS=new Set(legends.map(s=>s.id));
 /**
- * 계통이 쓰는 책략. 책사 계열(책사·군사·신산)은 공격 책략과 술법, 풍수사 계열(풍수사·선도·선인·고취수)은
+ * 계통이 쓰는 책략. 책사 계열(책사·군사·신산)은 공격 책략과 술법, 풍수사 계열(풍수사·선도·선인)은
  * 회복·고무에 땅과 물의 책략. 초한 고사 책략과 명상(MP 회복)은 둘 다 쓴다. 그 밖의 계통은 제한 없음(병종 목록은 troops.ts).
  */
 export function familyAllows(family:string|undefined,s:LearnedStrategy){

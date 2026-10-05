@@ -4,6 +4,7 @@
  * 신세력으로 시작하는 회차에 처음부터 함께하거나, 모병소·전투 보상에 나온다.
  */
 import type {UnitClass} from '../../core/src/index.ts';
+import {currentClass} from '../../core/src/index.ts';
 import type {Temper} from './duel.ts';
 import {registerOfficer,unregisterOfficer,romanceByName} from './romance.ts';
 import {registerFace,clearFaces} from './officer-art.ts';
@@ -17,7 +18,7 @@ export const STAT_KEYS=['war','int','lead','pol','cha'] as const;
 export const STAT_NAMES:Record<typeof STAT_KEYS[number],string>={war:'무력',int:'지력',lead:'통솔',pol:'정치',cha:'매력'};
 export const STAT_MIN=20,STAT_MAX=95,STAT_BUDGET=350,CUSTOM_LIMIT=8;
 /** 신장수가 고를 수 있는 병종(기본 병종). */
-export const CUSTOM_CLASSES:UnitClass[]=['infantry','spearman','cavalry','archer','crossbow','strategist','physician','heavyCav','horseArcher','fengshui','slinger','bandit','monk','taoist','assassin','javelin','axeman','mountaineer','xiliang','qingzhou','jishi','shieldBow','drummer','riderSage','jiangdong','langzhong'] as UnitClass[];
+export const CUSTOM_CLASSES:UnitClass[]=['infantry','spearman','cavalry','archer','crossbow','strategist','heavyCav','horseArcher','fengshui','slinger','bandit','monk','taoist','assassin','xiliang','swordsman','wheelSage','valiantCav'] as UnitClass[];
 export const TEMPERS:Temper[]=['reckless','brave','proud','calm','cautious','wise','timid'];
 export const FACTION_COLORS=['#1f3f8a','#8a1f1a','#2a6a3a','#6a2a7a','#b8862a','#2a2a2a'];
 
@@ -46,7 +47,7 @@ export function checkFaction(f:Faction):string|undefined{
 export function readCustoms(raw:unknown):CustomOfficer[]{
   if(!Array.isArray(raw))return [];const out:CustomOfficer[]=[];
   for(const x of raw){const o=x as CustomOfficer;if(!o||typeof o!=='object')continue;
-    const pt=readPortrait(o.portrait),clean:CustomOfficer={name:String(o.name??''),epithet:String(o.epithet??'').slice(0,24),unitClass:o.unitClass,temper:o.temper,war:o.war,int:o.int,lead:o.lead,pol:o.pol,cha:o.cha,...(pt?{portrait:pt}:{}),...(isPresetPortrait(o.art)?{art:o.art}:{})};
+    const pt=readPortrait(o.portrait),clean:CustomOfficer={name:String(o.name??''),epithet:String(o.epithet??'').slice(0,24),unitClass:currentClass(String(o.unitClass)),temper:o.temper,war:o.war,int:o.int,lead:o.lead,pol:o.pol,cha:o.cha,...(pt?{portrait:pt}:{}),...(isPresetPortrait(o.art)?{art:o.art}:{})};
     if(!checkCustom(clean,out.map(c=>c.name))&&out.length<CUSTOM_LIMIT)out.push(clean);}
   return out;
 }

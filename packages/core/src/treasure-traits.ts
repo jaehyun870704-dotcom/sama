@@ -88,7 +88,7 @@ function matches(c:Condition,ctx:DamageContext,self:Unit){switch(c){
  case 'wounded':return self.hp<=self.stats.maxHp*.5;case 'healthy':return self.hp>=self.stats.maxHp*.8;
  case 'mounted':return ctx.kind==='physical'&&['cavalry','heavyCav','horseArcher'].includes(familyOf(ctx.defender.unitClass));
  case 'armored':return ctx.kind==='physical'&&['infantry','spearman','heavyCav','ram'].includes(familyOf(ctx.defender.unitClass));
- case 'caster':return ctx.kind==='physical'&&['strategist','fengshui','shaman','taoist','maiden','physician'].includes(familyOf(ctx.defender.unitClass));
+ case 'caster':return ctx.kind==='physical'&&['strategist','fengshui','shaman','taoist','maiden'].includes(familyOf(ctx.defender.unitClass));
  case 'stationary':return !self.movedThisTurn;case 'moving':return !!self.movedThisTurn;default:return true;
 }}
 export function treasurePowerText(id:string){return treasurePowers.find(t=>t.id===id)?.rules.map(([effect,n,when='always'])=>{

@@ -12,7 +12,7 @@ import type {Coord} from '../../core/src/index.ts';
 function fort(){const d=deployment(freshCampaign(),true);/* Q02: 성 안의 적이 절반 — 성을 치는 수련 */for(const who of Object.keys(d.levels))d.levels[who]=Math.max(d.levels[who]!,3);d.mission={id:'Q02',runId:'siege',version:4,balance:1,supportClasses:['engineer','catapult']};return new Session(7,'normal',215,'survival',4,d);}
 function allyPhase(s:Session){for(let i=0;i<40&&s.state.currentSide!=='ally';i++){const u=s.state.living(s.state.currentSide).find(x=>!x.hasActed);if(CONTROLLABLE.has(s.state.currentSide)&&u)s.act({kind:'wait',unit:u.id});else s.tick();}expect(s.state.currentSide).toBe('ally');}
 function freeNeighbour(s:Session,at:Coord){return [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}].map(d=>({x:at.x+d.x,y:at.y+d.y})).find(p=>s.state.map.inBounds(p)&&!s.state.unitAt(p)&&['plain','road'].includes(s.state.map.tileAt(p).terrain));}
-function naval(seed=215){const d=deployment(freshCampaign(),true);for(const who of Object.keys(d.levels))d.levels[who]=Math.max(d.levels[who]!,11);d.mission={id:'T07',runId:'naval-'+seed,version:4,balance:1,supportClasses:['crossbow','physician']};return new Session(7,'normal',seed,'survival',4,d);}
+function naval(seed=215){const d=deployment(freshCampaign(),true);for(const who of Object.keys(d.levels))d.levels[who]=Math.max(d.levels[who]!,11);d.mission={id:'T07',runId:'naval-'+seed,version:4,balance:1,supportClasses:['crossbow','fengshui']};return new Session(7,'normal',seed,'survival',4,d);}
 function play(s:Session){for(let i=0;i<1200&&s.state.outcome==='ongoing';i++){const st=s.state;if(!CONTROLLABLE.has(st.currentSide)){s.tick();continue;}const u=st.living(st.currentSide).find(x=>!x.hasActed);if(!u){s.tick();continue;}for(const cmd of decide(st,u)){if(cmd.kind==='move'&&key(cmd.to)===key(u.pos))continue;s.act(cmd);if(st.outcome!=='ongoing')break;}if(!u.hasActed&&st.outcome==='ongoing')s.act({kind:'wait',unit:u.id});}}
 describe('naval battles',()=>{
  it('launches two allied boats on the water against an enemy river fleet',()=>{
@@ -58,7 +58,7 @@ describe('procedural score',()=>{
   for(const theme of Object.values(placeThemes)){expect(theme.mode).toHaveLength(5);expect(theme.phrase).toHaveLength(16);expect(degree(theme,5)).toBe(theme.root+12);expect(degree(theme,-1)).toBeLessThan(theme.root);}
  });
  it('gives each troop family its own motif',()=>{
-  expect(classFamily('cavalry')).toBe('horse');expect(classFamily('horseArcher')).toBe('horse');expect(classFamily('crossbow')).toBe('bow');expect(classFamily('physician')).toBe('sage');
+  expect(classFamily('cavalry')).toBe('horse');expect(classFamily('horseArcher')).toBe('horse');expect(classFamily('crossbow')).toBe('bow');expect(classFamily('fengshui')).toBe('sage');
   expect(classFamily('ram')).toBe('siege');expect(classFamily('navy')).toBe('boat');expect(classFamily('monk')).toBe('foot');expect(classFamily(undefined)).toBeUndefined();
   expect(new Set(Object.values(familyMotifs).map(m=>m.name)).size).toBe(7);
  });

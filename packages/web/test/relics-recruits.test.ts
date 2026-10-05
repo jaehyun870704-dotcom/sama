@@ -3,7 +3,7 @@ import {Session} from '../src/session.ts';
 import type {Deployment} from '../src/progression.ts';
 
 const base=():Deployment=>({levels:{sima_yi:6,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{}});
-const recruit={id:'rc_of1',name:'학소',unitClass:'shieldBow' as const,level:5,xp:0,hp:.8,officer:true as const};
+const recruit={id:'rc_of1',name:'학소',unitClass:'crossbow' as const,level:5,xp:0,hp:.8,officer:true as const};
 
 describe('회차에서 얻은 장수·보물은 연의 전장에 곧바로 실린다',()=>{
  it('fields recruited officers beside 사마의 and applies run relics',()=>{

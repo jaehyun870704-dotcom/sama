@@ -48,7 +48,7 @@ export function classFamily(cls:UnitClass|string|undefined):Family|undefined{
   const base=(troopRoles as Record<string,{base:string}>)[cls]?.base??cls;
   if(['cavalry','heavyCav','horseArcher'].includes(cls)||['cavalry','heavyCav'].includes(base))return 'horse';
   if(['archer','crossbow'].includes(cls))return 'bow';
-  if(['strategist','fengshui','shaman','maiden','taoist','physician'].includes(cls)||['strategist','fengshui'].includes(base))return 'sage';
+  if(['strategist','fengshui','shaman','maiden','taoist'].includes(cls)||['strategist','fengshui'].includes(base))return 'sage';
   if(['ram','catapult','engineer'].includes(cls))return 'siege';
   if(cls==='navy')return 'boat';
   if(cls==='civilian')return 'folk';

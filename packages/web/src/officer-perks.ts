@@ -27,7 +27,7 @@ export interface OfficerPerk {
 const LEVELS=[5,10,15,20,28],COSTS=[3,4,6,8,12],SCALE=[1,1.15,1.3,1.5,1.75];
 
 /** 장수가 주로 쓰는 병종(신장수·영입 명단·이야기 동료, 없으면 능력으로 어림). */
-const COMPANION_CLASS:Record<string,UnitClass>={조진:'cavalry',장합:'spearman',곽회:'archer',사마랑:'physician',사마의:'strategist',사마부:'fengshui',사마방:'spearman'};
+const COMPANION_CLASS:Record<string,UnitClass>={조진:'cavalry',장합:'spearman',곽회:'archer',사마랑:'fengshui',사마의:'strategist',사마부:'fengshui',사마방:'spearman'};
 export function officerClass(name:string):UnitClass{
   const c=customList().find(o=>o.name===name);if(c)return c.unitClass;
   const r=OFFICER_RECRUITS.find(o=>o.name===name);if(r)return r.unitClass;
@@ -59,7 +59,7 @@ export function perksFor(name:string,unitClass?:UnitClass):OfficerPerk[]{
   // 병종 계열이 주는 효과(점수를 크게 줘 거의 늘 들어간다)
   const role:Partial<Record<string,[string,number,string]>>={cavalry:['chargePower',10,'돌격 숙련'],heavyCav:['chargePower',8,'돌진 숙련'],horseArcher:['rangedPower',8,'기사 숙련'],
     archer:['rangedPower',10,'궁술 숙련'],crossbow:['rangedPower',10,'노술 숙련'],infantry:['meleePower',8,'백병 숙련'],spearman:['counterBoost',18,'창진'],bandit:['meleePower',10,'매복 숙련'],
-    strategist:['strategyPower',8,'군략'],taoist:['strategyPower',8,'도술'],shaman:['strategyPower',8,'요술'],fengshui:['healPower',20,'의술'],physician:['healPower',25,'의술'],maiden:['healPower',20,'기도'],monk:['regen',4,'수행']};
+    strategist:['strategyPower',8,'군략'],taoist:['strategyPower',8,'도술'],shaman:['strategyPower',8,'요술'],fengshui:['healPower',20,'의술'],maiden:['healPower',20,'기도'],monk:['regen',4,'수행']};
   const rr=role[fam];if(rr)cand.push({trait:rr[0],base:rr[1],name:rr[2],source:'병종',score:200});
   // 성격이 주는 효과
   const tp:Partial<Record<string,[string,number,string]>>={reckless:['lastStand',20,'배수의 진'],brave:['turnaround',15,'전화위복'],proud:['critical',10,'오만한 일격'],calm:['veteran',15,'침착'],cautious:['defenseBoost',6,'신중'],wise:['strategyEvasion',12,'혜안'],timid:['evasionBoost',10,'몸 사리기']};

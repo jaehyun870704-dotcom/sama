@@ -14,10 +14,8 @@ export const troopAdvice:Partial<Record<UnitClass,string>>={
  shaman:'독·봉인·혼란은 해당 책략 습득 후 활용하세요. 초반에는 화계로 전열을 지원합니다.',
  maiden:'소회복으로 아군을 보조하고 성장 후 정화·견고·고무를 활용하세요.',
  taoist:'바람·물·번개 책략을 단계적으로 습득합니다. 전열 뒤에서 MP를 관리하세요.',
- physician:'부상 부대를 3칸 안에서 회복하세요. 물리 공격보다 회복·정화가 주 역할입니다.',
  monk:'숲·잔도 이동 비용 1, 갈대늪·여울 2. 근접 전투와 소회복을 조합하고 기병과의 정면전을 피하세요.',
  horseArcher:'이동 6, 사거리 2~3. 평지에서 측면 사격하세요. 산지는 사실상 한 칸, 여울은 건널 수 있습니다.',
- javelin:'창병 계열이라 기병에 강합니다. 사거리 1~2로 전열 바로 뒤에서 한 칸 건너 적을 찌르고, 붙어 오는 적에게도 반격하세요.',
  bandit:'숲·잔도 이동 비용 1, 갈대늪 2. 험지와 갈대 속에서 매복하세요. 방어가 약하므로 지원 부대와 함께 움직이세요.',
  ram:'이동 3. 도로로 접근해 성문·감시탑을 공격하세요. 산지·갈대늪·잔도·여울에는 들어갈 수 없습니다.',
  catapult:'2~4칸 원거리 사격. 산지·갈대늪·잔도·여울에는 들어갈 수 없으니 길을 따라 전열 뒤에 두세요.',
@@ -26,18 +24,18 @@ export const troopAdvice:Partial<Record<UnitClass,string>>={
  civilian:'전투를 피하고 호위하세요. 무장 전환 등 해당 시나리오의 목표를 따르세요.'
 };
 export const recommendedSupport:Record<TrialLandscape,{classes:[UnitClass,UnitClass];reason:string}>={
- field:{classes:['archer','physician'],reason:'궁병이 전열 뒤에서 보병·창병을 사격하고 의술사가 아군을 회복합니다.'},
- forest:{classes:['bandit','physician'],reason:'산적의 숲 기동과 의술사의 회복으로 좁은 보급로를 지킵니다.'},
+ field:{classes:['archer','fengshui'],reason:'궁병이 전열 뒤에서 보병·창병을 사격하고 풍수사가 아군을 회복합니다.'},
+ forest:{classes:['bandit','fengshui'],reason:'산적의 숲 기동과 풍수사의 회복으로 좁은 보급로를 지킵니다.'},
  river:{classes:['crossbow','maiden'],reason:'노병이 교량 너머를 사격하고 무녀가 전열을 회복합니다.'},
  pass:{classes:['monk','crossbow'],reason:'무도가가 험지를 통과하고 노병이 협로 뒤에서 지원합니다. 회복 MP를 아껴 쓰세요.'},
- court:{classes:['shaman','physician'],reason:'주술사의 화계·성장 책략으로 수비대를 약화하고 의술사로 버팁니다.'},
+ court:{classes:['shaman','fengshui'],reason:'주술사의 화계·성장 책략으로 수비대를 약화하고 풍수사로 버팁니다.'},
  fort:{classes:['catapult','engineer'],reason:'포차가 감시탑을 사격하고 공병이 충차를 수리하며 방책으로 사격을 막아 성문에 접근합니다.'},
- naval:{classes:['crossbow','physician'],reason:'수군 두 척이 물길을 막는 동안 노병이 강안에서 적선을 사격하고 의술사가 부교를 건너는 전열을 회복합니다.'}
+ naval:{classes:['crossbow','fengshui'],reason:'수군 두 척이 물길을 막는 동안 노병이 강안에서 적선을 사격하고 풍수사가 부교를 건너는 전열을 회복합니다.'}
 };
 export function recommendExpeditionSupport(id:string):{classes:[UnitClass,UnitClass];reason:string}{
  const terrain=expeditionLandscape(id),goal=trialGoals[id]?.kind;
- if(goal==='defend')return {classes:['spearman','physician'],reason:'창병으로 거점과 증원 기병을 막고 의술사로 수비 부대를 회복합니다. 두 방어 칸을 모두 지키세요.'};
- if(goal==='rescue')return {classes:[terrain==='forest'?'bandit':'monk','physician'],reason:'험지에 강한 전열로 구출 경로를 열고 의술사로 귀환하는 대상을 회복합니다. 사마의 또는 조진이 대상에게 접근해야 합니다.'};
+ if(goal==='defend')return {classes:['spearman','fengshui'],reason:'창병으로 거점과 증원 기병을 막고 풍수사로 수비 부대를 회복합니다. 두 방어 칸을 모두 지키세요.'};
+ if(goal==='rescue')return {classes:[terrain==='forest'?'bandit':'monk','fengshui'],reason:'험지에 강한 전열로 구출 경로를 열고 풍수사로 귀환하는 대상을 회복합니다. 사마의 또는 조진이 대상에게 접근해야 합니다.'};
  return recommendedSupport[terrain];
 }
 export function supportWarnings(units:Unit[]){const warnings:string[]=[];

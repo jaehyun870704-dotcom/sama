@@ -8,7 +8,6 @@ export const troopRoles:Partial<Record<UnitClass,{name:string;role:string;base:U
  shaman:{name:'주술사',role:'독·봉인·혼란으로 적을 약화하는 책략 병종',base:'strategist',tint:0xd7afff,spells:['fire','embers','bind','poison','silence','confuse','feint','demoralize','weakenCurse','terror','plague','rumor','chaos']},
  maiden:{name:'무녀',role:'정화·방호·고무로 부대를 지키는 지원 병종',base:'fengshui',tint:0xffc4de,spells:['mend','purify','fortify','inspire','greatMend','focus','ironWall','sanctuary']},
  taoist:{name:'도사',role:'바람·수계·낙뢰를 다루는 원소 책략 병종',base:'strategist',tint:0xaee9ff,spells:['fire','gust','windDragon','flood','waterSurge','thunder','whirlwind','tempest','thunderbolt','gale','mire','tidalLine','thunderCross','quake']},
- physician:{name:'의술사',role:'회복·정화에 집중하는 의무 병종',base:'fengshui',tint:0xb8ffd9,spells:['mend','purify','greatMend']},
  monk:{name:'무도가',role:'험지 기동과 근접 공격, 자기 회복을 겸하는 병종',base:'infantry',tint:0xffd398,spells:['mend','march','fortify']},
  horseArcher:{name:'궁기병',role:'이동 6 · 사거리 2~3, 기동 사격에 특화',base:'cavalry',tint:0xc7e6ae,spells:[]},
  bandit:{name:'산적',role:'숲·산지에서 강하지만 평지 방어가 약한 병종',base:'infantry',tint:0xd8b58e,spells:[]},
@@ -39,7 +38,6 @@ export const troopRoles:Partial<Record<UnitClass,{name:string;role:string;base:U
  warlock:{name:'요술사',role:'주술사 2단계 · 저주가 깊어지고 적의 책략을 흘린다',base:'shaman',tint:0xb98cff,spells:['fire','embers','bind','poison','silence','confuse','feint','demoralize','weakenCurse','terror','plague','rumor','chaos']},
  priestess:{name:'신녀',role:'무녀 2단계 · 정신이 높고 책략 피해를 덜 받는다',base:'maiden',tint:0xffd6ea,spells:['mend','purify','fortify','inspire','greatMend','focus','ironWall','sanctuary']},
  stormSage:{name:'뇌공',role:'도사 2단계 · 바람과 벼락을 더 세게 부린다',base:'taoist',tint:0xd2f4ff,spells:['fire','gust','windDragon','flood','waterSurge','thunder','whirlwind','tempest','thunderbolt','gale','mire','tidalLine','thunderCross','quake']},
- divineDoctor:{name:'신의',role:'의술사 2단계 · 회복량과 책략 MP가 크게 오른다',base:'physician',tint:0xd8ffe8,spells:['mend','purify','greatMend']},
  warriorMonk:{name:'무승',role:'무도가 2단계 · 단단한 몸과 회심 일격',base:'monk',tint:0xffe0a8,spells:['mend','march','fortify']},
  outlaw:{name:'녹림호걸',role:'산적 2단계 · 숲과 산의 우두머리, 회심 일격',base:'bandit',tint:0xe8c49a,spells:[]},
  elephant:{name:'상병',role:'남만의 코끼리 부대 · 체력이 매우 높고 느리다',base:'heavyCav',tint:0xb9b2a4,spells:[]},
@@ -54,65 +52,30 @@ export const troopRoles:Partial<Record<UnitClass,{name:string;role:string;base:U
  demonKing:{name:'요왕',role:'주술사 3단계 · 저주를 되돌리는 요술의 왕',base:'shaman',tint:0x9a62ff,spells:['fire','embers','bind','poison','silence','confuse','feint','demoralize','weakenCurse','terror','plague','rumor','chaos']},
  celestial:{name:'선녀',role:'무녀 3단계 · 하늘의 가호로 부대를 지키는 최고의 지원 병종',base:'maiden',tint:0xffe6f2,spells:['mend','purify','fortify','inspire','greatMend','focus','ironWall','sanctuary']},
  thunderGod:{name:'뇌신',role:'도사 3단계 · 벼락을 부리는 원소 책략의 정점',base:'taoist',tint:0xe6f8ff,spells:['fire','gust','windDragon','flood','waterSurge','thunder','whirlwind','tempest','thunderbolt','gale','mire','tidalLine','thunderCross','quake']},
- medicineSaint:{name:'의선',role:'의술사 3단계 · 회복량 55% 증가, 전장의 명의',base:'physician',tint:0xeafff2,spells:['mend','purify','greatMend']},
- javelin:{name:'투창병',role:'창병 계열 · 사거리 1~2, 붙은 적과 한 칸 건너 적을 모두 찌른다',base:'spearman',tint:0xc9b98f,spells:[]},
- eliteJavelin:{name:'정예 투창병',role:'투창병 2단계 · 방어를 꿰뚫는 표창 투척',base:'spearman',tint:0xdcc890,spells:[]},
- flyingSpear:{name:'비창대',role:'투창병 3단계 · 사거리 1~3, 창비가 쏟아진다',base:'spearman',tint:0xffd98a,spells:[]},
  // 명부대 — 정사·연의에 이름을 남긴 부대
- axeman:{name:'도부수',role:'큰 도끼를 든 공격형 보병 · 방어는 얇고 회심이 높다',base:'infantry',tint:0xe0a07a,spells:[]},
- greatBlade:{name:'대도병',role:'도부수 2단계 · 큰 칼로 갑옷째 벤다',base:'infantry',tint:0xf0b070,spells:[]},
- xianzhen:{name:'함진영',role:'도부수 3단계 · 고순의 칠백, 치는 곳마다 진이 무너진다',base:'infantry',tint:0xff8a5a,spells:[]},
- mountaineer:{name:'산악병',role:'험지를 평지처럼 달리는 경보병 · 사거리 1~2의 단궁',base:'bandit',tint:0xa8c890,spells:[]},
- wudang:{name:'무당비군',role:'산악병 2단계 · 왕평의 산병, 이동 6 · 회심',base:'bandit',tint:0x9ed8a0,spells:[]},
  xiliang:{name:'서량기병',role:'이동 7 · 거친 서쪽 말의 돌격 기병',base:'cavalry',tint:0xe8c890,spells:[]},
  feixiong:{name:'비웅군',role:'서량기병 2단계 · 동탁의 정예, 피를 보면 더 사나워진다',base:'cavalry',tint:0xd07a6a,spells:[]},
- qingzhou:{name:'청주병',role:'조조가 거둔 황건 출신 정병 · 무너지지 않는 보병',base:'infantry',tint:0x9cc0e8,spells:[]},
- danyang:{name:'단양병',role:'청주병 2단계 · 날랜 단양의 정병, 반격이 매섭다',base:'infantry',tint:0x8ab0f0,spells:[]},
- baier:{name:'백이병',role:'청주병 3단계 · 진도의 흰 깃털 친위대, 곁의 아군을 지킨다',base:'infantry',tint:0xf4f4ff,spells:[]},
- jishi:{name:'극사',role:'긴 극으로 두 칸 앞까지 찌르는 창병',base:'spearman',tint:0xb8a8d8,spells:[]},
- daji:{name:'대극사',role:'극사 2단계 · 원소의 대극사, 방어를 꿰뚫는다',base:'spearman',tint:0xc890e8,spells:[]},
- shieldBow:{name:'방패노병',role:'방패를 세우고 쏘는 노병 · 사거리 2, 물리 피해 감소',base:'crossbow',tint:0xb0c4a0,spells:[]},
- xiandeng:{name:'선등사',role:'방패노병 2단계 · 국의의 결사대, 붙어도 쏘고 몇 번이고 맞받는다',base:'crossbow',tint:0xe8d070,spells:[]},
- jiangdong:{name:'강동자제',role:'항우와 강을 건넌 강동의 팔천 · 궁지에 몰릴수록 사나워지는 보병',base:'infantry',tint:0xe08a6a,spells:[]},
- bawang:{name:'패왕친위군',role:'강동자제 2단계 · 패왕의 곁을 지킨 최강의 보병',base:'infantry',tint:0xd85040,spells:[]},
- langzhong:{name:'낭중기',role:'관영이 이끈 한의 기병 · 이동 7, 달려와 치면 더 세다',base:'cavalry',tint:0xa8c0e8,spells:[]},
- yulin:{name:'우림기',role:'낭중기 2단계 · 한의 친위 기병, 방어를 꿰뚫는 돌격',base:'cavalry',tint:0x88b0ff,spells:[]},
- drummer:{name:'고취수',role:'북과 피리로 부대를 고무하는 지원 병종',base:'fengshui',tint:0xf0b0a0,spells:['inspire','march','fortify','warCry']},
- warDrummer:{name:'군악대',role:'고취수 2단계 · 진군의 북소리가 전장을 덮는다',base:'fengshui',tint:0xffc080,spells:['inspire','march','fortify','warCry','grandDrum','mend','burnBoats','backWater']},
- riderSage:{name:'기마책사',role:'이동 6 · 말 위에서 책략을 쓰는 기동 책사',base:'strategist',tint:0xa8d8f0,spells:['fire','embers','gust','windDragon','rumor','ambush']},
- swiftSage:{name:'질풍군사',role:'기마책사 2단계 · 이동 7, 바람처럼 와서 계책을 놓고 간다',base:'strategist',tint:0x88e0ff,spells:['fire','embers','gust','windDragon','rumor','ambush','whirlwind','breakArmor','secretPath','hongmen']},
- cliffWalker:{name:'잔도귀병',role:'산악병 3단계 · 잔도와 벼랑을 달리는 촉의 귀신 같은 산병',base:'bandit',tint:0x7ee0b0,spells:[]},
  liangzhouIron:{name:'서량철기',role:'서량기병 3단계 · 쇠를 두른 서쪽의 철기, 쓰러질수록 사납다',base:'cavalry',tint:0xff7a5a,spells:[]},
- tianji:{name:'천극위',role:'극사 3단계 · 두 칸 앞을 꿰뚫고 몇 번이고 맞받는 극의 벽',base:'spearman',tint:0xd878ff,spells:[]},
- baizhan:{name:'백전선등',role:'방패노병 3단계 · 백 번 싸운 선등의 결사대',base:'crossbow',tint:0xffe060,spells:[]},
- grandBand:{name:'대고취대',role:'고취수 3단계 · 천 개의 북이 전군을 움직인다',base:'fengshui',tint:0xffd060,spells:['inspire','march','fortify','warCry','grandDrum','mend','burnBoats','backWater','swiftWind','ironWall','valor']},
- divineSage:{name:'신기군사',role:'기마책사 3단계 · 귀신같은 계책을 말 위에서 놓는 군사',base:'strategist',tint:0x60f0ff,spells:['fire','embers','gust','windDragon','rumor','ambush','whirlwind','breakArmor','secretPath','hongmen','tempest','thunderbolt','tenAmbush']},
- overlordGuard:{name:'패왕금위',role:'강동자제 3단계 · 패왕과 끝까지 함께한 마지막 팔천',base:'infantry',tint:0xff4030,spells:[]},
- huben:{name:'호분위',role:'낭중기 3단계 · 황제를 지키는 호랑이 기병',base:'cavalry',tint:0x60a0ff,spells:[]},
- sapper:{name:'축성병',role:'공병 2단계 · 방책을 세우고 성벽을 고치는 숙련 공병',base:'engineer',tint:0xd0b070,spells:[]},
- masterBuilder:{name:'공성 장인',role:'공병 3단계 · 운제와 충차를 손보는 장인',base:'engineer',tint:0xffd070,spells:[]},
- thunderCart:{name:'벽력거',role:'포차 2단계 · 관도에서 원소의 망루를 부순 돌수레',base:'catapult',tint:0xc8a070,spells:[]},
- greatTrebuchet:{name:'천균거',role:'포차 3단계 · 다섯 칸 밖까지 돌을 던지는 큰 포차',base:'catapult',tint:0xffc060,spells:[]},
  ironRam:{name:'철충차',role:'충차 2단계 · 쇠를 씌워 불화살을 견디는 충차',base:'ram',tint:0xb0b8c8,spells:[]},
  cloudRam:{name:'파성충차',role:'충차 3단계 · 성문을 부수는 큰 망치 수레',base:'ram',tint:0xffd060,spells:[]},
  mengchong:{name:'몽충',role:'수군 2단계 · 쇠가죽을 씌운 돌격선',base:'navy',tint:0x90c0e0,spells:[]},
  louchuan:{name:'누선',role:'수군 3단계 · 여러 층 망루를 올린 큰 배',base:'navy',tint:0xffd070,spells:[]},
  ...CHART_ROLES,
 };
-export const supportOptions:UnitClass[]=['infantry','fengshui','strategist','shaman','maiden','taoist','physician','monk','horseArcher','bandit','spearman','crossbow','archer','cavalry','heavyCav','catapult','ram','engineer'];
+export const supportOptions:UnitClass[]=['infantry','fengshui','strategist','shaman','maiden','taoist','monk','horseArcher','bandit','spearman','crossbow','archer','cavalry','heavyCav','catapult','ram','engineer'];
 export function troopStrategies(kind:UnitClass,level:number){const role=troopRoles[kind];return role?allStrategies.filter(s=>role.spells.includes(s.id)&&(s.level<=level||s.id==='mend')).map(s=>s.id):undefined;}
 export function visualClass(kind:UnitClass){return troopRoles[kind]?.base??kind;}
 export const classNames:Record<string,string>={infantry:'보병',spearman:'창병',cavalry:'경기병',heavyCav:'중기병',archer:'궁병',crossbow:'노병',strategist:'책사',fengshui:'풍수사',ram:'충차',catapult:'포차',engineer:'공병',navy:'수군',civilian:'민중',...Object.fromEntries(Object.entries(troopRoles).map(([k,v])=>[k,v.name]))};
 /** The class whose sprite a unit is drawn with: extended classes borrow their lineage's art. */
 export function artClass(kind:UnitClass):UnitClass{return VARIANTS[kind]?(troopRoles[kind]?.base??familyOf(kind)):kind;}
 /** Every class a player can field, by tier: for codex and recruiting. */
-export const recruitPool:UnitClass[]=['infantry','spearman','cavalry','archer','crossbow','strategist','fengshui','horseArcher','heavyCav','slinger','assassin','rattan','elephant','monk','taoist','physician','bandit','javelin','axeman','mountaineer','xiliang','qingzhou','jishi','shieldBow','drummer','riderSage','jiangdong','langzhong',
+export const recruitPool:UnitClass[]=['infantry','spearman','cavalry','archer','crossbow','strategist','fengshui','horseArcher','heavyCav','slinger','assassin','rattan','elephant','monk','taoist','bandit','xiliang',
  // 병종 차트로 늘린 계통과 모병 특수 병과
  'swordsman','lord','commander','dancer','mountainCav','valiantCav','lightChariot','crownPrince','transport','nanmanRider','gaemaWarrior','halberdCav','wheelSage',
  'yellowTurban','ytArcher','ytSpear','ytBrawler','nanmanFoot','northFoot','northRider','palanquin','baguaChariot','flyingBlade','bashuRepeater'];
 
 export const troopSheets=[...paintedTroopSheets,{id:'casters',url:'troops-casters-v1.png',rows:3},{id:'specialists',url:'troops-specialists-v1.png',rows:4},{id:'casters-walk',url:'troops-casters-walk-v1.png',rows:3},{id:'specialists-walk',url:'troops-specialists-walk-v1.png',rows:4},{id:'casters-reaction',url:'troops-casters-reaction-v1.png',rows:3},{id:'specialists-reaction',url:'troops-specialists-reaction-v1.png',rows:4},{id:'base-reaction',url:'units-base-reaction-v1.png',rows:6},{id:'extra-reaction',url:'units-extra-reaction-v1.png',rows:4}] as const;
-export const troopArt:Partial<Record<UnitClass,{sheet:'casters'|'specialists';row:number;rows:number}>>={shaman:{sheet:'casters',row:0,rows:3},maiden:{sheet:'casters',row:1,rows:3},taoist:{sheet:'casters',row:2,rows:3},physician:{sheet:'specialists',row:0,rows:4},monk:{sheet:'specialists',row:1,rows:4},horseArcher:{sheet:'specialists',row:2,rows:4},bandit:{sheet:'specialists',row:3,rows:4}};
+export const troopArt:Partial<Record<UnitClass,{sheet:'casters'|'specialists';row:number;rows:number}>>={shaman:{sheet:'casters',row:0,rows:3},maiden:{sheet:'casters',row:1,rows:3},taoist:{sheet:'casters',row:2,rows:3},monk:{sheet:'specialists',row:1,rows:4},horseArcher:{sheet:'specialists',row:2,rows:4},bandit:{sheet:'specialists',row:3,rows:4}};
 
 export const basicReactionArt:Partial<Record<UnitClass,{sheet:string;row:number;rows:number}>>={
  infantry:{sheet:'base-reaction',row:0,rows:6},spearman:{sheet:'base-reaction',row:1,rows:6},archer:{sheet:'base-reaction',row:2,rows:6},cavalry:{sheet:'base-reaction',row:3,rows:6},strategist:{sheet:'base-reaction',row:4,rows:6},catapult:{sheet:'base-reaction',row:5,rows:6},crossbow:{sheet:'extra-reaction',row:0,rows:4},heavyCav:{sheet:'extra-reaction',row:1,rows:4},engineer:{sheet:'extra-reaction',row:2,rows:4},fengshui:{sheet:'extra-reaction',row:3,rows:4}

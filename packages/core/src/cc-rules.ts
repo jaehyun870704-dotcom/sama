@@ -38,18 +38,11 @@ const LINE_GRADES: Partial<Record<UnitClass, GradeProfile>> = {
   // 보병 계열
   infantry:   g("보병계", "BASBB", [110, 6], [10, 1], "foot"),
   rattan:     g("등갑병", "BCSBA", [110, 6], [10, 1], "foot"),
-  axeman:     g("도부수", "SCABB", [100, 5], [10, 1], "foot"),
-  qingzhou:   g("청주병", "BBABS", [110, 6], [10, 1], "foot"),
-  jiangdong:  g("강동자제", "ABABA", [100, 5], [10, 1], "foot"),
   // 창병 계열
   spearman:   g("창병계", "ABABB", [100, 5], [10, 1], "foot"),
-  javelin:    g("투창병", "ABBAB", [90, 4], [10, 1], "foot"),
-  jishi:      g("극사", "ABABA", [100, 5], [10, 1], "foot"),
   // 기병 계열
   cavalry:    g("기병계", "SBABB", [100, 5], [10, 1], "horse"),
   xiliang:    g("서량기병", "SCSBB", [110, 6], [5, 1], "xiliang"),
-  riderSage:  g("기마책사계", "ASBBC", [100, 5], [50, 2], "horse"),
-  langzhong:  g("낭중기", "ABAAB", [100, 5], [10, 1], "horse"),
   heavyCav:   g("중기병", "SCSCB", [110, 6], [5, 1], "horse"),
   elephant:   g("곰부대형 상병", "SCABB", [110, 6], [5, 1], "beast"),
   horseArcher:g("궁기병계", "SBBBA", [100, 5], [10, 1], "horse"),
@@ -57,7 +50,6 @@ const LINE_GRADES: Partial<Record<UnitClass, GradeProfile>> = {
   archer:     g("궁병계", "ABBBS", [90, 4], [10, 1], "foot"),
   slinger:    g("투석병", "ABBCS", [90, 4], [10, 1], "foot"),
   crossbow:   g("노병", "SBACA", [90, 4], [10, 1], "foot"),
-  shieldBow:  g("방패노병", "ABSCB", [100, 5], [10, 1], "foot"),
   catapult:   g("포차계", "SBACA", [90, 4], [10, 1], "machine"),
   ram:        g("충차", "ACSCC", [110, 6], [5, 1], "machine"),
   engineer:   g("공병", "BBABB", [90, 4], [10, 1], "foot"),
@@ -65,16 +57,13 @@ const LINE_GRADES: Partial<Record<UnitClass, GradeProfile>> = {
   // 문관
   strategist: g("책사계", "BSBBB", [90, 4], [40, 2], "scholar"),
   fengshui:   g("풍수사계", "CSCAA", [80, 3], [50, 2], "scholar"),
-  drummer:    g("고취수", "CACAS", [80, 3], [40, 2], "scholar"),
   taoist:     g("도사계", "CSBAB", [80, 3], [40, 2], "rough"),
   shaman:     g("주술사", "CSBBA", [80, 3], [60, 3], "scholar"),
-  physician:  g("의술사", "CSCAA", [80, 3], [50, 2], "scholar"),
   maiden:     g("무희계", "ABBSB", [90, 3], [35, 1], "dancer"),
   // 무예·산적
   monk:       g("무도가계", "ACASB", [90, 4], [20, 1], "monk"),
   bandit:     g("적병계", "SCBBS", [100, 5], [20, 1], "rough"),
   assassin:   g("자객", "ACCSA", [90, 4], [20, 1], "rough"),
-  mountaineer:g("산악병", "ACBAA", [100, 5], [20, 1], "rough"),
   civilian:   g("민중", "CCCCC", [80, 3], [5, 1], "civilian"),
   // 병종 차트로 늘린 계통(chart-classes.ts)
   swordsman:  g("검사계", "SCBAB", [100, 5], [10, 1], "foot"),

@@ -14,7 +14,7 @@ import {STORY_ORDER,RUN_FLOORS,XP_PER_LEVEL,WOUNDED,RELICS,OFFICER_RECRUITS,gran
 import {Rng} from '../../core/src/index.ts';
 import {checkFaction,customList,type Faction,type CustomOfficer} from './custom.ts';
 import {isNewPower,newPowerScript,setFactionContext} from './newpower.ts';
-import {evolvedClass,type UnitClass} from '../../core/src/index.ts';
+import {evolvedClass,currentClass,type UnitClass} from '../../core/src/index.ts';
 import type {ChapterScript,ChoiceEffect,ExtraTale,ScenarioPack,ScriptStep,Look} from './scenario-types.ts';
 import history1 from './scenario/history-1.ts';
 import history2 from './scenario/history-2.ts';
@@ -103,7 +103,7 @@ export function readScenario(raw:string|null):ScenarioState{
     for(const [k,v] of Object.entries(s.choices??{}))if(typeof v==='string')clean.choices[k]=v;
     for(const [k,v] of Object.entries(s.paths??{}))if(typeof v==='string'&&EXTRA_TALES.some(t=>t.id===v&&t.replaces===k))clean.paths[k]=v;
     const run=readRun(s.run);if(run)clean.run=run;
-    for(const [k,o] of Object.entries(s.officers??{}))if(o&&typeof o.unitClass==='string'&&Number.isInteger(o.level)&&o.level>=1&&o.level<=60&&Number.isInteger(o.xp)&&o.xp>=0&&o.xp<XP_PER_LEVEL)clean.officers[k]={name:k,unitClass:o.unitClass as UnitClass,level:o.level,xp:o.xp};
+    for(const [k,o] of Object.entries(s.officers??{}))if(o&&typeof o.unitClass==='string'&&Number.isInteger(o.level)&&o.level>=1&&o.level<=60&&Number.isInteger(o.xp)&&o.xp>=0&&o.xp<XP_PER_LEVEL)clean.officers[k]={name:k,unitClass:currentClass(o.unitClass),level:o.level,xp:o.xp};
     return clean;
   }catch{return freshScenario();}
 }
@@ -120,7 +120,7 @@ function readRun(r:unknown):ScenarioRun|undefined{
 export function loadScenario(){let s:ScenarioState;try{s=readScenario(localStorage.getItem(KEY));}catch{s=freshScenario();}syncFaction(s);return s;}
 /** 신세력 대본이 지금 회차의 세력 이름·동료를 쓰게 한다. */
 export function syncFaction(s:ScenarioState){
-  const LOOK:Record<string,Look>={infantry:'infantry',spearman:'spear',archer:'archer',cavalry:'cavalry',heavyCav:'heavy',crossbow:'crossbow',strategist:'strategist',physician:'physician',horseArcher:'horseArcher',bandit:'bandit',monk:'monk',taoist:'taoist',fengshui:'sage'};
+  const LOOK:Record<string,Look>={infantry:'infantry',spearman:'spear',archer:'archer',cavalry:'cavalry',heavyCav:'heavy',crossbow:'crossbow',strategist:'strategist',horseArcher:'horseArcher',bandit:'bandit',monk:'monk',taoist:'taoist',fengshui:'sage'};
   const f=s.run?.faction;setFactionContext({name:f?.name??'신세력',emblem:f?.emblem??'신',companions:Object.values(s.officers).map(o=>({name:o.name,look:LOOK[o.unitClass]??'infantry'}))});
 }
 export function saveScenario(s:ScenarioState){syncFaction(s);try{localStorage.setItem(KEY,JSON.stringify(s));}catch{/* storage optional */}}
@@ -190,7 +190,7 @@ export function choose(state:ScenarioState,step:ScenarioStep,optionId:string,eff
 /** 그 길에서 적으로 만나는 사람. */
 export function foesOf(route:Route){return [route.region.boss.name,...route.tales.map(t=>t.target.name),...EXTRA_TALES.filter(t=>t.route===route.id).map(t=>t.target.name)];}
 /** 가상 루트의 기본 동료: 조진(기병)·장합(창병)·곽회(궁병)·사마랑(의원). 원소 쪽에서 시작한 길에는 조진이 없다. */
-export const COMPANIONS:Array<{name:string;unitClass:UnitClass}>=[{name:'조진',unitClass:'cavalry'},{name:'장합',unitClass:'spearman'},{name:'곽회',unitClass:'archer'},{name:'사마랑',unitClass:'physician'}];
+export const COMPANIONS:Array<{name:string;unitClass:UnitClass}>=[{name:'조진',unitClass:'cavalry'},{name:'장합',unitClass:'spearman'},{name:'곽회',unitClass:'archer'},{name:'사마랑',unitClass:'fengshui'}];
 export function joinCompanions(state:ScenarioState,route:Route,heroLevel:number){
   const yuanSide=state.route[1]==='yuan',foes=new Set(foesOf(route));
   // 원소 쪽 길: 조진 대신 백마에서 살아남은 문추가 곁에 선다.
@@ -245,7 +245,7 @@ export function endingNotes(state:ScenarioState){return ENDING_NOTES.filter(n=>s
 /** 새 회차: 연의 첫 장부터. 사마랑·조진이 곁에 있고, 해금에 따라 사마사·보물·가호가 더해진다. */
 export function newScenarioRun(no:number,seed:number,unlocks:readonly string[]=[],heroLevel=1,opts:{faction?:Faction;customs?:readonly CustomOfficer[]}={}):ScenarioState{
   const s=freshScenario(),lv=Math.max(1,heroLevel-1);
-  s.officers['사마랑']={name:'사마랑',unitClass:'physician',level:lv,xp:0};
+  s.officers['사마랑']={name:'사마랑',unitClass:'fengshui',level:lv,xp:0};
   // 신세력: 조씨의 장수 대신 직접 만든 신장수(최대 넷)가 처음부터 함께한다.
   if(opts.faction)for(const c of (opts.customs??[]).slice(0,4))s.officers[c.name]={name:c.name,unitClass:landClass(c.unitClass),level:lv,xp:0};
   else s.officers['조진']={name:'조진',unitClass:'cavalry',level:lv,xp:0};
@@ -259,7 +259,7 @@ export function ensureRun(state:ScenarioState,seed:number,unlocks:readonly strin
   if(state.run)return false;
   // 곁에 장수가 없으면(연의 길의 예전 기록) 사마랑·조진이 행군에 함께한다(그 길의 적이 아니면).
   if(!Object.keys(state.officers).length){const foes=new Set((['1','2','3'] as const).flatMap(a=>{const rt=routeById(state.route[Number(a) as 1|2|3]);return rt?foesOf(rt):[];}));
-    for(const [name,unitClass] of [['사마랑','physician'],['조진','cavalry']] as const)if(!foes.has(name))state.officers[name]={name,unitClass,level:Math.max(1,heroLevel-1),xp:0};}
+    for(const [name,unitClass] of [['사마랑','fengshui'],['조진','cavalry']] as const)if(!foes.has(name))state.officers[name]={name,unitClass,level:Math.max(1,heroLevel-1),xp:0};}
   state.run={seed,no:1,hp:{},relics:[],fallen:[],marched:[],guard:unlocks.includes('second_chance'),nodes:0,status:'alive'};return true;
 }
 const hashId=(id:string)=>{let h=2166136261;for(const ch of id)h=Math.imul(h^ch.charCodeAt(0),16777619);return h>>>0;};

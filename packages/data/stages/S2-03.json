@@ -13,7 +13,7 @@
     "slots": 1,
     "grantedUnits": [
       {
-        "type": "physician",
+        "type": "fengshui",
         "count": 1,
         "level": 9,
         "countsTowardAllyLoss": true

@@ -7,7 +7,7 @@ import {classFamily} from '../src/music.ts';
 import {deployment,freshCampaign,award,levelInfo} from '../src/progression.ts';
 import {growthMilestones,officerEvolution} from '../src/growth-milestones.ts';
 import {chapters,campaignOrder} from '../src/session.ts';
-import {getTrait,makeUnit,VARIANTS,EVOLUTION,familyOf,tierOf,profileOf,evolvedClass,statsFor,type DamageContext,type UnitClass} from '../../core/src/index.ts';
+import {getTrait,makeUnit,VARIANTS,EVOLUTION,familyOf,tierOf,profileOf,evolvedClass,statsFor,type DamageContext,type UnitClass,currentClass} from '../../core/src/index.ts';
 import {classNames,troopRoles,artClass,evolutionLines} from '../src/troops.ts';
 import {adviceFor} from '../src/troop-tactics.ts';
 import {RECRUITS} from '../src/roguelike.ts';
@@ -16,8 +16,7 @@ import {RECRUITS} from '../src/roguelike.ts';
 const NEW_CLASSES:Array<[UnitClass,UnitClass,1|2|3]>=[
  ['ironPagoda','heavyCav',3],['elephantKing','heavyCav',3],['boulderCorps','archer',3],['wraith','bandit',3],
  ['wuguoRattan','infantry',3],['greenwoodKing','bandit',3],['arhat','monk',3],['demonKing','shaman',3],
- ['celestial','maiden',3],['thunderGod','taoist',3],['medicineSaint','physician',3],
- ['javelin','spearman',1],['eliteJavelin','spearman',2],['flyingSpear','spearman',3],
+ ['celestial','maiden',3],['thunderGod','taoist',3],['liangzhouIron','cavalry',3],['cloudRam','ram',3],
 ];
 const STATS=['hp','mp','attack','defense','intellect','spirit','agility'] as const;
 describe('새 병종과 진화 계통',()=>{
@@ -40,13 +39,14 @@ describe('새 병종과 진화 계통',()=>{
   for(const line of lines){
    for(let i=1;i<line.length;i++){expect(line[i]![1],line.map(x=>x[0]).join('→')).toBeGreaterThan(line[i-1]![1]);expect(tierOf(line[i]![0])).toBeGreaterThan(tierOf(line[i-1]![0]));}
   }
-  expect(evolvedClass('javelin',9)).toBe('javelin');expect(evolvedClass('javelin',10)).toBe('eliteJavelin');expect(evolvedClass('javelin',30)).toBe('flyingSpear');
+  expect(evolvedClass('xiliang',11)).toBe('xiliang');expect(evolvedClass('xiliang',12)).toBe('feixiong');expect(evolvedClass('xiliang',20)).toBe('liangzhouIron');
   expect(evolvedClass('heavyCav',20)).toBe('ironPagoda');expect(evolvedClass('elephant',21)).toBe('warElephant');expect(evolvedClass('elephant',22)).toBe('elephantKing');
  });
  it('evolves every lineage tier by tier (1→2→3, chart lines up to 5), siege and navy included',()=>{
   // 기본은 1→2→3단. 병종 차트로 늘린 계통은 2~5단(검사는 5단), 기존 계통 일부는 4단(레벨 30)이 붙는다.
   for(const line of evolutionLines()){const tiers=line.map(([c])=>tierOf(c));expect(tiers,line.map(x=>x[0]).join('→')).toEqual(tiers.map((_,i)=>i+1));expect(tiers.length).toBeGreaterThanOrEqual(2);expect(tiers.length).toBeLessThanOrEqual(5);}
-  for(const c of ['engineer','catapult','ram','navy'] as const)expect(evolvedClass(c,30)).not.toBe(c);
+  for(const c of ['ram','navy'] as const)expect(evolvedClass(c,30)).not.toBe(c);
+  for(const c of ['engineer','catapult'] as const)expect(evolvedClass(c,30)).toBe(c);
   for(const line of evolutionLines())for(const [c] of line)expect(classNames[c],c).toMatch(/[가-힣]/);
  });
  it('makes each new tier 3 stronger than its tier 2 and keeps the tier 2 skills',()=>{
@@ -63,10 +63,10 @@ describe('새 병종과 진화 계통',()=>{
    expect(Object.keys(t3).length,c).toBeGreaterThanOrEqual(Object.keys(t2).length);
   }
  });
- it('lets the javelin line be recruited and strike at range 1~2',()=>{
-  expect(RECRUITS).toContain('javelin');
-  const u=makeUnit({id:'j',unitClass:'javelin',level:5,side:'player',pos:{x:0,y:0}});
-  expect(u.range).toEqual([1,2]);expect(cryFor('flyingSpear')).toEqual(cryFor('spearman'));expect(classFamily('arhat')).toBe(classFamily('monk'));
+ it('removes the overlapping lines and reads their old saves as the nearest surviving class',()=>{
+  for(const c of ['physician','javelin','axeman','mountaineer','qingzhou','jishi','shieldBow','drummer','riderSage','jiangdong','langzhong','sapper','thunderCart']){expect((VARIANTS as Record<string,unknown>)[c],c).toBeUndefined();expect(RECRUITS as string[]).not.toContain(c);expect(VARIANTS[currentClass(c)]??(['fengshui','spearman','bandit','infantry','crossbow','engineer','catapult'].includes(currentClass(c))||undefined),c).toBeTruthy();}
+  expect(evolvedClass('engineer',40)).toBe('engineer');expect(evolvedClass('catapult',40)).toBe('catapult');
+  expect(classFamily('arhat')).toBe(classFamily('monk'));
  });
 });
 

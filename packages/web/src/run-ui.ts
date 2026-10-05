@@ -15,7 +15,7 @@ import {fatePoint,ROUTES,routesFor,routeById,endingFor,ALL_ENDINGS} from './fate
 import {classNames} from './troops.ts';
 import {chapters,campaignOrder} from './session.ts';
 import {freshCampaign,award,deployment as campaignDeployment} from './progression.ts';
-import {tierOf,type UnitClass,type BattleState} from '../../core/src/index.ts';
+import {tierOf,currentClass,type UnitClass,type BattleState} from '../../core/src/index.ts';
 import type {Deployment} from './progression.ts';
 
 export interface RunHost {
@@ -45,7 +45,7 @@ export interface RunHost {
 const KEY='sama-run-v1';
 export const RUN_CHAPTER=11;
 
-export function loadRun():Run|null{try{const raw=localStorage.getItem(KEY);if(!raw)return null;const r=JSON.parse(raw) as Run;return r?.version===1&&Array.isArray(r.party)?r:null;}catch{return null;}}
+export function loadRun():Run|null{try{const raw=localStorage.getItem(KEY);if(!raw)return null;const r=JSON.parse(raw) as Run;if(r?.version!==1||!Array.isArray(r.party))return null;for(const u of r.party)u.unitClass=currentClass(u.unitClass);return r;}catch{return null;}}
 function saveRun(run:Run){try{localStorage.setItem(KEY,JSON.stringify(run));}catch{/* storage optional */}}
 function clearRun(){try{localStorage.removeItem(KEY);}catch{/* storage optional */}}
 

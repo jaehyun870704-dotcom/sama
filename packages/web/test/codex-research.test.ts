@@ -98,10 +98,12 @@ describe('출진 보정이 전장에 실린다',()=>{
 
 describe('병종과 책략',()=>{
  it('adds the named-unit lines, recruitable and with officers to lead them',()=>{
-  for(const c of ['axeman','mountaineer','xiliang','qingzhou','jishi','shieldBow','drummer','riderSage'] as const){expect(recruitPool).toContain(c);expect(EVOLUTION[c]).toBeDefined();expect(troopRoles[c]).toBeDefined();}
-  for(const c of ['xianzhen','baier','wudang','feixiong','daji','xiandeng','warDrummer','swiftSage'] as const)expect(classNames[c]).toBeTruthy();
-  expect(OFFICER_RECRUITS.find(o=>o.name==='학소')?.unitClass).toBe('shieldBow');
-  expect(profileOf('riderSage').canUseStrategy).toBe(true);expect(profileOf('riderSage').movement).toBe(6);
+  for(const c of ['xiliang'] as const){expect(recruitPool).toContain(c);expect(EVOLUTION[c]).toBeDefined();expect(troopRoles[c]).toBeDefined();}
+  for(const c of ['feixiong','liangzhouIron'] as const)expect(classNames[c]).toBeTruthy();
+  // 겹치던 명부대 계통은 지우고, 그 장수들은 이어받는 병종을 이끈다.
+  for(const c of ['axeman','mountaineer','qingzhou','jishi','shieldBow','drummer','riderSage'])expect(recruitPool as string[]).not.toContain(c);
+  expect(OFFICER_RECRUITS.find(o=>o.name==='학소')?.unitClass).toBe('crossbow');expect(OFFICER_RECRUITS.find(o=>o.name==='가후')?.unitClass).toBe('wheelSage');
+  expect(profileOf('wheelSage').canUseStrategy).toBe(true);
   for(const r of Object.values(troopRoles))for(const sp of r!.spells)expect(allStrategies.some(s=>s.id===sp),sp).toBe(true);
  });
  it('shapes: cross arms, a line away from the caster',()=>{
@@ -154,7 +156,7 @@ describe('초한의 선대 영웅',()=>{
  it('adds the legendary strategies, units and relics',()=>{
   for(const id of ['hongmen','secretPath','burnBoats','backWater','fourSongs','weiRiver','tenAmbush'])expect(allStrategies.find(s=>s.id===id),id).toBeDefined();
   expect(allStrategies.find(s=>s.id==='fourSongs')!.inflicts).toEqual(['confusion','weaken']);
-  expect(EVOLUTION.jiangdong?.[0]).toBe('bawang');expect(EVOLUTION.langzhong?.[0]).toBe('yulin');expect(recruitPool).toContain('jiangdong');
+  expect((EVOLUTION as Record<string,unknown>).jiangdong).toBeUndefined();expect((EVOLUTION as Record<string,unknown>).langzhong).toBeUndefined();
   for(const id of ['bawangJi','huangshi','xiaoheLedger','yuJade'])expect(RELICS.some(r=>r.id===id)).toBe(true);
  });
 });

@@ -17,7 +17,7 @@ export interface SoundEvent {
 }
 export interface SoundShot {name:string;delay?:number;gain?:number;rate?:number;wet?:number;duck?:boolean;priority?:number}
 
-const HORSE=['cavalry','heavyCav','horseArcher'],BOW=['archer','horseArcher'],SAGE=['strategist','fengshui','shaman','maiden','taoist','physician'];
+const HORSE=['cavalry','heavyCav','horseArcher'],BOW=['archer','horseArcher'],SAGE=['strategist','fengshui','shaman','maiden','taoist'];
 /** Recipe for a strategy: element first, then the kind of support. */
 export function strategySound(id=''):string{
   if(id==='heal'||id==='calm')return 'heal';if(id==='repair')return 'repair';
