@@ -1,7 +1,7 @@
 import type {UnitClass} from '../../core/src/index.ts';
 import {VARIANTS,EVOLUTION,familyOf} from '../../core/src/index.ts';
 import {allStrategies} from './officers.ts';
-import {paintedTroopSheets} from './painted-troops.ts';
+import {paintedTroopSheets,paintedTroopArt} from './painted-troops.ts';
 
 export const troopRoles:Partial<Record<UnitClass,{name:string;role:string;base:UnitClass;tint:number;spells:string[]}>>={
  shaman:{name:'주술사',role:'독·봉인·혼란으로 적을 약화하는 책략 병종',base:'strategist',tint:0xd7afff,spells:['fire','embers','bind','poison','silence','confuse','feint','demoralize','weakenCurse','terror','plague','rumor','chaos']},
@@ -136,4 +136,4 @@ export function loadClassSheets(base=''){
   return classSheetsReady;
 }
 /** 행동·걷기·반응 그림이 따로 있는 병종(전용 시트 또는 술사·특수병 시트) */
-export const hasPaintedMotion=(c:UnitClass)=>classSheets.has(c)||!!troopArt[artClass(c)];
+export const hasPaintedMotion=(c:UnitClass)=>classSheets.has(c)||!!paintedTroopArt[c]||!!troopArt[artClass(c)];

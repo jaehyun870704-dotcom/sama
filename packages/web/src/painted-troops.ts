@@ -7,6 +7,12 @@ export const paintedTroopArt:Partial<Record<UnitClass,{sheet:string;row:number;r
   rattanElite:{sheet:'rattan-v2',row:1,rows:3},
   wuguoRattan:{sheet:'rattan-v2',row:2,rows:3},
 };
+/** 진화표의 겉모습 설명: 전용 그림은 단계 장비가 그림에 이미 그려져 있어 갑옷 덧그리기 규칙 대신 이 글을 쓴다. */
+export const paintedLook:Partial<Record<UnitClass,string>>={
+  rattan:'등나무 갑옷 · 등투구 · 녹색 천 · 작은 등패 · 환도',
+  rattanElite:'겹겹 짙은 등갑 · 넓게 덧댄 등패 · 짙은 녹색 어깨 망토',
+  wuguoRattan:'촘촘한 짙은 등갑에 놋쇠 띠 · 황토색 망토 · 높은 등투구 · 큰 등패',
+};
 /** Atlas columns: idle, attack, stride, recoil. Battle pose numbers remain unchanged. */
 export function paintedTroopFrame(pose:number){
   if(pose>=8)return pose===9||pose===11?0:3;

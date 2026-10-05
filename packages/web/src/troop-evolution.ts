@@ -8,6 +8,7 @@ import {VARIANTS,tierOf,familyOf,profileOf,classTactics} from '../../core/src/in
 import {classNames,evolutionLines,artClass} from './troops.ts';
 import {classSprite,paintArmor} from './codex-ui.ts';
 import {MOUNTED_FAMILIES,ROBE_FAMILIES,MACHINE_FAMILIES} from './armor.ts';
+import {paintedLook} from './painted-troops.ts';
 
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 export type EvoGroup='all'|'foot'|'spear'|'horse'|'ranged'|'mind'|'siege';
@@ -20,6 +21,7 @@ const KEY:Array<[keyof ReturnType<typeof profileOf>,string]>=[['hp','체력'],['
 
 /** 단계마다 겉모습이 어떻게 바뀌는가(armor.ts와 같은 규칙). */
 export function lookText(c:UnitClass){
+  const painted=paintedLook[c];if(painted)return painted;
   const t=tierOf(c),fam=familyOf(artClass(c));
   if(t===1)return '기본 차림';
   if(MACHINE_FAMILIES.has(fam))return t===2?'쇠를 덧댄 강철 장갑':'금테 두른 장갑 · 깃발';
