@@ -1,4 +1,6 @@
 export const SPRITE_CELL=256;
+/** 완성 병종 원화의 몸집(칸 높이 대비): 걷는 병종 대기 자세 키 · 말·수레·배처럼 옆으로 넓은 병종의 키. */
+export const FOOT_HEIGHT=.6,MOUNT_HEIGHT=.72;
 export interface AtlasPixels {width:number;height:number;data:Uint8ClampedArray}
 
 /** Generated sheets have uneven gutters. Find connected silhouettes before assigning
@@ -8,35 +10,92 @@ export function isolateFrames(source:AtlasPixels,rows:number,columns=4,union=fal
   const {width,height,data}=source,labels=new Int32Array(width*height);
   if(strictGrid){
     type Box={left:number;top:number;right:number;bottom:number};
-    const boxes:Box[]=[],keep=new Uint8Array(width*height),edgeRadius=3;
-    for(let row=0;row<rows;row++)for(let col=0;col<columns;col++){
-      const x0=Math.floor(col*width/columns),x1=Math.floor((col+1)*width/columns)-1;
-      const y0=Math.floor(row*height/rows),y1=Math.floor((row+1)*height/rows)-1;
-      let left=x1,top=y1,right=x0,bottom=y0,found=false;
-      for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(data[(y*width+x)*4+3]!>=alphaCutoff){
-        keep[y*width+x]=1;found=true;left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);
+    const edgeRadius=3,solid=(p:number)=>data[p*4+3]!>=alphaCutoff;
+    // 생성 시트는 행·열 간격이 고르지 않다(06번은 행 높이가 120~160px로 제각각).
+    // 불투명 픽셀이 적은 줄을 지나면서 칸 간격이 평균에서 크게 벗어나지 않는 경계선 묶음을 한꺼번에 고른다.
+    const cut=(proj:Uint32Array,n:number,parts:number)=>{
+      const avg=n/parts,pen=(d:number)=>d<avg*.6?Infinity:200*(d/avg-1)**2;
+      const cost=(i:number)=>{let v=0;for(let d=-2;d<=2;d++)v+=proj[Math.min(n-1,Math.max(0,i+d))]!;return v;};
+      let cand=[0],acc=[0];const from:number[][]=[],at:number[][]=[];
+      for(let k=1;k<parts;k++){
+        const lo=Math.max(1,Math.round((k-.5)*avg)),hi=Math.min(n-2,Math.round((k+.5)*avg)),next:number[]=[],nacc:number[]=[],back:number[]=[];
+        for(let i=lo;i<=hi;i++){
+          let best=Infinity,arg=0;
+          cand.forEach((j,t)=>{const v=acc[t]!+pen(i-j);if(v<best){best=v;arg=t;}});
+          next.push(i);nacc.push(best+cost(i));back.push(arg);
+        }
+        from.push(back);at.push(next);cand=next;acc=nacc;
       }
-      if(!found)throw new Error(`Sprite atlas: empty strict-grid cell ${row},${col}`);
-      boxes.push({left:Math.max(x0,left-edgeRadius),top:Math.max(y0,top-edgeRadius),right:Math.min(x1,right+edgeRadius),bottom:Math.min(y1,bottom+edgeRadius)});
+      let t=0,best=Infinity;cand.forEach((j,u)=>{const v=acc[u]!+pen(n-j);if(v<best){best=v;t=u;}});
+      const lines=[n];
+      for(let k=parts-1;k>=1;k--){lines.unshift(at[k-1]![t]!);t=from[k-1]![t]!;}
+      lines.unshift(0);return lines;
+    };
+    const rowProj=new Uint32Array(height);
+    for(let y=0;y<height;y++)for(let x=0;x<width;x++)if(solid(y*width+x))rowProj[y]!++;
+    const rowLines=cut(rowProj,height,rows),rowOf=new Int16Array(height),colOf:Int16Array[]=[];
+    for(let r=0;r<rows;r++){
+      for(let y=rowLines[r]!;y<rowLines[r+1]!;y++)rowOf[y]=r;
+      const colProj=new Uint32Array(width);
+      for(let y=rowLines[r]!;y<rowLines[r+1]!;y++)for(let x=0;x<width;x++)if(solid(y*width+x))colProj[x]!++;
+      const colLines=cut(colProj,width,columns),of=new Int16Array(width);
+      for(let c=0;c<columns;c++)for(let x=colLines[c]!;x<colLines[c+1]!;x++)of[x]=c;
+      colOf.push(of);
+    }
+    const cellAt=(x:number,y:number)=>rowOf[y]!*columns+colOf[rowOf[y]!]![x]!;
+    // 실루엣(연결 덩어리)은 무게중심이 든 칸에 통째로 준다: 이웃 행의 발끝·창끝이 남의 칸에 끼지 않는다.
+    // 두 칸을 넘게 걸친 덩어리(붙어 버린 두 병사)만 경계선으로 자른다. 먼지 같은 아주 작은 조각은 버린다.
+    const queue=new Int32Array(width*height),compCell=[-1];
+    let id=0;
+    for(let start=0;start<labels.length;start++){
+      if(labels[start]||!solid(start))continue;
+      id++;let head=0,tail=1,sx=0,sy=0,l=width,t=height,r=0,b=0;queue[0]=start;labels[start]=id;
+      while(head<tail){
+        const p=queue[head++]!,x=p%width,y=(p-x)/width;sx+=x;sy+=y;l=Math.min(l,x);r=Math.max(r,x);t=Math.min(t,y);b=Math.max(b,y);
+        for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+          const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=width||ny>=height)continue;
+          const q=ny*width+nx;if(labels[q]||!solid(q))continue;labels[q]=id;queue[tail++]=q;
+        }
+      }
+      const cx=Math.round(sx/tail),cy=Math.round(sy/tail),row=rowOf[cy]!;
+      const bandH=rowLines[row+1]!-rowLines[row]!,colW=width/columns;
+      compCell.push(tail<16?-2:(b-t+1)<=bandH*1.25&&(r-l+1)<=colW*1.25?cellAt(cx,cy):-1);
+    }
+    const cellOf=new Int16Array(width*height).fill(-1);
+    for(let p=0;p<labels.length;p++){
+      const c=labels[p]?compCell[labels[p]!]!:-2;if(c===-2)continue;
+      cellOf[p]=c>=0?c:cellAt(p%width,Math.floor(p/width));
     }
     // 높은 알파의 몸체를 씨앗으로 삼고 가까운 원래 픽셀만 되살린다.
     // 따라서 배경 안개는 버리되 머리술·무기 끝·옷자락의 반투명 안티앨리어싱은 보존된다.
     for(let pass=0;pass<edgeRadius;pass++){
-      const next=new Uint8Array(keep);
+      const next=new Int16Array(cellOf);
       for(let y=1;y<height-1;y++)for(let x=1;x<width-1;x++){
-        const p=y*width+x;if(keep[p]||data[p*4+3]!<8)continue;
-        for(let dy=-1;dy<=1&&!next[p];dy++)for(let dx=-1;dx<=1;dx++)if(keep[p+dy*width+dx]){next[p]=1;break;}
+        const p=y*width+x;if(cellOf[p]!>=0||data[p*4+3]!<8)continue;
+        for(let dy=-1;dy<=1&&next[p]!<0;dy++)for(let dx=-1;dx<=1;dx++){const c=cellOf[p+dy*width+dx]!;if(c>=0){next[p]=c;break;}}
       }
-      keep.set(next);
+      cellOf.set(next);
     }
+    const boxes:Box[]=Array.from({length:rows*columns},()=>({left:width,top:height,right:-1,bottom:-1}));
+    for(let p=0;p<cellOf.length;p++){
+      const c=cellOf[p]!;if(c<0)continue;const b=boxes[c]!,x=p%width,y=(p-x)/width;
+      b.left=Math.min(b.left,x);b.right=Math.max(b.right,x);b.top=Math.min(b.top,y);b.bottom=Math.max(b.bottom,y);
+    }
+    boxes.forEach((b,slot)=>{if(b.right<0)throw new Error(`Sprite atlas: empty strict-grid cell ${Math.floor(slot/columns)},${slot%columns}`);});
     const outWidth=SPRITE_CELL*columns,outHeight=SPRITE_CELL*rows,out=new Uint8ClampedArray(outWidth*outHeight*4);
-    const scale=Math.min(...boxes.map(b=>(SPRITE_CELL-28)/Math.max(b.right-b.left+1,b.bottom-b.top+1)));
+    // 병종(행)마다 축척을 따로 정해 모든 병종의 몸집을 맞춘다: 걷는 병종은 대기 자세 키가 FOOT_HEIGHT,
+    // 말·수레·배·코끼리처럼 옆으로 넓은 병종은 MOUNT_HEIGHT. 한 행의 네 동작은 같은 축척이라 자세가 바뀌어도 몸집이 같다.
+    const rowScale=Array.from({length:rows},(_,row)=>{
+      const cells=boxes.slice(row*columns,(row+1)*columns),bw=(b:Box)=>b.right-b.left+1,bh=(b:Box)=>b.bottom-b.top+1;
+      const idle=cells[0]!,wide=bw(idle)/bh(idle)>1.2,target=(wide?MOUNT_HEIGHT:FOOT_HEIGHT)*SPRITE_CELL;
+      return Math.min(target/bh(idle),(SPRITE_CELL-8)/Math.max(...cells.map(bw)),(SPRITE_CELL-16)/Math.max(...cells.map(bh)));
+    });
     boxes.forEach((b,slot)=>{
-      const w=Math.round((b.right-b.left+1)*scale),h=Math.round((b.bottom-b.top+1)*scale);
+      const scale=rowScale[Math.floor(slot/columns)]!,w=Math.round((b.right-b.left+1)*scale),h=Math.round((b.bottom-b.top+1)*scale);
       const ox=(slot%columns)*SPRITE_CELL+Math.floor((SPRITE_CELL-w)/2),oy=Math.floor(slot/columns)*SPRITE_CELL+SPRITE_CELL-14-h;
       for(let y=0;y<h;y++)for(let x=0;x<w;x++){
         const sx=b.left+Math.min(b.right-b.left,Math.floor(x/scale)),sy=b.top+Math.min(b.bottom-b.top,Math.floor(y/scale)),p=sy*width+sx;
-        if(!keep[p])continue;
+        if(cellOf[p]!==slot)continue;
         out.set(data.subarray(p*4,p*4+4),((oy+y)*outWidth+ox+x)*4);
       }
     });

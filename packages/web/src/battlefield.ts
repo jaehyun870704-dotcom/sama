@@ -54,6 +54,8 @@ export function hitStyle(family:string,unitClass:string,strategy?:string):HitSty
   }
 }
 
+/** 완성 병종 원화 한 칸을 전장에 그리는 크기(px). 걷는 병종 키는 이 값의 0.6, 기마·수레·배는 0.72. */
+const TROOP_CELL_SIZE=112;
 export class Battlefield {
   app=new Application();
   world=new Container();
@@ -322,7 +324,8 @@ export class Battlefield {
           const piece=new Container(),sprite=new Sprite(this.unitTexture(unit));sprite.anchor.set(.5,.88);sprite.position.set(0,8);
           const mounted=(unit.id.startsWith('convoy_')||['cavalry','heavyCav','horseArcher','catapult','ram'].includes(artClass(unit.unitClass)));sprite.width=mounted?96:84;sprite.height=mounted?96:84;if(unit.id.startsWith('convoy_')){sprite.width=80;sprite.height=80;}else if(familyOf(artClass(unit.unitClass))==='ram'){sprite.width=sprite.height=76;}else if(familyOf(artClass(unit.unitClass))==='navy'){sprite.width=sprite.height=84;sprite.anchor.y=NAVAL_WATERLINE+.03;}else if(!structureKind(unit.id))sprite.anchor.y=.945;
           // 전용 채색 시트는 칸이 정사각형이 아닐 수 있다(코끼리 384×341): 높이를 기준으로 가로 비율을 지킨다.
-          if(paintedTroopArt[unit.unitClass]&&!structureKind(unit.id)&&!unit.id.startsWith('convoy_')){const h=sprite.height;sprite.width=h*sprite.texture.width/sprite.texture.height;}if(structureKind(unit.id)){const kind=structureKind(unit.id);sprite.width=kind==='tower'?85:kind==='barricade'?58:64;sprite.height=kind==='tower'?118:kind==='barricade'?46:75;}
+          // 완성 병종 원화는 아틀라스에서 병종마다 몸집을 맞춰 두었으므로(sprite-atlas FOOT_HEIGHT·MOUNT_HEIGHT) 칸을 모두 같은 크기로 그린다.
+          if(paintedTroopArt[unit.unitClass]&&!structureKind(unit.id)&&!unit.id.startsWith('convoy_')){sprite.height=TROOP_CELL_SIZE;sprite.width=TROOP_CELL_SIZE*sprite.texture.width/sprite.texture.height;}if(structureKind(unit.id)){const kind=structureKind(unit.id);sprite.width=kind==='tower'?85:kind==='barricade'?58:64;sprite.height=kind==='tower'?118:kind==='barricade'?46:75;}
           // Troops first face the bulk of the opposing army; afterwards they turn as they move and strike.
           if(!structureKind(unit.id)){const foes=state.living().filter(o=>(o.side==='enemy')!==(unit.side==='enemy')&&!structureKind(o.id));const cx=foes.reduce((a,o)=>a+o.pos.x,0)/Math.max(1,foes.length);if(foes.length&&cx<unit.pos.x)sprite.scale.x*=-1;}
           // Dark-edged side disc under the feet: reads on grass, sand and water alike.
