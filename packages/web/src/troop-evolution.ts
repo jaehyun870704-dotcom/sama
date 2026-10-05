@@ -1,14 +1,12 @@
 /**
  * 병종 진화표 — 병종이 어떻게 강해지는가를 한눈에.
  * 계통마다 1단(기본) → 2단(정예) → 3단(최정예) 카드: 진화 레벨, 능력치 변화(▲), 사거리·이동, 개화 스킬, 겉모습의 변화.
- * 그림은 도감과 같은 병종 그림(2·3단은 단계 장비를 입힌 그림).
+ * 그림은 도감과 같은 완성 병종 원화.
  */
 import type {UnitClass} from '../../core/src/index.ts';
 import {VARIANTS,tierOf,familyOf,profileOf,classTactics} from '../../core/src/index.ts';
-import {classNames,evolutionLines,artClass} from './troops.ts';
+import {classNames,evolutionLines} from './troops.ts';
 import {classSprite,paintArmor} from './codex-ui.ts';
-import {MOUNTED_FAMILIES,ROBE_FAMILIES,MACHINE_FAMILIES} from './armor.ts';
-import {paintedLook,paintedTroopArt} from './painted-troops.ts';
 
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 export type EvoGroup='all'|'foot'|'spear'|'horse'|'ranged'|'mind'|'siege';
@@ -19,17 +17,10 @@ export const EVO_GROUPS:Array<[EvoGroup,string,string[]]>=[
 const TIER_NAME=['','기본','정예','최정예','전설','신화'];
 const KEY:Array<[keyof ReturnType<typeof profileOf>,string]>=[['hp','체력'],['attack','공격'],['defense','방어'],['intellect','지력'],['spirit','정신'],['agility','순발']];
 
-/** 단계마다 겉모습이 어떻게 바뀌는가(armor.ts와 같은 규칙). */
+/** 단계마다 겉모습: 모든 병종이 완성 원화를 쓰고, 단계 장비는 그 원화에 이미 그려져 있다. */
 export function lookText(c:UnitClass){
-  const painted=paintedLook[c];if(painted)return painted;
-  // 병종 차트에서 잘라 낸 그림: 단계 장비가 그림에 이미 그려져 있다.
-  if(paintedTroopArt[c]?.sheet.startsWith('chart-'))return '병종 차트 원화 그대로';
-  const t=tierOf(c),fam=familyOf(artClass(c));
-  if(t===1)return '기본 차림';
-  if(MACHINE_FAMILIES.has(fam))return t===2?'쇠를 덧댄 강철 장갑':'금테 두른 장갑 · 깃발';
-  if(ROBE_FAMILIES.has(fam))return t===2?'진영 색 망토':'금빛 둥근 빛 · 금테 망토 · 등 깃발';
-  const horse=MOUNTED_FAMILIES.has(fam);
-  return t===2?`강철 갑주 · 진영 색 망토 · 투구 붉은 술${horse?' · 말에 마의(馬衣)':''}`:`금빛 갑주 · 금테 망토 · 등 깃발 둘 · 투구 금 장식${horse?' · 말 전신 철갑(마갑)':''}`;
+  const t=tierOf(c);
+  return `완성 원화 그대로 · ${t<=1?'기본 차림':t===2?'정예 장비':t===3?'최정예 장비':'전설 장비'}`;
 }
 function card(c:UnitClass,lv:number,prev?:UnitClass){
   const p=profileOf(c),q=prev?profileOf(prev):undefined,v=VARIANTS[c],t=tierOf(c);

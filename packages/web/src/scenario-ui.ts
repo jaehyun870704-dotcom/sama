@@ -4,7 +4,7 @@
  */
 import {loadScenario,saveScenario,scenarioPath,winOver,currentStep,scriptOf,choose,finishStep,fateChoices,floorFor,scenarioParty,rewardOfficers,endingNotes,routeTales,COMPANIONS,
   ensureRun,newScenarioRun,inWhatIf,joinCaptive,pendingMarch,marchNodes,recruitOffer,relicOffer,recruitOfficer,healAll,finishMarch,marchFloor,afterFight,loseFight,runMandate,omenOffer,omenOf,chooseOmen,omenReward,addRunBonus,type ScenarioState,type ScenarioStep,type MarchNode} from './scenario.ts';
-import {playScenes,playNarration,spriteStyle,Stage} from './story-stage.ts';
+import {playScenes,playNarration,Stage} from './story-stage.ts';
 import {startPersuasion,speak,reaction,PITCH,GREETING,AGREE,REFUSE,APPROACH_NAMES,PERSUADE_GOAL,type Approach} from './persuade.ts';
 import {openCamp} from './story-camp.ts';
 import {isoBackdrop} from './story-iso.ts';
@@ -23,6 +23,7 @@ import {cardFace} from './faces.ts';
 import {portraitImage} from './portrait-images.ts';
 import {taleSortieLimit} from './sortie.ts';
 import {classNames} from './troops.ts';
+import {classSprite} from './codex-ui.ts';
 import {nextEvolutionText,XP_PER_LEVEL,RELICS,survivorsOf,type BattleMods,type RunBattleRef,type RunUnit} from './roguelike.ts';
 import {loadMeta,saveMeta,recordStory,buyUnlock,UNLOCKS,recordOfficerLevels} from './meta.ts';
 import {xpMult,restMult,mandateBonus,recruitBonus,heroLevelBonus} from './research.ts';
@@ -261,7 +262,7 @@ export function showIfPrep(host:ScenarioHost,state:ScenarioState,step:ScenarioSt
   const f=focus??'사마의',mods=modsOf(state,step),base=enemyBase(state,hero.level,step)+(difficulty==='extreme'?2:0);
   const unitOf=(name:string)=>name==='사마의'?{name,unitClass:evolvedClass('strategist',hero.level),level:hero.level,xp:hero.xp}:state.officers[name]!;
   const card=(name:string)=>{const u=unitOf(name),c=evolvedClass(u.unitClass,u.level),must=name==='사마의'||required.includes(name),on=must||sel.includes(name);
-    return `<button class="prep-officer ${on?'on':''} ${must?'must':''} ${f===name?'focus':''}" data-officer="${esc(name)}">${portraitImage(name)?`<span class="prep-sprite prep-face">${cardFace(name)}</span>`:`<span class="prep-sprite" style="${spriteStyle(lookOf(c))}"></span>`}<span><strong>${esc(name)}</strong><small>${esc(classNames[c]??c)} · Lv.${u.level} ${'◆'.repeat(tierOf(c))}</small><i class="prep-xp"><i style="width:${Math.round(u.xp/XP_PER_LEVEL*100)}%"></i></i></span>${name==='사마의'?'<em>총대장</em>':must?'<em>🔒 필수</em>':`<label class="prep-toggle"><input type="checkbox" data-sortie="${esc(name)}" ${on?'checked':''}> 출진</label>`}</button>`;};
+    return `<button class="prep-officer ${on?'on':''} ${must?'must':''} ${f===name?'focus':''}" data-officer="${esc(name)}">${portraitImage(name)?`<span class="prep-sprite prep-face">${cardFace(name)}</span>`:`<span class="prep-sprite prep-troop">${classSprite(c)}</span>`}<span><strong>${esc(name)}</strong><small>${esc(classNames[c]??c)} · Lv.${u.level} ${'◆'.repeat(tierOf(c))}</small><i class="prep-xp"><i style="width:${Math.round(u.xp/XP_PER_LEVEL*100)}%"></i></i></span>${name==='사마의'?'<em>총대장</em>':must?'<em>🔒 필수</em>':`<label class="prep-toggle"><input type="checkbox" data-sortie="${esc(name)}" ${on?'checked':''}> 출진</label>`}</button>`;};
   const u=unitOf(f),c=evolvedClass(u.unitClass,u.level),r=romanceByName(f),temper=temperOf(f),t=classTactics(c);
   host.modal(`<div class="briefing prep-screen" style="--prep-art:url('story-backgrounds-2.png')"><div class="prep-backdrop" style="${isoBackdrop(14)}"></div><div class="eyebrow">출진 전 정비 · ${esc(kindTag[step.kind])} · ${esc(stepTitle(step,state))}</div><h2>누구를 데리고 갈 것인가</h2>
   <p class="camp-mission">승리: ${esc(foe.name)} 격퇴 · 패배: 사마의 퇴각. 지역 ${esc(route.region.name)} · 적 수준 Lv.${base} 안팎.</p>
@@ -272,7 +273,7 @@ export function showIfPrep(host:ScenarioHost,state:ScenarioState,step:ScenarioSt
     return `<div class="prep-contest"><span class="prep-contest-face">${cardFace(foe.name)}</span><div><b>적장 ${esc(foe.name)}과(와) 마주했다</b><small>${c?`${c.kind==='duel'?'일기토':'설전'} ${c.result==='win'?'승리 — 이번 전투 사기 상승'+(c.kind==='duel'?' · 적 기세 꺾임(체력 80%)':' · 책략 MP +15'):c.result==='lose'?'패배':'무승부'}`:'싸우기 전에 겨뤄 볼 수 있다. 이기면 이번 전투가 유리해진다(한 장에 한 번).'}</small></div>${c?'':`<button data-contest="duel" data-by="${esc(best('war'))}">⚔ 일기토 · ${esc(best('war'))}</button><button data-contest="debate" data-by="${esc(best('int'))}">✒ 설전 · ${esc(best('int'))}</button>`}</div>`;})():''}
   ${modsText(mods).length?`<p class="prep-mods"><b>대사 선택의 효과</b> ${esc(modsText(mods).join(' · '))}</p>`:''}
   <div class="prep-body"><div class="prep-list">${card('사마의')}${required.map(card).join('')}${optional.map(card).join('')}</div>
-  <div class="prep-detail"><div class="prep-portrait">${portraitImage(f)?`<span class="prep-sprite big prep-face">${cardFace(f)}</span>`:`<span class="prep-sprite big" style="${spriteStyle(lookOf(c),2)}"></span>`}<div><h3>${esc(f)}</h3><p>${esc(classNames[c]??c)} · Lv.${u.level} · 경험치 ${u.xp}/${XP_PER_LEVEL}</p>${r?`<p class="muted">${esc(r.epithet)}</p>`:''}</div></div>
+  <div class="prep-detail"><div class="prep-portrait">${portraitImage(f)?`<span class="prep-sprite big prep-face">${cardFace(f)}</span>`:`<span class="prep-sprite big prep-troop">${classSprite(c)}</span>`}<div><h3>${esc(f)}</h3><p>${esc(classNames[c]??c)} · Lv.${u.level} · 경험치 ${u.xp}/${XP_PER_LEVEL}</p>${r?`<p class="muted">${esc(r.epithet)}</p>`:''}</div></div>
     ${r?`<div class="romance-stats prep-stats">${([['무력',r.war],['지력',r.int],['통솔',r.lead],['정치',r.pol],['매력',r.cha]] as const).map(([k,v])=>`<span><small>${k}</small><b>${v}</b><i style="width:${v}%"></i></span>`).join('')}</div>`:''}
     ${temper?`<p>성격 <b>${temperNames[temper]}</b> — 일기토·설전에 응하는 방식</p>`:''}${r?.skill?`<p><b>${esc(r.skill.name)}</b> ${esc(r.skill.description)}</p>`:''}
     ${t.map(x=>`<p><b class="tactic-name">전법 「${esc(x.name)}」</b> ${esc(x.description)}</p>`).join('')}<p class="muted">${esc(nextEvolutionText(c))}</p></div></div>
