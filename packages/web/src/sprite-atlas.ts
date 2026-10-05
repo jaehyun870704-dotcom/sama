@@ -3,7 +3,8 @@ export interface AtlasPixels {width:number;height:number;data:Uint8ClampedArray}
 
 /** Generated sheets have uneven gutters. Find connected silhouettes before assigning
  * frames, so a spear crossing a nominal cell boundary stays with its owner. */
-export function isolateFrames(source:AtlasPixels,rows:number,columns=4):AtlasPixels {
+/** union=true: 같은 칸에 든 실루엣 조각(투석기와 병사, 떠도는 부적)을 한 프레임으로 합친다. 기본은 칸마다 가장 큰 조각만 쓴다. */
+export function isolateFrames(source:AtlasPixels,rows:number,columns=4,union=false):AtlasPixels {
   const {width,height,data}=source,labels=new Int32Array(width*height);
   const queue=new Int32Array(width*height);
   const groups:Array<{id:number;size:number;left:number;top:number;right:number;bottom:number}>=[];
@@ -21,12 +22,15 @@ export function isolateFrames(source:AtlasPixels,rows:number,columns=4):AtlasPix
     }
     if(tail>=100)groups.push({id,size:tail,left,top,right,bottom});
   }
-  const frames=new Map<number,typeof groups[number]>();
+  type Frame={ids:Set<number>;size:number;left:number;top:number;right:number;bottom:number};
+  const frames=new Map<number,Frame>();
   for(const g of groups){
     const col=Math.min(columns-1,Math.floor((g.left+g.right)/2/(width/columns)));
     const row=Math.min(rows-1,Math.floor((g.top+g.bottom)/2/(height/rows)));
-    const slot=row*columns+col;
-    if(!frames.has(slot)||frames.get(slot)!.size<g.size)frames.set(slot,g);
+    const slot=row*columns+col,cur=frames.get(slot);
+    if(!cur)frames.set(slot,{ids:new Set([g.id]),size:g.size,left:g.left,top:g.top,right:g.right,bottom:g.bottom});
+    else if(union){cur.ids.add(g.id);cur.size+=g.size;cur.left=Math.min(cur.left,g.left);cur.top=Math.min(cur.top,g.top);cur.right=Math.max(cur.right,g.right);cur.bottom=Math.max(cur.bottom,g.bottom);}
+    else if(cur.size<g.size)frames.set(slot,{ids:new Set([g.id]),size:g.size,left:g.left,top:g.top,right:g.right,bottom:g.bottom});
   }
   if(frames.size!==rows*columns)throw new Error(`Sprite atlas: expected ${rows*columns} complete silhouettes, found ${frames.size}`);
   const outWidth=SPRITE_CELL*columns,outHeight=SPRITE_CELL*rows;
@@ -38,7 +42,7 @@ export function isolateFrames(source:AtlasPixels,rows:number,columns=4):AtlasPix
     const ox=(slot%columns)*SPRITE_CELL+Math.floor((SPRITE_CELL-w)/2),oy=Math.floor(slot/columns)*SPRITE_CELL+SPRITE_CELL-14-h;
     for(let y=0;y<h;y++)for(let x=0;x<w;x++){
       const sx=g.left+Math.min(g.right-g.left,Math.floor(x/scale)),sy=g.top+Math.min(g.bottom-g.top,Math.floor(y/scale)),p=sy*width+sx;
-      if(labels[p]!==g.id)continue;
+      if(!g.ids.has(labels[p]!))continue;
       const dest=((oy+y)*outWidth+ox+x)*4;out.set(data.subarray(p*4,p*4+4),dest);
     }
   }
@@ -51,7 +55,7 @@ function toCanvas(p:AtlasPixels){
   const g=canvas.getContext('2d',{willReadFrequently:true})!,img=g.createImageData(p.width,p.height);img.data.set(p.data);g.putImageData(img,0,0);return canvas;
 }
 /** Small worker pool: every sheet is cut in parallel, away from the main thread. */
-type Job={url:string;rows:number;columns:number;resolve:(c:HTMLCanvasElement)=>void;reject:(e:unknown)=>void};
+type Job={url:string;rows:number;columns:number;union:boolean;resolve:(c:HTMLCanvasElement)=>void;reject:(e:unknown)=>void};
 const queue:Job[]=[],idle:Worker[]=[],pending=new Map<number,Job>();let workers=0,jobs=0;
 const poolSize=()=>Math.max(1,Math.min(4,(navigator.hardwareConcurrency||2)-1));
 function dispatch(){
@@ -62,21 +66,21 @@ function dispatch(){
         const d=e.data,job=pending.get(d.id);pending.delete(d.id);idle.push(worker);
         if(job){if(d.error)job.reject(new Error(d.error));else{const plain=toCanvas({width:d.width,height:d.height,data:new Uint8ClampedArray(d.plain)});rims.set(plain,toCanvas({width:d.width,height:d.height,data:new Uint8ClampedArray(d.rim)}));job.resolve(plain);}}
         dispatch();};}
-    const job=queue.shift()!,id=++jobs;pending.set(id,job);w.postMessage({id,url:new URL(job.url,location.href).href,rows:job.rows,columns:job.columns});
+    const job=queue.shift()!,id=++jobs;pending.set(id,job);w.postMessage({id,url:new URL(job.url,location.href).href,rows:job.rows,columns:job.columns,union:job.union});
   }
 }
-async function onMainThread(url:string,rows:number,columns:number){
+async function onMainThread(url:string,rows:number,columns:number,union=false){
   const img=new Image();img.src=url;await img.decode();
   const canvas=document.createElement('canvas');canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
   const context=canvas.getContext('2d',{willReadFrequently:true})!;context.drawImage(img,0,0);
-  return toCanvas(isolateFrames(context.getImageData(0,0,canvas.width,canvas.height),rows,columns));
+  return toCanvas(isolateFrames(context.getImageData(0,0,canvas.width,canvas.height),rows,columns,union));
 }
-export function spriteAtlas(url:string,rows:number,columns=4){
+export function spriteAtlas(url:string,rows:number,columns=4,union=false){
   // 문서 기준 상대 경로를 완전한 주소로: 워커는 자기 스크립트 위치를 기준으로 경로를 풀기 때문이다.
   url=typeof document!=='undefined'?new URL(url,document.baseURI).href:url;
-  const key=url+':'+rows+':'+columns;
-  if(!cache.has(key))cache.set(key,typeof Worker==='undefined'||typeof OffscreenCanvas==='undefined'?onMainThread(url,rows,columns):
-    new Promise<HTMLCanvasElement>((resolve,reject)=>{queue.push({url,rows,columns,resolve,reject});dispatch();}).catch(()=>onMainThread(url,rows,columns)));
+  const key=url+':'+rows+':'+columns+(union?':u':'');
+  if(!cache.has(key))cache.set(key,typeof Worker==='undefined'||typeof OffscreenCanvas==='undefined'?onMainThread(url,rows,columns,union):
+    new Promise<HTMLCanvasElement>((resolve,reject)=>{queue.push({url,rows,columns,union,resolve,reject});dispatch();}).catch(()=>onMainThread(url,rows,columns,union)));
   return cache.get(key)!;
 }
 

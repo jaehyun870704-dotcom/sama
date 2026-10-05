@@ -16,7 +16,7 @@ describe('dedicated troop art',()=>{
   it('retains distinct rattan evolution rows without metal armor overlays',()=>{
     for(const [row,c] of (['rattan','rattanElite','wuguoRattan'] as const).entries()){
       expect(paintedTroopArt[c]?.row).toBe(row);
-      expect(classSprite(c)).toContain('--rattan-v2-atlas');
+      expect(classSprite(c)).toContain('--rattan-v3-atlas');
       expect(classSprite(c)).not.toContain('cx-armor');
     }
   });
@@ -49,5 +49,23 @@ describe('sheet-specific frame use',()=>{
       expect(paintedTroopArt[a]).toEqual({sheet,row:0,rows:3});expect(paintedTroopArt[b]?.row).toBe(1);expect(paintedTroopArt[c]?.row).toBe(2);
       expect(lookText(a)).not.toMatch(/강철|금빛|기본 차림/);expect(lookText(c)).not.toMatch(/강철|금빛/);
     }
+  });
+});
+
+import {RUN,CASTER,paintedTroopSheets} from '../src/painted-troops.ts';
+describe('second batch: assassin, slinger, shaman, maiden and the new rattan sheet',()=>{
+  it('runs with the second column and strikes with the third for assassins and rattan troops',()=>{
+    expect(paintedFrames('assassin-v1')).toBe(RUN);expect(paintedFrames('rattan-v3')).toBe(RUN);
+    expect([1,2,3,4,5].map(p=>paintedTroopFrame(p,RUN))).toEqual([2,2,2,1,0]);
+  });
+  it('maps casters and the five new families to their own sheets',()=>{
+    expect(paintedFrames('shaman-v1')).toBe(CASTER);expect(paintedFrames('maiden-v1')).toBe(CASTER);
+    for(const [a,c,sheet] of [['assassin','wraith','assassin-v1'],['slinger','boulderCorps','slinger-v1'],['shaman','demonKing','shaman-v1'],['maiden','celestial','maiden-v1'],['rattan','wuguoRattan','rattan-v3']] as const){
+      expect(paintedTroopArt[a]?.sheet).toBe(sheet);expect(paintedTroopArt[c]).toEqual({sheet,row:2,rows:3});expect(lookText(c)).not.toMatch(/강철|금빛|기본 차림/);
+    }
+  });
+  it('packs sheets with pieces apart (siege engine and crew) as one frame per cell',()=>{
+    const slinger=paintedTroopSheets.find(s=>s.id==='slinger-v1');expect(slinger&&'union' in slinger&&slinger.union).toBe(true);
+    expect(paintedTroopSheets.find(s=>s.id==='elephant-v1')).not.toHaveProperty('union');
   });
 });

@@ -6,20 +6,26 @@ export const STRIDE:PaintedFrames={attack:[1,1],walk:[2,0],cast:1,hit:3};   // 2
 export const THRUST:PaintedFrames={attack:[1,2],walk:[2,0],cast:1,hit:3};   // 2열 준비 · 3열 내지름(걷기 겸용: 창병·기병)
 export const SHOOT:PaintedFrames={attack:[1,2],walk:[0,0],cast:2,hit:3};    // 2열 겨눔 · 3열 쏨 · 걷기는 대기 칸(궁병·노병)
 export const CASTER:PaintedFrames={attack:[1,2],walk:[0,0],cast:2,hit:3};   // 2열 책 들기 · 3열 부채 휘두름(책사·풍수사)
+export const RUN:PaintedFrames={attack:[2,2],walk:[1,0],cast:2,hit:3};      // 2열 달림(걷기) · 3열 공격(자객·등갑병)
 /** Dedicated art includes all three evolutions; never recolor another troop into these classes. */
+/** union: 칸 안의 떨어진 조각(투석기와 병사, 떠도는 부적)을 한 프레임으로 합쳐 자른다. 정리 도구로 짠 시트는 모두 켠다. */
 export const paintedTroopSheets=[
-  {id:'rattan-v2',url:'troops-rattan-v2.png',rows:3,frames:STRIDE},
+  {id:'rattan-v3',url:'troops-rattan-v3.png',rows:3,frames:RUN,union:true},
   {id:'elephant-v1',url:'troops-elephant-v1.png',rows:3,frames:STRIDE},
-  {id:'infantry-v1',url:'troops-infantry-v1.png',rows:3,frames:STRIDE},
-  {id:'spearman-v1',url:'troops-spearman-v1.png',rows:3,frames:THRUST},
-  {id:'archer-v1',url:'troops-archer-v1.png',rows:3,frames:SHOOT},
-  {id:'cavalry-v1',url:'troops-cavalry-v1.png',rows:3,frames:THRUST},
+  {id:'infantry-v1',url:'troops-infantry-v1.png',rows:3,frames:STRIDE,union:true},
+  {id:'spearman-v1',url:'troops-spearman-v1.png',rows:3,frames:THRUST,union:true},
+  {id:'archer-v1',url:'troops-archer-v1.png',rows:3,frames:SHOOT,union:true},
+  {id:'cavalry-v1',url:'troops-cavalry-v1.png',rows:3,frames:THRUST,union:true},
+  {id:'assassin-v1',url:'troops-assassin-v1.png',rows:3,frames:RUN,union:true},
+  {id:'slinger-v1',url:'troops-slinger-v1.png',rows:3,frames:SHOOT,union:true},
+  {id:'shaman-v1',url:'troops-shaman-v1.png',rows:3,frames:CASTER,union:true},
+  {id:'maiden-v1',url:'troops-maiden-v1.png',rows:3,frames:CASTER,union:true},
 ] as const;
 export const paintedFrames=(sheet:string):PaintedFrames=>paintedTroopSheets.find(s=>s.id===sheet)?.frames??STRIDE;
 export const paintedTroopArt:Partial<Record<UnitClass,{sheet:string;row:number;rows:number}>>={
-  rattan:{sheet:'rattan-v2',row:0,rows:3},
-  rattanElite:{sheet:'rattan-v2',row:1,rows:3},
-  wuguoRattan:{sheet:'rattan-v2',row:2,rows:3},
+  rattan:{sheet:'rattan-v3',row:0,rows:3},
+  rattanElite:{sheet:'rattan-v3',row:1,rows:3},
+  wuguoRattan:{sheet:'rattan-v3',row:2,rows:3},
   elephant:{sheet:'elephant-v1',row:0,rows:3},
   warElephant:{sheet:'elephant-v1',row:1,rows:3},
   elephantKing:{sheet:'elephant-v1',row:2,rows:3},
@@ -35,15 +41,39 @@ export const paintedTroopArt:Partial<Record<UnitClass,{sheet:string;row:number;r
   cavalry:{sheet:'cavalry-v1',row:0,rows:3},
   lancer:{sheet:'cavalry-v1',row:1,rows:3},
   tigerRider:{sheet:'cavalry-v1',row:2,rows:3},
+  assassin:{sheet:'assassin-v1',row:0,rows:3},
+  phantom:{sheet:'assassin-v1',row:1,rows:3},
+  wraith:{sheet:'assassin-v1',row:2,rows:3},
+  slinger:{sheet:'slinger-v1',row:0,rows:3},
+  hurler:{sheet:'slinger-v1',row:1,rows:3},
+  boulderCorps:{sheet:'slinger-v1',row:2,rows:3},
+  shaman:{sheet:'shaman-v1',row:0,rows:3},
+  warlock:{sheet:'shaman-v1',row:1,rows:3},
+  demonKing:{sheet:'shaman-v1',row:2,rows:3},
+  maiden:{sheet:'maiden-v1',row:0,rows:3},
+  priestess:{sheet:'maiden-v1',row:1,rows:3},
+  celestial:{sheet:'maiden-v1',row:2,rows:3},
 };
 /** 진화표의 겉모습 설명: 전용 그림은 단계 장비가 그림에 이미 그려져 있어 갑옷 덧그리기 규칙 대신 이 글을 쓴다. */
 export const paintedLook:Partial<Record<UnitClass,string>>={
   elephant:'가죽·밧줄 하네스 · 얇은 안장 덮개 · 단독 기수',
   warElephant:'보강 가죽 하네스 · 누빔 방호포 · 머리 철갑 · 난간 좌석',
   elephantKing:'다중 체결 하네스 · 측면 비늘갑 · 상아 보호구 · 2인승 전투 누각',
-  rattan:'등나무 갑옷 · 등투구 · 녹색 천 · 작은 등패 · 환도',
-  rattanElite:'겹겹 짙은 등갑 · 넓게 덧댄 등패 · 짙은 녹색 어깨 망토',
-  wuguoRattan:'촘촘한 짙은 등갑에 놋쇠 띠 · 황토색 망토 · 높은 등투구 · 큰 등패',
+  rattan:'등나무 갑옷 · 등투구 · 큰 둥근 등패 · 환도',
+  rattanElite:'붉은 술 투구 · 비늘 등갑 · 긴 직사각 등패 · 대도',
+  wuguoRattan:'사자 문양 흑갑 · 못 박은 대형 등패 · 톱날 대도',
+  assassin:'검은 두건 · 짙은 회색 무복 · 쌍단검',
+  phantom:'복면 · 가죽 찰갑 · 검은 띠 · 쌍곡도',
+  wraith:'뿔 투구 · 검은 판갑 · 긴 망토 · 어둠이 서린 쌍검',
+  slinger:'두건 · 갈색 천 옷 · 손 투석구 · 작은 투석기',
+  hurler:'철 투구 · 비늘 철갑 · 불덩이 투석기',
+  boulderCorps:'깃 투구 · 금장 판갑 · 톱니 추 달린 대형 투석기',
+  shaman:'갈색 무복 · 뼈 장식 · 깃털 달린 부적 지팡이',
+  warlock:'금관 · 자줏빛 도포 · 떠도는 부적 · 삼지창 지팡이',
+  demonKing:'뿔 투구 · 검은 갑주 · 마기 구슬 · 붉은 요검',
+  maiden:'흰 저고리 · 붉은 치마 · 방울 · 부채',
+  priestess:'금 비녀 · 청록 비단옷 · 나뭇가지 · 거울',
+  celestial:'하늘거리는 비단 띠 · 연꽃 · 꽃잎 바람 · 맨발',
   infantry:'푸른 두건 · 가죽 조끼 · 둥근 나무 방패 · 환도',
   shieldGuard:'철 투구 · 비늘 철갑 · 직사각 큰 방패',
   royalGuard:'깃털 투구 · 금장 판갑 · 문양 큰 방패 · 긴 환도',
