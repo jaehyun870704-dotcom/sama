@@ -8,8 +8,9 @@ import type {Temper} from './duel.ts';
 import {registerOfficer,unregisterOfficer,romanceByName} from './romance.ts';
 import {registerFace,clearFaces} from './officer-art.ts';
 import {readPortrait,suggestPortrait,portraitURL,type PortraitSpec} from './portrait.ts';
+import {assignPresetPortrait,clearPresetPortraits,isPresetPortrait,type PresetPortrait} from './portrait-images.ts';
 
-export interface CustomOfficer {name:string;epithet:string;unitClass:UnitClass;temper:Temper;war:number;int:number;lead:number;pol:number;cha:number;/** 초상(없으면 이름·병종·성격으로 지어 준다) */portrait?:PortraitSpec}
+export interface CustomOfficer {name:string;epithet:string;unitClass:UnitClass;temper:Temper;war:number;int:number;lead:number;pol:number;cha:number;/** 초상(없으면 이름·병종·성격으로 지어 준다) */portrait?:PortraitSpec;/** 고른 기본 초상 그림(있으면 그린 초상 대신) */art?:PresetPortrait}
 export interface Faction {name:string;emblem:string;color:string}
 
 export const STAT_KEYS=['war','int','lead','pol','cha'] as const;
@@ -30,6 +31,7 @@ export function checkCustom(o:CustomOfficer,others:readonly string[]=[]):string|
   if(o.epithet.length>24)return '별호는 24자까지';
   if(!CUSTOM_CLASSES.includes(o.unitClass))return '고를 수 없는 병종';
   if(!TEMPERS.includes(o.temper))return '성격을 고르세요';
+  if(o.art!==undefined&&!isPresetPortrait(o.art))return '없는 기본 초상';
   for(const k of STAT_KEYS){const v=o[k];if(!Number.isInteger(v)||v<STAT_MIN||v>STAT_MAX)return `${STAT_NAMES[k]}은 ${STAT_MIN}~${STAT_MAX}`;}
   if(total(o)>STAT_BUDGET)return `능력치 합계 ${total(o)} — ${STAT_BUDGET}을 넘을 수 없다`;
   return undefined;
@@ -44,7 +46,7 @@ export function checkFaction(f:Faction):string|undefined{
 export function readCustoms(raw:unknown):CustomOfficer[]{
   if(!Array.isArray(raw))return [];const out:CustomOfficer[]=[];
   for(const x of raw){const o=x as CustomOfficer;if(!o||typeof o!=='object')continue;
-    const pt=readPortrait(o.portrait),clean:CustomOfficer={name:String(o.name??''),epithet:String(o.epithet??'').slice(0,24),unitClass:o.unitClass,temper:o.temper,war:o.war,int:o.int,lead:o.lead,pol:o.pol,cha:o.cha,...(pt?{portrait:pt}:{})};
+    const pt=readPortrait(o.portrait),clean:CustomOfficer={name:String(o.name??''),epithet:String(o.epithet??'').slice(0,24),unitClass:o.unitClass,temper:o.temper,war:o.war,int:o.int,lead:o.lead,pol:o.pol,cha:o.cha,...(pt?{portrait:pt}:{}),...(isPresetPortrait(o.art)?{art:o.art}:{})};
     if(!checkCustom(clean,out.map(c=>c.name))&&out.length<CUSTOM_LIMIT)out.push(clean);}
   return out;
 }
@@ -53,8 +55,8 @@ let registered:string[]=[],registeredList:CustomOfficer[]=[];
 export function registerCustoms(list:readonly CustomOfficer[]){
   for(const n of registered)unregisterOfficer(n);
   registered=list.map(o=>o.name);registeredList=list.map(o=>({...o}));
-  clearFaces();
-  for(const o of list){registerOfficer({name:o.name,epithet:o.epithet||'신장수',war:o.war,int:o.int,lead:o.lead,pol:o.pol,cha:o.cha,custom:true} as never,o.temper);const spec=portraitOf(o);registerFace(o.name,()=>portraitURL(spec,o.name));}
+  clearFaces();clearPresetPortraits();
+  for(const o of list){registerOfficer({name:o.name,epithet:o.epithet||'신장수',war:o.war,int:o.int,lead:o.lead,pol:o.pol,cha:o.cha,custom:true} as never,o.temper);const spec=portraitOf(o);registerFace(o.name,()=>portraitURL(spec,o.name));assignPresetPortrait(o.name,o.art);}
 }
 export const customNames=()=>[...registered];
 export const customList=()=>registeredList.map(o=>({...o}));

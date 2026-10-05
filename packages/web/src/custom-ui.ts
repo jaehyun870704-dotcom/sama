@@ -11,7 +11,7 @@ import {showFateMap} from './run-ui.ts';
 import {classNames} from './troops.ts';
 import {spriteStyle} from './story-stage.ts';
 import type {Look} from './scenario-types.ts';
-import {setPortraitImage,portraitImage} from './portrait-images.ts';
+import {setPortraitImage,portraitImage,removePortraitImage,isUploaded,PRESET_PORTRAITS,presetPortraitURL,type PresetPortrait} from './portrait-images.ts';
 import {PORTRAIT_PARTS,PORTRAIT_KEYS,portraitURL,suggestPortrait,type PortraitSpec} from './portrait.ts';
 const PART_NAMES:Record<string,string>={face:'얼굴형',skin:'피부',eyes:'눈매',brows:'눈썹',mouth:'입',beard:'수염',hair:'머리색',hat:'머리·관모',robe:'옷 색',armor:'갑옷',item:'소품',bg:'배경',age:'나이',mark:'흉터'};
 
@@ -31,7 +31,8 @@ export function showCustomEditor(host:CustomHost,back:()=>void,editing?:number,d
   host.modal(`<div class="briefing run-screen custom-screen"><div class="eyebrow">신장수 · 연의 장수록에 오른다</div><h2>신장수 만들기 <small class="muted">${list.length}/${CUSTOM_LIMIT}</small></h2>
   <div class="custom-body"><div class="prep-list">${cards||'<p class="muted">아직 만든 신장수가 없다.</p>'}<button id="cu-new">+ 새 신장수</button></div>
   <form class="custom-form" id="cu-form">
-    <div class="cu-portrait"><div class="cu-face"><img id="cu-face" alt="초상 미리보기" src="${(cur.name&&portraitImage(cur.name))||portraitURL(face,cur.name||undefined)}"><button type="button" id="cu-rand">🎲 무작위 초상</button><label class="cx-upload cu-upload">🖼 그림 파일로 초상 넣기<input type="file" accept="image/*" id="cu-img" hidden></label></div>
+    <div class="cu-portrait"><div class="cu-face"><img id="cu-face" alt="초상 미리보기" src="${(cur.name&&portraitImage(cur.name))||(cur.art&&presetPortraitURL(cur.art))||portraitURL(face,cur.name||undefined)}"><button type="button" id="cu-rand">🎲 무작위 초상</button>
+      <div class="cu-presets" role="group" aria-label="기본 초상">${PRESET_PORTRAITS.map(p=>`<button type="button" class="cu-preset ${cur.art===p.id?'on':''}" data-art="${p.id}" title="${p.label}" aria-label="기본 초상: ${p.label}"><img src="${presetPortraitURL(p.id)}" alt=""></button>`).join('')}</div><label class="cx-upload cu-upload">🖼 그림 파일로 초상 넣기<input type="file" accept="image/*" id="cu-img" hidden></label></div>
       <div class="cu-parts">${PORTRAIT_KEYS.map(k=>`<label>${PART_NAMES[k]} <select data-part="${k}">${PORTRAIT_PARTS[k].map((t,i)=>`<option value="${i}" ${face[k]===i?'selected':''}>${t}</option>`).join('')}</select></label>`).join('')}</div></div>
     <label>이름 <input name="name" maxlength="4" value="${esc(cur.name)}" placeholder="한글 1~4자" required></label>
     <label>별호 <input name="epithet" maxlength="24" value="${esc(cur.epithet)}" placeholder="예: 하내의 젊은 창"></label>
@@ -44,12 +45,17 @@ export function showCustomEditor(host:CustomHost,back:()=>void,editing?:number,d
   const form=document.getElementById('cu-form') as HTMLFormElement,err=document.getElementById('cu-err')!;
   const readFace=():PortraitSpec=>Object.fromEntries(PORTRAIT_KEYS.map(k=>[k,Number(form.querySelector<HTMLSelectElement>(`[data-part="${k}"]`)!.value)])) as PortraitSpec;
   const read=():CustomOfficer=>{const f=new FormData(form);return {name:String(f.get('name')??'').trim(),epithet:String(f.get('epithet')??'').trim(),unitClass:String(f.get('unitClass')) as CustomOfficer['unitClass'],temper:String(f.get('temper')) as CustomOfficer['temper'],
-    war:Number(f.get('war')),int:Number(f.get('int')),lead:Number(f.get('lead')),pol:Number(f.get('pol')),cha:Number(f.get('cha')),portrait:readFace()};};
+    war:Number(f.get('war')),int:Number(f.get('int')),lead:Number(f.get('lead')),pol:Number(f.get('pol')),cha:Number(f.get('cha')),portrait:readFace(),...(art?{art}:{})};};
   const faceImg=document.getElementById('cu-face') as HTMLImageElement;
-  form.querySelectorAll<HTMLSelectElement>('[data-part]').forEach(x=>x.addEventListener('change',()=>{faceImg.src=portraitURL(readFace());}));
+  // 기본 초상을 고르면 그린 초상 대신 그 그림을 쓴다. 얼굴 부위를 바꾸거나 무작위를 누르면 그린 초상으로 돌아간다.
+  let art:PresetPortrait|undefined=cur.art;
+  const markArt=()=>document.querySelectorAll<HTMLButtonElement>('[data-art]').forEach(b=>b.classList.toggle('on',b.dataset.art===art));
+  document.querySelectorAll<HTMLButtonElement>('[data-art]').forEach(b=>b.onclick=()=>{art=b.dataset.art as PresetPortrait;markArt();faceImg.src=presetPortraitURL(art);
+    const n=read().name;if(n&&isUploaded(n))void removePortraitImage(n);});
+  form.querySelectorAll<HTMLSelectElement>('[data-part]').forEach(x=>x.addEventListener('change',()=>{art=undefined;markArt();faceImg.src=portraitURL(readFace());}));
   document.getElementById('cu-img')!.addEventListener('change',e=>{const f=(e.target as HTMLInputElement).files?.[0],o=read();if(!f)return;if(!o.name.trim()){host.toast('먼저 이름을 적어 주세요. 그림은 이름에 붙습니다.');return;}
-    void setPortraitImage(o.name.trim(),f).then(url=>{faceImg.src=url;host.toast(`${o.name}의 초상으로 그림을 넣었다.`);},()=>host.toast('그림을 읽지 못했다.'));});
-  let salt=0;document.getElementById('cu-rand')!.onclick=()=>{const o=read(),r=suggestPortrait(o.name||'신장수',o.unitClass,o.temper,++salt);for(const k of PORTRAIT_KEYS)form.querySelector<HTMLSelectElement>(`[data-part="${k}"]`)!.value=String(r[k]);faceImg.src=portraitURL(r);};
+    void setPortraitImage(o.name.trim(),f).then(url=>{art=undefined;markArt();faceImg.src=url;host.toast(`${o.name}의 초상으로 그림을 넣었다.`);},()=>host.toast('그림을 읽지 못했다.'));});
+  let salt=0;document.getElementById('cu-rand')!.onclick=()=>{const o=read(),r=suggestPortrait(o.name||'신장수',o.unitClass,o.temper,++salt);for(const k of PORTRAIT_KEYS)form.querySelector<HTMLSelectElement>(`[data-part="${k}"]`)!.value=String(r[k]);art=undefined;markArt();faceImg.src=portraitURL(r);};
   form.addEventListener('input',()=>{const o=read();for(const k of STAT_KEYS)document.querySelector(`[data-v="${k}"]`)!.textContent=String(o[k]);const sum=statTotal(o),el=document.getElementById('cu-sum')!;el.textContent=String(sum);el.classList.toggle('over',sum>STAT_BUDGET);});
   form.addEventListener('submit',e=>{e.preventDefault();const o=read(),others=list.filter((_,i)=>i!==editing).map(x=>x.name);
     if(editing===undefined&&list.length>=CUSTOM_LIMIT){err.textContent=`신장수는 ${CUSTOM_LIMIT}명까지`;return;}

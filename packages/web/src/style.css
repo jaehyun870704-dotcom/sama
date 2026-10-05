@@ -477,6 +477,9 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
 @media(max-width:620px){.cu-portrait{grid-template-columns:1fr}}
 .cu-face{display:flex;flex-direction:column;gap:6px}.cu-face img{width:192px;height:192px;max-width:100%;border:1px solid #99805a;background:#142421}
 .cu-parts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:4px 10px}.cu-parts label{font-size:12px}
+.cu-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;width:192px;max-width:100%}
+.cu-preset{aspect-ratio:1;padding:0;min-height:0;overflow:hidden;border:2px solid #6a5a3a;border-radius:4px;cursor:pointer}.cu-preset img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 12%}
+.cu-preset.on{border-color:#e8c060;box-shadow:0 0 0 2px #e8c06066}
 .cu-thumb{background-size:cover!important;background-position:center!important;border:1px solid #6a5a3a}
 .battle-model.custom-portrait{border:1px solid #99805a}
 /* ── 삼국지 인물열전 · 연구 ── */
