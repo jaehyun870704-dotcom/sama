@@ -1,6 +1,7 @@
 import type {UnitClass} from '../../core/src/index.ts';
 import {VARIANTS,EVOLUTION,familyOf} from '../../core/src/index.ts';
 import {allStrategies} from './officers.ts';
+import {paintedTroopSheets} from './painted-troops.ts';
 
 export const troopRoles:Partial<Record<UnitClass,{name:string;role:string;base:UnitClass;tint:number;spells:string[]}>>={
  shaman:{name:'주술사',role:'독·봉인·혼란으로 적을 약화하는 책략 병종',base:'strategist',tint:0xd7afff,spells:['fire','embers','bind','poison','silence','confuse','feint','demoralize','weakenCurse','terror','plague','rumor','chaos']},
@@ -105,7 +106,7 @@ export function artClass(kind:UnitClass):UnitClass{return VARIANTS[kind]?(troopR
 /** Every class a player can field, by tier: for codex and recruiting. */
 export const recruitPool:UnitClass[]=['infantry','spearman','cavalry','archer','crossbow','strategist','fengshui','horseArcher','heavyCav','slinger','assassin','rattan','elephant','monk','taoist','physician','bandit','javelin','axeman','mountaineer','xiliang','qingzhou','jishi','shieldBow','drummer','riderSage','jiangdong','langzhong'];
 
-export const troopSheets=[{id:'casters',url:'troops-casters-v1.png',rows:3},{id:'specialists',url:'troops-specialists-v1.png',rows:4},{id:'casters-walk',url:'troops-casters-walk-v1.png',rows:3},{id:'specialists-walk',url:'troops-specialists-walk-v1.png',rows:4},{id:'casters-reaction',url:'troops-casters-reaction-v1.png',rows:3},{id:'specialists-reaction',url:'troops-specialists-reaction-v1.png',rows:4},{id:'base-reaction',url:'units-base-reaction-v1.png',rows:6},{id:'extra-reaction',url:'units-extra-reaction-v1.png',rows:4}] as const;
+export const troopSheets=[...paintedTroopSheets,{id:'casters',url:'troops-casters-v1.png',rows:3},{id:'specialists',url:'troops-specialists-v1.png',rows:4},{id:'casters-walk',url:'troops-casters-walk-v1.png',rows:3},{id:'specialists-walk',url:'troops-specialists-walk-v1.png',rows:4},{id:'casters-reaction',url:'troops-casters-reaction-v1.png',rows:3},{id:'specialists-reaction',url:'troops-specialists-reaction-v1.png',rows:4},{id:'base-reaction',url:'units-base-reaction-v1.png',rows:6},{id:'extra-reaction',url:'units-extra-reaction-v1.png',rows:4}] as const;
 export const troopArt:Partial<Record<UnitClass,{sheet:'casters'|'specialists';row:number;rows:number}>>={shaman:{sheet:'casters',row:0,rows:3},maiden:{sheet:'casters',row:1,rows:3},taoist:{sheet:'casters',row:2,rows:3},physician:{sheet:'specialists',row:0,rows:4},monk:{sheet:'specialists',row:1,rows:4},horseArcher:{sheet:'specialists',row:2,rows:4},bandit:{sheet:'specialists',row:3,rows:4}};
 
 export const basicReactionArt:Partial<Record<UnitClass,{sheet:string;row:number;rows:number}>>={
