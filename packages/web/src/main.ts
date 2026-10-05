@@ -49,7 +49,7 @@ import { Session, chapters, campaignOrder, type Preparation } from './session.ts
 import { Battlefield, classNames, terrainNames, unitName } from './battlefield.ts';
 import { Soundscape } from './audio.ts';
 import {placeFor,bossNear} from './music.ts';
-import { CONTROLLABLE, ignoresRough, awardedSeals, estimatePhysical, estimateStrategy, previewAttack, manhattan, tierOf, familyOf, classTactics, STRATEGY_TIER_NAMES } from '../../core/src/index.ts';
+import { CONTROLLABLE, ignoresRough, awardedSeals, estimatePhysical, estimateStrategy, previewAttack, doubleAttackChance, manhattan, tierOf, familyOf, classTactics, STRATEGY_TIER_NAMES } from '../../core/src/index.ts';
 import type { BattleState, Command, Coord, LogEntry, TerrainKind, Unit } from '../../core/src/index.ts';
 import {strategyIconUrl} from './strategy-icons.ts';
 
@@ -59,6 +59,8 @@ const SAVE_KEY='sama-battle-v2',PROGRESS_KEY='sama-seals-v2';
 const sound=new Soundscape(), field=new Battlefield();
 /** Developer shortcuts (straight into a late battle) only appear with ?dev in the address. */
 const devMode=new URLSearchParams(location.search).has('dev');
+/** 새 전투가 쓰는 규칙판: 5 = 조조전 병과 체계(등급 성장·지형 효율·명중/2회 공격/회심 비율). 예전 저장은 저장된 규칙판 그대로. */
+const RULES=5 as const;
 let session=new Session(),selected='sima_yi',mode='move',threat=false,speed=1,menuOpen=true,aiTimer:ReturnType<typeof setTimeout>|undefined,lastLog=0,resultShown=false;
 let saveAvailable=false,hasStarted=false;
 try{saveAvailable=!!localStorage.getItem(SAVE_KEY);}catch{/* Private browsing may disable storage. */}
@@ -123,8 +125,8 @@ function storyScene(chapter:number,beat=0,fromArt?:number){
 }
 let menuArc=1;
 const resumeSaved=()=>{try{session=Session.load(JSON.parse(localStorage.getItem(SAVE_KEY)??'null'));activate();toast('저장한 전투를 불러왔습니다.');}catch{toast('현재 버전의 저장 기록을 읽지 못했습니다.');}};
-const runHost:RunHost={modal:(html,closable)=>modal(html,closable),showMenu:()=>showMenu(),toast:t=>toast(t),startBattle:(dep,seed)=>{session=new Session(RUN_CHAPTER,'normal',seed,'survival',4,dep);activate();persist();},
-  startStory:(chapter,dep,seed)=>{session=new Session(chapter,'normal',seed,'survival',4,dep);activate();persist();},
+const runHost:RunHost={modal:(html,closable)=>modal(html,closable),showMenu:()=>showMenu(),toast:t=>toast(t),startBattle:(dep,seed)=>{session=new Session(RUN_CHAPTER,'normal',seed,'survival',RULES,dep);activate();persist();},
+  startStory:(chapter,dep,seed)=>{session=new Session(chapter,'normal',seed,'survival',RULES,dep);activate();persist();},
   showChronicle:()=>showChronicle(),showScenario:()=>showScenario(scenarioHost),showExpeditions:()=>showExpeditions(),showTroops:()=>showTroopGallery(),showOfficers:()=>showOfficerGallery(),showSlots:()=>showSlots(),
   get resumeSaved(){return saveAvailable&&!openRunSession()?resumeSaved:undefined;},
   liveRunBattle:()=>{const s=openRunSession();if(!s)return undefined;const d=s.deployment!;return d.run?{seed:d.run.seed,floor:d.run.floor,kind:d.run.kind}:{seed:d.runStory!.seed,floor:d.runStory!.floor,kind:'story'};},
@@ -133,7 +135,7 @@ const runHost:RunHost={modal:(html,closable)=>modal(html,closable),showMenu:()=>
 /** 시나리오 모드(본편)가 쓰는 연결: 연의 장의 정비·전투와 가상 전장 출진, 사마의의 성장 기록. */
 const scenarioHost:ScenarioHost={modal:(html,closable)=>{menuOpen=true;clearTimeout(aiTimer);sound.scene='camp';modal(html,closable);},showSlots:()=>showSlots(()=>showScenario(scenarioHost)),showMenu:()=>showMenu(),toast:t=>toast(t),
   storyBriefing:(chapter,sc)=>briefing(chapter,undefined,sc),
-  startBattle:(dep,seed,difficulty='normal')=>{session=new Session(RUN_CHAPTER,difficulty,seed,'survival',4,dep);activate();persist();},
+  startBattle:(dep,seed,difficulty='normal')=>{session=new Session(RUN_CHAPTER,difficulty,seed,'survival',RULES,dep);activate();persist();},
   hero:()=>{const l=levelInfo(campaign.xp.sima_yi??0);return {level:l.level,xp:l.next?Math.min(99,Math.floor(l.xp/l.next*100)):0};},
   addHeroXp:n=>{const before=levelInfo(campaign.xp.sima_yi??0).level;campaign.xp.sima_yi=(campaign.xp.sima_yi??0)+Math.max(0,n);saveCampaign();const after=levelInfo(campaign.xp.sima_yi).level;return [`사마의 경험치 +${n}`,...(after>before?[`레벨 상승 · 사마의 Lv.${after}`]:[])];},
   heroLoadout:()=>campaign.loadouts,
@@ -161,7 +163,7 @@ function showChronicle(){
   $('#expeditions').onclick=showExpeditions;
   $('#run-open').onclick=showMenu;
   $('#troop-gallery').onclick=()=>showTroopGallery();$('#officer-gallery').onclick=()=>showOfficerGallery();
-  $('#art-preview')?.addEventListener('click',()=>{session=new Session(1,'normal',215,'survival',4,deployment(campaign,true));activate();});
+  $('#art-preview')?.addEventListener('click',()=>{session=new Session(1,'normal',215,'survival',RULES,deployment(campaign,true));activate();});
   $('#chronicle').onclick=()=>{modal(`<div class="briefing"><div class="eyebrow">연의 기록</div><h2>지나온 전장</h2>${campaignOrder.map(i=>`<p>${chapters[i]!.stage.subtitle} · ${cleared(i)?'일반 완료':'미완료'} · 인장 ${(p[chapters[i]!.stage.id+':normal']??[]).length}/3</p>`).join('')}<p>동료는 이야기에 따라 합류합니다. 패배해도 다음 출진의 기본 보급은 줄어들지 않습니다.</p><button id="record-back">← 연의 회상</button></div>`,false);$('#record-back').onclick=showChronicle;};
   $('#resume')?.addEventListener('click',()=>{try{session=Session.load(JSON.parse(localStorage.getItem(SAVE_KEY)??'null'));activate();toast('저장한 전투를 불러왔습니다.');}catch{toast('현재 버전의 저장 기록을 읽지 못했습니다.');}});
   $('#back-battle')?.addEventListener('click',()=>{menuOpen=false;closeModal();});
@@ -214,7 +216,7 @@ function briefing(chapter:number,expeditionId?:string,scenario?:ScenarioDeployme
     ${allowed.length?'':'<small>이 장은 이야기상 정해진 장수만 출진한다.</small>'}</fieldset>`;};
   const draw=()=>{
     const previousScroll=$('#modal-content .camp-screen')?$<HTMLDialogElement>('#modal').scrollTop:0;
-    const preview=new Session(chapter,difficulty,215,prep,4,dispatch(true));
+    const preview=new Session(chapter,difficulty,215,prep,RULES,dispatch(true));
     const units=preview.state.living().filter(u=>u.side==='player'||u.side==='ally');
     modal(`<div class="briefing camp-screen"><div class="prep-backdrop" style="${isoBackdrop(expedition?6:16)}"></div><div class="eyebrow">${c.year} · 출진 전 정비</div><h2>${c.stage.subtitle}</h2><p class="camp-mission">${expedition?trialGoalText(expedition.id):mission}</p>${expedition?`<fieldset class="support-picker"><legend>지원 병종 편성 · 두 부대 선택</legend>${supports.map((kind,i)=>`<label>지원 ${i+1}<select data-support="${i}">${supportOptions.map(k=>`<option value="${k}" ${kind===k?'selected':''}>${classNames[k]}</option>`).join('')}</select><small>${troopAdvice[kind]}</small></label>`).join('')}<div class="support-recommendation"><b>목표·지형에 맞는 편성</b><p>${recommendation!.classes.map(k=>classNames[k]).join(' + ')} · ${recommendation!.reason}</p><button id="recommend-support" type="button">추천 병종으로 편성</button><small>추천은 선택 사항입니다. 병종은 전투마다 다시 고를 수 있습니다.</small></div>${supportWarnings(units).map(t=>`<p class="composition-note">${t}</p>`).join('')}</fieldset>`:''}${expedition?`<p class="trial-objective">${growthAdvice(campaign,expedition.level)}<br>지원 부대는 권장 레벨과 사마의 레벨 +1 중 낮은 레벨로 출진합니다.</p>`:''}${expedition?'':sortieMarkup()}${campMarkup(campaign,units,officer,filter,inspect,portraitFor,scenario?.relics)}<details><summary>작전·지형 정보</summary><p>${expedition?trialTactics(expedition.id)+' '+trialGoalText(expedition.id)+' · 사마의·조진 생존 필수. 수련은 반복 경험치, 보물 외전은 첫 승리 보상을 지급합니다.':rule}</p></details><div class="preparations">${[['survival','생존','체력 +25'],['strategy','책략','MP +18'],['command','지휘','이동 +1']].map(([id,name,desc])=>`<label><input type="radio" name="preparation" value="${id}" ${prep===id?'checked':''}>${name} · ${desc}</label>`).join('')}</div><div class="difficulty"><label><input type="radio" name="difficulty" value="normal" ${difficulty==='normal'?'checked':''}> 일반</label><label><input type="radio" name="difficulty" value="extreme" ${difficulty==='extreme'?'checked':''} ${!expedition&&cleared(chapter)?'':'disabled'}> 극한 · 일반 완료 후</label></div><div class="modal-actions"><button id="brief-back">← ${scenario?'장 목록':expedition?'수련 · 보물 인연':'연의 회상'}</button>${scenario?'<button id="brief-camp">← 진영으로</button>':''}<span>구급약 2 · ${growthText()}</span><button id="deploy" class="primary">출진한다 →</button></div></div>`,false);
     document.querySelectorAll<HTMLButtonElement>('[data-officer]').forEach(b=>b.onclick=()=>{officer=b.dataset.officer!;draw();});
@@ -230,7 +232,7 @@ function briefing(chapter:number,expeditionId?:string,scenario?:ScenarioDeployme
     if(scenario)$('#brief-camp').onclick=()=>campOf(scenarioHost,scenario.chapter);
     document.querySelectorAll<HTMLSelectElement>('[data-support]').forEach(el=>el.onchange=()=>{const k=supportOptions.find(k=>k===el.value);if(k){supports[Number(el.dataset.support)]=k;draw();}});
     $('#recommend-support')?.addEventListener('click',()=>{if(recommendation){supports=[...recommendation.classes];draw();}});
-    $('#deploy').onclick=()=>{session=new Session(chapter,difficulty,expedition?Date.now()%100000:215,prep,4,dispatch());activate();persist();};
+    $('#deploy').onclick=()=>{session=new Session(chapter,difficulty,expedition?Date.now()%100000:215,prep,RULES,dispatch());activate();persist();};
     $<HTMLDialogElement>('#modal').scrollTop=previousScroll;
   };draw();
 }
@@ -326,7 +328,7 @@ function hudHover(at:Coord|undefined){
   if(!left&&t){left={u:t};right=undefined;}
   if(u&&t&&right&&t.side==='enemy'){const d=manhattan(u.pos,t.pos),def=s.strategyFor(u,mode);
     if(def&&d<=def.range){const dmg=estimateStrategy(u,t,def,s.map);right.o={preview:dmg,note:`${def.name??mode} · 예상 피해 ${dmg}`};}
-    else if(mode==='attack'&&d>=u.range[0]&&d<=u.range[1]){const v=previewAttack(u,t,s.map,session.battle.wouldCounter(t,u));right.o={preview:v.hit>0?v.damage:0,note:`명중 ${v.hit}% · 피해 ${v.damage}${v.lethal?' · 격파':''}`};if(v.counter)left={u,o:{preview:v.counter.damage,note:`반격 ${v.counter.damage} · 명중 ${v.counter.hit}%`}};}}
+    else if(mode==='attack'&&d>=u.range[0]&&d<=u.range[1]){const v=previewAttack(u,t,s.map,session.battle.wouldCounter(t,u));right.o={preview:v.hit>0?v.damage:0,note:`명중 ${v.hit}% · 피해 ${v.damage}${doubleAttackChance(u,t)>1?` · 연속 ${Math.round(doubleAttackChance(u,t))}%`:''}${v.lethal?' · 격파':''}`};if(v.counter)left={u,o:{preview:v.counter.damage,note:`반격 ${v.counter.damage} · 명중 ${v.counter.hit}%`}};}}
   renderHud($('#unit-hud'),s,left,right);
 }
 /** 싸움이 일어나면: 친 쪽과 맞은 쪽 카드를 띄우고 체력 막대를 싸우기 전에서 뒤로 줄인다. */
@@ -361,7 +363,7 @@ function render(){
   renderUnit(s.find(selected));
   $<HTMLButtonElement>('#end-phase').disabled=!CONTROLLABLE.has(s.currentSide)||s.outcome!=='ongoing'||field.busy||!!session.activeDuel;
   $<HTMLButtonElement>('#undo').disabled=!session.checkpoints.length||field.busy;
-  $('#tactical-tip').textContent=session.revision===4&&session.chapter===4?'여포는 물리 공격이 강합니다. 무력보다 지력 차이를 활용해 설전 승리와 혼란을 노리세요. 각 대결이 끝나면 체력·MP가 회복됩니다.':session.revision===4?'일기토는 인접한 적, 설전은 3칸 이내 적을 선택합니다. 충차는 성문·감시탑에 피해 3배. 풍수사는 MP 8로 3칸 이내 아군을 치유합니다.':'목표와 승리 조건을 확인하세요. 본대 다음 편입 아군을 직접 지휘합니다.';
+  $('#tactical-tip').textContent=session.revision>=4&&session.chapter===4?'여포는 물리 공격이 강합니다. 무력보다 지력 차이를 활용해 설전 승리와 혼란을 노리세요. 각 대결이 끝나면 체력·MP가 회복됩니다.':session.revision>=4?'일기토는 인접한 적, 설전은 3칸 이내 적을 선택합니다. 충차는 성문·감시탑에 피해 3배. 풍수사는 MP 8로 3칸 이내 아군을 치유합니다.':'목표와 승리 조건을 확인하세요. 본대 다음 편입 아군을 직접 지휘합니다.';
   sound.scene=s.outcome!=='ongoing'?'result':session.chapter===4?'dream':s.living('player').some(u=>u.hp<u.stats.maxHp*.35)?'crisis':bossNear(s.living())?'boss':'battle';
   renderCoach();queueLines();
   consumeLog();field.render(s,selected,mode,threat,session.scouted);checkModal();
@@ -392,21 +394,23 @@ function xpOf(u:Unit){const b=session.xpBase()?.[u.id];if(!b)return undefined;co
 function xpBar(u:Unit):Array<[string,string,number,number]>{const x=xpOf(u);return x?[['xp',`경험치 · 이번 전투 +${x.gained}`,x.now,XP_PER_LEVEL]]:[];}
 function renderUnit(u:Unit|undefined){
   if(!u)return;const s=session.state,can=u.alive&&!u.hasActed&&u.side===s.currentSide&&CONTROLLABLE.has(u.side)&&s.outcome==='ongoing';
-  const feature=session.revision===4?officerFeatures[u.id]:undefined;const talents=session.deployment?.growth?talentTree(u.id,u.level,session.deployment.growth):[];
+  const feature=session.revision>=4?officerFeatures[u.id]:undefined;const talents=session.deployment?.growth?talentTree(u.id,u.level,session.deployment.growth):[];
   // 한 화면 장수 카드: 초상·이름·체력/책략/경험 막대·능력치 8칸·성격·특성(이름만)·책략(눌러서 선택)·상태
   const r=romanceOf(u),temper=r?temperOf(r.name):undefined,sk=r?.skill??feature;
-  const statCells=[...(r&&!u.name.endsWith('환영')?[['무력',r.war],['지력',r.int],['통솔',r.lead],['정치',r.pol],['매력',r.cha]]:[['무력',martialPower(u)],['지력',u.stats.intellect]]),['공격',u.stats.attack],['방어',u.stats.defense],['이동',u.stats.movement]] as Array<[string,number]>;
+  const ab=u.ccRules?u.ability:undefined;
+  // 조조전 규칙 전투: 장수 능력 다섯(무력·지력·통솔·민첩·운)과 부대 공격·방어·이동. 순발력·사기는 칸에 마우스를 올리면 보인다.
+  const statCells=ab?[['무력',ab.war],['지력',ab.int],['통솔',ab.lead],['민첩',ab.agi],['운',ab.luck],['공격',u.stats.attack],['방어',u.stats.defense],['이동',u.stats.movement]] as Array<[string,number]>:[...(r&&!u.name.endsWith('환영')?[['무력',r.war],['지력',r.int],['통솔',r.lead],['정치',r.pol],['매력',r.cha]]:[['무력',martialPower(u)],['지력',u.stats.intellect]]),['공격',u.stats.attack],['방어',u.stats.defense],['이동',u.stats.movement]] as Array<[string,number]>;
   const strategyChips=u.strategies.map(id=>{const d=s.strategyFor(u,id)!,tier=d.tier??1;const off=!can||u.mp<d.mpCost||s.hasStatus(u,'seal');return `<button class="uc-strat t${tier}${mode===id?' active':''}" data-uc-strat="${id}" ${off?'disabled':''} title="${d.name} · ${STRATEGY_TIER_NAMES[tier]} · 위력 ${d.power} · ${strategyHint(id)}"><img src="${strategyIconUrl(id,tier)}" alt=""><b>${d.name}</b><small>${d.mpCost}</small></button>`;}).join('');
   const traits=[...(sk?[{n:sk.name,d:sk.description,on:true}]:[]),...talents.map(t=>({n:t.name,d:t.ready?t.description:t.requirement,on:t.ready}))].filter((t,i,a)=>a.findIndex(x=>x.n===t.n)===i);
   $('#unit-detail').innerHTML=`<div class="uc"><div class="uc-head"><div class="portrait uc-face"><div>${portraitFor(u)}</div><span class="portrait-tag">${sideNames[u.side]}</span></div><div class="uc-id"><h2>${unitName(u)}</h2><small>${classNames[u.unitClass]} · Lv.${u.level}${r?.epithet?` · ${r.epithet}`:''}</small>${[['hp','체력',u.hp,u.stats.maxHp],['mp','책략',u.mp,u.stats.maxMp],...xpBar(u).map(([k,,v,m])=>[k,'경험',v,m] as [string,string,number,number])].map(([kind,name,value,max])=>`<div class="uc-bar ${kind}"><span>${name}</span><i><i style="width:${Number(value)/Math.max(1,Number(max))*100}%"></i></i><b>${value}<small>/${max}</small></b></div>`).join('')}</div></div>
-    <div class="uc-stats">${statCells.map(([k,v])=>`<div><small>${k}</small><b>${v}</b></div>`).join('')}</div>
+    <div class="uc-stats"${ab?` title="순발력 ${u.stats.agility} · 사기 ${u.stats.morale} · 정신력 ${u.stats.spirit}"`:''}>${statCells.map(([k,v])=>`<div><small>${k}</small><b>${v}</b></div>`).join('')}</div>
     ${temper||traits.length?`<div class="uc-traits">${temper?`<span class="uc-chip temper" title="일기토·설전에 응하는 방식">성격 · ${temperNames[temper]}</span>`:''}${traits.map(t=>`<span class="uc-chip${t.on?'':' locked'}" title="${t.d.replace(/"/g,'&quot;')}">${t.on?'◆':'◇'} ${t.n}</span>`).join('')}</div>`:''}
     ${u.strategies.length?`<div class="uc-strats"><div class="uc-label">책략 <small>눌러서 고른 뒤 지도에서 대상을 누르세요</small></div><div class="uc-strat-list">${strategyChips}</div></div>`:''}
     <p class="uc-tip">${classTactics(u.unitClass).map(t=>`전법 「${t.name}」`).join(' · ')}${classTactics(u.unitClass).length?' · ':''}일반 공격 사거리 ${u.range[0]}~${u.range[1]}${u.statuses.length?` · <b>${u.statuses.map(x=>(STATUS_NAMES[x.kind]??x.kind)+' '+x.turns+'턴').join(' · ')}</b>`:''}</p></div>`;
   const buttons=[{id:'move',name:'이동',icon:'➶',meta:'1',disabled:u.hasMoved},{id:'attack',name:'공격',icon:'⚔',meta:'2',disabled:u.unitClass==='civilian'},...u.strategies.map(id=>{const d=s.strategyFor(u,id)!;return {id,name:d.name,icon:`<img src="${strategyIconUrl(id,d.tier??1)}" alt="">`,meta:d.mpCost+' MP',disabled:u.mp<d.mpCost||s.hasStatus(u,'seal')};}),{id:'wait',name:'대기',icon:'◷',meta:'W',disabled:false}];
   if(session.deployment&&familyOf(u.unitClass)==='fengshui')buttons.push({id:'heal',name:'치유',icon:'치',meta:'8 MP',disabled:u.mp<8||s.hasStatus(u,'seal')});
   if(familyOf(u.unitClass)==='engineer')buttons.push({id:'repair',name:'수리',icon:'수',meta:'인접',disabled:false},{id:'fortify',name:'방책',icon:'책',meta:session.barricadesLeft(u.id)+'회',disabled:session.barricadesLeft(u.id)<=0});
-  if(session.revision===4&&!['civilian','ram','catapult'].includes(familyOf(u.unitClass))&&!structureKind(u.id))buttons.push({id:'duel',name:'일기토',icon:'겨',meta:'5합',disabled:false},{id:'debate',name:'설전',icon:'논',meta:'5합',disabled:false});
+  if(session.revision>=4&&!['civilian','ram','catapult'].includes(familyOf(u.unitClass))&&!structureKind(u.id))buttons.push({id:'duel',name:'일기토',icon:'겨',meta:'5합',disabled:false},{id:'debate',name:'설전',icon:'논',meta:'5합',disabled:false});
   if(session.canCalm)buttons.push({id:'calm',name:'진정',icon:'진',meta:String(session.medicine),disabled:!session.medicine});
   buttons.push({id:'scout',name:'살피기',icon:'살',meta:'행동',disabled:session.scouted},{id:'medicine',name:'구급약',icon:'약',meta:String(session.medicine),disabled:!u.canUseItems||u.unitClass==='civilian'||!session.medicine||u.hp===u.stats.maxHp});
   const region=[...s.map.regions].find(([name,coords])=>s.victory.some(v=>v.type==='capture'&&v.target===name)&&coords.some(c=>c.x===u.pos.x&&c.y===u.pos.y));
@@ -477,7 +481,7 @@ function showRefusal(){
 let met=new Set<string>(),metFor:object|undefined;
 function encounterCheck(){
   const el=$('#encounter');if(metFor!==session){metFor=session;met=new Set();el.hidden=true;}
-  if(!el.hidden||menuOpen||field.busy||$<HTMLDialogElement>('#modal').open||session.activeDuel||session.revision!==4)return;
+  if(!el.hidden||menuOpen||field.busy||$<HTMLDialogElement>('#modal').open||session.activeDuel||session.revision<4)return;
   const s=session.state;if(s.outcome!=='ongoing'||!CONTROLLABLE.has(s.currentSide))return;
   const fighter=(u:Unit)=>!['civilian','ram','catapult'].includes(familyOf(u.unitClass))&&!/^(gate|tower)_/.test(u.id);
   for(const u of s.living(s.currentSide)){if(u.hasActed||!CONTROLLABLE.has(u.side)||!fighter(u)||!(romanceOf(u)||u.id==='sima_yi'))continue;
@@ -572,7 +576,7 @@ field.onCell=at=>{
     if(!target&&mode==='move'){act({kind:'move',unit:u.id,to:at});return;}
   }if(target)select(target.id);
 };
-field.onHover=at=>{hudHover(at);if(!at){$('#tile-info').textContent='끌어서 전장을 살피고, 미니맵을 눌러 옮긴다 · ⌖ 고른 장수에게로';return;}const s=session.state,u=s.find(selected),target=s.unitAt(at);const hz=s.map.tileAt(at).hazard;let line=`${terrainNames[s.map.tileAt(at).terrain]}${hz==='fire'?' · 불길(화상)':hz==='trap'&&session.scouted?' · 함정(최대 체력 25% 피해)':''} · (${at.x+1}, ${at.y+1}) · 회피 +${s.map.evasionBonus(at)}%`;if(target)line+=` · ${unitName(target)} ${target.hp} HP`;if(u&&target?.side==='enemy'&&(mode==='duel'||mode==='debate')&&session.revision===4){const a=session.challengeAnswer(u,target,mode);line+=a.reason==='nameless'?' · 이름 없는 병사는 응하지 않는다':a.accept?` · ${a.reason==='historic'?'연의의 대결 — 반드시 응한다':'응할 것 같다'}`:` · 거절할 것 같다(${a.reason==='wounded'?'부상':'성격'})`;}if(u&&target?.side==='enemy'){const d=s.strategies.get(mode);if(d&&manhattan(u.pos,at)<=d.range)line+=` · 예상 피해 ≈${estimateStrategy(u,target,d,s.map)}`;else if(mode==='attack'&&manhattan(u.pos,at)<=u.range[1]&&manhattan(u.pos,at)>=u.range[0]){const v=previewAttack(u,target,s.map,session.battle.wouldCounter(target,u));line+=` · 명중 ${v.hit}% · 피해 ${v.damage}${v.lethal?' (격파)':''}${v.counter?` · 반격 ${v.counter.damage} (명중 ${v.counter.hit}%)`:' · 반격 없음'}`;}}if(u&&mode==='move'){const cost=s.map.moveCost(u.unitClass,at,ignoresRough(u));line+=' · 이동 비용 '+(Number.isFinite(cost)?cost:'진입 불가')+' · 지형 위력 ×'+s.map.terrainAffinity(u.unitClass,at).toFixed(2);}if(u&&target?.side==='enemy'&&mode==='attack'&&!structureKind(target.id))line+=' · '+physicalMatchup(u.unitClass,target.unitClass);$('#tile-info').textContent=line;};
+field.onHover=at=>{hudHover(at);if(!at){$('#tile-info').textContent='끌어서 전장을 살피고, 미니맵을 눌러 옮긴다 · ⌖ 고른 장수에게로';return;}const s=session.state,u=s.find(selected),target=s.unitAt(at);const hz=s.map.tileAt(at).hazard;let line=`${terrainNames[s.map.tileAt(at).terrain]}${hz==='fire'?' · 불길(화상)':hz==='trap'&&session.scouted?' · 함정(최대 체력 25% 피해)':''} · (${at.x+1}, ${at.y+1}) · 회피 +${s.map.evasionBonus(at)}%`;if(target)line+=` · ${unitName(target)} ${target.hp} HP`;if(u&&target?.side==='enemy'&&(mode==='duel'||mode==='debate')&&session.revision>=4){const a=session.challengeAnswer(u,target,mode);line+=a.reason==='nameless'?' · 이름 없는 병사는 응하지 않는다':a.accept?` · ${a.reason==='historic'?'연의의 대결 — 반드시 응한다':'응할 것 같다'}`:` · 거절할 것 같다(${a.reason==='wounded'?'부상':'성격'})`;}if(u&&target?.side==='enemy'){const d=s.strategies.get(mode);if(d&&manhattan(u.pos,at)<=d.range)line+=` · 예상 피해 ≈${estimateStrategy(u,target,d,s.map)}`;else if(mode==='attack'&&manhattan(u.pos,at)<=u.range[1]&&manhattan(u.pos,at)>=u.range[0]){const v=previewAttack(u,target,s.map,session.battle.wouldCounter(target,u));line+=` · 명중 ${v.hit}% · 피해 ${v.damage}${v.lethal?' (격파)':''}${v.counter?` · 반격 ${v.counter.damage} (명중 ${v.counter.hit}%)`:' · 반격 없음'}`;}}if(u&&mode==='move'){const cost=s.map.moveCost(u.unitClass,at,ignoresRough(u));line+=' · 이동 비용 '+(Number.isFinite(cost)?cost:'진입 불가')+' · 지형 위력 ×'+s.map.terrainAffinity(u.unitClass,at).toFixed(2);}if(u&&target?.side==='enemy'&&mode==='attack'&&!structureKind(target.id))line+=' · '+physicalMatchup(u.unitClass,target.unitClass);$('#tile-info').textContent=line;};
 function updateSound(){$('#sound-toggle').innerHTML=`♪ <span>${sound.enabled?'소리 켜짐':'음소거'}</span>`;}
 $('#sound-toggle').onclick=()=>{sound.enabled=!sound.enabled;storeSettings();void sound.start().then(updateSound);};
 $('#menu').onclick=showMenu;$('#brand').onclick=showMenu;$('#undo').onclick=undo;
@@ -616,5 +620,5 @@ document.addEventListener('keydown',e=>{if($<HTMLDialogElement>('#modal').open||
 const atlasUrl=(canvas:HTMLCanvasElement)=>new Promise<string>(resolve=>canvas.toBlob(blob=>resolve(blob?URL.createObjectURL(blob):canvas.toDataURL())));
 async function boot(){try{await Promise.all([...[['officer-story','officer-story-v1.png',2,4],['base','units-v3.png',6,4],['extra','units-extra-v1.png',4,4],['ram','ram-v1.png',2,2],...troopSheets.map(s=>[s.id,s.url,s.rows,4,!!(s as {union?:boolean}).union])].map(async([name,url,rows,columns,union])=>{const atlas=await spriteAtlas(String(url),Number(rows),Number(columns),Boolean(union));document.documentElement.style.setProperty('--'+name+'-atlas','url('+await atlasUrl(atlas)+')');}),navalAtlas().then(async c=>document.documentElement.style.setProperty('--naval-atlas','url('+await atlasUrl(c)+')')),loadFigures(),loadIsoArt(),loadPaintedScenes(),loadClassSheets().then(()=>Promise.all([...classSheets].map(async([c,url])=>{try{document.documentElement.style.setProperty('--own-'+c+'-atlas','url('+await atlasUrl(await spriteAtlas(url,3))+')');}catch{/* 계열 그림 */}}))),field.init($('#map'))]);field.load(session.state);render();showMenu();}catch(error){$('#map').innerHTML='<p class="render-error">전장 그래픽을 초기화하지 못했습니다. 새로고침해 주세요.</p>';console.error(error);}}
 // ?dev only: a handle for QA scripts to inspect or nudge the running battle.
-if(devMode)Object.assign(window,{__sama:{get session(){return session;},get field(){return field;},render,start(chapter:number){session=new Session(chapter,'normal',215,'survival',4,{...deployment(campaign,true),wide:1});activate();},story(chapter:number){storyScene(chapter);},act(cmd:Command){act(cmd);}}});
+if(devMode)Object.assign(window,{__sama:{get session(){return session;},get field(){return field;},render,start(chapter:number){session=new Session(chapter,'normal',215,'survival',RULES,{...deployment(campaign,true),wide:1});activate();},story(chapter:number){storyScene(chapter);},act(cmd:Command){act(cmd);}}});
 void boot();

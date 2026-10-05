@@ -8,6 +8,7 @@
  * 경험치로 레벨이 오르면 병종이 진화한다(classes.ts의 계통).
  * 화면과 저장은 main.ts가 맡는다. 이 모듈은 상태를 바꾸는 순수 함수만 둔다.
  */
+import {ccLevelDelta} from './cc-apply.ts';
 import {Rng,VARIANTS,makeUnit,evolvedClass,nextEvolution,profileOf,evolveUnit,familyOf,statsFor,type UnitClass,type StageDef,type MapFile,type UnitSpawnSpec,type BattleState,type LogEntry,type Unit} from '../../core/src/index.ts';
 import {classNames,troopStrategies} from './troops.ts';
 import {availableStrategies,allStrategies} from './officers.ts';
@@ -528,7 +529,9 @@ export function xpFromLog(entries:LogEntry[],mine:(id:string)=>boolean,levelOf:(
 /** 전투 중 레벨업: 같은 병종의 성장분만큼 능력치를 올리고, 늘어난 체력·책략만큼 채운다. */
 export function levelUpInBattle(u:Unit,to:number){
   if(to<=u.level)return;
-  const a=statsFor(u.unitClass,u.level),b=statsFor(u.unitClass,to),s=u.stats;
-  for(const k of ['maxHp','maxMp','attack','defense','intellect','spirit','agility'] as const)s[k]+=b[k]-a[k];
-  u.hp=Math.min(s.maxHp,u.hp+(b.maxHp-a.maxHp));u.mp=Math.min(s.maxMp,u.mp+(b.maxMp-a.maxMp));u.level=to;
+  const s=u.stats,a=statsFor(u.unitClass,u.level),b=statsFor(u.unitClass,to);
+  // 조조전 규칙 부대는 등급·장수 능력으로 정한 상승치만큼 오른다.
+  const d=u.ccRules?ccLevelDelta(u,u.level,to):{maxHp:b.maxHp-a.maxHp,maxMp:b.maxMp-a.maxMp,attack:b.attack-a.attack,defense:b.defense-a.defense,intellect:b.intellect-a.intellect,spirit:b.spirit-a.spirit,agility:b.agility-a.agility,morale:0};
+  for(const k of ['maxHp','maxMp','attack','defense','intellect','spirit','agility','morale'] as const)s[k]+=d[k];
+  u.hp=Math.min(s.maxHp,u.hp+d.maxHp);u.mp=Math.min(s.maxMp,u.mp+d.maxMp);u.level=to;
 }

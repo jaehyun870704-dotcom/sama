@@ -192,8 +192,9 @@ export const skillParam=(param:number,tier:number)=>Math.round(param*SKILL_TIER[
  * 연의 능력을 유닛에 입힌다(한 번만). 무력→공격, 지력→지력, 통솔→방어·체력,
  * (지력+정치)/2→정신, 매력→사기. 체력·책략 비율은 유지한다.
  */
-export function applyRomance(u:Unit):boolean{
+export function applyRomance(u:Unit,stats=true):boolean{
   const r=romanceOf(u);if(!r)return false;
+  if(!stats){if(r.skill&&!u.traits.includes(r.skill.trait)){u.traits.push(r.skill.trait);if(r.skill.param!==undefined)u.traitParams[r.skill.trait]=skillParam(r.skill.param,tierOf(u.unitClass));}return true;}
   const hp=u.hp/Math.max(1,u.stats.maxHp),s=u.stats;
   s.attack=Math.max(1,Math.round(s.attack*scale(r.war,.15)));
   s.intellect=Math.max(1,Math.round(s.intellect*scale(r.int,.15)));

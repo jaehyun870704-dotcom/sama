@@ -10,6 +10,7 @@ import { applyTraitHooks, combine, type AttackKind, type DamageContext } from ".
 import { familyOf } from "./classes.ts";
 import { hasTrait, traitParam } from "./traits.ts";
 import { tacticMultiplier } from "./tactics.ts";
+import { ccHitChance, ccRatioChance, ccPhysicalBase, ccStrategyBase, terrainEfficiency } from "./cc-rules.ts";
 
 /** 최소 보장 피해. 방어력이 아무리 높아도 이만큼은 들어간다. */
 export const MIN_DAMAGE = 1;
@@ -92,10 +93,40 @@ export function createDamageContext(
  *   기본 90 + (공격자 순발력 - 방어자 순발력) * 0.5 - 방어자 지형 회피 + 특성 보정
  */
 export function accuracy(ctx: DamageContext, map: BattleMap): number {
+  // 조조전 규칙: 물리는 순발력 비율, 책략은 (정신력+사기) 비율로 명중을 정한다. 지형 회피는 지형 효율이 대신한다.
+  if (ctx.attacker.ccRules) {
+    const a = ctx.attacker.stats, d = ctx.defender.stats;
+    const base = ctx.kind === "strategy" ? ccHitChance(a.spirit + a.morale, d.spirit + d.morale) : ccHitChance(a.agility, d.agility);
+    return clamp(base + ctx.accuracyMod, 5, 100);
+  }
   const agiDiff = ctx.attacker.stats.agility - ctx.defender.stats.agility;
   const raw =
     BASE_ACCURACY + agiDiff * 0.5 - map.evasionBonus(ctx.defender.pos) + ctx.accuracyMod;
   return clamp(raw, 5, 100);
+}
+
+/** 물리 피해의 분산 전 값과 지형 배율(내역 표시용). 실제 계산·AI 추정·공격 미리보기가 같은 계수를 쓴다. */
+function physicalRaw(attacker: Unit, defender: Unit, map: BattleMap, ctx: DamageContext, counter: boolean): { base: number; matchup: number; terrain: number; elevation: number; morale: number; tactic: ReturnType<typeof tacticMultiplier> } {
+  const matchup = matchupMultiplier(attacker.unitClass, defender.unitClass);
+  const elevation = elevationMultiplier(map.heightAt(attacker.pos), map.heightAt(defender.pos));
+  const tactic = tacticMultiplier(attacker, defender, map, counter);
+  if (attacker.ccRules) {
+    const atkEff = terrainEfficiency(attacker.unitClass, map.tileAt(attacker.pos).terrain);
+    const defEff = terrainEfficiency(defender.unitClass, map.tileAt(defender.pos).terrain);
+    const base = ccPhysicalBase(attacker, defender, atkEff, defEff, ctx.attackMul, ctx.defenseIgnore);
+    return { base, matchup, terrain: atkEff / defEff, elevation, morale: 1, tactic };
+  }
+  const atk = attacker.stats.attack * ctx.attackMul;
+  const def = defender.stats.defense * (1 - ctx.defenseIgnore);
+  return { base: Math.max(MIN_DAMAGE, atk - def), matchup, terrain: map.terrainAffinity(attacker.unitClass, attacker.pos), elevation, morale: moraleMultiplier(attacker.stats.morale), tactic };
+}
+/** 회심 확률(%): 조조전 규칙은 사기 비율에 특성 보정을 더한다. */
+function criticalChanceOf(ctx: DamageContext): number {
+  return ctx.attacker.ccRules ? Math.min(100, ccRatioChance(ctx.attacker.stats.morale, ctx.defender.stats.morale) + ctx.criticalChance) : ctx.criticalChance;
+}
+/** 2회 공격 확률(%): 조조전 규칙에서만, 순발력 비율로. */
+export function doubleAttackChance(attacker: Unit, defender: Unit): number {
+  return attacker.ccRules ? ccRatioChance(attacker.stats.agility, defender.stats.agility) : 0;
 }
 
 /** 물리 공격 피해 계산. */
@@ -126,19 +157,13 @@ export function computePhysical(
     };
   }
 
-  const atk = attacker.stats.attack * ctx.attackMul;
-  const def = defender.stats.defense * (1 - ctx.defenseIgnore);
-  const base = Math.max(MIN_DAMAGE, atk - def);
-
-  const matchup = matchupMultiplier(attacker.unitClass, defender.unitClass);
-  const terrain = map.terrainAffinity(attacker.unitClass, attacker.pos);
-  const elevation = elevationMultiplier(map.heightAt(attacker.pos), map.heightAt(defender.pos));
-  const morale = moraleMultiplier(attacker.stats.morale);
+  const { base, matchup, terrain, elevation, morale, tactic } = physicalRaw(attacker, defender, map, ctx, !!opts.isCounter);
   const variance = 0.95 + rng.next() * 0.1;
-  const critical = ctx.criticalChance > 0 && rng.chance(ctx.criticalChance);
+  const critChance = criticalChanceOf(ctx);
+  const critical = critChance > 0 && rng.chance(critChance);
 
-  const tactic = tacticMultiplier(attacker, defender, map, !!opts.isCounter);
-  let dmg = base * matchup * terrain * elevation * morale * variance * (1 - ctx.reduction) * tactic.mul;
+  // 조조전 규칙의 지형 효율은 base에 이미 들어 있다(terrain은 내역 표시용 비율).
+  let dmg = base * matchup * (attacker.ccRules ? 1 : terrain) * elevation * morale * variance * (1 - ctx.reduction) * tactic.mul;
   if (critical) dmg *= CRITICAL_MULTIPLIER;
   if (opts.isCounter) dmg *= counterMultiplier(attacker);
 
@@ -206,6 +231,7 @@ export function computeStrategy(
  * 지력이 오르는 만큼 꾸준히(제곱에 가깝게) 강해진다.
  */
 export function strategyBase(caster: Unit, target: Unit, strategy: StrategyDef, attackMul = 1): number {
+  if (caster.ccRules) return ccStrategyBase(caster, target, strategy.power, attackMul);
   // 옛 규칙 전투(저장 재생)는 예전 빼기식 그대로.
   if (!caster.classTactics) return Math.max(MIN_DAMAGE, caster.stats.intellect * (strategy.power / 100) * attackMul - target.stats.spirit * 0.5);
   const int = Math.max(1, caster.stats.intellect), spirit = Math.max(1, target.stats.spirit);
@@ -273,19 +299,12 @@ export function estimatePhysical(attacker: Unit, defender: Unit, map: BattleMap)
   applyTraitHooks(ctx);
   if (ctx.immune) return 0;
 
-  const atk = attacker.stats.attack * ctx.attackMul;
-  const def = defender.stats.defense * (1 - ctx.defenseIgnore);
-  const base = Math.max(MIN_DAMAGE, atk - def);
-
+  const r = physicalRaw(attacker, defender, map, ctx, false);
   const raw =
-    base *
-    matchupMultiplier(attacker.unitClass, defender.unitClass) *
-    map.terrainAffinity(attacker.unitClass, attacker.pos) *
-    elevationMultiplier(map.heightAt(attacker.pos), map.heightAt(defender.pos)) *
-    moraleMultiplier(attacker.stats.morale) *
-    (1 - ctx.reduction) *
-    tacticMultiplier(attacker, defender, map, false).mul *
-    (1 + (Math.min(100, ctx.criticalChance) / 100) * (CRITICAL_MULTIPLIER - 1));
+    r.base * r.matchup * (attacker.ccRules ? 1 : r.terrain) * r.elevation * r.morale *
+    (1 - ctx.reduction) * r.tactic.mul *
+    (1 + (Math.min(100, criticalChanceOf(ctx)) / 100) * (CRITICAL_MULTIPLIER - 1)) *
+    (1 + doubleAttackChance(attacker, defender) / 100);
 
   const hitRate = ctx.alwaysHit ? 1 : accuracy(ctx, map) / 100;
   return Math.max(0, raw * hitRate);
@@ -320,13 +339,8 @@ function hitPreview(attacker: Unit, defender: Unit, map: BattleMap, counter = fa
   const ctx = createDamageContext(attacker, defender, "physical");
   applyTraitHooks(ctx);
   if (ctx.immune) return { hit: 0, damage: 0 };
-  const atk = attacker.stats.attack * ctx.attackMul;
-  const def = defender.stats.defense * (1 - ctx.defenseIgnore);
-  const dmg = Math.max(MIN_DAMAGE, atk - def) *
-    matchupMultiplier(attacker.unitClass, defender.unitClass) *
-    map.terrainAffinity(attacker.unitClass, attacker.pos) *
-    elevationMultiplier(map.heightAt(attacker.pos), map.heightAt(defender.pos)) *
-    moraleMultiplier(attacker.stats.morale) * (1 - ctx.reduction) * tacticMultiplier(attacker, defender, map, counter).mul;
+  const r = physicalRaw(attacker, defender, map, ctx, counter);
+  const dmg = r.base * r.matchup * (attacker.ccRules ? 1 : r.terrain) * r.elevation * r.morale * (1 - ctx.reduction) * r.tactic.mul;
   return { hit: ctx.alwaysHit ? 100 : Math.round(accuracy(ctx, map)), damage: Math.max(MIN_DAMAGE, Math.round(dmg)) };
 }
 export function previewAttack(attacker: Unit, defender: Unit, map: BattleMap, canCounter: boolean): AttackPreview {

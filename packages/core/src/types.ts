@@ -143,6 +143,9 @@ export interface Status {
 
 // ─────────────────────────────────────────────────────────── 유닛
 
+/** 장수 다섯 능력(조조전 열전 능력치). */
+export interface Ability { war: number; int: number; lead: number; agi: number; luck: number }
+
 export interface UnitStats {
   maxHp: number;
   maxMp: number;
@@ -186,6 +189,10 @@ export interface Unit {
   movedSteps?: number;
   /** 현행 규칙 전투인가: 병종 전법(tactics.ts)과 지력 비례 책략 피해를 쓴다. 옛 규칙 저장 재생이 달라지지 않게 현행 전투만 켠다. */
   classTactics?: boolean;
+  /** 조조전 규칙 전투인가(규칙판 5): 능력 등급·지형 효율·비율 확률·2회 공격을 쓴다. cc-rules.ts 참조. */
+  ccRules?: boolean;
+  /** 장수 다섯 능력(무력·지력·통솔·민첩·운). 조조전 규칙에서 능력치 성장과 상태 회복에 쓴다. */
+  ability?: Ability;
   hasActed: boolean;
   alive: boolean;
   /** 도구 사용 가능 여부. 편입 아군은 false. PRD §3.3 */

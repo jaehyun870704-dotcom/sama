@@ -6,8 +6,8 @@
  * 병종: 모든 병종의 그림·능력 계수·사거리·전법·개화 스킬·진화 계통·쓰는 책략.
  * 책략: 아이콘 목록과 속성·소모 MP·습득 레벨·시전 범위·효과 범위 격자·설명.
  */
-import type {UnitClass,StrategyTier} from '../../core/src/index.ts';
-import {VARIANTS,tierOf,familyOf,profileOf,classTactics,strategyArea,tieredStrategy,strategyTierLevel,STRATEGY_TIER_NAMES} from '../../core/src/index.ts';
+import type {UnitClass,StrategyTier,TerrainKind} from '../../core/src/index.ts';
+import {VARIANTS,tierOf,familyOf,profileOf,classTactics,strategyArea,tieredStrategy,strategyTierLevel,STRATEGY_TIER_NAMES,gradeProfileOf,terrainEfficiency,efficiencyMark} from '../../core/src/index.ts';
 import {strategyIconUrl} from './strategy-icons.ts';
 import {allRomanceNames,romanceByName,temperOf} from './romance.ts';
 import {temperNames} from './duel.ts';
@@ -132,6 +132,13 @@ export async function paintArmor(){
       el.width=f.width;el.height=f.height;el.getContext('2d')!.drawImage(f,0,0);el.classList.add('on');}catch{/* 그림을 못 읽으면 원래 그림 그대로 */}
   }
 }
+const CC_TERRAINS:Array<[TerrainKind,string]>=[['plain','평지'],['forest','숲'],['hill','구릉'],['mountain','산지'],['marsh','늪'],['water','물'],['fort','성채']];
+/** 조조전 병과 등급(새 전투 규칙): 다섯 능력 등급·HP/MP 성장·지형 효율. */
+function ccGrades(c:UnitClass){
+  const g=gradeProfileOf(c),[a,sp,d,ag,m]=g.grades;
+  const terrain=CC_TERRAINS.map(([t,name])=>`${name}${efficiencyMark(terrainEfficiency(c,t))}`).join(' ');
+  return `<p class="cx-unique"><b>조조전 병과 「${esc(g.name)}」</b> 공격 ${a} · 정신 ${sp} · 방어 ${d} · 순발 ${ag} · 사기 ${m} · HP ${g.hp[0]}+${g.hp[1]}/Lv · MP ${g.mp[0]}+${g.mp[1]}/Lv<br><small>지형 효율 ${terrain} (★120% ◎110% ○100% △90% X80%)</small></p>`;
+}
 const PROFILE_ROWS:Array<[keyof ReturnType<typeof profileOf>,string]>=[['hp','체력'],['attack','공격'],['defense','방어'],['intellect','지력'],['spirit','정신'],['agility','순발'],['mp','책략']];
 function classesTab(pick:string){
   const all=codexClasses(),c=(all.includes(pick as UnitClass)?pick:all[0]!) as UnitClass,p=profileOf(c),v=VARIANTS[c],line=evolutionLines().find(l=>l.some(([x])=>x===c));
@@ -140,6 +147,7 @@ function classesTab(pick:string){
   const detail=`<div class="cx-detail"><div class="cx-head">${sprite(c)}<div><small>${'◆'.repeat(tierOf(c))} ${tierOf(c)===1?'기본':tierOf(c)===2?'정예':'최정예'} · ${esc(classNames[familyOf(c)]??familyOf(c))} 계열</small><h3>${esc(classNames[c]??c)}</h3><p>${esc(troopRoles[c]?.role??adviceFor(c))}</p></div></div>
     <div class="cx-stats">${PROFILE_ROWS.map(([k,label])=>{const n=p[k] as number;return `<div class="cx-stat"><span>${label}</span><i><i style="width:${Math.min(100,n/2.2*100)}%" class="${n>=1.3?'hi':n<0.7?'lo':''}"></i></i><b>${n.toFixed(2)}</b></div>`;}).join('')}</div>
     <p class="cx-tags"><span>이동 ${p.movement}</span><span>사거리 ${p.range[0]}~${p.range[1]}</span>${p.canUseStrategy?'<span>책략 사용</span>':''}</p>
+    ${ccGrades(c)}
     ${v?.bloom?`<p class="cx-unique"><b>개화 「${esc(v.bloom.name)}」</b> ${esc(v.bloom.description)}</p>`:''}
     ${classTactics(c).map(t=>`<p class="cx-unique"><b>전법 「${esc(t.name)}」</b> ${esc(t.description)}</p>`).join('')}
     ${line?`<div class="cx-line">${line.map(([k,lv],i)=>`${i?`<span class="evo-arrow">Lv.${lv} →</span>`:''}<button data-cx-class="${k}" class="evo-node ${k===c?'chosen':''}"><b>${'◆'.repeat(tierOf(k))}</b>${esc(classNames[k]??k)}</button>`).join('')}</div>`:''}

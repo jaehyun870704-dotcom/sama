@@ -224,6 +224,9 @@ function withoutCaptureGoals(state: any) {
   return view;
 }
 
+/** 측정할 규칙판(기본: 새 전투가 쓰는 규칙판). SIM_REVISION=4로 예전 규칙과 비교한다. */
+const SIM_REVISION = (Number(process.env.SIM_REVISION) || 5) as 4 | 5;
+
 /** AI 자동 플레이 1회. 사람 실력의 하한선 근사치로 쓴다. */
 function play(chapter: number, difficulty: Difficulty, seed: number) {
   // 출진 준비는 책략(MP) — 주력 딜이 책략이므로 AI가 가장 잘 쓰는 선택이다.
@@ -232,7 +235,7 @@ function play(chapter: number, difficulty: Difficulty, seed: number) {
     difficulty,
     seed,
     "strategy",
-    4,
+    SIM_REVISION,
     deployment(campaignAt(chapter, difficulty), true),
   );
 

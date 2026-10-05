@@ -4,7 +4,9 @@
 import { BattleState, PHASE_ORDER, type BattleSnapshot } from "./state.ts";
 import type { Command, CommandResult } from "./commands.ts";
 import { ok, fail } from "./commands.ts";
-import { computePhysical, computeStrategy, createDamageContext } from "./formulas.ts";
+import { ccRecoverChance } from "./cc-rules.ts";
+import type { StatusKind } from "./types.ts";
+import { computePhysical, computeStrategy, createDamageContext, doubleAttackChance } from "./formulas.ts";
 import { applyTraitHooks, counterLimitOf, ignoresRough, hasTrait, guardsAdjacent, getTrait, traitParam } from "./traits.ts";
 import { DialogueScript } from "./dialogue.ts";
 import { runEvents } from "./events.ts";
@@ -22,6 +24,8 @@ export interface BattleOptions {
   /** 무한 루프 방어. 이 턴을 넘기면 강제 종료한다. */
   maxTurns?: number;
 }
+
+const NEGATIVE_STATUS = new Set<StatusKind>(["confusion", "immobile", "bound", "bleed", "burn", "shock", "seal", "weaken", "breach", "slow"]);
 
 export class Battle {
   readonly state: BattleState;
@@ -125,29 +129,32 @@ export class Battle {
     const [minR, maxR] = a.range;
     if (dist < minR || dist > maxR) return fail(`사거리 밖 (거리 ${dist}, 사거리 ${minR}~${maxR})`);
 
-    const res = computePhysical(a, d, this.state.map, this.state.rng);
-    this.state.push({
-      t: "attack", attacker: a.id, defender: d.id,
-      damage: res.damage, hit: res.hit, critical: res.critical,
-      ...(res.hit && res.tactic ? { tactic: res.tactic } : {}),
-    });
-    if (res.hit) this.damage(d, res.damage, a);
+    this.strike(a, d, false);
 
     a.hasActed = true;
     a.hasMoved = true;
 
     // 반격: 생존 + 사거리 내 + 무반격 아님 + 반격 횟수 잔여
     if (d.alive && a.alive && this.canCounter(d, a, dist)) {
-      const counter = computePhysical(d, a, this.state.map, this.state.rng, { isCounter: true });
-      this.state.push({
-        t: "counter", attacker: d.id, defender: a.id,
-        damage: counter.damage, hit: counter.hit,
-        ...(counter.hit && counter.tactic ? { tactic: counter.tactic } : {}),
-      });
-      if (counter.hit) this.damage(a, counter.damage, d);
+      this.strike(d, a, true);
       this.counters.set(d.id, (this.counters.get(d.id) ?? 0) + 1);
     }
     return ok;
+  }
+
+  /** 한 번의 물리 타격(조조전 규칙이면 순발력 비율로 한 번 더 친다). */
+  private strike(a: Unit, d: Unit, isCounter: boolean): void {
+    const once = (double: boolean): boolean => {
+      const res = computePhysical(a, d, this.state.map, this.state.rng, { isCounter });
+      const extra = double ? { double: true } : {};
+      if (isCounter) this.state.push({ t: "counter", attacker: a.id, defender: d.id, damage: res.damage, hit: res.hit, ...(res.hit && res.tactic ? { tactic: res.tactic } : {}), ...extra });
+      else this.state.push({ t: "attack", attacker: a.id, defender: d.id, damage: res.damage, hit: res.hit, critical: res.critical, ...(res.hit && res.tactic ? { tactic: res.tactic } : {}), ...extra });
+      if (res.hit) this.damage(d, res.damage, a);
+      return res.hit;
+    };
+    once(false);
+    const chance = doubleAttackChance(a, d);
+    if (chance > 0 && a.alive && d.alive && this.state.rng.chance(chance)) once(true);
   }
 
   private doStrategy(casterId: string, strategyId: string, at: Coord): CommandResult {
@@ -380,6 +387,11 @@ export class Battle {
       if (s.kind === "burn") u.hp = Math.max(1, u.hp - Math.round(u.stats.maxHp * 0.08));
       if (s.kind === "bleed") u.hp = Math.max(1, u.hp - Math.round(u.stats.maxHp * 0.05));
       s.turns--;
+    }
+    // 조조전 규칙: 나쁜 상태는 턴마다 (운 ÷ 2)% 확률로 저절로 풀린다.
+    if (u.ccRules) {
+      const chance = ccRecoverChance(u);
+      for (const s of u.statuses) if (s.turns > 0 && NEGATIVE_STATUS.has(s.kind) && this.state.rng.chance(chance)) s.turns = 0;
     }
     u.statuses = u.statuses.filter((s) => s.turns > 0);
   }

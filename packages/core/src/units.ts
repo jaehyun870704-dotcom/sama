@@ -5,6 +5,7 @@
  */
 import type { Unit, UnitClass, UnitStats, Side, AiBehavior, Coord } from "./types.ts";
 import { VARIANTS, type ClassProfile } from "./classes.ts";
+import { ccStatsFor } from "./cc-rules.ts";
 
 const PROFILES: Partial<Record<UnitClass, ClassProfile>> = {
   infantry:   { hp: 1.10, mp: 0.4, attack: 1.00, defense: 1.10, intellect: 0.6, spirit: 0.9, agility: 0.9, movement: 5, range: [1, 1], canUseStrategy: false },
@@ -140,7 +141,8 @@ export function evolveUnit(unit: Unit, to: UnitClass): UnitClass | undefined {
   unit.traits = [...new Set([...unit.traits, ...Object.keys(fresh)])];
   Object.assign(unit.traitParams, fresh);
   unit.unitClass = to;
-  unit.stats = statsFor(to, unit.level);
+  // 조조전 규칙 부대는 새 병과의 등급·HP 상승으로 다시 계산한다(진화 한 번마다 HP·MP 상승치 2배를 더 받는다).
+  unit.stats = unit.ccRules && unit.ability ? ccStatsFor(to, unit.level, unit.ability, unit.side, profileOf(to).movement) : statsFor(to, unit.level);
   unit.range = profileOf(to).range;
   unit.hp = Math.max(1, Math.round(unit.stats.maxHp * hpRatio));
   unit.mp = Math.round(unit.stats.maxMp * mpRatio);
