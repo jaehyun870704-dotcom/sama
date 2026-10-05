@@ -6,7 +6,7 @@ import {newRun,startingOfficers,departingOfficers,floorChoices,visitNode,finishB
 import {romanceStats,romanceByName} from './romance.ts';
 import {scenarioSummary} from './scenario-ui.ts';
 import {showCustomEditor} from './custom-ui.ts';
-import {treasurePanel,treasureCodex,type TreasureTab} from './treasure-codex.ts';
+import {treasurePanel,treasureCodex,defaultFilter,type TreasureTab,type CodexFilter} from './treasure-codex.ts';
 import {fateMap} from './fate-map.ts';
 import {classTactics} from '../../core/src/index.ts';
 import {loadMeta,saveMeta,buyUnlock,recordStory,settleRun,UNLOCKS,type MetaState} from './meta.ts';
@@ -91,9 +91,14 @@ export function showHub(host:RunHost){
 }
 
 /** 보물 도감: 가진 것·얻는 곳·효과·특기·장착한 장수. */
-export function showTreasures(host:RunHost,tab:TreasureTab='all'){
-  host.modal(`<div class="briefing treasure-screen"><div class="eyebrow">보물 · 도감</div><h2>천하의 보물</h2>${treasureCodex(tab)}<div class="run-actions"><button id="tc-back">← 본영</button></div></div>`,false);
-  document.querySelectorAll<HTMLButtonElement>('[data-tc-tab]').forEach(b=>b.onclick=()=>showTreasures(host,b.dataset.tcTab as TreasureTab));
+export function showTreasures(host:RunHost,tab:TreasureTab|CodexFilter='all'){
+  const f=typeof tab==='string'?defaultFilter(tab):tab;
+  host.modal(`<div class="briefing treasure-screen"><div class="eyebrow">보물 · 도감</div><h2>천하의 보물</h2>${treasureCodex(f)}<div class="run-actions"><button id="tc-back">← 본영</button></div></div>`,false);
+  const go=(g:Partial<CodexFilter>)=>showTreasures(host,{...f,...g});
+  document.querySelectorAll<HTMLButtonElement>('[data-tc-kind]').forEach(b=>b.onclick=()=>go({kind:b.dataset.tcKind as CodexFilter['kind'],form:'all'}));
+  document.querySelectorAll<HTMLButtonElement>('[data-tc-form]').forEach(b=>b.onclick=()=>go({form:b.dataset.tcForm as CodexFilter['form']}));
+  document.querySelectorAll<HTMLButtonElement>('[data-tc-grade]').forEach(b=>b.onclick=()=>go({grade:Number(b.dataset.tcGrade)}));
+  document.querySelectorAll<HTMLButtonElement>('[data-tc-own]').forEach(b=>b.onclick=()=>go({own:b.dataset.tcOwn as CodexFilter['own']}));
   document.getElementById('tc-back')!.onclick=host.showMenu;
 }
 /** 갈림길 지도: 연의에서 가상으로 갈라지는 자리와 진행 방식. */

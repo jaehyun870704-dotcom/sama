@@ -4,7 +4,7 @@ import {familyOf} from './classes.ts';
 type Condition='always'|'physical'|'strategy'|'melee'|'ranged'|'wounded'|'healthy'|'mounted'|'armored'|'caster'|'stationary'|'moving';
 type Effect='power'|'pierce'|'critical'|'accuracy'|'reduction'|'evade'|'safe'|'hp'|'mp'|'rough'|'counter';
 type Rule=readonly [Effect,number,Condition?];
-// Ordered independently of UI catalogues: stable 6 × 10 atlas positions.
+// Ordered independently of UI catalogues: the first 60 are stable 6 × 10 atlas positions.
 export const treasurePowers:Array<{id:string;name:string;rules:Rule[]}>=([
  ['silverarmor','백은 수호',[['reduction',12,'physical']]],
  ['yitian','군주의 검',[['power',12,'healthy']]],
@@ -65,7 +65,22 @@ export const treasurePowers:Array<{id:string;name:string;rules:Rule[]}>=([
  ['springAutumn','춘추 대의',[['power',10,'healthy'],['mp',1]]],
  ['jadePendant','백옥 안정',[['hp',3],['mp',1]]],
  ['tigerTally','호부 결전',[['power',14,'wounded'],['accuracy',5,'physical']]],
- ['strategistRobe','군사 정심',[['reduction',15,'strategy'],['mp',1]]]
+ ['strategistRobe','군사 정심',[['reduction',15,'strategy'],['mp',1]]],
+ // 아래는 그림 판(6×10) 밖의 보물: 그림은 public/treasures/<id>.webp 낱장을 쓴다.
+ ['rattanShield','등패 막이',[['reduction',10,'ranged']]],
+ ['hujia','호가의 가락',[['hp',2],['mp',1]]],
+ ['meteorHammer','유성 강타',[['power',14,'armored']]],
+ ['phoenixHelm','봉시의 투구',[['reduction',9,'physical']]],
+ ['hookSpear','구겸 걸기',[['power',18,'mounted']]],
+ ['baguaMirror','팔괘 반사',[['reduction',14,'strategy']]],
+ ['purpleGourd','자금 단약',[['mp',2],['hp',3]]],
+ ['bearCloak','흑웅의 가죽',[['reduction',10,'wounded'],['hp',2]]],
+ ['phoenixHairpin','봉황의 비녀',[['evade',8],['mp',1]]],
+ ['swiftBoots','신행의 걸음',[['rough',1],['evade',6,'moving']]],
+ ['zhanmaDao','참마의 일격',[['power',20,'mounted'],['critical',5,'physical']]],
+ ['tigerShield','호두 방벽',[['reduction',18,'melee']]],
+ ['lionHelm','사자의 위용',[['reduction',12],['hp',3]]],
+ ['tortoiseToken','현무의 영패',[['reduction',10,'stationary'],['counter',2]]]
 ] as Array<[string,string,Rule[]]>).map(([id,name,rules])=>({id,name,rules}));
 const conditionText:Record<Condition,string>={always:'',physical:'물리 공격 시 ',strategy:'책략 공격 시 ',melee:'인접 교전 시 ',ranged:'거리 2칸 이상 교전 시 ',wounded:'자신의 HP 50% 이하 시 ',healthy:'자신의 HP 80% 이상 시 ',mounted:'기병 계열 상대 시 ',armored:'보병·창병·중기병·충차 상대 시 ',caster:'책략 병종 상대 시 ',stationary:'이번 차례 이동 전 ',moving:'이번 차례 이동 후 '};
 function matches(c:Condition,ctx:DamageContext,self:Unit){switch(c){

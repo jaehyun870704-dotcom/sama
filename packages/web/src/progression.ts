@@ -1,6 +1,6 @@
 import type {RunBattleRef,RunStoryRef} from './roguelike.ts';
 import {treasurePowers,treasurePowerText} from '../../core/src/treasure-traits.ts';
-import {extraTreasures} from './treasure-catalogue.ts';
+import {extraTreasures,trainingTreasures} from './treasure-catalogue.ts';
 import type {Difficulty,Unit,UnitClass} from '../../core/src/index.ts';
 
 export const OFFICERS=['sima_yi','sima_lang','sima_fang','cao_zhen'] as const;
@@ -32,9 +32,12 @@ const extraItems=[
  ['ironArmor','철제 갑주','S1-01','철','방어 +2',{defense:2},'연의의 장수 갑주'],
 ] as const;
 for(const [id,name,stage,glyph,effect,bonus,motif] of extraItems)treasures.push({id,name,stage,glyph,effect,bonus,description:motif+'에 얽힌 보물. 전장에서 쌓은 공로로 그 인연을 이어받습니다.'});
-treasures.push(...extraTreasures);
+treasures.push(...extraTreasures,...trainingTreasures);
 export const gearNames:Record<GearSlot,string>={weapon:'무기',armor:'방어구',accessory:'보조구'};
-export function treasureInfo(id:string){const i=treasures.findIndex(t=>t.id===id),item=treasures[i];const slot:GearSlot=['silverarmor','ironArmor'].includes(id)?'armor':['dunjia','taiping','dilu','mengde','redHare','fan','seal'].includes(id)?'accessory':'weapon';const grade=['ironArmor','taiping'].includes(id)?1:['sevenstar','bow','dilu'].includes(id)?2:['yitian','qinggang','greenDragon','halberd','seal','redHare'].includes(id)?4:3;return {slot:item?.slot??slot,grade:item?.grade??grade,rarity:['일반','희귀','영웅','전설'][(item?.grade??grade)-1]!,icon:Math.max(0,treasurePowers.findIndex(t=>t.id===id))};}
+export function treasureInfo(id:string){const i=treasures.findIndex(t=>t.id===id),item=treasures[i];const slot:GearSlot=['silverarmor','ironArmor'].includes(id)?'armor':['dunjia','taiping','dilu','mengde','redHare','fan','seal'].includes(id)?'accessory':'weapon';const grade=['ironArmor','taiping'].includes(id)?1:['sevenstar','bow','dilu'].includes(id)?2:['yitian','qinggang','greenDragon','halberd','seal','redHare'].includes(id)?4:3;return {slot:item?.slot??slot,grade:item?.grade??grade,rarity:['일반','희귀','영웅','전설'][(item?.grade??grade)-1]!,icon:atlasCell(id)};}
+/** 그림 판(6×10)의 칸. 판 밖의 보물은 -1(낱장 그림을 쓴다). */
+export const ATLAS_CELLS=60;
+function atlasCell(id:string){const k=treasurePowers.findIndex(t=>t.id===id);return k>=0&&k<ATLAS_CELLS?k:-1;}
 export function equippedItems(c:Pick<Campaign,'equipped'|'loadouts'>,id:string){return c.loadouts?.[id]?Object.values(c.loadouts[id]!):c.equipped[id]?[c.equipped[id]!]:[];}
 export function equipSlot(c:Campaign,officer:string,slot:GearSlot,id:string){
  if(!OFFICERS.includes(officer as typeof OFFICERS[number])||!Object.hasOwn(gearNames,slot))return false;

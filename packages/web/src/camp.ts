@@ -7,7 +7,8 @@ import {officerFeatures,allStrategies,strategyHint,talentTree,martialPower} from
 import {classNames,unitName} from './battlefield.ts';
 import {RELICS} from './roguelike.ts';
 import {specialOf} from './treasure-specials.ts';
-export function treasureIcon(id:string){const i=treasureInfo(id).icon,row=Math.floor(i/6),edges=[0,150,306,458,610,764,919,1072,1228,1387,1619],top=edges[row]!,height=edges[row+1]!-top;return `<i class="treasure-icon" style="background-size:600% ${1619/height*100}%;background-position:${i%6/5*100}% ${top/(1619-height)*100}%"></i>`;}
+export {treasureIcon} from './treasure-art.ts';
+import {treasureIcon} from './treasure-art.ts';
 export function campMarkup(c:Campaign,units:Unit[],selected:string,filter:string,inspect:string,portrait:(u:Unit)=>string,relics:string[]=[]){
  const u=units.find(x=>x.id===selected)??units[0]!,feature=officerFeatures[u.id],owned=equippedItems(c,u.id),item=treasures.find(t=>t.id===inspect&&c.treasures.includes(t.id));
  // 보물 도감은 가진 보물만 보인다(못 얻은 보물은 목록에도 나오지 않는다).

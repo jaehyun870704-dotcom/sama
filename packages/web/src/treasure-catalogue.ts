@@ -18,3 +18,27 @@ export const extraTreasures:Treasure[]=entries.map(([id,name,slot,grade,icon,que
  const names:Record<string,string>={attack:'공격',defense:'방어',maxHp:'최대 체력',maxMp:'최대 MP',intellect:'지력',spirit:'정신',agility:'민첩'};
  return {id,name,slot,grade,icon,quest,stage:quest,glyph:slot==='weapon'?'무':slot==='armor'?'갑':'보',bonus,effect:Object.entries(bonus).map(([k,v])=>names[k]+' +'+v).join(' · '),description:['흩어진 병장기를 되찾아 장인의 손에서 되살린 보물.','험한 길을 함께 넘은 이들이 신뢰의 증표로 건넨 보물.','전란 속에서 지켜 낸 기록과 기술이 담긴 보물.'][i%3]!};
 });
+
+/**
+ * 연무장(훈련) 첫 승리에 얻는 새 형태의 보물: 방패·투구·암기·거울·호로·비녀·신발·영패 등.
+ * 그림 판(treasures-v2.png) 밖이라 그림은 public/treasures/<id>.webp 낱장을 쓴다(treasure-art.ts).
+ */
+const trainingEntries:Array<[string,string,GearSlot,number,string,Treasure['bonus'],string]>=[
+ ['rattanShield','등패','armor',1,'T01',{defense:2,maxHp:4},'등나무를 엮어 만든 가벼운 방패. 화살을 튕겨 내는 데 쓴다.'],
+ ['hujia','호가','accessory',1,'T01',{spirit:2,maxMp:2},'북방에서 전해진 갈대 피리. 진중의 밤을 달랜다.'],
+ ['meteorHammer','유성추','weapon',2,'T02',{attack:4,agility:2},'쇠사슬 끝에 쇠망치를 단 암기. 갑옷 위로 내리친다.'],
+ ['phoenixHelm','봉시투구','armor',2,'T02',{defense:3,maxHp:6},'봉황의 깃을 꽂은 장수의 투구.'],
+ ['hookSpear','구겸창','weapon',3,'T03',{attack:5,maxHp:4},'갈고리 낫을 단 창. 말의 다리를 걸어 기병을 넘어뜨린다.'],
+ ['baguaMirror','팔괘경','accessory',3,'T03',{spirit:4,intellect:2},'뒷면에 팔괘를 새긴 청동 거울. 요사스러운 술수를 되비춘다.'],
+ ['purpleGourd','자금호로','accessory',3,'T07',{maxMp:6,maxHp:6},'붉은 금빛 호리병. 도사가 단약을 담아 다녔다.'],
+ ['bearCloak','흑웅피 망토','armor',2,'T07',{defense:2,maxHp:9},'검은 곰 가죽으로 지은 망토. 강바람과 칼끝을 함께 막는다.'],
+ ['phoenixHairpin','봉황비녀','accessory',3,'T04',{agility:3,spirit:2},'봉황을 새긴 금비녀. 지닌 이를 날래게 한다는 말이 있다.'],
+ ['swiftBoots','신행화','accessory',3,'T04',{agility:4,maxHp:3},'먼 길을 하루에 간다는 신행태보의 가죽신.'],
+ ['zhanmaDao','참마도','weapon',4,'T05',{attack:6,maxHp:6},'말과 사람을 한 번에 벤다는 긴 자루의 큰 칼.'],
+ ['tigerShield','호두패','armor',4,'T05',{defense:5,maxHp:10},'범의 머리를 새긴 큰 방패. 정면 교전에서 무너지지 않는다.'],
+ ['lionHelm','사자투구','armor',4,'T06',{defense:4,maxHp:12},'금빛 사자 머리 투구. 장수의 위용을 드러낸다.'],
+ ['tortoiseToken','현무영패','accessory',4,'T06',{defense:2,spirit:4},'북방 현무를 새긴 영패. 진을 지키는 장수에게 내린다.'],
+];
+const STAT_KO:Record<string,string>={attack:'공격',defense:'방어',maxHp:'최대 체력',maxMp:'최대 MP',intellect:'지력',spirit:'정신',agility:'민첩'};
+export const trainingTreasures:Treasure[]=trainingEntries.map(([id,name,slot,grade,quest,bonus,description])=>({id,name,slot,grade,quest,stage:quest,glyph:name.slice(0,1),bonus,description,
+ effect:Object.entries(bonus).map(([k,v])=>STAT_KO[k]+' +'+v).join(' · ')}));
