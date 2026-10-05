@@ -10,6 +10,7 @@ import {openCamp} from './story-camp.ts';
 import {isoBackdrop} from './story-iso.ts';
 import {routeById,fatePoint,endingFor,factionText,ALL_ENDINGS,type Route} from './fate.ts';
 import {foundingOption} from './newpower.ts';
+import {showFateMap} from './run-ui.ts';
 import {pickFaction} from './custom-ui.ts';
 import {setPlayerFlag} from './story-iso.ts';
 import {chapters} from './session.ts';
@@ -133,13 +134,14 @@ export function showScenario(host:ScenarioHost,selected?:string){
     <section class="sc-detail"><div class="sc-banner" style="${isoBackdrop(firstArt(sel))}"><span class="sc-kind kind-${sel.kind}">${kindTag[sel.kind]}</span><div class="sc-banner-title"><small>${esc(stepYear(sel,state))}</small><h3>${esc(stepTitle(sel,state))}</h3></div></div>
       <p class="sc-synopsis">${esc(stepSynopsis(sel,state))}</p>${detailRows(sel,state,hero.level)}
       <div class="sc-actions">${isCur&&march?`<button class="primary" id="sc-march">행군로 ▶</button><span class="muted">다음 장 앞의 길목에서 세 갈래 중 하나를 고른다</span>`:isCur?`<button class="primary" id="sc-enter">${sel.kind==='fate'?'갈림길로 ▶':sel.kind==='ending'?'결말 보기 ▶':'이야기 시작 ▶'}</button>`:isDone?`<button id="sc-replay">이야기 다시 보기</button>`:'<button disabled>앞 장을 마치면 열린다</button>'}</div></section></div>
-    <div class="sc-foot"><button id="sc-back">← 본영</button>${host.showSlots?'<button id="sc-save">💾 저장 · 불러오기</button>':''}<button id="sc-reset" class="${state.done.length?'':'hidden'}">이번 회차를 끝낸다</button></div></div>`,false);
+    <div class="sc-foot"><button id="sc-back">← 본영</button><button id="sc-fate">갈림길 지도 · 정사/가상</button>${host.showSlots?'<button id="sc-save">💾 저장 · 불러오기</button>':''}<button id="sc-reset" class="${state.done.length?'':'hidden'}">이번 회차를 끝낸다</button></div></div>`,false);
   document.querySelectorAll<HTMLButtonElement>('[data-step]').forEach(b=>b.onclick=()=>showScenario(host,b.dataset.step));
   document.getElementById('sc-enter')?.addEventListener('click',()=>void enter(host,sel));
   document.getElementById('sc-march')?.addEventListener('click',()=>showMarch(host));
   void run;
   document.getElementById('sc-replay')?.addEventListener('click',()=>void replay(host,sel));
   document.getElementById('sc-back')!.onclick=host.showMenu;
+  document.getElementById('sc-fate')!.onclick=()=>showFateMap(host,()=>showScenario(host,selected));
   document.getElementById('sc-save')?.addEventListener('click',()=>host.showSlots!());
   const reset=document.getElementById('sc-reset')!;reset.onclick=()=>{if(reset.dataset.armed!=='1'){reset.dataset.armed='1';reset.textContent='정말 끝낼까? (천명을 정산하고 연의 첫 장부터 새 회차)';reset.classList.add('danger');return;}const st=loadScenario();st.run!.status='over';saveScenario(st);showRunOver(host);};
   document.querySelector('.sc-card[aria-pressed="true"]')?.scrollIntoView({block:'nearest'});
@@ -150,7 +152,7 @@ function detailRows(step:ScenarioStep,state:ScenarioState,heroLevel:number){
     const t=treasures.filter(x=>x.stage===step.stage);if(t.length)rows.push(['보물',t.map(x=>x.name).join(' · ')]);}
   if(step.kind==='tale'||step.kind==='boss'){const r=routeById(step.route)!,foe=step.kind==='boss'?r.region.boss:step.tale!.target;
     rows.push(['적장',`${foe.name} (${classNames[foe.unitClass]??foe.unitClass})${romanceStats(foe.name)?' · '+romanceStats(foe.name):''}`],['지역',r.region.name],['승리 조건',`${foe.name} 격퇴 · 사마의 생존`],['적 수준',`Lv.${enemyBase(state,heroLevel,step)} 안팎`]);}
-  if(step.kind==='fate')rows.push(['고를 수 있는 길',fateChoices(state,step.id).map(r=>`${r.history?'[정사]':'[가상]'} ${r.choice}`).join(' / ')]);
+  if(step.kind==='fate'){rows.push(['고를 수 있는 길',fateChoices(state,step.id).map(r=>`${r.history?'[정사]':r.custom?'[신세력]':'[가상]'} ${r.choice}`).join(' / ')]);rows.push(['진행','정사를 고르면 연의 장이 이어지고, 가상을 고르면 가상 전장 3장과 우두머리 전투로 바뀐다. 한 번 가상으로 가면 정사로 돌아오지 않는다. 자세한 것은 아래 「갈림길 지도」.']);}
   if(step.kind==='ending')rows.push(['결말',endingFor({...state.route,3:step.route??''}).title]);
   const picked=state.choices[step.id];if(picked&&step.kind!=='fate'){const m=modsText(modsOf(state,step));if(m.length)rows.push(['선택의 효과',m.join(' · ')]);}
   return rows.length?`<dl class="sc-rows">${rows.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`:'';
