@@ -100,10 +100,10 @@ export function codexClasses():UnitClass[]{
 }
 export function classSprite(c:UnitClass){return sprite(c);}
 function sprite(c:UnitClass){
-  // 병종 전용 채색 시트가 있으면 그 첫 칸(대기)을 그대로 쓴다.
-  if(classSheets.has(c))return `<div class="cx-sprite" style="background-image:var(--own-${c}-atlas);background-size:400% 300%;background-position:0 0"></div>`;
   const painted=paintedTroopArt[c];
   if(painted)return `<div class="cx-sprite" role="img" aria-label="${esc(classNames[c]??c)}" style="background-image:var(--${painted.sheet}-atlas);background-size:400% ${painted.rows*100}%;background-position:0 ${painted.row/(painted.rows-1)*100}%"></div>`;
+  // 신규 전체 원화가 없는 경우에만 예전 manifest 전용 시트를 보조 그림으로 쓴다.
+  if(classSheets.has(c))return `<div class="cx-sprite" style="background-image:var(--own-${c}-atlas);background-size:400% 300%;background-position:0 0"></div>`;
   const base=artClass(c),fam=familyOf(base),art=troopArt[base]??troopArt[fam],react=basicReactionArt[base]??basicReactionArt[fam],tint=troopRoles[c]?.tint;
   const hex=tint!==undefined?'#'+tint.toString(16).padStart(6,'0'):'',glow=hex?`;--cx-tint:${hex}`:'';
   const sheet=art??react;

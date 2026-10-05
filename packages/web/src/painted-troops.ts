@@ -1,4 +1,5 @@
 import type {UnitClass} from '../../core/src/index.ts';
+import {completeTroopArt,completeTroopSheets} from './complete-troops.ts';
 
 /** 칸 쓰임새: 시트마다 2·3열이 뜻하는 동작이 다르다. attack은 [준비, 내지름], walk는 [내딛음, 디딤] 칸 번호. */
 export type PaintedFrames={attack:[number,number];walk:[number,number];cast:number;hit:number};
@@ -55,9 +56,10 @@ export const paintedTroopSheets=[
   {id:'chart-monk',url:'troops-chart-monk.png',rows:3,frames:POSE,union:true},
   {id:'chart-bandit',url:'troops-chart-bandit.png',rows:3,frames:POSE,union:true},
   {id:'chart-catapult',url:'troops-chart-catapult.png',rows:3,frames:POSE,union:true},
+  ...completeTroopSheets.map(sheet=>({...sheet,frames:POSE,union:true})),
 ] as const;
 export const paintedFrames=(sheet:string):PaintedFrames=>paintedTroopSheets.find(s=>s.id===sheet)?.frames??STRIDE;
-export const paintedTroopArt:Partial<Record<UnitClass,{sheet:string;row:number;rows:number}>>={
+export const legacyPaintedTroopArt:Partial<Record<UnitClass,{sheet:string;row:number;rows:number}>>={
   rattan:{sheet:'rattan-v3',row:0,rows:3},
   rattanElite:{sheet:'rattan-v3',row:1,rows:3},
   wuguoRattan:{sheet:'rattan-v3',row:2,rows:3},
@@ -194,6 +196,8 @@ export const paintedTroopArt:Partial<Record<UnitClass,{sheet:string;row:number;r
   mengchong:{sheet:'navy-v1',row:1,rows:3},
   louchuan:{sheet:'navy-v1',row:2,rows:3},
 };
+/** 화면과 전투는 예전 시트 대신 새 화풍으로 다시 그린 136병종만 사용한다. */
+export const paintedTroopArt:Record<UnitClass,{sheet:string;row:number;rows:number}>=completeTroopArt;
 /** 진화표의 겉모습 설명: 전용 그림은 단계 장비가 그림에 이미 그려져 있어 갑옷 덧그리기 규칙 대신 이 글을 쓴다. */
 export const paintedLook:Partial<Record<UnitClass,string>>={
   elephant:'가죽·밧줄 하네스 · 얇은 안장 덮개 · 단독 기수',

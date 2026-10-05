@@ -360,7 +360,8 @@ export class Battlefield {
   private unitTexture(u:Unit,pose=0){
     // 병종 전용 채색 시트: 0줄 행동, 1줄 걷기, 2줄 반응. 단계 장비는 그림에 이미 그려져 있다.
     const own=this.ownSheet(u);
-    if(own){const row=pose>=8?2:pose>=4?1:0,frame=pose%4,dye=dyeOfSide(u.side),sheet='base-own-'+u.unitClass,dyed=needsDye('base',dye),key='own:'+u.unitClass+':'+(dyed?dye:'')+':'+row+':'+frame,old=this.textures.get(key);if(old)return old;
+    // 전체 병종을 새 화풍으로 교체했으므로 예전 manifest 전용 시트는 새 원화가 없을 때만 쓴다.
+    if(own&&!paintedTroopArt[u.unitClass]){const row=pose>=8?2:pose>=4?1:0,frame=pose%4,dye=dyeOfSide(u.side),sheet='base-own-'+u.unitClass,dyed=needsDye('base',dye),key='own:'+u.unitClass+':'+(dyed?dye:'')+':'+row+':'+frame,old=this.textures.get(key);if(old)return old;
       const w=own.width/4,h=own.height/3,t=new Texture({source:dyed?this.dyedSource(own,sheet,dye):own.source,frame:new Rectangle(frame*w,row*h,w,h)});this.textures.set(key,t);return t;}
     const painted=paintedTroopArt[u.unitClass];
     if(painted&&!structureKind(u.id)&&!u.id.startsWith('convoy_')){
