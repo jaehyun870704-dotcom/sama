@@ -45,7 +45,7 @@ describe('sheet-specific frame use',()=>{
     expect(paintedFrames('spearman-v1')).toBe(THRUST);expect([1,2,4,5].map(p=>paintedTroopFrame(p,THRUST))).toEqual([1,2,2,0]);
   });
   it('maps the four new families to their own sheets by tier',()=>{
-    for(const [a,b,c,sheet] of [['infantry','shieldGuard','royalGuard','infantry-v1'],['spearman','pikeman','halberdier','spearman-v1'],['archer','longbow','sharpshooter','archer-v1'],['cavalry','lancer','tigerRider','cavalry-v1']] as const){
+    for(const [a,b,c,sheet] of [['infantry','shieldGuard','royalGuard','infantry-v2'],['spearman','pikeman','halberdier','spearman-v1'],['archer','longbow','sharpshooter','archer-v1'],['cavalry','lancer','tigerRider','cavalry-v1']] as const){
       expect(paintedTroopArt[a]).toEqual({sheet,row:0,rows:3});expect(paintedTroopArt[b]?.row).toBe(1);expect(paintedTroopArt[c]?.row).toBe(2);
       expect(lookText(a)).not.toMatch(/강철|금빛|기본 차림/);expect(lookText(c)).not.toMatch(/강철|금빛/);
     }
