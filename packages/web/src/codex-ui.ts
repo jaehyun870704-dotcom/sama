@@ -19,6 +19,7 @@ import {bioOf} from './officer-bios.ts';
 import {classNames,troopRoles,troopArt,basicReactionArt,artClass,recruitPool,evolutionLines,troopSheets,classSheets} from './troops.ts';
 import {spriteAtlas} from './sprite-atlas.ts';
 import {navalAtlas} from './naval-art.ts';
+import {paintedTroopArt} from './painted-troops.ts';
 import {armorFrame,MOUNTED_FAMILIES,ROBE_FAMILIES,MACHINE_FAMILIES,type ArmorTier} from './armor.ts';
 import {adviceFor} from './troop-tactics.ts';
 import {allStrategies,STATUS_NAMES,SHAPE_TEXT,familyAllows,schoolOf,SCHOOL_NAMES,type LearnedStrategy} from './officers.ts';
@@ -101,6 +102,8 @@ export function classSprite(c:UnitClass){return sprite(c);}
 function sprite(c:UnitClass){
   // 병종 전용 채색 시트가 있으면 그 첫 칸(대기)을 그대로 쓴다.
   if(classSheets.has(c))return `<div class="cx-sprite" style="background-image:var(--own-${c}-atlas);background-size:400% 300%;background-position:0 0"></div>`;
+  const painted=paintedTroopArt[c];
+  if(painted)return `<div class="cx-sprite" role="img" aria-label="${esc(classNames[c]??c)}" style="background-image:var(--${painted.sheet}-atlas);background-size:400% ${painted.rows*100}%;background-position:0 ${painted.row/(painted.rows-1)*100}%"></div>`;
   const base=artClass(c),fam=familyOf(base),art=troopArt[base]??troopArt[fam],react=basicReactionArt[base]??basicReactionArt[fam],tint=troopRoles[c]?.tint;
   const hex=tint!==undefined?'#'+tint.toString(16).padStart(6,'0'):'',glow=hex?`;--cx-tint:${hex}`:'';
   const sheet=art??react;

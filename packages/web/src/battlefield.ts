@@ -2,6 +2,7 @@ import {playbackEvents} from './battle-playback.ts';
 import {troopFacing,troopReaction,troopReactionPose,retreatMotion,battlePath,stepPose} from './troop-motion.ts';
 import {troopRoles,visualClass,troopArt,troopSheets,basicReactionArt,artClass,classSheets,loadClassSheets,hasPaintedMotion} from './troops.ts';
 import {spriteAtlas,outlinedCanvas} from './sprite-atlas.ts';
+import {paintedTroopArt,paintedTroopFrame} from './painted-troops.ts';
 import {cryFor,reactions,isCrisis,type Emote} from './emotes.ts';
 import type {SoundEvent} from './sound-events.ts';
 import {navalAtlas,navalCrewRow,NAVAL_WATERLINE} from './naval-art.ts';
@@ -353,12 +354,23 @@ export class Battlefield {
     this.drawMinimap();
   }
   private ownSheet(u:Unit){return structureKind(u.id)||u.id.startsWith('convoy_')?undefined:this.troopTextures.get('own:'+u.unitClass);}
-  private hasReaction(u:Unit){if(this.ownSheet(u))return true;const k=artClass(u.unitClass);return !structureKind(u.id)&&!u.id.startsWith('convoy_')&&!!(troopArt[k]||basicReactionArt[k]);}
+  private hasReaction(u:Unit){if(this.ownSheet(u))return true;const k=artClass(u.unitClass);return !structureKind(u.id)&&!u.id.startsWith('convoy_')&&!!(paintedTroopArt[u.unitClass]||troopArt[k]||basicReactionArt[k]);}
   private unitTexture(u:Unit,pose=0){
     // 병종 전용 채색 시트: 0줄 행동, 1줄 걷기, 2줄 반응. 단계 장비는 그림에 이미 그려져 있다.
     const own=this.ownSheet(u);
     if(own){const row=pose>=8?2:pose>=4?1:0,frame=pose%4,dye=dyeOfSide(u.side),sheet='base-own-'+u.unitClass,dyed=needsDye('base',dye),key='own:'+u.unitClass+':'+(dyed?dye:'')+':'+row+':'+frame,old=this.textures.get(key);if(old)return old;
       const w=own.width/4,h=own.height/3,t=new Texture({source:dyed?this.dyedSource(own,sheet,dye):own.source,frame:new Rectangle(frame*w,row*h,w,h)});this.textures.set(key,t);return t;}
+    const painted=paintedTroopArt[u.unitClass];
+    if(painted&&!structureKind(u.id)&&!u.id.startsWith('convoy_')){
+      const atlas=this.troopTextures.get(painted.sheet);
+      if(atlas){
+        const frame=paintedTroopFrame(pose),key=`painted:${painted.sheet}:${painted.row}:${frame}`;
+        const old=this.textures.get(key);if(old)return old;
+        const w=atlas.width/4,h=atlas.height/painted.rows;
+        const texture=new Texture({source:atlas.source,frame:new Rectangle(frame*w,painted.row*h,w,h)});
+        this.textures.set(key,texture);return texture;
+      }
+    }
     // 진화 단계는 그림을 바꾸기 전에 읽는다(2단: 강철·망토·마의, 3단: 금갑·등 깃발·마갑).
     const tier=structureKind(u.id)||u.id.startsWith('convoy_')?1:tierOf(u.unitClass),fam=familyOf(u.unitClass);
     if(artClass(u.unitClass)!==u.unitClass)u={...u,unitClass:artClass(u.unitClass)};
