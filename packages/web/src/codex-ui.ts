@@ -6,6 +6,7 @@
  * 병종: 모든 병종의 그림·능력 계수·사거리·전법·개화 스킬·진화 계통·쓰는 책략.
  * 책략: 아이콘 목록과 속성·소모 MP·습득 레벨·시전 범위·효과 범위 격자·설명.
  */
+import {hasPixelLook,unitPixelURL} from './unit-sprite.ts';
 import type {UnitClass,StrategyTier} from '../../core/src/index.ts';
 import {VARIANTS,tierOf,familyOf,profileOf,classTactics,strategyArea,tieredStrategy,strategyTierLevel,STRATEGY_TIER_NAMES} from '../../core/src/index.ts';
 import {strategyIconUrl} from './strategy-icons.ts';
@@ -99,6 +100,8 @@ export function codexClasses():UnitClass[]{
 }
 export function classSprite(c:UnitClass){return sprite(c);}
 function sprite(c:UnitClass){
+  // 사람 병종은 도트 그림(병종마다 장비·실루엣이 다르다)
+  if(hasPixelLook(c)){const url=unitPixelURL(c);if(url)return `<div class="cx-sprite px"><img src="${url}" alt=""></div>`;}
   const base=artClass(c),fam=familyOf(base),art=troopArt[base]??troopArt[fam],react=basicReactionArt[base]??basicReactionArt[fam],tint=troopRoles[c]?.tint;
   const hex=tint!==undefined?'#'+tint.toString(16).padStart(6,'0'):'',glow=hex?`;--cx-tint:${hex}`:'';
   const sheet=art??react;

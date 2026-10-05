@@ -7,7 +7,7 @@ import type {UnitClass} from '../../core/src/index.ts';
 import {VARIANTS,tierOf,familyOf,profileOf,classTactics} from '../../core/src/index.ts';
 import {classNames,evolutionLines,artClass} from './troops.ts';
 import {classSprite,paintArmor} from './codex-ui.ts';
-import {MOUNTED_FAMILIES,ROBE_FAMILIES,MACHINE_FAMILIES} from './armor.ts';
+import {classLook,describeLook} from './unit-looks.ts';
 
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 export type EvoGroup='all'|'foot'|'spear'|'horse'|'ranged'|'mind'|'siege';
@@ -18,15 +18,8 @@ export const EVO_GROUPS:Array<[EvoGroup,string,string[]]>=[
 const TIER_NAME=['','기본','정예','최정예'];
 const KEY:Array<[keyof ReturnType<typeof profileOf>,string]>=[['hp','체력'],['attack','공격'],['defense','방어'],['intellect','지력'],['spirit','정신'],['agility','순발']];
 
-/** 단계마다 겉모습이 어떻게 바뀌는가(armor.ts와 같은 규칙). */
-export function lookText(c:UnitClass){
-  const t=tierOf(c),fam=familyOf(artClass(c));
-  if(t===1)return '기본 차림';
-  if(MACHINE_FAMILIES.has(fam))return t===2?'쇠를 덧댄 강철 장갑':'금테 두른 장갑 · 깃발';
-  if(ROBE_FAMILIES.has(fam))return t===2?'진영 색 망토':'금빛 둥근 빛 · 금테 망토 · 등 깃발';
-  const horse=MOUNTED_FAMILIES.has(fam);
-  return t===2?`강철 갑주 · 진영 색 망토 · 투구 붉은 술${horse?' · 말에 마의(馬衣)':''}`:`금빛 갑주 · 금테 망토 · 등 깃발 둘 · 투구 금 장식${horse?' · 말 전신 철갑(마갑)':''}`;
-}
+/** 단계마다 겉모습이 어떻게 바뀌는가: 도트 사양에서 무기·갑옷·투구·탈것을 읽는다. */
+export function lookText(c:UnitClass){const l=classLook(c);return l?describeLook(l):'기본 차림';}
 function card(c:UnitClass,lv:number,prev?:UnitClass){
   const p=profileOf(c),q=prev?profileOf(prev):undefined,v=VARIANTS[c],t=tierOf(c);
   const stat=KEY.map(([k,label])=>{const n=p[k] as number,d=q?n-(q[k] as number):0;return `<span><small>${label}</small><b>${n.toFixed(2)}</b>${d>0.004?`<em>▲${d.toFixed(2)}</em>`:''}</span>`;}).join('');

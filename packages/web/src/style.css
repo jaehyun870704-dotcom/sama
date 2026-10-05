@@ -1299,3 +1299,5 @@ body.left-open .left-close{display:block;position:absolute;right:8px;top:8px;z-i
 .tt-special{font-style:normal;font-size:10px;color:#9fd4ff;display:block;text-align:center}
 .treasure-special{border-left:3px solid #6a92e8;padding:4px 8px;background:#1c2a4a55;font-size:13px}.treasure-special b{color:#bfe0ff}
 .battle-relics span.trial{color:#ffb0a0;border-color:#c0342a}
+.cx-sprite.px{overflow:hidden;background:radial-gradient(circle at 50% 70%,#2c3a2e,#0e1415 70%)}
+.cx-sprite.px img{width:100%;height:100%;image-rendering:pixelated;transform:scale(1.3) translateY(2%);transform-origin:50% 80%}
