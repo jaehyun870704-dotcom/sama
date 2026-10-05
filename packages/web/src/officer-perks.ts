@@ -98,8 +98,9 @@ export const PERK_TIERS=[{mul:1,suffix:'',mark:'Ⅰ'},{mul:1.5,suffix:'·정예'
 /** 단계에 맞춘 효과(이름·수치). */
 export function perkAt(p:OfficerPerk,tier:number){const t=PERK_TIERS[Math.max(1,Math.min(3,tier))-1]!;return {name:p.name+t.suffix,param:Math.round(p.param*t.mul),mark:t.mark};}
 /** 장수가 지금 닿아 있는 진화 단계: 출진 병종이 있으면 그 단계, 없으면 기록된 최고 레벨로 진화했을 병종의 단계. */
-export function officerTier(m:MetaState,name:string,unitClass?:UnitClass){
-  return unitClass?tierOf(unitClass):tierOf(evolvedClass(officerClass(name),Math.max(1,bestLevel(m,name))));
+export function officerTier(m:MetaState,name:string,unitClass?:UnitClass):1|2|3{
+  // 장수 효과는 3단(극의)까지다. 4·5단 병종(차트로 늘린 단계)도 극의로 친다.
+  const t=unitClass?tierOf(unitClass):tierOf(evolvedClass(officerClass(name),Math.max(1,bestLevel(m,name))));return Math.min(3,t) as 1|2|3;
 }
 type Sortie=string|{name:string;unitClass?:UnitClass};
 /** 출진하는 장수들의 장착 효과(이름 → 특성). 칸 수를 넘는 장착은 앞에서부터만. 수치는 그 장수의 진화 단계를 따른다. */

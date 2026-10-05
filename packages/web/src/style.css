@@ -1251,16 +1251,16 @@ body.left-open .left-close{display:block;position:absolute;right:8px;top:8px;z-i
 .evo-tabs{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:4px 0 10px}.evo-tabs button{font-size:13px;padding:6px 14px}.evo-tabs .muted{margin-left:auto;font-size:12px}
 .evo-lines{display:flex;flex-direction:column;gap:12px;max-height:calc(100dvh - 260px);overflow:auto;padding-right:4px}
 .evo-line h3{margin:0 0 6px;font-size:15px;color:#e5c991}.evo-line h3 small{font-size:11px;color:#a9a58f;font-weight:400;margin-left:6px}
-.evo-row{display:grid;grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr) 22px minmax(0,1fr);align-items:stretch;gap:4px}
+.evo-row{display:flex;align-items:stretch;gap:4px;overflow-x:auto}.evo-row>.evo-card{flex:1 0 220px}.evo-row>.evo-arrow2{flex:0 0 22px}
 .evo-arrow2{align-self:center;text-align:center;color:#d8a838;font-style:normal;font-size:16px}
 .evo-card{background:#161d1f;border:1px solid #ac8d5966;border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:5px;min-width:0}
-.evo-card.t2{border-color:#9aa8b8;background:linear-gradient(#1b2329,#151b1e)}.evo-card.t3{border-color:#d8a838;background:linear-gradient(#2a2312,#17150e);box-shadow:0 0 12px #d8a83822}
+.evo-card.t2{border-color:#9aa8b8;background:linear-gradient(#1b2329,#151b1e)}.evo-card.t3,.evo-card.t4,.evo-card.t5{border-color:#d8a838;background:linear-gradient(#2a2312,#17150e);box-shadow:0 0 12px #d8a83822}.evo-card.t5{border-color:#ffe48a;box-shadow:0 0 16px #ffe48a33}
 .evo-top{display:flex;gap:8px;align-items:center}.evo-top .cx-sprite{width:62px;height:62px}.evo-top small{font-size:11px;color:#c8b48a}.evo-top h4{margin:1px 0 0;font-size:15px;color:#fff1d6}
 .evo-top{flex-wrap:wrap}.evo-top .cx-sprite{width:128px;height:128px;flex:0 0 128px;background-color:transparent}
 .evo-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:2px 6px}.evo-stats span{display:flex;gap:3px;align-items:baseline;font-size:11px;font-variant-numeric:tabular-nums}.evo-stats small{color:#9a947e}.evo-stats b{color:#efe6cf}.evo-stats em{font-style:normal;color:#8fe07a;font-size:10px}
 .evo-more{margin:0;font-size:11px;color:#9fd4ff}.evo-skill{margin:0;font-size:11.5px;line-height:1.5;color:#e8dcc0}.evo-skill b{color:#ffd77a}
 .evo-look{margin:0;font-size:11px;color:#d8c0a0;border-top:1px dashed #ffffff1a;padding-top:4px}
-@media(max-width:760px){.evo-row{grid-template-columns:1fr}.evo-arrow2{transform:rotate(90deg)}}
+@media(max-width:760px){.evo-row{flex-direction:column;overflow-x:visible}.evo-row>.evo-card{flex:0 0 auto}.evo-arrow2{transform:rotate(90deg)}}
 @media(max-height:560px){.troop-evolution>.eyebrow,.troop-evolution>h2,.troop-evolution>p{display:none}.evo-lines{max-height:calc(100dvh - 110px)}}
 /* v42 연구: 10단계 막대·구간 */
 .rs-pips.bar{position:relative;width:50px;height:9px;padding:0!important;border-radius:5px;background:#2a2218;border:1px solid #a88a54;overflow:hidden;display:block}

@@ -76,3 +76,25 @@ describe('cavalry gallops between cells and thrusts on attack',()=>{
     expect(paintedFrames('cavalry-v2')).toBe(CHARGE);expect([1,2,4,5,8].map(p=>paintedTroopFrame(p,CHARGE))).toEqual([1,2,1,0,3]);
   });
 });
+
+describe('병종 차트로 늘린 병종', () => {
+  it('gives every chart class a Korean name, its own art row and a 조조전 grade', async () => {
+    const {CHART_ROLES} = await import('../src/chart-troops.ts');
+    const {paintedTroopArt, paintedTroopSheets} = await import('../src/painted-troops.ts');
+    const {classNames, recruitPool} = await import('../src/troops.ts');
+    const {VARIANTS, gradeProfileOf, evolvedClass, tierOf} = await import('../../core/src/index.ts');
+    for (const c of Object.keys(CHART_ROLES) as Array<keyof typeof CHART_ROLES>) {
+      expect(VARIANTS[c], c).toBeDefined();
+      expect(classNames[c], c).toMatch(/[가-힣]/);
+      const art = paintedTroopArt[c];
+      expect(art, c).toBeDefined();
+      const sheet = paintedTroopSheets.find((s) => s.id === art!.sheet);
+      expect(sheet && art!.row < sheet.rows, c).toBe(true);
+      expect(gradeProfileOf(c).grades).toHaveLength(5);
+    }
+    for (const c of ['swordsman', 'lord', 'commander', 'dancer', 'transport', 'yellowTurban'] as const) expect(recruitPool).toContain(c);
+    expect(evolvedClass('swordsman', 40)).toBe('swordSaint');
+    expect(tierOf('swordSaint')).toBe(5);
+    expect(evolvedClass('infantry', 30)).toBe('ironInfantry');
+  });
+});

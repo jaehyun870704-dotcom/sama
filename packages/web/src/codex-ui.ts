@@ -144,7 +144,7 @@ function classesTab(pick:string){
   const all=codexClasses(),c=(all.includes(pick as UnitClass)?pick:all[0]!) as UnitClass,p=profileOf(c),v=VARIANTS[c],line=evolutionLines().find(l=>l.some(([x])=>x===c));
   const spells=troopRoles[c]?.spells??(p.canUseStrategy&&['strategist','fengshui'].includes(familyOf(c))?allStrategies.filter(s=>familyAllows(familyOf(c),s)).map(s=>s.id):[]);
   const grid=`<div class="cx-classes">${all.map(k=>`<button data-cx-class="${k}" class="cx-class tier-${tierOf(k)} ${k===c?'chosen':''}">${sprite(k)}<b>${esc(classNames[k]??k)}</b><small>${'◆'.repeat(tierOf(k))}</small></button>`).join('')}</div>`;
-  const detail=`<div class="cx-detail"><div class="cx-head">${sprite(c)}<div><small>${'◆'.repeat(tierOf(c))} ${tierOf(c)===1?'기본':tierOf(c)===2?'정예':'최정예'} · ${esc(classNames[familyOf(c)]??familyOf(c))} 계열</small><h3>${esc(classNames[c]??c)}</h3><p>${esc(troopRoles[c]?.role??adviceFor(c))}</p></div></div>
+  const detail=`<div class="cx-detail"><div class="cx-head">${sprite(c)}<div><small>${'◆'.repeat(tierOf(c))} ${tierOf(c)===1?'기본':tierOf(c)===2?'정예':tierOf(c)===3?'최정예':tierOf(c)===4?'전설':'신화'} · ${esc(classNames[familyOf(c)]??familyOf(c))} 계열</small><h3>${esc(classNames[c]??c)}</h3><p>${esc(troopRoles[c]?.role??adviceFor(c))}</p></div></div>
     <div class="cx-stats">${PROFILE_ROWS.map(([k,label])=>{const n=p[k] as number;return `<div class="cx-stat"><span>${label}</span><i><i style="width:${Math.min(100,n/2.2*100)}%" class="${n>=1.3?'hi':n<0.7?'lo':''}"></i></i><b>${n.toFixed(2)}</b></div>`;}).join('')}</div>
     <p class="cx-tags"><span>이동 ${p.movement}</span><span>사거리 ${p.range[0]}~${p.range[1]}</span>${p.canUseStrategy?'<span>책략 사용</span>':''}</p>
     ${ccGrades(c)}

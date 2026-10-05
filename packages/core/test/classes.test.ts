@@ -12,10 +12,14 @@ describe("병종 계통과 진화", () => {
     expect(evolvedClass("infantry", 7)).toBe("infantry");
     expect(evolvedClass("infantry", 8)).toBe("shieldGuard");
     expect(evolvedClass("infantry", 20)).toBe("royalGuard");
-    expect(evolvedClass("navy", 30)).toBe("louchuan");
+    expect(evolvedClass("navy", 29)).toBe("louchuan");
+    expect(evolvedClass("navy", 30)).toBe("admiral");
+    expect(evolvedClass("swordsman", 40)).toBe("swordSaint");
+    expect(tierOf("swordSaint")).toBe(5);
     expect(evolvedClass("navy", 12)).toBe("mengchong");
     expect(nextEvolution("archer")).toEqual({ to: "longbow", level: 8 });
-    expect(nextEvolution("royalGuard")).toBeUndefined();
+    expect(nextEvolution("royalGuard")).toEqual({ to: "ironInfantry", level: 30 });
+    expect(nextEvolution("ironInfantry")).toBeUndefined();
   });
   it("every evolution target is a defined variant one tier up in the same family", () => {
     for (const [from, [to]] of Object.entries(EVOLUTION) as Array<[UnitClass, readonly [UnitClass, number]]>) {

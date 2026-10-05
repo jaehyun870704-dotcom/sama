@@ -5,9 +5,13 @@
  * 병종 상성·그림은 계열의 것을 쓰고, 능력치 계수·사거리·고유 특성만 따로 둔다.
  * 그래서 병종을 늘려도 지형표와 상성표를 병종 수만큼 다시 쓰지 않는다.
  *
- * 진화: 레벨이 기준에 닿으면 같은 계통의 다음 단계 병종으로 바뀐다. 모든 계통은 1→2→3단으로 세 단계다.
+ * 진화: 레벨이 기준에 닿으면 같은 계통의 다음 단계 병종으로 바뀐다. 기본은 1→2→3단, 차트로 늘린 계통은 4·5단까지 있다.
  */
 import type { UnitClass } from "./types.ts";
+import { chartClasses } from "./chart-classes.ts";
+
+/** 1 = 기본, 2 = 정예, 3 = 최정예, 4·5 = 차트로 늘린 전설 단계(검성은 5). */
+export type ClassTier = 1 | 2 | 3 | 4 | 5;
 
 export interface ClassProfile {
   hp: number;
@@ -25,8 +29,8 @@ export interface ClassProfile {
 export interface ClassVariant {
   /** 이동·상성·그림을 물려받는 기존 병종 */
   family: UnitClass;
-  /** 1 = 기본, 2 = 정예, 3 = 최정예 */
-  tier: 1 | 2 | 3;
+  /** 1 = 기본, 2 = 정예, 3 = 최정예, 4·5 = 전설 */
+  tier: ClassTier;
   profile: ClassProfile;
   /** 이 병종이 되면 붙는 고유 특성 (id → 매개변수) */
   traits?: Record<string, number>;
@@ -253,20 +257,27 @@ export const EVOLUTION: Partial<Record<UnitClass, readonly [UnitClass, number]>>
   ram: ["ironRam", 10], ironRam: ["cloudRam", 18], navy: ["mengchong", 10], mengchong: ["louchuan", 18],
 };
 
+// 병종 차트로 늘린 계통·4단계·모병 특수 병과(chart-classes.ts)를 합친다.
+{
+  const chart = chartClasses(VARIANTS);
+  Object.assign(VARIANTS, chart.variants);
+  Object.assign(EVOLUTION, chart.evolution);
+}
+
 /** 이동·상성·그림의 기준이 되는 병종. 기존 병종은 자기 자신. */
 export function familyOf(unitClass: UnitClass): UnitClass {
   return VARIANTS[unitClass]?.family ?? unitClass;
 }
 
 /** 1 = 기본 병종, 2·3 = 진화 단계. */
-export function tierOf(unitClass: UnitClass): 1 | 2 | 3 {
+export function tierOf(unitClass: UnitClass): ClassTier {
   return VARIANTS[unitClass]?.tier ?? 1;
 }
 
 /** 이 레벨에서 도달하는 최종 병종(여러 단계를 한 번에 건너뛸 수 있다). */
 export function evolvedClass(unitClass: UnitClass, level: number): UnitClass {
   let current = unitClass;
-  for (let guard = 0; guard < 4; guard++) {
+  for (let guard = 0; guard < 6; guard++) {
     const next = EVOLUTION[current];
     if (!next || level < next[1]) break;
     current = next[0];

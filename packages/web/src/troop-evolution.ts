@@ -8,7 +8,7 @@ import {VARIANTS,tierOf,familyOf,profileOf,classTactics} from '../../core/src/in
 import {classNames,evolutionLines,artClass} from './troops.ts';
 import {classSprite,paintArmor} from './codex-ui.ts';
 import {MOUNTED_FAMILIES,ROBE_FAMILIES,MACHINE_FAMILIES} from './armor.ts';
-import {paintedLook} from './painted-troops.ts';
+import {paintedLook,paintedTroopArt} from './painted-troops.ts';
 
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 export type EvoGroup='all'|'foot'|'spear'|'horse'|'ranged'|'mind'|'siege';
@@ -16,12 +16,14 @@ export const EVO_GROUPS:Array<[EvoGroup,string,string[]]>=[
   ['all','전체',[]],['foot','보병',['infantry','bandit','monk']],['spear','창병',['spearman']],['horse','기병',['cavalry','heavyCav','horseArcher']],
   ['ranged','궁·노',['archer','crossbow']],['mind','책사·술사',['strategist','fengshui','shaman','maiden','taoist','physician']],['siege','공성·수군',['engineer','catapult','ram','navy']],
 ];
-const TIER_NAME=['','기본','정예','최정예'];
+const TIER_NAME=['','기본','정예','최정예','전설','신화'];
 const KEY:Array<[keyof ReturnType<typeof profileOf>,string]>=[['hp','체력'],['attack','공격'],['defense','방어'],['intellect','지력'],['spirit','정신'],['agility','순발']];
 
 /** 단계마다 겉모습이 어떻게 바뀌는가(armor.ts와 같은 규칙). */
 export function lookText(c:UnitClass){
   const painted=paintedLook[c];if(painted)return painted;
+  // 병종 차트에서 잘라 낸 그림: 단계 장비가 그림에 이미 그려져 있다.
+  if(paintedTroopArt[c]?.sheet.startsWith('chart-'))return '병종 차트 원화 그대로';
   const t=tierOf(c),fam=familyOf(artClass(c));
   if(t===1)return '기본 차림';
   if(MACHINE_FAMILIES.has(fam))return t===2?'쇠를 덧댄 강철 장갑':'금테 두른 장갑 · 깃발';
@@ -40,7 +42,7 @@ function card(c:UnitClass,lv:number,prev?:UnitClass){
 export function evolutionChart(group:EvoGroup='all'){
   const fams=EVO_GROUPS.find(g=>g[0]===group)![2];
   const lines=evolutionLines().filter(l=>!fams.length||fams.includes(familyOf(l[0]![0])));
-  return `<div class="evo-tabs">${EVO_GROUPS.map(([id,name])=>`<button data-evo-group="${id}" class="${id===group?'active':''}">${name}</button>`).join('')}<span class="muted">${lines.length}계통 · 모두 3단 진화</span></div>
+  return `<div class="evo-tabs">${EVO_GROUPS.map(([id,name])=>`<button data-evo-group="${id}" class="${id===group?'active':''}">${name}</button>`).join('')}<span class="muted">${lines.length}계통 · 3~5단 진화</span></div>
   <div class="evo-lines">${lines.map(l=>`<section class="evo-line"><h3>${esc(classNames[l[0]![0]]??l[0]![0])} 계통 <small>${esc(classNames[familyOf(l[0]![0])]??'')} 계열 · ${l.map(([,lv],i)=>i?`Lv.${lv}`:'Lv.1').join(' → ')}</small></h3>
     <div class="evo-row">${l.map(([c,lv],i)=>`${i?'<i class="evo-arrow2">▶</i>':''}${card(c,lv,i?l[i-1]![0]:undefined)}`).join('')}</div></section>`).join('')}</div>`;
 }

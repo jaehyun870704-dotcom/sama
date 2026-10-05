@@ -76,6 +76,32 @@ const LINE_GRADES: Partial<Record<UnitClass, GradeProfile>> = {
   assassin:   g("자객", "ACCSA", [90, 4], [20, 1], "rough"),
   mountaineer:g("산악병", "ACBAA", [100, 5], [20, 1], "rough"),
   civilian:   g("민중", "CCCCC", [80, 3], [5, 1], "civilian"),
+  // 병종 차트로 늘린 계통(chart-classes.ts)
+  swordsman:  g("검사계", "SCBAB", [100, 5], [10, 1], "foot"),
+  lord:       g("군주계", "AAABA", [107, 5], [30, 1], "horse"),
+  commander:  g("도독계", "AABBB", [100, 5], [30, 2], "foot"),
+  dancer:     g("무희계", "ABBSB", [90, 3], [35, 1], "dancer"),
+  mountainCav:g("산악기병계", "SBBAB", [100, 5], [10, 1], "xiliang"),
+  valiantCav: g("효기병계", "SCBAB", [100, 5], [10, 1], "horse"),
+  lightChariot:g("전차계", "SCSCB", [110, 6], [5, 1], "machine"),
+  siegeTower: g("정란계", "ACSCC", [110, 6], [5, 1], "machine"),
+  crownPrince:g("천자계", "BABBA", [90, 4], [40, 2], "scholar"),
+  transport:  g("물자대", "CCBCC", [100, 5], [20, 1], "civilian"),
+  nanmanRider:g("남만기병", "SCBBA", [100, 5], [5, 1], "horse"),
+  gaemaWarrior:g("개마무사", "SCSCB", [110, 6], [5, 1], "horse"),
+  halberdCav: g("극기병", "SCABB", [100, 5], [10, 1], "horse"),
+  wheelSage:  g("사륜거", "CSBCB", [85, 4], [45, 2], "scholar"),
+  yellowTurban:g("황건적", "ACBBB", [100, 5], [10, 1], "rough"),
+  ytArcher:   g("황건궁병", "BCBBA", [90, 4], [10, 1], "rough"),
+  ytSpear:    g("황건창병", "ACABB", [100, 5], [10, 1], "rough"),
+  ytBrawler:  g("황건무인", "ACBAB", [90, 4], [10, 1], "rough"),
+  nanmanFoot: g("남만보병", "SCBBB", [110, 6], [5, 1], "rough"),
+  northFoot:  g("북방보병", "ACABB", [110, 6], [5, 1], "foot"),
+  northRider: g("북방기병", "ABBAB", [100, 5], [10, 1], "horse"),
+  palanquin:  g("어가", "CABBA", [90, 4], [40, 2], "civilian"),
+  baguaChariot:g("팔괘전차", "AABCB", [100, 5], [30, 2], "machine"),
+  flyingBlade:g("비도수", "ACCSA", [90, 4], [20, 1], "rough"),
+  bashuRepeater:g("파촉 연노병", "SBACA", [90, 4], [10, 1], "foot"),
 };
 
 /** 병종의 계통 뿌리(1단 병종). 진화 사슬을 거꾸로 따라간다. */
@@ -83,7 +109,7 @@ const PREV: Partial<Record<UnitClass, UnitClass>> = {};
 for (const [from, to] of Object.entries(EVOLUTION)) if (to) PREV[to[0]] = from as UnitClass;
 function lineRoot(c: UnitClass): UnitClass {
   let cur = c;
-  for (let i = 0; i < 4 && PREV[cur]; i++) cur = PREV[cur]!;
+  for (let i = 0; i < 6 && PREV[cur]; i++) cur = PREV[cur]!;
   return cur;
 }
 

@@ -43,8 +43,9 @@ describe('새 병종과 진화 계통',()=>{
   expect(evolvedClass('javelin',9)).toBe('javelin');expect(evolvedClass('javelin',10)).toBe('eliteJavelin');expect(evolvedClass('javelin',30)).toBe('flyingSpear');
   expect(evolvedClass('heavyCav',20)).toBe('ironPagoda');expect(evolvedClass('elephant',21)).toBe('warElephant');expect(evolvedClass('elephant',22)).toBe('elephantKing');
  });
- it('evolves every lineage in exactly three tiers (1→2→3), siege and navy included',()=>{
-  for(const line of evolutionLines())expect(line.map(([c])=>tierOf(c)),line.map(x=>x[0]).join('→')).toEqual([1,2,3]);
+ it('evolves every lineage tier by tier (1→2→3, chart lines up to 5), siege and navy included',()=>{
+  // 기본은 1→2→3단. 병종 차트로 늘린 계통은 2~5단(검사는 5단), 기존 계통 일부는 4단(레벨 30)이 붙는다.
+  for(const line of evolutionLines()){const tiers=line.map(([c])=>tierOf(c));expect(tiers,line.map(x=>x[0]).join('→')).toEqual(tiers.map((_,i)=>i+1));expect(tiers.length).toBeGreaterThanOrEqual(2);expect(tiers.length).toBeLessThanOrEqual(5);}
   for(const c of ['engineer','catapult','ram','navy'] as const)expect(evolvedClass(c,30)).not.toBe(c);
   for(const line of evolutionLines())for(const [c] of line)expect(classNames[c],c).toMatch(/[가-힣]/);
  });

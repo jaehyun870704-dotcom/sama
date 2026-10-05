@@ -2,6 +2,7 @@ import type {UnitClass} from '../../core/src/index.ts';
 import {VARIANTS,EVOLUTION,familyOf} from '../../core/src/index.ts';
 import {allStrategies} from './officers.ts';
 import {paintedTroopSheets,paintedTroopArt} from './painted-troops.ts';
+import {CHART_ROLES} from './chart-troops.ts';
 
 export const troopRoles:Partial<Record<UnitClass,{name:string;role:string;base:UnitClass;tint:number;spells:string[]}>>={
  shaman:{name:'주술사',role:'독·봉인·혼란으로 적을 약화하는 책략 병종',base:'strategist',tint:0xd7afff,spells:['fire','embers','bind','poison','silence','confuse','feint','demoralize','weakenCurse','terror','plague','rumor','chaos']},
@@ -96,6 +97,7 @@ export const troopRoles:Partial<Record<UnitClass,{name:string;role:string;base:U
  cloudRam:{name:'파성충차',role:'충차 3단계 · 성문을 부수는 큰 망치 수레',base:'ram',tint:0xffd060,spells:[]},
  mengchong:{name:'몽충',role:'수군 2단계 · 쇠가죽을 씌운 돌격선',base:'navy',tint:0x90c0e0,spells:[]},
  louchuan:{name:'누선',role:'수군 3단계 · 여러 층 망루를 올린 큰 배',base:'navy',tint:0xffd070,spells:[]},
+ ...CHART_ROLES,
 };
 export const supportOptions:UnitClass[]=['infantry','fengshui','strategist','shaman','maiden','taoist','physician','monk','horseArcher','bandit','spearman','crossbow','archer','cavalry','heavyCav','catapult','ram','engineer'];
 export function troopStrategies(kind:UnitClass,level:number){const role=troopRoles[kind];return role?allStrategies.filter(s=>role.spells.includes(s.id)&&(s.level<=level||s.id==='mend')).map(s=>s.id):undefined;}
@@ -104,7 +106,10 @@ export const classNames:Record<string,string>={infantry:'보병',spearman:'창�
 /** The class whose sprite a unit is drawn with: extended classes borrow their lineage's art. */
 export function artClass(kind:UnitClass):UnitClass{return VARIANTS[kind]?(troopRoles[kind]?.base??familyOf(kind)):kind;}
 /** Every class a player can field, by tier: for codex and recruiting. */
-export const recruitPool:UnitClass[]=['infantry','spearman','cavalry','archer','crossbow','strategist','fengshui','horseArcher','heavyCav','slinger','assassin','rattan','elephant','monk','taoist','physician','bandit','javelin','axeman','mountaineer','xiliang','qingzhou','jishi','shieldBow','drummer','riderSage','jiangdong','langzhong'];
+export const recruitPool:UnitClass[]=['infantry','spearman','cavalry','archer','crossbow','strategist','fengshui','horseArcher','heavyCav','slinger','assassin','rattan','elephant','monk','taoist','physician','bandit','javelin','axeman','mountaineer','xiliang','qingzhou','jishi','shieldBow','drummer','riderSage','jiangdong','langzhong',
+ // 병종 차트로 늘린 계통과 모병 특수 병과
+ 'swordsman','lord','commander','dancer','mountainCav','valiantCav','lightChariot','crownPrince','transport','nanmanRider','gaemaWarrior','halberdCav','wheelSage',
+ 'yellowTurban','ytArcher','ytSpear','ytBrawler','nanmanFoot','northFoot','northRider','palanquin','baguaChariot','flyingBlade','bashuRepeater'];
 
 export const troopSheets=[...paintedTroopSheets,{id:'casters',url:'troops-casters-v1.png',rows:3},{id:'specialists',url:'troops-specialists-v1.png',rows:4},{id:'casters-walk',url:'troops-casters-walk-v1.png',rows:3},{id:'specialists-walk',url:'troops-specialists-walk-v1.png',rows:4},{id:'casters-reaction',url:'troops-casters-reaction-v1.png',rows:3},{id:'specialists-reaction',url:'troops-specialists-reaction-v1.png',rows:4},{id:'base-reaction',url:'units-base-reaction-v1.png',rows:6},{id:'extra-reaction',url:'units-extra-reaction-v1.png',rows:4}] as const;
 export const troopArt:Partial<Record<UnitClass,{sheet:'casters'|'specialists';row:number;rows:number}>>={shaman:{sheet:'casters',row:0,rows:3},maiden:{sheet:'casters',row:1,rows:3},taoist:{sheet:'casters',row:2,rows:3},physician:{sheet:'specialists',row:0,rows:4},monk:{sheet:'specialists',row:1,rows:4},horseArcher:{sheet:'specialists',row:2,rows:4},bandit:{sheet:'specialists',row:3,rows:4}};
