@@ -253,7 +253,7 @@ function showOfficerGallery(pick?:string){menuOpen=true;clearTimeout(aiTimer);
   $('#officer-back').onclick=showMenu;}
 function showTroopGallery(group:EvoGroup='all'){
  menuOpen=true;clearTimeout(aiTimer);
- modal(`<div class="briefing troop-evolution"><div class="eyebrow">병종 · 진화표</div><h2>병종은 이렇게 강해진다</h2><p class="muted">모든 병종은 세 단계로 진화한다. 레벨이 기준에 닿으면 전투 중에도 곧바로 다음 단계가 되어 능력치가 오르고(▲), 개화 스킬이 붙고, 갑옷·망토·깃발·말 갑옷이 더해진다.</p>${evolutionChart(group)}<div class="modal-actions"><button id="troop-back">← 본영</button></div></div>`,false);
+ modal(`<div class="briefing troop-evolution"><div class="eyebrow">병종 · 진화표</div><h2>병종은 이렇게 강해진다</h2><p class="muted">모든 병종은 세 단계로 진화한다. 레벨이 기준에 닿으면 전투 중에도 다음 단계가 되어 능력치가 오르고(▲), 개화 스킬이 붙는다. 각 단계의 장비와 외형은 아래 그림에서 비교할 수 있다.</p>${evolutionChart(group)}<div class="modal-actions"><button id="troop-back">← 본영</button></div></div>`,false);
  document.querySelectorAll<HTMLButtonElement>('[data-evo-group]').forEach(b=>b.onclick=()=>showTroopGallery(b.dataset.evoGroup as EvoGroup));
  void paintArmor();$('#troop-back').onclick=showMenu;
 }
