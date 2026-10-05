@@ -15,8 +15,6 @@ import {romanceOf} from './romance.ts';
 import {crispZoom,groundScaleMode,unitTint} from './pixel-look.ts';
 import {dyeOfSide,dyePixels,clothBand,needsDye,type Dye} from './dye.ts';
 import {armorFrame,MOUNTED_FAMILIES,ROBE_FAMILIES,MACHINE_FAMILIES,type ArmorTier} from './armor.ts';
-import {hasPixelLook,unitPixelCanvas} from './unit-sprite.ts';
-import {classLook} from './unit-looks.ts';
 import type {LogEntry} from '../../core/src/index.ts';
 import { key, manhattan, ignoresRough, tierOf, familyOf, strategyArea } from '../../core/src/index.ts';
 import type { BattleState, Coord, Unit, TerrainKind } from '../../core/src/index.ts';
@@ -176,7 +174,7 @@ export class Battlefield {
         a.sprite.scale.y=by*(1+Math.sin(t*(a.officer?2.2:1.8)+phase)*(a.officer?.016:.012));
         if(a.officer)a.sprite.y=8-(1+Math.sin(t*2.2+phase))*1.1;
         // 그림이 둘인 병종은 가끔 자세를 고쳐 선다(무게를 옮김)
-        const facing=this.facing.get(id)??0;if(facing===0&&(!troopArt[artClass(a.unit.unitClass)]||this.isPixel(a.unit))){const cyc=(t+phase*1.7)%(3.4+phase%1.3);a.sprite.texture=this.unitTexture(a.unit,cyc<.5?3:0);}}});
+        const facing=this.facing.get(id)??0;if(facing===0&&!troopArt[artClass(a.unit.unitClass)]){const cyc=(t+phase*1.7)%(3.4+phase%1.3);a.sprite.texture=this.unitTexture(a.unit,cyc<.5?3:0);}}});
   }
   private fromPoint(x:number,y:number):Coord|undefined{
     const p=this.world.toLocal({x,y});const c={x:Math.floor(p.x/W),y:Math.floor(p.y/H)};
@@ -319,7 +317,7 @@ export class Battlefield {
         let actor=this.actors.get(unit.id);
         if(!actor){
           const piece=new Container(),sprite=new Sprite(this.unitTexture(unit));sprite.anchor.set(.5,.88);sprite.position.set(0,8);
-          const mounted=(unit.id.startsWith('convoy_')||['cavalry','heavyCav','horseArcher','catapult','ram'].includes(artClass(unit.unitClass)));sprite.width=mounted?96:84;sprite.height=mounted?96:84;if(this.isPixel(unit)){const m=classLook(unit.unitClass)?.mount;sprite.width=sprite.height=m==='elephant'?112:m==='horse'?100:90;}if(unit.id.startsWith('convoy_')){sprite.width=80;sprite.height=80;}else if(familyOf(artClass(unit.unitClass))==='ram'){sprite.width=sprite.height=76;}else if(familyOf(artClass(unit.unitClass))==='navy'){sprite.width=sprite.height=84;sprite.anchor.y=NAVAL_WATERLINE+.03;}else if(!structureKind(unit.id))sprite.anchor.y=.945;if(structureKind(unit.id)){const kind=structureKind(unit.id);sprite.width=kind==='tower'?85:kind==='barricade'?58:64;sprite.height=kind==='tower'?118:kind==='barricade'?46:75;}
+          const mounted=(unit.id.startsWith('convoy_')||['cavalry','heavyCav','horseArcher','catapult','ram'].includes(artClass(unit.unitClass)));sprite.width=mounted?96:84;sprite.height=mounted?96:84;if(unit.id.startsWith('convoy_')){sprite.width=80;sprite.height=80;}else if(familyOf(artClass(unit.unitClass))==='ram'){sprite.width=sprite.height=76;}else if(familyOf(artClass(unit.unitClass))==='navy'){sprite.width=sprite.height=84;sprite.anchor.y=NAVAL_WATERLINE+.03;}else if(!structureKind(unit.id))sprite.anchor.y=.945;if(structureKind(unit.id)){const kind=structureKind(unit.id);sprite.width=kind==='tower'?85:kind==='barricade'?58:64;sprite.height=kind==='tower'?118:kind==='barricade'?46:75;}
           // Troops first face the bulk of the opposing army; afterwards they turn as they move and strike.
           if(!structureKind(unit.id)){const foes=state.living().filter(o=>(o.side==='enemy')!==(unit.side==='enemy')&&!structureKind(o.id));const cx=foes.reduce((a,o)=>a+o.pos.x,0)/Math.max(1,foes.length);if(foes.length&&cx<unit.pos.x)sprite.scale.x*=-1;}
           // Dark-edged side disc under the feet: reads on grass, sand and water alike.
@@ -352,15 +350,8 @@ export class Battlefield {
     }
     this.drawMinimap();
   }
-  private hasReaction(u:Unit){if(this.isPixel(u))return true;const k=artClass(u.unitClass);return !structureKind(u.id)&&!u.id.startsWith('convoy_')&&!!(troopArt[k]||basicReactionArt[k]);}
-  /** 도트로 그리는 사람 병종인가(성채·수송대·충차·포차·배는 그림 시트). */
-  private isPixel(u:Unit){return !structureKind(u.id)&&!u.id.startsWith('convoy_')&&hasPixelLook(u.unitClass);}
+  private hasReaction(u:Unit){const k=artClass(u.unitClass);return !structureKind(u.id)&&!u.id.startsWith('convoy_')&&!!(troopArt[k]||basicReactionArt[k]);}
   private unitTexture(u:Unit,pose=0){
-    if(this.isPixel(u)){
-      const officer=this.isOfficer(u)?u.name:'',dye=dyeOfSide(u.side),key=`px:${u.unitClass}:${officer}:${dye}:${pose>=4&&pose<8?12+pose%2:pose}`,old=this.textures.get(key);if(old)return old;
-      const canvas=unitPixelCanvas(u.unitClass,dye,pose,officer)!;
-      const t=new Texture({source:new CanvasSource({resource:canvas,autoGenerateMipmaps:true,scaleMode:'linear'})});this.textures.set(key,t);return t;
-    }
     // 진화 단계는 그림을 바꾸기 전에 읽는다(2단: 강철·망토·마의, 3단: 금갑·등 깃발·마갑).
     const tier=structureKind(u.id)||u.id.startsWith('convoy_')?1:tierOf(u.unitClass),fam=familyOf(u.unitClass);
     if(artClass(u.unitClass)!==u.unitClass)u={...u,unitClass:artClass(u.unitClass)};
@@ -425,7 +416,7 @@ export class Battlefield {
       // 출발·도착만 기록되므로 지형을 따라 길을 다시 찾아 한 칸씩 걷는다(벽·물을 가로질러 미끄러지지 않게).
       const st=this.state,mover=actor.unit,cls=mover.unitClass,hostile=(c:Coord)=>!!st?.living().some(o=>o.id!==mover.id&&o.pos.x===c.x&&o.pos.y===c.y&&(o.side==='enemy')!==(mover.side==='enemy'));
       const path=battlePath(e.from,e.to,c=>st&&st.map.inBounds(c)?st.map.moveCost(cls,c,ignoresRough(mover)):Infinity,hostile);
-      const walkArt=!!troopArt[artClass(cls)]&&!this.isPixel(mover),mounted=['cavalry','heavyCav','horseArcher'].includes(artClass(cls)),machine=['ram','catapult'].includes(artClass(cls))||!!structureKind(mover.id);
+      const walkArt=!!troopArt[artClass(cls)],mounted=['cavalry','heavyCav','horseArcher'].includes(artClass(cls)),machine=['ram','catapult'].includes(artClass(cls))||!!structureKind(mover.id);
       const stride=actor.officer,per=Math.min(mounted?150:stride?220:190,1500/Math.max(1,path.length));
       if(stride)this.sparks(e.from,{count:6,color:0xb8a27a,speed:40,life:500,gravity:40,size:3});
       let at=e.from;
@@ -441,8 +432,7 @@ export class Battlefield {
           if(mounted){actor.sprite.y=8-Math.abs(Math.sin(p*Math.PI))*4;actor.sprite.rotation=Math.sin(p*Math.PI*2)*.04;}
           else if(machine){actor.sprite.y=8-Math.abs(Math.sin(p*Math.PI*2))*1;actor.sprite.rotation=Math.sin(p*Math.PI*2)*.015;}
           else{actor.sprite.y=8-Math.abs(Math.sin(p*Math.PI*2))*(stride?2.5:2);actor.sprite.rotation=lean*Math.sin(p*Math.PI);}
-          if(this.isPixel(actor.unit))actor.sprite.texture=this.unitTexture(actor.unit,12+(i*2+(p>=.5?1:0))%2);
-          else if(!machine&&!actor.unit.id.startsWith('convoy_')&&familyOf(actor.unit.unitClass)!=='navy')actor.sprite.texture=this.unitTexture(actor.unit,stepPose(walkArt,walkArt?facing.pose:0,i,p>=.5));
+          if(!machine&&!actor.unit.id.startsWith('convoy_')&&familyOf(actor.unit.unitClass)!=='navy')actor.sprite.texture=this.unitTexture(actor.unit,stepPose(walkArt,walkArt?facing.pose:0,i,p>=.5));
           else if(actor.unit.id.startsWith('convoy_'))actor.sprite.texture=this.unitTexture(actor.unit,1+(i*2+(p>=.5?1:0))%2);
           else if(familyOf(actor.unit.unitClass)==='navy'){actor.sprite.texture=this.unitTexture(actor.unit,1+(i*2+(p>=.5?1:0))%2);actor.sprite.y=8-Math.sin(p*Math.PI)*2;}
         });
@@ -491,7 +481,7 @@ export class Battlefield {
       if(p<.72)return reach;
       return reach*(1-(p-.72)/.28);};
     const frame=(p:number)=>{
-      const pose=troopArt[artClass(actor.unit.unitClass)]&&!this.isPixel(actor.unit)?(p<.2||p>.9?0:e.t==='strategy'?3:2):(p<.22?1:p<.65?2:p<.92?3:0);actor.sprite.texture=this.unitTexture(actor.unit,pose);
+      const pose=troopArt[artClass(actor.unit.unitClass)]?(p<.2||p>.9?0:e.t==='strategy'?3:2):(p<.22?1:p<.65?2:p<.92?3:0);actor.sprite.texture=this.unitTexture(actor.unit,pose);
       const lunge=lungeAt(p),jump=leap&&p>=.4&&p<.6?Math.sin((p-.4)/.2*Math.PI)*16:0;actor.sprite.x=dx/len*lunge;actor.sprite.y=8+dy/len*lunge-jump;
       fx.clear();
       if(ranged&&p>.2&&p<.6){const q=(p-.2)/.4,x=from.x+dx*q,y=from.y+dy*q-Math.sin(q*Math.PI)*22;
