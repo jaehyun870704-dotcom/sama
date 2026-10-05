@@ -56,17 +56,32 @@ function toCanvas(p:AtlasPixels){
 }
 /** Small worker pool: every sheet is cut in parallel, away from the main thread. */
 type Job={url:string;rows:number;columns:number;union:boolean;resolve:(c:HTMLCanvasElement)=>void;reject:(e:unknown)=>void};
-const queue:Job[]=[],idle:Worker[]=[],pending=new Map<number,Job>();let workers=0,jobs=0;
+const queue:Job[]=[],idle:Worker[]=[],pending=new Map<number,Job>(),running=new Map<Worker,number>();let workers=0,jobs=0;
+/** 작업자 파일을 못 불러오면(배포 누락·차단) 다시 쓰지 않고 메인 스레드에서 자른다. 대기가 끝나지 않아 화면이 멈추는 일을 막는다. */
+let workerBroken=false;
+const JOB_TIMEOUT=20000;
 const poolSize=()=>Math.max(1,Math.min(4,(navigator.hardwareConcurrency||2)-1));
+function failAll(reason:string){
+  workerBroken=true;
+  for(const job of pending.values())job.reject(new Error(reason));pending.clear();running.clear();
+  for(const job of queue.splice(0))job.reject(new Error(reason));
+}
 function dispatch(){
   while(queue.length){
+    if(workerBroken){failAll('atlas worker unavailable');return;}
     let w=idle.pop();
-    if(!w){if(workers>=poolSize())return;workers++;w=new Worker(new URL('./atlas-worker.ts',import.meta.url),{type:'module'});
-      const worker=w;worker.onmessage=(e:MessageEvent<{id:number;width:number;height:number;plain:ArrayBuffer;rim:ArrayBuffer;error?:string}>)=>{
-        const d=e.data,job=pending.get(d.id);pending.delete(d.id);idle.push(worker);
+    if(!w){if(workers>=poolSize())return;workers++;
+      try{w=new Worker(new URL('./atlas-worker.ts',import.meta.url),{type:'module'});}catch{failAll('atlas worker could not start');return;}
+      const worker=w;
+      worker.onerror=()=>{worker.terminate();failAll('atlas worker failed to load');};
+      worker.onmessage=(e:MessageEvent<{id:number;width:number;height:number;plain:ArrayBuffer;rim:ArrayBuffer;error?:string}>)=>{
+        const d=e.data,job=pending.get(d.id);pending.delete(d.id);running.delete(worker);idle.push(worker);
         if(job){if(d.error)job.reject(new Error(d.error));else{const plain=toCanvas({width:d.width,height:d.height,data:new Uint8ClampedArray(d.plain)});rims.set(plain,toCanvas({width:d.width,height:d.height,data:new Uint8ClampedArray(d.rim)}));job.resolve(plain);}}
         dispatch();};}
-    const job=queue.shift()!,id=++jobs;pending.set(id,job);w.postMessage({id,url:new URL(job.url,location.href).href,rows:job.rows,columns:job.columns,union:job.union});
+    const job=queue.shift()!,id=++jobs;pending.set(id,job);running.set(w,id);
+    // 답이 오지 않는 작업은 메인 스레드로 넘긴다(작업자가 조용히 죽은 경우).
+    setTimeout(()=>{const j=pending.get(id);if(j){pending.delete(id);j.reject(new Error('atlas worker timed out'));}},JOB_TIMEOUT);
+    w.postMessage({id,url:new URL(job.url,location.href).href,rows:job.rows,columns:job.columns,union:job.union});
   }
 }
 async function onMainThread(url:string,rows:number,columns:number,union=false){
@@ -79,7 +94,7 @@ export function spriteAtlas(url:string,rows:number,columns=4,union=false){
   // 문서 기준 상대 경로를 완전한 주소로: 워커는 자기 스크립트 위치를 기준으로 경로를 풀기 때문이다.
   url=typeof document!=='undefined'?new URL(url,document.baseURI).href:url;
   const key=url+':'+rows+':'+columns+(union?':u':'');
-  if(!cache.has(key))cache.set(key,typeof Worker==='undefined'||typeof OffscreenCanvas==='undefined'?onMainThread(url,rows,columns,union):
+  if(!cache.has(key))cache.set(key,workerBroken||typeof Worker==='undefined'||typeof OffscreenCanvas==='undefined'?onMainThread(url,rows,columns,union):
     new Promise<HTMLCanvasElement>((resolve,reject)=>{queue.push({url,rows,columns,union,resolve,reject});dispatch();}).catch(()=>onMainThread(url,rows,columns,union)));
   return cache.get(key)!;
 }

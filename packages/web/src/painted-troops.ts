@@ -7,15 +7,16 @@ export const THRUST:PaintedFrames={attack:[1,2],walk:[2,0],cast:1,hit:3};   // 2
 export const SHOOT:PaintedFrames={attack:[1,2],walk:[0,0],cast:2,hit:3};    // 2열 겨눔 · 3열 쏨 · 걷기는 대기 칸(궁병·노병)
 export const CASTER:PaintedFrames={attack:[1,2],walk:[0,0],cast:2,hit:3};   // 2열 책 들기 · 3열 부채 휘두름(책사·풍수사)
 export const RUN:PaintedFrames={attack:[2,2],walk:[1,0],cast:2,hit:3};      // 2열 달림(걷기) · 3열 공격(자객·등갑병)
+export const CHARGE:PaintedFrames={attack:[1,2],walk:[1,0],cast:2,hit:3};   // 2열 질주(걷기·준비) · 3열 찌르기(기병)
 /** Dedicated art includes all three evolutions; never recolor another troop into these classes. */
 /** union: 칸 안의 떨어진 조각(투석기와 병사, 떠도는 부적)을 한 프레임으로 합쳐 자른다. 정리 도구로 짠 시트는 모두 켠다. */
 export const paintedTroopSheets=[
   {id:'rattan-v3',url:'troops-rattan-v3.png',rows:3,frames:RUN,union:true},
   {id:'elephant-v1',url:'troops-elephant-v1.png',rows:3,frames:STRIDE},
   {id:'infantry-v2',url:'troops-infantry-v2.png',rows:3,frames:RUN,union:true},
-  {id:'spearman-v1',url:'troops-spearman-v1.png',rows:3,frames:THRUST,union:true},
+  {id:'spearman-v2',url:'troops-spearman-v2.png',rows:3,frames:THRUST,union:true},
   {id:'archer-v1',url:'troops-archer-v1.png',rows:3,frames:SHOOT,union:true},
-  {id:'cavalry-v1',url:'troops-cavalry-v1.png',rows:3,frames:THRUST,union:true},
+  {id:'cavalry-v2',url:'troops-cavalry-v2.png',rows:3,frames:CHARGE,union:true},
   {id:'assassin-v1',url:'troops-assassin-v1.png',rows:3,frames:RUN,union:true},
   {id:'slinger-v1',url:'troops-slinger-v1.png',rows:3,frames:SHOOT,union:true},
   {id:'shaman-v1',url:'troops-shaman-v1.png',rows:3,frames:CASTER,union:true},
@@ -32,15 +33,15 @@ export const paintedTroopArt:Partial<Record<UnitClass,{sheet:string;row:number;r
   infantry:{sheet:'infantry-v2',row:0,rows:3},
   shieldGuard:{sheet:'infantry-v2',row:1,rows:3},
   royalGuard:{sheet:'infantry-v2',row:2,rows:3},
-  spearman:{sheet:'spearman-v1',row:0,rows:3},
-  pikeman:{sheet:'spearman-v1',row:1,rows:3},
-  halberdier:{sheet:'spearman-v1',row:2,rows:3},
+  spearman:{sheet:'spearman-v2',row:0,rows:3},
+  pikeman:{sheet:'spearman-v2',row:1,rows:3},
+  halberdier:{sheet:'spearman-v2',row:2,rows:3},
   archer:{sheet:'archer-v1',row:0,rows:3},
   longbow:{sheet:'archer-v1',row:1,rows:3},
   sharpshooter:{sheet:'archer-v1',row:2,rows:3},
-  cavalry:{sheet:'cavalry-v1',row:0,rows:3},
-  lancer:{sheet:'cavalry-v1',row:1,rows:3},
-  tigerRider:{sheet:'cavalry-v1',row:2,rows:3},
+  cavalry:{sheet:'cavalry-v2',row:0,rows:3},
+  lancer:{sheet:'cavalry-v2',row:1,rows:3},
+  tigerRider:{sheet:'cavalry-v2',row:2,rows:3},
   assassin:{sheet:'assassin-v1',row:0,rows:3},
   phantom:{sheet:'assassin-v1',row:1,rows:3},
   wraith:{sheet:'assassin-v1',row:2,rows:3},
@@ -77,15 +78,15 @@ export const paintedLook:Partial<Record<UnitClass,string>>={
   infantry:'푸른 두건 · 가죽 조끼 · 둥근 나무 방패 · 환도',
   shieldGuard:'철 투구 · 비늘 철갑 · 긴 사각 방패 · 환도',
   royalGuard:'검은 깃 투구 · 금장 비늘갑 · 금테 방패 · 불꽃 서린 환도',
-  spearman:'맨소매 천 옷 · 짧은 창',
-  pikeman:'철 투구 · 비늘 철갑 · 붉은 술 장창',
-  halberdier:'검은 깃 투구 · 금장 판갑 · 월아극',
+  spearman:'푸른 두건 · 가죽 조끼 · 장창',
+  pikeman:'철 투구 · 비늘 찰갑 · 붉은 술 장창',
+  halberdier:'검은 깃 투구 · 금테 흑갑 · 월아 대부',
   archer:'푸른 두건 · 가죽 조끼 · 짧은 활 · 화살통',
   longbow:'철 투구 · 비늘 철갑 · 큰 활',
   sharpshooter:'붉은 술 금투구 · 금갑 · 용머리 장궁 · 망토',
-  cavalry:'머리띠 · 가죽 갑 · 안장 없는 갈색 말 · 창',
-  lancer:'철 투구 · 비늘 철갑 · 마갑 두른 말 · 장창',
-  tigerRider:'호랑이 가죽 망토 · 붉은 갈기 투구 · 검은 철갑 말',
+  cavalry:'푸른 무복 · 갈색 말 · 창',
+  lancer:'철 투구 · 찰갑 · 마갑 두른 말 · 붉은 술 기창',
+  tigerRider:'녹색 망토 · 호피 마의 · 검은 말 · 월아극',
 };
 /** 전장 자세 번호 → 시트 칸. 0 대기 · 1 공격 준비 · 2 공격 · 3 책략 · 4~7 걷기(짝수 내딛음) · 8~11 반응. */
 export function paintedTroopFrame(pose:number,f:PaintedFrames=STRIDE){

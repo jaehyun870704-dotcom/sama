@@ -42,10 +42,10 @@ import {paintedFrames,SHOOT,THRUST} from '../src/painted-troops.ts';
 describe('sheet-specific frame use',()=>{
   it('archers aim then loose and never walk with the shooting frame; spearmen thrust with the stride frame',()=>{
     expect(paintedFrames('archer-v1')).toBe(SHOOT);expect([1,2,3,4,5].map(p=>paintedTroopFrame(p,SHOOT))).toEqual([1,2,2,0,0]);
-    expect(paintedFrames('spearman-v1')).toBe(THRUST);expect([1,2,4,5].map(p=>paintedTroopFrame(p,THRUST))).toEqual([1,2,2,0]);
+    expect(paintedFrames('spearman-v2')).toBe(THRUST);expect([1,2,4,5].map(p=>paintedTroopFrame(p,THRUST))).toEqual([1,2,2,0]);
   });
   it('maps the four new families to their own sheets by tier',()=>{
-    for(const [a,b,c,sheet] of [['infantry','shieldGuard','royalGuard','infantry-v2'],['spearman','pikeman','halberdier','spearman-v1'],['archer','longbow','sharpshooter','archer-v1'],['cavalry','lancer','tigerRider','cavalry-v1']] as const){
+    for(const [a,b,c,sheet] of [['infantry','shieldGuard','royalGuard','infantry-v2'],['spearman','pikeman','halberdier','spearman-v2'],['archer','longbow','sharpshooter','archer-v1'],['cavalry','lancer','tigerRider','cavalry-v2']] as const){
       expect(paintedTroopArt[a]).toEqual({sheet,row:0,rows:3});expect(paintedTroopArt[b]?.row).toBe(1);expect(paintedTroopArt[c]?.row).toBe(2);
       expect(lookText(a)).not.toMatch(/강철|금빛|기본 차림/);expect(lookText(c)).not.toMatch(/강철|금빛/);
     }
@@ -67,5 +67,12 @@ describe('second batch: assassin, slinger, shaman, maiden and the new rattan she
   it('packs sheets with pieces apart (siege engine and crew) as one frame per cell',()=>{
     const slinger=paintedTroopSheets.find(s=>s.id==='slinger-v1');expect(slinger&&'union' in slinger&&slinger.union).toBe(true);
     expect(paintedTroopSheets.find(s=>s.id==='elephant-v1')).not.toHaveProperty('union');
+  });
+});
+
+import {CHARGE} from '../src/painted-troops.ts';
+describe('cavalry gallops between cells and thrusts on attack',()=>{
+  it('uses the gallop column for walking and wind-up, the thrust column for the strike',()=>{
+    expect(paintedFrames('cavalry-v2')).toBe(CHARGE);expect([1,2,4,5,8].map(p=>paintedTroopFrame(p,CHARGE))).toEqual([1,2,1,0,3]);
   });
 });
