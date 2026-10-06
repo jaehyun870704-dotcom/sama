@@ -61,15 +61,15 @@ describe('장수 효과',()=>{
   expect(togglePerk(m,'관우',list[0]!.id)).toBe(true);expect(togglePerk(m,'관우',list[2]!.id)).toBe(true);
   const t=officerTier(m,'관우');expect(officerGrants(m,['관우'])['관우']).toEqual([[list[1]!.trait,perkAt(list[1]!,t).param],[list[2]!.trait,perkAt(list[2]!,t).param]]);
  });
- it('grows stronger as the officer evolves (Ⅰ → Ⅱ → Ⅲ)',()=>{
+ it('grows stronger as the officer evolves (Ⅰ → Ⅱ → Ⅲ → Ⅳ)',()=>{
   const m=rich(),list=perksFor('장합');m.officerBest={장합:30};learnPerk(m,'장합',list[0]!.id);
-  const p=list[0]!,at=(c:'spearman'|'pikeman'|'halberdier')=>officerGrants(m,[{name:'장합',unitClass:c}])['장합']![0]![1];
-  expect(at('spearman')).toBe(p.param);expect(at('pikeman')).toBe(Math.round(p.param*1.5));expect(at('halberdier')).toBe(p.param*2);
-  expect(perkAt(p,3).name).toContain('극의');expect(officerTier(m,'장합')).toBe(3);m.officerBest={장합:3};expect(officerTier(m,'장합')).toBe(1);
+  const p=list[0]!,at=(c:'spearman'|'pikeman'|'halberdier'|'divineSpear')=>officerGrants(m,[{name:'장합',unitClass:c}])['장합']![0]![1];
+  expect(at('spearman')).toBe(p.param);expect(at('pikeman')).toBe(Math.round(p.param*1.5));expect(at('halberdier')).toBe(p.param*2);expect(at('divineSpear')).toBe(Math.round(p.param*2.5));
+  expect(perkAt(p,3).name).toContain('극의');expect(perkAt(p,4).name).toContain('전설');expect(officerTier(m,'장합')).toBe(4);m.officerBest={장합:3};expect(officerTier(m,'장합')).toBe(1);
   // 고유능력도 진화 단계를 따라 강해진다
   const u1=makeUnit({id:'zh1',unitClass:'spearman',level:5,side:'player',pos:{x:0,y:0}}),u3=makeUnit({id:'zh3',unitClass:'halberdier',level:20,side:'player',pos:{x:0,y:0}});
   (u1 as {name:string}).name='장합';(u3 as {name:string}).name='장합';applyRomance(u1);applyRomance(u3);
-  expect(u3.traitParams.counterBoost!-(VARIANTS.halberdier?.traits?.counterBoost??0)).toBeGreaterThanOrEqual(0);expect(skillParam(20,1)).toBe(20);expect(skillParam(20,3)).toBe(30);
+  expect(u3.traitParams.counterBoost!-(VARIANTS.halberdier?.traits?.counterBoost??0)).toBeGreaterThanOrEqual(0);expect(skillParam(20,1)).toBe(20);expect(skillParam(20,3)).toBe(30);expect(skillParam(20,4)).toBe(35);
  });
  it('records the best level each officer reached',()=>{const m=freshMeta();recordOfficerLevels(m,[{name:'장합',level:7}]);recordOfficerLevels(m,[{name:'장합',level:5}]);expect(m.officerBest).toEqual({장합:7});});
  it('adds up the same trait from two sources',()=>{const u=makeUnit({id:'a',unitClass:'longbow',level:5,side:'player',pos:{x:0,y:0}});const c=u.traitParams.critical!;grantPerk(u,'critical',5);expect(u.traitParams.critical).toBe(c+5);expect(u.traits.filter(t=>t==='critical')).toHaveLength(1);});

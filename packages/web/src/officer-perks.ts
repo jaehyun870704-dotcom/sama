@@ -137,14 +137,14 @@ export function togglePerk(m:MetaState,name:string,id:string){
 }
 // ─────────────────────────────────────────────── 진화: 장수 효과는 병종이 진화할수록 강해진다
 
-/** 진화 단계(병종 단계 1·2·3)마다 효과 수치 배율과 이름 꼬리. */
-export const PERK_TIERS=[{mul:1,suffix:'',mark:'Ⅰ'},{mul:1.5,suffix:'·정예',mark:'Ⅱ'},{mul:2,suffix:'·극의',mark:'Ⅲ'}] as const;
+/** 진화 단계(병종 단계 1·2·3·4)마다 효과 수치 배율과 이름 꼬리. */
+export const PERK_TIERS=[{mul:1,suffix:'',mark:'Ⅰ'},{mul:1.5,suffix:'·정예',mark:'Ⅱ'},{mul:2,suffix:'·극의',mark:'Ⅲ'},{mul:2.5,suffix:'·전설',mark:'Ⅳ'}] as const;
 /** 단계에 맞춘 효과(이름·수치). */
-export function perkAt(p:OfficerPerk,tier:number){const t=PERK_TIERS[Math.max(1,Math.min(3,tier))-1]!;return {name:p.name+t.suffix,param:Math.round(p.param*t.mul),mark:t.mark};}
+export function perkAt(p:OfficerPerk,tier:number){const t=PERK_TIERS[Math.max(1,Math.min(4,tier))-1]!;return {name:p.name+t.suffix,param:Math.round(p.param*t.mul),mark:t.mark};}
 /** 장수가 지금 닿아 있는 진화 단계: 출진 병종이 있으면 그 단계, 없으면 기록된 최고 레벨로 진화했을 병종의 단계. */
-export function officerTier(m:MetaState,name:string,unitClass?:UnitClass):1|2|3{
-  // 장수 효과는 3단(극의)에서 완성되며 4단 전설도 극의로 친다.
-  const t=unitClass?tierOf(unitClass):tierOf(evolvedClass(officerClass(name),Math.max(1,bestLevel(m,name))));return Math.min(3,t) as 1|2|3;
+export function officerTier(m:MetaState,name:string,unitClass?:UnitClass):1|2|3|4{
+  // 장수 효과도 병종처럼 네 단계: 기본 Ⅰ · 정예 Ⅱ · 극의 Ⅲ · 전설 Ⅳ(4단 전설 병종).
+  const t=unitClass?tierOf(unitClass):tierOf(evolvedClass(officerClass(name),Math.max(1,bestLevel(m,name))));return Math.max(1,Math.min(4,t)) as 1|2|3|4;
 }
 type Sortie=string|{name:string;unitClass?:UnitClass};
 /** 출진하는 장수들의 장착 효과(이름 → 특성). 칸 수를 넘는 장착은 앞에서부터만. 수치는 그 장수의 진화 단계를 따른다. */

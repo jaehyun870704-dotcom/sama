@@ -187,8 +187,8 @@ export const allRomanceNames=()=>Object.keys(byName);
 
 const scale=(r:number,span:number)=>1+(r-50)/50*span;
 /** 고유능력 수치의 진화 단계 배율. */
-export const SKILL_TIER=[1,1.25,1.5] as const;
-export const skillParam=(param:number,tier:number)=>Math.round(param*SKILL_TIER[Math.max(1,Math.min(3,tier))-1]!);
+export const SKILL_TIER=[1,1.25,1.5,1.75] as const;
+export const skillParam=(param:number,tier:number)=>Math.round(param*SKILL_TIER[Math.max(1,Math.min(4,tier))-1]!);
 /**
  * 연의 능력을 유닛에 입힌다(한 번만). 무력→공격, 지력→지력, 통솔→방어·체력,
  * (지력+정치)/2→정신, 매력→사기. 체력·책략 비율은 유지한다.
