@@ -33,8 +33,9 @@ const baseTroopSheets = completeTroopRows.map((_,i)=>({
   strictGrid:true,
 }));
 
-/** Four-stage corrections: weapon continuity, mounted lords, and the final chariot strategist. */
+/** Four-stage corrections: complete progression rows, mounted lords, and the final chariot strategist. */
 export const fourStageCorrectionRows = {
+  'four-stage-infantry':['infantry','shieldGuard','royalGuard','ironInfantry'],
   'four-stage-command':['divineStrategist','lord','hegemon','sovereign'],
   'four-stage-command-extra':['sonOfHeaven','sapper','masterBuilder','divineEngineer'],
   'four-stage-ranged':['northRider','ytArcher','bashuRepeater','palanquin'],
@@ -46,6 +47,7 @@ export const fourStageCorrectionRows = {
 
 export const completeTroopSheets = [
   ...baseTroopSheets,
+  {id:'four-stage-infantry',url:'troops-four-stage-infantry-v1.png',rows:4,alphaCutoff:240,strictGrid:true},
   {id:'four-stage-command',url:'troops-four-stage-command-v1.png',rows:4,alphaCutoff:240,strictGrid:true},
   {id:'four-stage-command-extra',url:'troops-four-stage-command-extra-v1.png',rows:4,alphaCutoff:240,strictGrid:true},
   {id:'four-stage-ranged',url:'troops-four-stage-ranged-v1.png',rows:4,alphaCutoff:240,strictGrid:true},

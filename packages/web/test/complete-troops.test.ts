@@ -14,8 +14,8 @@ describe('새 화풍 전체 병종 원화',()=>{
     for(const c of classes)expect(paintedTroopArt[c],c).toEqual(completeTroopArt[c]);
   });
 
-  it('24개 시트가 4열 동작과 고정된 행 매핑을 사용한다',()=>{
-    expect(completeTroopSheets).toHaveLength(24);
+  it('25개 시트가 4열 동작과 고정된 행 매핑을 사용한다',()=>{
+    expect(completeTroopSheets).toHaveLength(25);
     for(const sheet of completeTroopSheets){
       expect(sheet.rows).toBeGreaterThanOrEqual(4);
       expect(sheet.url).toMatch(/^troops-(?:complete-\d{2}|four-stage-[a-z-]+)-v[12]\.png$/);
@@ -28,9 +28,15 @@ describe('새 화풍 전체 병종 원화',()=>{
     expect(Object.values(fourStageCorrectionRows).flat()).toContain('sonOfHeaven');
   });
 
+  it('보병 계열은 기본부터 전설까지 새 화풍의 정확한 4단계 행을 쓴다',()=>{
+    for(const [row,troop] of (['infantry','shieldGuard','royalGuard','ironInfantry'] as const).entries()){
+      expect(completeTroopArt[troop]).toEqual({sheet:'four-stage-infantry',row,rows:4});
+    }
+  });
+
   it('예전 manifest 전용 그림이 있어도 신규 전체 원화를 우선한다',()=>{
     classSheets.set('infantry','troops/old-infantry.png');
-    expect(classSprite('infantry')).toContain('--complete-01-atlas');
+    expect(classSprite('infantry')).toContain('--four-stage-infantry-atlas');
     expect(classSprite('infantry')).not.toContain('--own-infantry-atlas');
     classSheets.delete('infantry');
   });

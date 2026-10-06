@@ -5,7 +5,7 @@ import {completeTroopArt,completeTroopSheets} from './complete-troops.ts';
 export type PaintedFrames={attack:[number,number];walk:[number,number];cast:number;hit:number};
 /** 완성 병종 시트: 0 대기 · 1 준비(젖힘) · 2 공격(내디딤) · 3 피격. 걷기는 대기·준비를 번갈아. */
 export const POSE:PaintedFrames={attack:[1,2],walk:[0,1],cast:1,hit:3};
-/** 전투·도감·정비 화면은 완성 병종 원화 24장·145병종만 쓴다. 예전 병종 시트는 지웠다.
+/** 전투·도감·정비 화면은 완성 병종 원화 25장·145병종만 쓴다. 예전 병종 시트는 지웠다.
  * union: 칸 안의 떨어진 조각(투석기와 병사, 떠도는 부적)을 한 프레임으로 합쳐 자른다. */
 export const paintedTroopSheets=completeTroopSheets.map(sheet=>({...sheet,frames:POSE,union:true}));
 export const paintedFrames=(_sheet:string):PaintedFrames=>POSE;

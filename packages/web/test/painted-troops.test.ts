@@ -27,9 +27,10 @@ import {lookText} from '../src/troop-evolution.ts';
 import {hasPaintedMotion} from '../src/troops.ts';
 import {paintedFrames,paintedTroopSheets,POSE} from '../src/painted-troops.ts';
 describe('완성 원화만 쓰는 병종 그림',()=>{
-  it('loads the 17 complete sheets plus 7 four-stage corrections, never legacy sheets',()=>{
+  it('loads the 17 complete sheets plus 8 four-stage corrections, never legacy sheets',()=>{
     expect(paintedTroopSheets.map(s=>s.id)).toEqual([
       ...Array.from({length:17},(_,i)=>`complete-${String(i+1).padStart(2,'0')}`),
+      'four-stage-infantry',
       'four-stage-command','four-stage-command-extra','four-stage-ranged','four-stage-ranged-extra',
       'four-stage-special','four-stage-special-extra','four-stage-siege',
     ]);
@@ -43,8 +44,8 @@ describe('완성 원화만 쓰는 병종 그림',()=>{
     expect(hasPaintedMotion('rattan')).toBe(true);expect(hasPaintedMotion('wuguoRattan')).toBe(true);
   });
   it('maps the families to their own complete sheets by tier',()=>{
-    for(const [a,b,c,sheet,row] of [['infantry','shieldGuard','royalGuard','complete-01',0],['spearman','pikeman','halberdier','complete-01',4],['archer','longbow','sharpshooter','complete-03',0],['cavalry','lancer','tigerRider','complete-02',0]] as const){
-      expect(paintedTroopArt[a]).toEqual({sheet,row,rows:8});expect(paintedTroopArt[b]?.row).toBe(row+1);expect(paintedTroopArt[c]?.row).toBe(row+2);
+    for(const [a,b,c,sheet,row,rows] of [['infantry','shieldGuard','royalGuard','four-stage-infantry',0,4],['spearman','pikeman','halberdier','complete-01',4,8],['archer','longbow','sharpshooter','complete-03',0,8],['cavalry','lancer','tigerRider','complete-02',0,8]] as const){
+      expect(paintedTroopArt[a]).toEqual({sheet,row,rows});expect(paintedTroopArt[b]?.row).toBe(row+1);expect(paintedTroopArt[c]?.row).toBe(row+2);
     }
     for(const [a,c,aSheet,aRow,cSheet,cRow] of [['assassin','wraith','complete-07',2,'complete-07',4],['slinger','boulderCorps','complete-03',6,'complete-08',6],['shaman','demonKing','complete-05',0,'complete-05',2]] as const){
       expect(paintedTroopArt[a]).toEqual({sheet:aSheet,row:aRow,rows:8});expect(paintedTroopArt[c]).toEqual({sheet:cSheet,row:cRow,rows:8});
