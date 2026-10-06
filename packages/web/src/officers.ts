@@ -60,7 +60,20 @@ const legends:LearnedStrategy[]=[
  {id:'weiRiver',name:'유수 수공',level:30,element:'water',shape:'line',range:3,radius:5,mpCost:26,power:140,inflicts:['immobile'],targetSides:['enemy']},
  {id:'tenAmbush',name:'십면매복',level:32,element:'earth',shape:'spread',range:4,radius:2,mpCost:30,power:120,inflicts:['bound'],targetSides:['enemy']},
 ];
-export const allStrategies:LearnedStrategy[]=[...learnedStrategies,...more,...wider,...legends].sort((a,b)=>a.level-b.level);
+/** 삼국 고사의 계책: 정사·연의에 이름난 싸움에서 딴 책략. [id,이름,습득Lv,속성,모양,사거리,반경,MP,위력,상태] */
+const stratagems:LearnedStrategy[]=[
+ ...([['bowangFire','박망파 화공',13,'fire','spread',3,1,14,110,'burn'],['riverDam','백하 수공',15,'water','line',3,3,15,115,'slow'],
+  ['fireShips','화공선',15,'fire','line',3,3,16,120,'burn'],['counterSpy','반간계',13,'support','single',5,0,14,40,'seal'],
+  ['beautyTrap','미인계',17,'support','single',3,0,15,45,'confusion'],['lureTiger','조호이산',19,'support','single',5,0,16,35,'slow'],
+  ['burnCamp','연영 화공',19,'fire','spread',4,1,18,130,'burn'],['rockAmbush','낙석 매복',20,'earth','line',3,3,19,130,'bound'],
+  ['selfInjury','고육계',21,'support','single',4,0,18,55,'breach'],['thunderStorm','뇌우',21,'thunder','spread',4,1,21,135,'shock'],
+  ['borrowKnife','차도살인',23,'support','spread',4,1,20,40,'weaken'],['eastWind','동남풍',25,'wind','spread',5,2,27,145,undefined],
+  ['sevenArmies','칠군 수몰',27,'water','spread',4,2,28,150,'immobile'],['lockedGates','팔문금쇄진',31,'earth','spread',4,2,30,110,'immobile'],
+  ['stoneMaze','석병팔진',34,'support','spread',5,2,34,60,'confusion']] as const).map(([id,name,level,element,shape,range,radius,mpCost,power,status])=>({id,name,level,element,shape,range,radius,mpCost,power,targetSides:['enemy' as const],...(status?{inflicts:[status]}:{})} as LearnedStrategy)),
+ ...([['relief','구휼',12,14,1,'heal',30],['strawBoats','초선차전',17,14,1,'rally',0],['supplyLine','군량 수송',20,16,2,'mana',12],['woodenOx','목우유마',28,22,2,'haste',0],['peachOath','도원결의',32,30,2,'valor',0]] as const)
+  .map(([id,name,level,mpCost,radius,support,power])=>({id,name,level,mpCost,radius,support,power,element:'support' as const,range:3,shape:radius?'spread' as const:'single' as const,targetSides:['player' as const,'ally' as const,'allyAi' as const]} as LearnedStrategy)),
+];
+export const allStrategies:LearnedStrategy[]=[...learnedStrategies,...more,...wider,...legends,...stratagems].sort((a,b)=>a.level-b.level);
 for(const s of allStrategies)(s as {learnLevel?:number}).learnLevel=s.level;
 export function strategyHint(id:string){const s=allStrategies.find(x=>x.id===id);if(!s)return '';const effect=s.support?({heal:'아군 체력 회복',cleanse:'해로운 상태이상 제거',guard:'받는 피해 15% 감소',haste:'이동력 +1',rally:'공격 피해 12% 증가',mana:`MP ${s.power} 회복`,valor:'공격 피해 12% 증가 · 받는 피해 15% 감소'}[s.support]):`위력 ${s.power}${s.inflicts?.length?' · '+s.inflicts.map(x=>STATUS_NAMES[x]??x).join(' · '):''}`;return `${effect} · 사거리 ${s.range} · ${SHAPE_TEXT(s)}`;}
 /** 상태이상 이름. */

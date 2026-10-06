@@ -161,6 +161,13 @@ function classesTab(pick:string){
 const ELEMENT_NAMES:Record<string,string>={fire:'화',wind:'풍',water:'수',thunder:'뇌',earth:'지',support:'술'};
 /** 책략마다 한 줄 풀이(무엇을 하는 계책인가). */
 export const STRATEGY_TEXT:Record<string,string>={
+  bowangFire:'박망파 — 좁은 길로 끌어들인 적을 둘레째 불사른다.',riverDam:'백하의 둑을 터 한 줄의 적을 쓸어 가고 걸음을 늦춘다.',fireShips:'적벽의 화선 — 불붙은 배를 한 줄로 몰아 들이받는다.',
+  counterSpy:'반간계 — 적의 첩자를 역으로 써 적 책사의 책략을 봉인한다.',beautyTrap:'미인계 — 적장의 마음을 흔들어 혼란에 빠뜨린다.',lureTiger:'조호이산 — 범을 산에서 끌어내듯 적을 꾀어내 걸음을 늦춘다.',
+  burnCamp:'이릉의 연영 화공 — 길게 늘어선 진영을 둘레째 태운다.',rockAmbush:'매복한 병사가 돌을 굴려 한 줄의 적을 치고 포박한다.',selfInjury:'고육계 — 거짓 투항으로 적의 경계를 풀어 받는 피해를 늘린다.',
+  thunderStorm:'뇌우를 불러 둘레의 적을 감전시킨다.',borrowKnife:'차도살인 — 남의 칼을 빌리듯 둘레의 적끼리 의심하게 해 힘을 뺀다.',eastWind:'동남풍 — 바람을 빌려 넓은 땅의 적을 휩쓴다.',
+  sevenArmies:'칠군 수몰 — 한수의 물을 끌어 넓은 땅의 적을 잠그고 발을 묶는다.',lockedGates:'팔문금쇄진 — 여덟 문을 닫아 둘레의 적을 가둔다.',stoneMaze:'석병팔진 — 돌무더기 진으로 넓은 땅의 적을 길 잃게 한다.',
+  relief:'구휼 — 둘레의 아군에게 양식과 약을 나눠 체력을 회복한다.',strawBoats:'초선차전 — 적의 화살을 빌려 둘레의 아군 사기를 높인다(공격 피해 증가).',supplyLine:'군량 수송 — 둘레의 아군이 MP를 되찾는다.',
+  woodenOx:'목우유마 — 수레로 보급을 잇대어 넓은 땅의 아군 이동력을 늘린다.',peachOath:'도원결의 — 의형제의 맹세로 넓은 땅의 아군이 결사의 각오를 한다.',
   fire:'적 한 부대에 불을 놓아 태운다. 숲에서 더 거세다.',embers:'작은 불씨를 던져 적을 그을린다. 적은 MP로 쓰는 첫 화계.',inferno:'넓은 땅을 업화로 덮는다. 맞은 적은 화상을 입는다.',fireWall:'불의 진을 쳐 둘레의 적을 태운다.',
   chainFire:'배를 묶은 연환처럼, 한 줄로 늘어선 적을 차례로 불사른다.',skyFire:'하늘에서 불비를 내려 십자로 퍼뜨린다.',
   windDragon:'바람의 용이 휘몰아쳐 둘레의 적을 친다. 사마의의 장기.',gust:'돌풍으로 적 한 부대를 밀어 친다.',whirlwind:'회오리로 둘레를 휩쓴다.',tempest:'폭풍으로 넓은 땅을 휩쓴다.',gale:'칼날 같은 질풍이 한 줄로 내달린다.',
