@@ -29,7 +29,7 @@ const extraItems=[
  ['redHare','적토마','S1-08','적','이동 +1 · 민첩 +5',{movement:1,agility:5},'관우와 적토마'],
  ['fan','백우선','S1-05','백','지력 +5 · 최대 MP +5',{intellect:5,maxMp:5},'제갈량의 깃털 부채'],
  ['seal','전국옥새','S1-07','전','정신 +5 · 최대 체력 +10',{spirit:5,maxHp:10},'전국옥새를 둘러싼 연의의 다툼'],
- ['ironArmor','철제 갑주','S1-01','철','방어 +2',{defense:2},'연의의 장수 갑주'],
+ ['ironArmor','환쇄개','S1-01','환','방어 +2',{defense:2},'조식의 상소에 이름이 오른 쇠고리 갑옷'],
 ] as const;
 for(const [id,name,stage,glyph,effect,bonus,motif] of extraItems)treasures.push({id,name,stage,glyph,effect,bonus,description:motif+'에 얽힌 보물. 전장에서 쌓은 공로로 그 인연을 이어받습니다.'});
 treasures.push(...extraTreasures,...trainingTreasures,...questTreasures);
