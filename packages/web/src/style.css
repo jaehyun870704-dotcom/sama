@@ -1377,3 +1377,5 @@ body.left-open .left-close{display:block;position:absolute;right:8px;top:8px;z-i
 #art-loading small{font-variant-numeric:tabular-nums;color:#8c9a95}#art-loading.waiting{border-color:#c2a36b;color:#f0dcae}#art-loading.waiting b:after{content:' — 누른 메뉴를 곧 엽니다'}
 /* 넓은 화면: 위쪽 가운데 대사 띠와 왼쪽 위 안내 상자가 겹쳐 대사가 가려졌다 — 대사가 떠 있는 동안 안내 상자를 그 아래로 내린다 */
 @media(min-width:901px){.map:has(#battle-line:not([hidden])) .coach{top:140px}}
+/* 가로 모바일(낮은 화면): 미니맵을 줄여 전장을 덜 가린다 */
+@media(max-height:500px) and (orientation:landscape){.tactical-minimap{width:96px!important;height:72px!important;right:8px!important;top:8px!important}.map canvas.tactical-minimap{right:8px!important;top:8px!important}}

@@ -55,7 +55,7 @@ export function hitStyle(family:string,unitClass:string,strategy?:string):HitSty
 }
 
 /** 완성 병종 원화 한 칸을 전장에 그리는 크기(px). 걷는 병종 키는 이 값의 0.6, 기마·수레·배는 0.72. */
-const TROOP_CELL_SIZE=112;
+const TROOP_CELL_SIZE=86;
 export class Battlefield {
   app=new Application();
   world=new Container();
@@ -100,6 +100,8 @@ export class Battlefield {
   private zoom=1;
   private overview=false;
   private pan={x:0,y:0};
+  /** 마우스 위치(가장자리 스크롤용, 캔버스 좌표). */
+  private edgeAt:{x:number;y:number}|undefined;
   private drag:{x:number;y:number;px:number;py:number}|undefined;
   private dragged=false;
   private hover:Coord|undefined;
@@ -142,7 +144,7 @@ export class Battlefield {
       if(fingers.has(e.pointerId))fingers.set(e.pointerId,local(e));
       if(pinch&&fingers.size===2){const {dist,mid}=spread();if(pinch.dist>0)this.zoomAt(pinch.zoom*dist/pinch.dist,mid,false);return;}
       if(this.drag){const dx=e.clientX-this.drag.x,dy=e.clientY-this.drag.y;if(Math.hypot(dx,dy)>5){this.dragged=true;clearTimeout(hold);}if(this.dragged){this.pan={x:this.drag.px+dx,y:this.drag.py+dy};this.fit();return;}}
-      if(e.pointerType!=='touch'){const at=local(e);this.setHover(this.fromPoint(at.x,at.y));}
+      if(e.pointerType!=='touch'){const at=local(e);this.edgeAt=e.pointerType==='mouse'?at:undefined;this.setHover(this.fromPoint(at.x,at.y));}
     });
     const release=(e:PointerEvent,cancel:boolean)=>{
       const was=fingers.size;fingers.delete(e.pointerId);clearTimeout(hold);
@@ -154,7 +156,13 @@ export class Battlefield {
     const spread0=()=>({x:this.app.screen.width/2,y:this.app.screen.height/2});
     canvas.addEventListener('pointerup',e=>release(e,false));
     canvas.addEventListener('pointercancel',e=>release(e,true));
-    canvas.addEventListener('pointerleave',e=>{if(!this.drag&&e.pointerType!=='touch')this.setHover(undefined);});
+    canvas.addEventListener('pointerleave',e=>{this.edgeAt=undefined;if(!this.drag&&e.pointerType!=='touch')this.setHover(undefined);});
+    // 가장자리 스크롤: 마우스를 전장 가장자리(56px 안)에 대면 그쪽으로 화면이 따라 흐른다. 가까울수록 빠르다.
+    this.app.ticker.add(t=>{const at=this.edgeAt;if(!at||this.drag||!this.state||this.busy)return;
+      const w=this.app.screen.width,h=this.app.screen.height,E=Math.min(56,w*.08,h*.1),v=(d:number)=>d<E?(1-d/E)*16*t.deltaTime:0;
+      const dx=v(at.x)-v(w-at.x),dy=v(at.y)-v(h-at.y);if(!dx&&!dy)return;
+      const before={...this.pan};this.pan={x:this.pan.x+dx,y:this.pan.y+dy};this.fit();
+      if(before.x!==this.pan.x||before.y!==this.pan.y)this.setHover(this.fromPoint(at.x,at.y));});
     // 휠로는 확대하지 않는다: 전장(배경)은 고정이고, 확대는 화면의 +/− 버튼으로만 한다.
     canvas.addEventListener('keydown',e=>{
       const moves:Record<string,Coord>={ArrowRight:{x:1,y:0},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowUp:{x:0,y:-1}};
@@ -213,7 +221,7 @@ export class Battlefield {
     const now=this.world.toGlobal(before);this.pan={x:this.pan.x+at.x-now.x,y:this.pan.y+at.y-now.y};this.fit();
   }
   /** 전장 배율은 고정: 가로로 열두 칸 반, 세로로 일곱 칸 남짓이 보이게(작은 화면은 일곱 칸). 넓은 전장은 끌어서·미니맵으로 살핀다. */
-  private fixedZoom(){const w=this.app.screen.width,h=this.app.screen.height,across=w<600?7:12.5;return Math.max(.5,Math.min(w/(across*W),h/(7*H)));}
+  private fixedZoom(){const w=this.app.screen.width,h=this.app.screen.height,across=w<600?9:w<1000?13:17;return Math.max(.5,Math.min(w/(across*W),h/(9.5*H)));}
   reset(){if(!this.state)return;this.overview=false;this.zoom=this.fixedZoom();this.fit();if(this.selected){const u=this.state.find(this.selected);if(u){this.focus(u.pos);return;}}this.focus(this.state.living('player')[0]?.pos??{x:0,y:0});}
   overviewReset(){if(!this.state)return;this.overview=true;this.zoom=crispZoom(Math.min((this.app.screen.width-40)/(this.state.map.width*W),(this.app.screen.height-70)/(this.state.map.height*H)),this.app.renderer.resolution,-1);this.pan={x:0,y:0};this.fit();}
   /** 전장은 고정이다: 전체가 보이면 움직이지 않고, 확대해 둔 상태에서 그 칸이 화면 밖일 때만 그쪽으로 옮긴다(확대 배율은 그대로). */
