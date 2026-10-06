@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { filterTreasures, defaultFilter } from "../src/treasure-codex.ts";
-import { formOf, FORMS, relicIcon, treasureIcon } from "../src/treasure-art.ts";
+import { EXTRA_TREASURE_SHEETS, TREASURE_ART, formOf, FORMS, relicIcon, treasureIcon } from "../src/treasure-art.ts";
 import { treasures } from "../src/progression.ts";
 import { RELICS } from "../src/roguelike.ts";
 
@@ -23,10 +23,13 @@ describe("보물 도감 필터", () => {
   it("모든 보물의 형태는 그 보물 칸(무기·방어구·보조구)에 속한다", () => {
     for (const t of treasures) expect(FORMS.find((f) => f.id === formOf(t.id))!.slot).toBe(t.slot ?? FORMS.find((f) => f.id === formOf(t.id))!.slot);
   });
-  it("그림 판 밖의 보물은 준비 중 패, 같은 이름의 회차 보물은 판 그림", () => {
-    expect(treasureIcon("lionHelm")).toContain("pending");
-    expect(treasureIcon("yitian")).not.toContain("pending");
+  it("그림 판 밖의 보물과 회차 보물도 모두 추가 그림판에 등록한다", () => {
+    expect(EXTRA_TREASURE_SHEETS.flat()).toHaveLength(66);
+    expect(TREASURE_ART.size).toBe(66);
+    for(const t of treasures)expect(treasureIcon(t.id),t.id).not.toContain("pending");
+    for(const r of RELICS)expect(relicIcon(r.id,r.name),r.id).not.toContain("pending");
+    expect(treasureIcon("lionHelm")).toContain("treasures-extra-02-v1.png");
+    expect(relicIcon("whetstone", "숫돌")).toContain("treasures-extra-05-v1.png");
     expect(relicIcon("drum", "진군고")).not.toContain("pending");
-    expect(relicIcon("whetstone", "숫돌")).toContain("pending");
   });
 });

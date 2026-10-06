@@ -3,8 +3,8 @@
  *
  * 그림은 두 곳에서 온다.
  *  · 그림 판 treasures-v2.png(6×10): 처음 60점. 칸 번호는 core treasurePowers의 순서.
- *  · 낱장 public/treasures/<id>.webp: 판 밖의 보물과 회차 보물. 그림을 넣으면 TREASURE_ART에 id를 적는다.
- * 그림이 아직 없는 보물은 형태 글자를 담은 등급 테두리 패로 보인다.
+ *  · 추가 그림판 treasures-extra-01~06-v1.png(3×4): 판 밖의 보물과 회차 보물.
+ * 그림이 없는 새 보물은 형태 글자를 담은 등급 테두리 패로 안전하게 돌아간다.
  */
 import {treasureInfo,type GearSlot} from './progression.ts';
 
@@ -49,13 +49,31 @@ export const RELIC_GRADE:Record<string,number>={whetstone:1,lamellar:1,drum:1,he
 /** 회차 보물 가운데 같은 물건이 그림 판에 있는 것(판의 장착 보물 id). */
 const RELIC_ATLAS:Record<string,string>={drum:'warDrum',sunzi:'sunzi'};
 
-/** 낱장 그림이 있는 보물·회차 보물 id(public/treasures/<id>.webp). */
-export const TREASURE_ART:ReadonlySet<string>=new Set<string>([]);
+/**
+ * 기존 6×10 그림판 밖의 56개 장착 보물과, 기존 그림을 공유하지 않는 회차 보물 10개.
+ * 각 배열은 추가 그림판 한 장의 왼쪽 위부터 가로 3칸씩 읽는 순서다.
+ */
+export const EXTRA_TREASURE_SHEETS=[
+  ['rattanShield','hujia','meteorHammer','phoenixHelm','hookSpear','baguaMirror','purpleGourd','bearCloak','phoenixHairpin','swiftBoots','zhanmaDao','tigerShield'],
+  ['lionHelm','tortoiseToken','bronzeSword','hornBowSmall','hideShield','strawCape','copperBell','travelPouch','ringBlade','ironRod','lamellarVest','wolfHelm'],
+  ['bambooSlips','ponyBridle','snakeBlade','armorPiercer','boltQuiver','mountainArmor','fireproofRobe','beaconToken','wuhuanBow','cavalrySaber','feltArmor','horseBarding'],
+  ['eagleFeather','nomadSteed','poisonDarts','tuskSpear','rattanHelm','shuBrocade','bronzeDrum','spiritBead','initiateBadge','sharpSpearhead','riverShield','summitBanner'],
+  ['gatekeeperHalberd','gatekeeperArmor','courtSeal','cliffSandals','fordHorse','hundredPaceBow','peerlessSword','overlordArmor','relic-whetstone','relic-lamellar','relic-warhorse','relic-banner'],
+  ['relic-herbs','relic-quiver','relic-xiaoheLedger','relic-yuJade','relic-bawangJi','relic-huangshi'],
+] as const;
+type ExtraArt={sheet:number;cell:number};
+const EXTRA_ART=new Map<string,ExtraArt>(EXTRA_TREASURE_SHEETS.flatMap((items,sheet)=>items.map((id,cell)=>[id,{sheet,cell}] as const)));
+/** 실제 그림이 등록된 추가 보물·회차 보물 id. */
+export const TREASURE_ART:ReadonlySet<string>=new Set(EXTRA_ART.keys());
 
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const EDGES=[0,150,306,458,610,764,919,1072,1228,1387,1619];
 function atlasIcon(i:number){const row=Math.floor(i/6),top=EDGES[row]!,height=EDGES[row+1]!-top;return `<i class="treasure-icon" style="background-size:600% ${1619/height*100}%;background-position:${i%6/5*100}% ${top/(1619-height)*100}%"></i>`;}
-const sheetIcon=(key:string)=>`<i class="treasure-icon sheet" style="background-image:url(treasures/${encodeURIComponent(key)}.webp)"></i>`;
+const sheetIcon=(key:string)=>{
+  const art=EXTRA_ART.get(key);if(!art)return '';
+  const col=art.cell%3,row=Math.floor(art.cell/3);
+  return `<i class="treasure-icon sheet" style="background-image:url(treasures-extra-${String(art.sheet+1).padStart(2,'0')}-v1.png);background-size:300% 400%;background-position:${col*50}% ${row*100/3}%;background-repeat:no-repeat"></i>`;
+};
 const pendingIcon=(glyph:string,grade:number,label:string)=>`<i class="treasure-icon pending g${grade}" title="${esc(label)} · 그림 준비 중">${esc(glyph)}</i>`;
 
 /** 장착 보물의 그림. */
