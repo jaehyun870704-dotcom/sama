@@ -44,8 +44,8 @@ export function isolateFrames(source:AtlasPixels,rows:number,columns=4,union=fal
     }
     const cellAt=(x:number,y:number)=>rowOf[y]!*columns+colOf[rowOf[y]!]![x]!;
     // 실루엣(연결 덩어리)은 무게중심이 든 칸에 통째로 준다: 이웃 행의 발끝·창끝이 남의 칸에 끼지 않는다.
-    // 두 칸을 넘게 걸친 덩어리(붙어 버린 두 병사)만 경계선으로 자른다. 먼지 같은 아주 작은 조각은 버린다.
-    const queue=new Int32Array(width*height),compCell=[-1];
+    // 칸을 크게 넘게 걸친 덩어리(붙어 버린 두 병사)만 경계선으로 자른다. 먼지 같은 아주 작은 조각은 버린다.
+    const queue=new Int32Array(width*height),compCell=[-1],compArea=[0];
     let id=0;
     for(let start=0;start<labels.length;start++){
       if(labels[start]||!solid(start))continue;
@@ -59,8 +59,29 @@ export function isolateFrames(source:AtlasPixels,rows:number,columns=4,union=fal
       }
       const cx=Math.round(sx/tail),cy=Math.round(sy/tail),row=rowOf[cy]!;
       const bandH=rowLines[row+1]!-rowLines[row]!,colW=width/columns;
-      compCell.push(tail<16?-2:(b-t+1)<=bandH*1.25&&(r-l+1)<=colW*1.25?cellAt(cx,cy):-1);
+      // 가로는 1.5칸까지 한 덩어리로 본다: 긴 창을 내지른 병사(1.26칸)가 경계선에서 잘려 창 뒤쪽이 옆 칸으로 가던 문제. 붙어 버린 두 병사는 2칸 가까이 된다.
+      compCell.push(tail<16?-2:(b-t+1)<=bandH*1.25&&(r-l+1)<=colW*1.5?cellAt(cx,cy):-1);compArea.push(tail);
     }
+    // 떨어져 나온 조각(창대·창끝·날아가는 돌)은 무게중심이 아니라 가장 가까운 몸통의 칸으로 보낸다.
+    // 경계를 넘는 긴 창은 무게중심이 이웃 칸에 떨어져 공격 동작의 창이 사라지고 옆 칸에 창만 떠 있었다.
+    const anchor=new Int32Array(rows*columns);
+    for(let c=1;c<=id;c++){const cell=compCell[c]!;if(cell>=0&&compArea[c]!>compArea[anchor[cell]!]!)anchor[cell]=c;}
+    const anchorCell=new Int16Array(id+1).fill(-1);
+    anchor.forEach((c,cell)=>{if(c)anchorCell[c]=cell;});
+    const near=new Int16Array(width*height).fill(-1),dist=new Int32Array(width*height);
+    let head=0,tail=0;
+    for(let p=0;p<labels.length;p++){const c=anchorCell[labels[p]!]!;if(labels[p]&&c>=0){near[p]=c;queue[tail++]=p;}}
+    while(head<tail){
+      const p=queue[head++]!,x=p%width;
+      // 행 경계는 넘지 않는다: 아래 행의 돌이 위 행 투석기에 붙지 않게.
+      for(const q of [x>0?p-1:-1,x<width-1?p+1:-1,p-width,p+width]){if(q<0||q>=near.length||near[q]!>=0||rowOf[(q-q%width)/width]!==rowOf[(p-x)/width])continue;near[q]=near[p]!;dist[q]=dist[p]!+1;queue[tail++]=q;}
+    }
+    const best=new Int32Array(id+1).fill(-1);
+    for(let p=0;p<labels.length;p++){
+      const c=labels[p]!;if(!c||compCell[c]!<0||anchorCell[c]!>=0)continue;
+      if(best[c]!<0||dist[p]!<dist[best[c]!]!)best[c]=p;
+    }
+    for(let c=1;c<=id;c++)if(best[c]!>=0&&near[best[c]!]!>=0)compCell[c]=near[best[c]!]!;
     const cellOf=new Int16Array(width*height).fill(-1);
     for(let p=0;p<labels.length;p++){
       const c=labels[p]?compCell[labels[p]!]!:-2;if(c===-2)continue;

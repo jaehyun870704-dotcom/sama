@@ -36,4 +36,36 @@ describe('isolateFrames union',()=>{
     expect(alphas).toContain(255);expect(alphas).toContain(120);
     expect(clean.data[3]).toBe(0); // 먼 배경 안개는 남지 않는다.
   });
+
+  // 실제 4단계 시트에서 나온 두 오류의 재현: 경계를 넘어 내지른 창, 경계 근처를 날아가는 돌.
+  const strictSheet=(paint:(put:(x:number,y:number,rgb:[number,number,number])=>void)=>void)=>{
+    const width=400,height=100,data=new Uint8ClampedArray(width*height*4);
+    const put=(x:number,y:number,[r,g,b]:[number,number,number])=>{const i=(y*width+x)*4;data[i]=r;data[i+1]=g;data[i+2]=b;data[i+3]=255;};
+    const body=(x0:number,x1:number)=>{for(let y=40;y<90;y++)for(let x=x0;x<=x1;x++)put(x,y,[40,60,180]);};
+    body(30,80);body(330,380);paint(put);
+    return isolateFrames({width,height,data},1,4,false,240,true);
+  };
+  const redIn=(img:{width:number;height:number;data:Uint8ClampedArray},cell:number)=>{
+    const cw=img.width/4;let n=0;
+    for(let y=0;y<img.height;y++)for(let x=cell*cw;x<(cell+1)*cw;x++){const i=(y*img.width+x)*4;if(img.data[i+3]!>200&&img.data[i]!>150&&img.data[i+2]!<100)n++;}
+    return n;
+  };
+  it('keeps a spear that reaches past the cell line with the soldier holding it',()=>{
+    const img=strictSheet(put=>{
+      for(let y=40;y<90;y++)for(let x=125;x<=175;x++)put(x,y,[40,60,180]);
+      for(let y=60;y<63;y++)for(let x=150;x<=255;x++)put(x,y,[220,40,40]); // 1.3칸 너비가 되는 창
+      for(let y=40;y<90;y++)for(let x=262;x<=300;x++)put(x,y,[40,60,180]);
+    });
+    expect(redIn(img,1)).toBeGreaterThan(0);
+    expect(redIn(img,2)).toBe(0);
+  });
+  it('gives a detached projectile to the nearest body, not the cell holding its centre',()=>{
+    const img=strictSheet(put=>{
+      for(let y=40;y<90;y++)for(let x=130;x<=185;x++)put(x,y,[40,60,180]);
+      for(let y=10;y<21;y++)for(let x=205;x<=221;x++)put(x,y,[220,40,40]); // 경계 너머에 무게중심이 있는 돌
+      for(let y=40;y<90;y++)for(let x=262;x<=300;x++)put(x,y,[40,60,180]);
+    });
+    expect(redIn(img,1)).toBeGreaterThan(0);
+    expect(redIn(img,2)).toBe(0);
+  });
 });
