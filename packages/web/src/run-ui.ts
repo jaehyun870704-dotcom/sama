@@ -76,13 +76,12 @@ const actTrack=(run:Run)=>`<div class="run-track" aria-label="원정 진행">${[
 export function showHub(host:RunHost){
   const meta=loadMeta(),sc=scenarioSummary(),done=sc.state.done.length;
   host.modal(`<div class="campaign run-hub"><div class="campaign-art"><img src="sima-portrait-v2.webp" alt="부채를 든 사마의 창작 초상"><div class="art-caption">사 마 의 <span>천명은 기다리는 자에게 온다</span></div></div>
-  <div class="campaign-copy"><div class="eyebrow">삼국지 · 전략 연대기</div><p class="chapter-pretitle">사마의전 · 연의와 가상의 천하</p><h2>사마의전</h2><p class="tagline">칼을 거두고, 때를 기다린다.</p>
+  <div class="campaign-copy"><h2>사마의전</h2><p class="tagline">칼을 거두고, 때를 기다린다.</p>
   <div class="hub-stats"><span><b>${done}</b><small>마친 장</small></span><span><b>${esc(sc.tag)}</b><small>지금</small></span><span><b>${meta.endings.length}/${ALL_ENDINGS.length}</b><small>본 결말</small></span><span><b>${meta.mandate}</b><small>천명</small></span></div>
   ${runBoard(sc.state,meta)}
   ${treasurePanel()}
   <div class="hub-actions"><button id="hub-scenario" class="primary">${done?'천명의 길 이어하기':'천명의 길 시작'}${sc.state.run?` · 제${sc.state.run.no}회차`:''} · ${esc(sc.tag)} 「${esc(sc.title)}」</button>
-  <button id="hub-quests">반복 퀘스트 <small>원정 · 수련 · 회상</small></button>${host.resumeSaved?'<button id="hub-resume">전투 이어하기</button>':''}<button id="hub-codex">삼국지 인물열전 <small>장수 · 병종 · 책략</small></button><button id="hub-research">연구 <small>전투 · 내정 · 편성</small></button><button id="hub-custom">신장수 · 신세력</button><button id="hub-slots">저장 칸</button><button id="hub-troops">병종 진화표 <small>기본→정예→최정예→전설</small></button><button id="hub-officers">장수 · 연의 장수록</button><button id="hub-fate">갈림길 지도 <small>정사 · 가상 · 신세력</small></button></div>
-  <p class="prototype-note">기록은 이 브라우저에 저장됩니다.</p></div></div>`,false);
+  <button id="hub-quests">반복 퀘스트</button>${host.resumeSaved?'<button id="hub-resume">전투 이어하기</button>':''}<button id="hub-codex">삼국지 인물열전</button><button id="hub-research">연구</button><button id="hub-custom">신장수 · 신세력</button><button id="hub-slots">저장 칸</button><button id="hub-troops">병종 진화표</button><button id="hub-officers">장수 · 연의 장수록</button><button id="hub-fate">갈림길 지도</button></div></div></div>`,false);
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
   on('hub-scenario',host.showScenario);on('hub-quests',()=>showQuests(host));on('hub-custom',()=>showCustomEditor(host,()=>showHub(host)));
   const codex=()=>showCodex({modal:host.modal,toast:host.toast,back:()=>showHub(host),research:()=>research()}),research=()=>showResearch({modal:host.modal,toast:host.toast,back:()=>showHub(host),codex});

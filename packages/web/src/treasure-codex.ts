@@ -91,7 +91,7 @@ export function treasurePanel(){
   const owned=treasures.filter(t=>h.owned.has(t.id)).sort((a,b)=>treasureInfo(b.id).grade-treasureInfo(a.id).grade).slice(0,8);
   const relics=RELICS.filter(r=>h.relics.has(r.id));
   return `<section class="hub-treasure"><div class="section-label">보물 <span>장착 ${s.owned}/${s.total} · 회차 ${s.relics}/${s.relicTotal}</span></div>
-    <div class="hub-treasure-row">${owned.length?owned.map(t=>`<button class="hub-treasure-item g${treasureInfo(t.id).grade}" data-treasure="${t.id}" title="${esc(t.effect)}">${treasureIcon(t.id)}<b>${esc(t.name)}</b></button>`).join(''):'<p class="muted">아직 가진 장착 보물이 없다. 연의 전장을 이기면 그 장의 보물을, 보물 외전을 처음 이기면 네 점을 얻는다.</p>'}
+    <div class="hub-treasure-row">${owned.length?owned.map(t=>`<button class="hub-treasure-item g${treasureInfo(t.id).grade}" data-treasure="${t.id}" title="${esc(t.effect)}">${treasureIcon(t.id)}<b>${esc(t.name)}</b></button>`).join(''):'<p class="muted">아직 보물이 없다. 전투에서 이기면 얻는다.</p>'}
     ${relics.map(r=>`<span class="hub-treasure-item relic" title="${esc(r.effect)}">${relicIcon(r.id,r.name)}<b>${esc(r.name)}</b></span>`).join('')}</div>
     <button id="hub-treasures" class="hub-treasure-more">보물 도감 보기 ▶</button></section>`;
 }

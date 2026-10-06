@@ -256,7 +256,7 @@ function showOfficerGallery(pick?:string){menuOpen=true;clearTimeout(aiTimer);
   $('#officer-back').onclick=showMenu;}
 function showTroopGallery(group:EvoGroup='all'){
  menuOpen=true;clearTimeout(aiTimer);
- modal(`<div class="briefing troop-evolution"><div class="eyebrow">병종 · 진화표</div><h2>병종은 이렇게 강해진다</h2><p class="muted">모든 전투 계통은 기본 → 정예 → 최정예 → 전설의 네 단계로 진화한다. 레벨이 기준에 닿으면 전투 중에도 다음 단계가 되어 능력치가 오르고(▲), 개화 스킬이 붙는다. 계통별 무기는 바뀌지 않고 갑옷·말·기계 장식이 발전한다.</p>${evolutionChart(group)}<div class="modal-actions"><button id="troop-back">← 본영</button></div></div>`,false);
+ modal(`<div class="briefing troop-evolution"><div class="eyebrow">병종 · 진화표</div><h2>병종은 이렇게 강해진다</h2><p class="muted">레벨이 오르면 기본 → 정예 → 최정예 → 전설로 진화한다.</p>${evolutionChart(group)}<div class="modal-actions"><button id="troop-back">← 본영</button></div></div>`,false);
  document.querySelectorAll<HTMLButtonElement>('[data-evo-group]').forEach(b=>b.onclick=()=>showTroopGallery(b.dataset.evoGroup as EvoGroup));
  void paintArmor();$('#troop-back').onclick=showMenu;
 }
@@ -428,7 +428,7 @@ function renderUnit(u:Unit|undefined){
   $('#unit-detail').innerHTML=`<div class="uc"><div class="uc-head"><div class="portrait uc-face"><div>${faceFor(u)}</div><span class="portrait-tag">${sideNames[u.side]}</span></div><div class="uc-id"><h2>${unitName(u)}</h2><small>${classNames[u.unitClass]} · Lv.${u.level}${r?.epithet?` · ${r.epithet}`:''}</small>${[['hp','체력',u.hp,u.stats.maxHp],['mp','책략',u.mp,u.stats.maxMp],...xpBar(u).map(([k,,v,m])=>[k,'경험',v,m] as [string,string,number,number])].map(([kind,name,value,max])=>`<div class="uc-bar ${kind}"><span>${name}</span><i><i style="width:${Number(value)/Math.max(1,Number(max))*100}%"></i></i><b>${value}<small>/${max}</small></b></div>`).join('')}</div></div>
     <div class="uc-stats"${ab?` title="순발력 ${u.stats.agility} · 사기 ${u.stats.morale} · 정신력 ${u.stats.spirit}"`:''}>${statCells.map(([k,v])=>`<div><small>${k}</small><b>${v}</b></div>`).join('')}</div>
     ${temper||traits.length?`<div class="uc-traits">${temper?`<span class="uc-chip temper" title="일기토·설전에 응하는 방식">성격 · ${temperNames[temper]}</span>`:''}${traits.map(t=>`<span class="uc-chip${t.on?'':' locked'}" title="${t.d.replace(/"/g,'&quot;')}">${t.on?'◆':'◇'} ${t.n}</span>`).join('')}</div>`:''}
-    ${u.strategies.length?`<div class="uc-strats"><div class="uc-label">책략 <small>눌러서 고른 뒤 지도에서 대상을 누르세요</small></div><div class="uc-strat-list">${strategyChips}</div></div>`:''}
+    ${u.strategies.length?`<div class="uc-strats"><div class="uc-label">책략</div><div class="uc-strat-list">${strategyChips}</div></div>`:''}
     <p class="uc-tip">${classTactics(u.unitClass).map(t=>`전법 「${t.name}」`).join(' · ')}${classTactics(u.unitClass).length?' · ':''}일반 공격 사거리 ${u.range[0]}~${u.range[1]} · ${REACH_NAMES[reachShape(u.unitClass)]}${u.statuses.length?` · <b>${u.statuses.map(x=>(STATUS_NAMES[x.kind]??x.kind)+' '+x.turns+'턴').join(' · ')}</b>`:''}</p></div>`;
   const buttons=[{id:'move',name:'이동',icon:'➶',meta:'1',disabled:u.hasMoved},{id:'attack',name:'공격',icon:'⚔',meta:'2',disabled:u.unitClass==='civilian'},...u.strategies.map(id=>{const d=s.strategyFor(u,id)!;return {id,name:d.name,icon:`<img src="${strategyIconUrl(id,d.tier??1)}" alt="">`,meta:d.mpCost+' MP',disabled:u.mp<d.mpCost||s.hasStatus(u,'seal')};}),{id:'wait',name:'대기',icon:'◷',meta:'W',disabled:false}];
   if(session.deployment&&familyOf(u.unitClass)==='fengshui')buttons.push({id:'heal',name:'치유',icon:'치',meta:'8 MP',disabled:u.mp<8||s.hasStatus(u,'seal')});

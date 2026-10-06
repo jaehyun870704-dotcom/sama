@@ -6,7 +6,7 @@ const meta={mandate:7} as MetaState;
 describe('본영 로그라이크 진행판',()=>{
   it('explains the roguelike loop before the first run',()=>{
     const html=runBoard(freshScenario(),meta);
-    for(const word of ['회차마다 처음부터','행군로 세 갈래','체력·보물이 이어진다','천명'])expect(html).toContain(word);
+    for(const word of ['회차마다','행군로 세 갈래','체력·보물이 이어진다','천명'])expect(html).toContain(word);
   });
   it('shows the run number, the current chapter, the pending march choices, relics and wounds',()=>{
     const s=readScenario(JSON.stringify({version:1,route:{},done:['S1-01','S1-02'],flags:[],choices:{},officers:{},paths:{},run:{seed:123,no:2,hp:{'조진':0.4},relics:['whetstone'],fallen:[],marched:['S1-01'],guard:true,nodes:1,status:'alive',bonus:3}}));

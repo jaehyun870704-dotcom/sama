@@ -23,7 +23,6 @@ describe('dedicated troop art',()=>{
     expect([8,9,10,11].map(f)).toEqual([3,0,3,0]);
   });
 });
-import {lookText} from '../src/troop-evolution.ts';
 import {hasPaintedMotion} from '../src/troops.ts';
 import {paintedFrames,paintedTroopSheets,POSE} from '../src/painted-troops.ts';
 import {fourStageCorrectionRows} from '../src/complete-troops.ts';
@@ -35,9 +34,6 @@ describe('완성 원화만 쓰는 병종 그림',()=>{
     ]);
     expect(paintedTroopSheets.every(s=>s.url.startsWith('troops-four-stage-'))).toBe(true);
     expect(paintedFrames('four-stage-infantry')).toBe(POSE);
-  });
-  it('describes every tier as the complete art itself, not armor overlays',()=>{
-    for(const c of ['rattan','rattanElite','wuguoRattan','elephantKing'] as const){const t=lookText(c);expect(t).toContain('완성 원화');expect(t).not.toMatch(/강철|금빛/);}
   });
   it('lets the battlefield use the painted walk and facing frames',()=>{
     expect(hasPaintedMotion('rattan')).toBe(true);expect(hasPaintedMotion('wuguoRattan')).toBe(true);

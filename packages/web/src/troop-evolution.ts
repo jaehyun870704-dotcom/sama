@@ -17,18 +17,13 @@ export const EVO_GROUPS:Array<[EvoGroup,string,string[]]>=[
 const TIER_NAME=['','기본','정예','최정예','전설','신화'];
 const KEY:Array<[keyof ReturnType<typeof profileOf>,string]>=[['hp','체력'],['attack','공격'],['defense','방어'],['intellect','지력'],['spirit','정신'],['agility','순발']];
 
-/** 단계마다 겉모습: 모든 병종이 완성 원화를 쓰고, 단계 장비는 그 원화에 이미 그려져 있다. */
-export function lookText(c:UnitClass){
-  const t=tierOf(c);
-  return `완성 원화 그대로 · ${t<=1?'기본 차림':t===2?'정예 장비':t===3?'최정예 장비':'전설 장비'}`;
-}
 function card(c:UnitClass,lv:number,prev?:UnitClass){
   const p=profileOf(c),q=prev?profileOf(prev):undefined,v=VARIANTS[c],t=tierOf(c);
   const stat=KEY.map(([k,label])=>{const n=p[k] as number,d=q?n-(q[k] as number):0;return `<span><small>${label}</small><b>${n.toFixed(2)}</b>${d>0.004?`<em>▲${d.toFixed(2)}</em>`:''}</span>`;}).join('');
   const more=[q&&p.movement>q.movement?`이동 ${q.movement}→${p.movement}`:'',q&&(p.range[1]>q.range[1]||p.range[0]<q.range[0])?`사거리 ${q.range[0]}~${q.range[1]}→${p.range[0]}~${p.range[1]}`:'',!q?`이동 ${p.movement} · 사거리 ${p.range[0]}~${p.range[1]}`:''].filter(Boolean).join(' · ');
   const skill=v?.bloom?`<p class="evo-skill"><b>개화 「${esc(v.bloom.name)}」</b> ${esc(v.bloom.description)}</p>`:classTactics(c).slice(0,1).map(x=>`<p class="evo-skill"><b>전법 「${esc(x.name)}」</b> ${esc(x.description)}</p>`).join('');
   return `<article class="evo-card t${t}"><div class="evo-top">${classSprite(c)}<div><small>${'◆'.repeat(t)} ${TIER_NAME[t]}${lv?` · Lv.${lv}에 진화`:' · 처음부터'}</small><h4>${esc(classNames[c]??c)}</h4></div></div>
-    <div class="evo-stats">${stat}</div>${more?`<p class="evo-more">${more}</p>`:''}${skill}<p class="evo-look">겉모습 · ${esc(lookText(c))}</p></article>`;
+    <div class="evo-stats">${stat}</div>${more?`<p class="evo-more">${more}</p>`:''}${skill}</article>`;
 }
 export function evolutionChart(group:EvoGroup='all'){
   const fams=EVO_GROUPS.find(g=>g[0]===group)![2];

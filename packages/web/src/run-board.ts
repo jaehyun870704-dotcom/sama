@@ -16,7 +16,7 @@ const marchAfter=(a:ScenarioStep,b:ScenarioStep|undefined)=>!!b&&a.kind!=='fate'
 export function runBoard(state:ScenarioState,meta:MetaState){
   const run=state.run;
   if(!run)return `<section class="rogue-board fresh"><header><b>로그라이크 · 천명의 길</b><span class="rogue-status">아직 회차 없음</span></header>
-    <ul class="rogue-rules"><li><i>회</i><span><b>회차마다 처음부터</b>189년 하내에서 사마의의 일생을 다시 시작</span></li><li><i>갈</i><span><b>장 사이 행군로 세 갈래</b>전투·정예·모병·의원·보물고·수련 중 하나</span></li><li><i>보</i><span><b>체력·보물이 이어진다</b>쓰러진 장수는 중상으로 돌아온다</span></li><li><i>천</i><span><b>천명으로 영구 해금</b>회차가 끝나면 천명 정산</span></li></ul></section>`;
+    <p class="rogue-oneline">회차마다 189년부터 다시 · 장 사이 행군로 세 갈래 · 체력·보물이 이어진다 · 끝나면 천명</p></section>`;
   const path=scenarioPath(state),done=new Set(state.done),cur=currentStep(state),at=cur?path.findIndex(x=>x.id===cur.id):path.length;
   const from=Math.max(0,at-3),to=Math.min(path.length,at+5),cells:string[]=[];
   for(let i=from;i<to;i++){
