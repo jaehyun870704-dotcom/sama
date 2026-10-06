@@ -9,7 +9,7 @@
 import type { Unit } from "./types.ts";
 import type { BattleMap } from "./grid.ts";
 import { familyOf } from "./classes.ts";
-import { manhattan } from "./grid.ts";
+import { engageDistance } from "./reach.ts";
 
 export interface ClassTactic {
   /** 전법 이름 (발동하면 전장에 외친다) */
@@ -27,9 +27,9 @@ const ROUGH = new Set(["forest", "mountain", "hill"]);
 
 const OFFENSE: Partial<Record<string, OffenseRule>> = {
   cavalry: { name: "돌격", description: "이번 차례에 3칸 이상 달려와 근접 공격하면 피해 20% 증가", mul: 1.2,
-    when: (a, d, _m, counter) => !counter && moved(a) >= 3 && manhattan(a.pos, d.pos) === 1 },
+    when: (a, d, _m, counter) => !counter && moved(a) >= 3 && engageDistance(a.pos, d.pos) === 1 },
   heavyCav: { name: "돌진", description: "이번 차례에 2칸 이상 밀고 들어와 근접 공격하면 피해 15% 증가", mul: 1.15,
-    when: (a, d, _m, counter) => !counter && moved(a) >= 2 && manhattan(a.pos, d.pos) === 1 },
+    when: (a, d, _m, counter) => !counter && moved(a) >= 2 && engageDistance(a.pos, d.pos) === 1 },
   horseArcher: { name: "기사", description: "말을 달린 뒤 쏘면 피해 10% 증가", mul: 1.1,
     when: (a, _d, _m, counter) => !counter && moved(a) >= 1 },
   spearman: { name: "창벽", description: "반격할 때 피해 15% 증가", mul: 1.15,
@@ -41,7 +41,7 @@ const OFFENSE: Partial<Record<string, OffenseRule>> = {
   bandit: { name: "매복", description: "숲·구릉·산지에서 공격하면 피해 15% 증가", mul: 1.15,
     when: (a, _d, map) => ROUGH.has(map.tileAt(a.pos).terrain) },
   monk: { name: "권법", description: "근접 반격할 때 피해 15% 증가", mul: 1.15,
-    when: (a, d, _m, counter) => counter && manhattan(a.pos, d.pos) === 1 },
+    when: (a, d, _m, counter) => counter && engageDistance(a.pos, d.pos) === 1 },
 };
 const DEFENSE: Partial<Record<string, DefenseRule>> = {
   infantry: { name: "방진", description: "직전 차례에 자리를 지켰으면 받는 물리 피해 10% 감소", mul: 0.9,

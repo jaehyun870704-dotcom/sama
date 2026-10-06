@@ -17,7 +17,7 @@ import {crispZoom,groundScaleMode,unitTint} from './pixel-look.ts';
 import {dyeOfSide,dyePixels,clothBand,needsDye,type Dye} from './dye.ts';
 import {armorFrame,MOUNTED_FAMILIES,ROBE_FAMILIES,MACHINE_FAMILIES,type ArmorTier} from './armor.ts';
 import type {LogEntry} from '../../core/src/index.ts';
-import { key, manhattan, ignoresRough, tierOf, familyOf, strategyArea } from '../../core/src/index.ts';
+import { key, manhattan, ignoresRough, tierOf, familyOf, strategyArea, inReach } from '../../core/src/index.ts';
 import type { BattleState, Coord, Unit, TerrainKind } from '../../core/src/index.ts';
 
 const W=48,H=48;
@@ -314,7 +314,7 @@ export class Battlefield {
       if(mode==='heal'&&familyOf(u.unitClass)==='fengshui')for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){if(manhattan(u.pos,{x,y})<=3){const p=iso({x,y});diamond(this.ranges,p.x,p.y,0x83e8b2,.22);}}
       if(mode==='move'&&!u.hasMoved){const reach=state.map.reachable(u,state.occupancy(),ignoresRough(u));for(const k of reach.keys()){const [x,y]=k.split(',').map(Number);const p=iso({x:x!,y:y!});tileMark(this.ranges,p.x,p.y,0x2f86d8,0x9fd4ff);}}
       else if(mode==='attack'||mode==='duel'||mode==='debate'||state.strategies.has(mode)){
-        const def=state.strategyFor(u,mode);for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){const d=manhattan(u.pos,{x,y});if(d<=(def?.range??(mode==='debate'?3:mode==='duel'?1:u.range[1]))&&d>=(def?0:u.range[0])){const p=iso({x,y});tileMark(this.ranges,p.x,p.y,def?0xc89a3a:0xd0442e,def?0xffe3a0:0xffa088,.36);}}
+        const def=state.strategyFor(u,mode);for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++){const d=manhattan(u.pos,{x,y});if(def||mode!=='attack'?d<=(def?.range??(mode==='debate'?3:1)):inReach(u,u.pos,{x,y})){const p=iso({x,y});tileMark(this.ranges,p.x,p.y,def?0xc89a3a:0xd0442e,def?0xffe3a0:0xffa088,.36);}}
       }
     }
     if(!this.busy){

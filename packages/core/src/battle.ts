@@ -12,6 +12,7 @@ import { DialogueScript } from "./dialogue.ts";
 import { runEvents } from "./events.ts";
 import { evaluateGroup } from "./conditions.ts";
 import { manhattan, key, sameCoord, adjacent, isHostile } from "./grid.ts";
+import { inReach, reachShape, REACH_NAMES } from "./reach.ts";
 import { CONTROLLABLE } from "./types.ts";
 import type { Unit, Coord, StrategyDef } from "./types.ts";
 import { decide } from "./ai.ts";
@@ -126,8 +127,7 @@ export class Battle {
     if (a.hasActed) return fail("이미 행동함");
 
     const dist = manhattan(a.pos, d.pos);
-    const [minR, maxR] = a.range;
-    if (dist < minR || dist > maxR) return fail(`사거리 밖 (거리 ${dist}, 사거리 ${minR}~${maxR})`);
+    if (!inReach(a, a.pos, d.pos)) return fail(`사거리 밖 (거리 ${dist}, 사거리 ${a.range[0]}~${a.range[1]} · ${REACH_NAMES[reachShape(a.unitClass)]})`);
 
     this.strike(a, d, false);
 
@@ -135,7 +135,7 @@ export class Battle {
     a.hasMoved = true;
 
     // 반격: 생존 + 사거리 내 + 무반격 아님 + 반격 횟수 잔여
-    if (d.alive && a.alive && this.canCounter(d, a, dist)) {
+    if (d.alive && a.alive && this.canCounter(d, a)) {
       this.strike(d, a, true);
       this.counters.set(d.id, (this.counters.get(d.id) ?? 0) + 1);
     }
@@ -257,13 +257,12 @@ export class Battle {
 
   /** Would `defender` strike back if `attacker` hit it from where it stands now? For previews. */
   wouldCounter(defender: Unit, attacker: Unit): boolean {
-    return this.canCounter(defender, attacker, manhattan(attacker.pos, defender.pos));
+    return this.canCounter(defender, attacker);
   }
 
-  private canCounter(defender: Unit, attacker: Unit, dist: number): boolean {
+  private canCounter(defender: Unit, attacker: Unit): boolean {
     if (defender.unitClass === 'civilian') return false;
-    const [minR, maxR] = defender.range;
-    if (dist < minR || dist > maxR) return false;
+    if (!inReach(defender, defender.pos, attacker.pos)) return false;
     const context=createDamageContext(attacker,defender,"physical");applyTraitHooks(context);
     if (context.suppressCounter) return false;
     const used = this.counters.get(defender.id) ?? 0;

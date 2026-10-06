@@ -50,7 +50,7 @@ import { Session, chapters, campaignOrder, type Preparation } from './session.ts
 import { Battlefield, classNames, terrainNames, unitName } from './battlefield.ts';
 import { Soundscape } from './audio.ts';
 import {placeFor,bossNear} from './music.ts';
-import { CONTROLLABLE, ignoresRough, awardedSeals, estimatePhysical, estimateStrategy, previewAttack, doubleAttackChance, manhattan, tierOf, familyOf, classTactics, STRATEGY_TIER_NAMES } from '../../core/src/index.ts';
+import { CONTROLLABLE, ignoresRough, awardedSeals, estimatePhysical, estimateStrategy, previewAttack, doubleAttackChance, manhattan, inReach, reachShape, REACH_NAMES, tierOf, familyOf, classTactics, STRATEGY_TIER_NAMES } from '../../core/src/index.ts';
 import type { BattleState, Command, Coord, LogEntry, TerrainKind, Unit } from '../../core/src/index.ts';
 import {strategyIconUrl} from './strategy-icons.ts';
 
@@ -351,7 +351,7 @@ function hudHover(at:Coord|undefined){
   if(!left&&t){left={u:t};right=undefined;}
   if(u&&t&&right&&t.side==='enemy'){const d=manhattan(u.pos,t.pos),def=s.strategyFor(u,mode);
     if(def&&d<=def.range){const dmg=estimateStrategy(u,t,def,s.map);right.o={preview:dmg,note:`${def.name??mode} · 예상 피해 ${dmg}`};}
-    else if(mode==='attack'&&d>=u.range[0]&&d<=u.range[1]){const v=previewAttack(u,t,s.map,session.battle.wouldCounter(t,u));right.o={preview:v.hit>0?v.damage:0,note:`명중 ${v.hit}% · 피해 ${v.damage}${doubleAttackChance(u,t)>1?` · 연속 ${Math.round(doubleAttackChance(u,t))}%`:''}${v.lethal?' · 격파':''}`};if(v.counter)left={u,o:{preview:v.counter.damage,note:`반격 ${v.counter.damage} · 명중 ${v.counter.hit}%`}};}}
+    else if(mode==='attack'&&inReach(u,u.pos,t.pos)){const v=previewAttack(u,t,s.map,session.battle.wouldCounter(t,u));right.o={preview:v.hit>0?v.damage:0,note:`명중 ${v.hit}% · 피해 ${v.damage}${doubleAttackChance(u,t)>1?` · 연속 ${Math.round(doubleAttackChance(u,t))}%`:''}${v.lethal?' · 격파':''}`};if(v.counter)left={u,o:{preview:v.counter.damage,note:`반격 ${v.counter.damage} · 명중 ${v.counter.hit}%`}};}}
   renderHud($('#unit-hud'),s,left,right);
 }
 /** 싸움이 일어나면: 친 쪽과 맞은 쪽 카드를 띄우고 체력 막대를 싸우기 전에서 뒤로 줄인다. */
@@ -429,7 +429,7 @@ function renderUnit(u:Unit|undefined){
     <div class="uc-stats"${ab?` title="순발력 ${u.stats.agility} · 사기 ${u.stats.morale} · 정신력 ${u.stats.spirit}"`:''}>${statCells.map(([k,v])=>`<div><small>${k}</small><b>${v}</b></div>`).join('')}</div>
     ${temper||traits.length?`<div class="uc-traits">${temper?`<span class="uc-chip temper" title="일기토·설전에 응하는 방식">성격 · ${temperNames[temper]}</span>`:''}${traits.map(t=>`<span class="uc-chip${t.on?'':' locked'}" title="${t.d.replace(/"/g,'&quot;')}">${t.on?'◆':'◇'} ${t.n}</span>`).join('')}</div>`:''}
     ${u.strategies.length?`<div class="uc-strats"><div class="uc-label">책략 <small>눌러서 고른 뒤 지도에서 대상을 누르세요</small></div><div class="uc-strat-list">${strategyChips}</div></div>`:''}
-    <p class="uc-tip">${classTactics(u.unitClass).map(t=>`전법 「${t.name}」`).join(' · ')}${classTactics(u.unitClass).length?' · ':''}일반 공격 사거리 ${u.range[0]}~${u.range[1]}${u.statuses.length?` · <b>${u.statuses.map(x=>(STATUS_NAMES[x.kind]??x.kind)+' '+x.turns+'턴').join(' · ')}</b>`:''}</p></div>`;
+    <p class="uc-tip">${classTactics(u.unitClass).map(t=>`전법 「${t.name}」`).join(' · ')}${classTactics(u.unitClass).length?' · ':''}일반 공격 사거리 ${u.range[0]}~${u.range[1]} · ${REACH_NAMES[reachShape(u.unitClass)]}${u.statuses.length?` · <b>${u.statuses.map(x=>(STATUS_NAMES[x.kind]??x.kind)+' '+x.turns+'턴').join(' · ')}</b>`:''}</p></div>`;
   const buttons=[{id:'move',name:'이동',icon:'➶',meta:'1',disabled:u.hasMoved},{id:'attack',name:'공격',icon:'⚔',meta:'2',disabled:u.unitClass==='civilian'},...u.strategies.map(id=>{const d=s.strategyFor(u,id)!;return {id,name:d.name,icon:`<img src="${strategyIconUrl(id,d.tier??1)}" alt="">`,meta:d.mpCost+' MP',disabled:u.mp<d.mpCost||s.hasStatus(u,'seal')};}),{id:'wait',name:'대기',icon:'◷',meta:'W',disabled:false}];
   if(session.deployment&&familyOf(u.unitClass)==='fengshui')buttons.push({id:'heal',name:'치유',icon:'치',meta:'8 MP',disabled:u.mp<8||s.hasStatus(u,'seal')});
   if(familyOf(u.unitClass)==='engineer')buttons.push({id:'repair',name:'수리',icon:'수',meta:'인접',disabled:false},{id:'fortify',name:'방책',icon:'책',meta:session.barricadesLeft(u.id)+'회',disabled:session.barricadesLeft(u.id)<=0});

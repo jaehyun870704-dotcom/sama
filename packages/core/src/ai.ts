@@ -9,6 +9,7 @@ import type { BattleState } from "./state.ts";
 import type { Unit, Coord } from "./types.ts";
 import type { Command } from "./commands.ts";
 import { manhattan, key, sameCoord, isHostile } from "./grid.ts";
+import { inReach } from "./reach.ts";
 import { ignoresRough } from "./traits.ts";
 import { estimatePhysical, estimateStrategy } from "./formulas.ts";
 import { evaluate } from "./conditions.ts";
@@ -109,7 +110,12 @@ export function decide(state: BattleState, unit: Unit): Command[] {
 
   if (behavior === "hold") return [{ kind: "wait", unit: unit.id }];
 
-  // 교전 불가 → 목표 지점이 있으면 그쪽으로, 없으면 가장 가까운 적 쪽으로 전진
+  // 교전 불가 → 목표 지점이 있으면 그쪽으로, 없으면 가장 가까운 적 쪽으로 전진.
+  // 단 아군 쪽 부상병(체력 45% 미만)은 목표가 없으면 적에게서 물러난다.
+  if (!objective && (unit.side === "player" || unit.side === "ally") && unit.hp < unit.stats.maxHp * 0.45) {
+    const away = stepAwayFrom(reach, hostiles);
+    if (away && !sameCoord(away, unit.pos)) return [{ kind: "move", unit: unit.id, to: away }, { kind: "wait", unit: unit.id }];
+  }
   const goal = objective
     ? goalCoord(state, unit, objective.region)
     : (closest(unit.pos, hostiles)?.pos ?? null);
@@ -229,7 +235,6 @@ function bestAction(
   reach: Map<string, number>,
   hostiles: Unit[],
 ): ActionPlan | null {
-  const [minR, maxR] = unit.range;
   const positions: Coord[] = [unit.pos, ...decodeAll(reach)];
   const usable = unit.strategies
     .map((id) => state.strategyFor(unit, id))
@@ -241,23 +246,44 @@ function bestAction(
   };
 
   const original = { ...unit.pos };
+  // 아군 쪽(사람이 고를 수 있는 편)만: 다음 적 차례에 닿을 적들의 기대 피해가 체력을 넘는 자리는 피한다.
+  // 대각선까지 치는 기병이 늘어 무턱대고 들어간 장수가 쓰러지는 일을 줄인다. 적 AI는 그대로.
+  const careful = unit.side === "player" || unit.side === "ally";
+  const exposureCache = new Map<string, number>();
+  const exposure = (from: Coord, target: Unit) => {
+    if (!careful) return 0;
+    const k = key(from) + "|" + target.id;
+    const hit = exposureCache.get(k);
+    if (hit !== undefined) return hit;
+    unit.pos = from;
+    let incoming = 0;
+    for (const h of hostiles) {
+      if (h === target || !h.alive || h.range[1] <= 0) continue;
+      if (manhattan(h.pos, from) <= h.stats.movement + h.range[1] + 1) incoming += estimatePhysical(h, unit, state.map);
+    }
+    unit.pos = original;
+    const v = incoming * 1.25 >= unit.hp ? 400 : 0;
+    exposureCache.set(k, v);
+    return v;
+  };
   for (const from of positions) {
     for (const target of hostiles) {
       const dist = manhattan(from, target.pos);
 
       // 평타 — 사거리 안이면 반격 위험을 감안해 평가한다
-      if (dist >= minR && dist <= maxR) {
+      if (inReach(unit, from, target.pos)) {
         unit.pos = from; // 지형/고저 보정을 이동 후 위치로 계산
         const dealt = estimatePhysical(unit, target, state.map);
-        const [tMin, tMax] = target.range;
         const counter =
-          dist >= tMin && dist <= tMax ? estimatePhysical(target, unit, state.map) : 0;
+          inReach(target, target.pos, from) ? estimatePhysical(target, unit, state.map) : 0;
         unit.pos = original;
+        // 쓰러뜨리지도 못하면서 반격에 쓰러질 공격은 하지 않는다
+        if (counter * 1.3 >= unit.hp && dealt < target.hp) continue;
         consider({
           kind: "attack",
           from,
           target,
-          score: dealt + (dealt >= target.hp ? 500 : 0) - counter,
+          score: dealt + (dealt >= target.hp ? 500 : 0) - counter - exposure(from, target),
         });
       }
 
@@ -273,7 +299,7 @@ function bestAction(
           from,
           target,
           strategyId: def.id,
-          score: dealt + (dealt >= target.hp ? 500 : 0),
+          score: dealt + (dealt >= target.hp ? 500 : 0) - exposure(from, target),
         });
       }
     }
