@@ -38,9 +38,33 @@ export function officerClass(name:string):UnitClass{
   return s.lead>=s.war?'spearman':'infantry';
 }
 type Cand={trait:string;base:number;name:string;source:string;score:number};
-/** 장수의 효과 목록(고유능력 제외, 필요 레벨 순). 같은 장수는 언제나 같은 목록. */
-export function perksFor(name:string,unitClass?:UnitClass):OfficerPerk[]{
-  const s=romanceByName(name),cls=unitClass??officerClass(name),fam=familyOf(cls),temper=temperOf(name);
+/**
+ * 병종 갈래: 장수 효과는 그 병종이 실제로 쓰는 공격·방어에 맞아야 한다.
+ * 책사(책략 공격) · 회복(풍수·무녀) · 기병(돌격) · 원거리(활·노·투석·수군) · 근접(보병·창병 등).
+ */
+export type PerkRole='caster'|'healer'|'mounted'|'ranged'|'melee';
+const ROLE_OF:Partial<Record<string,PerkRole>>={strategist:'caster',shaman:'caster',taoist:'caster',fengshui:'healer',maiden:'healer',
+  cavalry:'mounted',heavyCav:'mounted',archer:'ranged',crossbow:'ranged',horseArcher:'ranged',catapult:'ranged',navy:'ranged'};
+export const perkRole=(cls:UnitClass):PerkRole=>ROLE_OF[familyOf(cls)]??'melee';
+/** 갈래마다 쓸모 있는 특성. 책략엔 회심·관통이 없고, 원거리·책사는 반격을 거의 하지 않는다. */
+const ROLE_TRAITS:Record<PerkRole,ReadonlySet<string>>={
+  caster:new Set(['strategyPower','strategyEvasion','manaRegen','mpThrift','accuracyBoost','strategyDamageReduction','physicalDamageReduction','evasionBoost','regen','veteran','defenseBoost','lastStand','turnaround']),
+  healer:new Set(['healPower','manaRegen','mpThrift','strategyPower','strategyEvasion','strategyDamageReduction','physicalDamageReduction','evasionBoost','regen','veteran','defenseBoost']),
+  mounted:new Set(['chargePower','physicalPower','critical','penetrate','counterBoost','accuracyBoost','physicalDamageReduction','strategyDamageReduction','strategyEvasion','evasionBoost','regen','veteran','defenseBoost','lastStand','turnaround']),
+  ranged:new Set(['rangedPower','physicalPower','critical','penetrate','accuracyBoost','physicalDamageReduction','strategyDamageReduction','strategyEvasion','evasionBoost','regen','veteran','defenseBoost','lastStand','turnaround']),
+  melee:new Set(['meleePower','physicalPower','critical','penetrate','counterBoost','accuracyBoost','physicalDamageReduction','strategyDamageReduction','strategyEvasion','evasionBoost','regen','veteran','defenseBoost','lastStand','turnaround']),
+};
+/** 갈래의 주무기 효과(가산점) — 같은 능력이면 이쪽을 먼저 고른다. */
+const ROLE_FOCUS:Record<PerkRole,ReadonlySet<string>>={
+  caster:new Set(['strategyPower','manaRegen','mpThrift','strategyEvasion']),
+  healer:new Set(['healPower','manaRegen','mpThrift','regen']),
+  mounted:new Set(['physicalPower','critical','penetrate','counterBoost']),
+  ranged:new Set(['physicalPower','critical','penetrate','accuracyBoost']),
+  melee:new Set(['physicalPower','critical','penetrate','counterBoost']),
+};
+/** 장수의 효과 목록(고유능력 제외, 필요 레벨 순). 같은 장수는 언제나 같은 목록. legacy는 옛 저장의 배운 효과를 옮길 때만 쓴다. */
+export function perksFor(name:string,unitClass?:UnitClass,legacy=false):OfficerPerk[]{
+  const s=romanceByName(name),cls=unitClass??officerClass(name),fam=familyOf(cls),temper=temperOf(name),kind=perkRole(cls);
   const st=s??{war:50,int:50,lead:50,pol:50,cha:50};
   const cand:Cand[]=[
     {trait:'physicalPower',base:8,name:'무위 강화',source:'무력',score:st.war},
@@ -56,26 +80,46 @@ export function perksFor(name:string,unitClass?:UnitClass):OfficerPerk[]{
     {trait:'accuracyBoost',base:8,name:'인망',source:'매력',score:st.cha-2},
     {trait:'evasionBoost',base:6,name:'민첩',source:'매력',score:st.cha-10},
   ];
+  if(!legacy)cand.push(
+    {trait:'mpThrift',base:8,name:'절용',source:'정치',score:(st.pol+st.int)/2-6},
+    {trait:'healPower',base:12,name:'인술',source:'정치',score:(st.pol+st.cha)/2-4});
   // 병종 계열이 주는 효과(점수를 크게 줘 거의 늘 들어간다)
   const role:Partial<Record<string,[string,number,string]>>={cavalry:['chargePower',10,'돌격 숙련'],heavyCav:['chargePower',8,'돌진 숙련'],horseArcher:['rangedPower',8,'기사 숙련'],
     archer:['rangedPower',10,'궁술 숙련'],crossbow:['rangedPower',10,'노술 숙련'],infantry:['meleePower',8,'백병 숙련'],spearman:['counterBoost',18,'창진'],bandit:['meleePower',10,'매복 숙련'],
-    strategist:['strategyPower',8,'군략'],taoist:['strategyPower',8,'도술'],shaman:['strategyPower',8,'요술'],fengshui:['healPower',20,'의술'],maiden:['healPower',20,'기도'],monk:['regen',4,'수행']};
+    strategist:['strategyPower',8,'군략'],taoist:['strategyPower',8,'도술'],shaman:['strategyPower',8,'요술'],fengshui:['healPower',20,'의술'],maiden:['healPower',20,'기도'],monk:['regen',4,'수행'],
+    ...(legacy?{}:{catapult:['rangedPower',10,'포술 숙련'],navy:['rangedPower',8,'수전 숙련']})};
   const rr=role[fam];if(rr)cand.push({trait:rr[0],base:rr[1],name:rr[2],source:'병종',score:200});
-  // 성격이 주는 효과
+  // 성격이 주는 효과 — 병종에 쓸모없으면 책사·회복 갈래는 그 성격다운 다른 효과로 바꾼다
   const tp:Partial<Record<string,[string,number,string]>>={reckless:['lastStand',20,'배수의 진'],brave:['turnaround',15,'전화위복'],proud:['critical',10,'오만한 일격'],calm:['veteran',15,'침착'],cautious:['defenseBoost',6,'신중'],wise:['strategyEvasion',12,'혜안'],timid:['evasionBoost',10,'몸 사리기']};
+  if(!legacy&&(kind==='caster'||kind==='healer'))tp.proud=['strategyPower',10,'오만한 계책'];
+  if(!legacy&&kind==='healer'){tp.reckless=['manaRegen',3,'불퇴의 기도'];tp.brave=['regen',4,'굳센 마음'];}
   const tt=temper?tp[temper]:undefined;if(tt)cand.push({trait:tt[0],base:tt[1],name:tt[2],source:'성격',score:150});
-  // 책략을 못 쓰는 병종에 책략 효과는 의미가 적다 — 점수를 낮춘다
-  const caster=profileOf(cls).canUseStrategy;
-  for(const x of cand)if(!caster&&['strategyPower','manaRegen'].includes(x.trait))x.score-=40;
+  if(legacy){
+    // 옛 규칙: 책략을 못 쓰는 병종에 책략 효과만 점수를 낮췄다
+    const caster=profileOf(cls).canUseStrategy;
+    for(const x of cand)if(!caster&&['strategyPower','manaRegen'].includes(x.trait))x.score-=40;
+  }else{
+    const ok=ROLE_TRAITS[kind],focus=ROLE_FOCUS[kind];
+    for(const x of cand){if(!ok.has(x.trait))x.score=-1e9;else if(focus.has(x.trait))x.score+=6;}
+  }
   // 같은 특성은 한 번만, 점수 높은 다섯
-  const picked:Cand[]=[];for(const x of [...cand].sort((a,b)=>b.score-a.score||a.trait.localeCompare(b.trait)))if(!picked.some(p=>p.trait===x.trait)&&picked.length<5)picked.push(x);
+  const picked:Cand[]=[];for(const x of [...cand].sort((a,b)=>b.score-a.score||a.trait.localeCompare(b.trait)))if(x.score>-1e8&&!picked.some(p=>p.trait===x.trait)&&picked.length<5)picked.push(x);
   // 낮은 단계는 약한 효과부터: 점수가 낮은 것을 앞에 둔다(가장 잘 맞는 효과가 가장 깊은 곳에)
   picked.sort((a,b)=>a.score-b.score||a.trait.localeCompare(b.trait));
   return picked.map((x,i)=>({id:x.trait,name:x.name,trait:x.trait,param:Math.round(x.base*SCALE[i]!),level:LEVELS[i]!,cost:COSTS[i]!,source:x.source}));
 }
+/**
+ * 옛 규칙으로 배운 효과를 새 목록으로 옮긴다: 목록에서 사라진 효과는 같은 자리(같은 필요 레벨·비용)의 새 효과로.
+ * 이미 낸 천명을 잃지 않게 하려는 것이다.
+ */
+function migrateIds(name:string,ids:readonly string[]){
+  const now=perksFor(name),old=perksFor(name,undefined,true),out:string[]=[];
+  for(const id of ids){let next=id;if(!now.some(p=>p.id===id)){const i=old.findIndex(p=>p.id===id);next=i>=0?now[i]?.id??id:id;}if(!out.includes(next))out.push(next);}
+  return out;
+}
 export const perkLine=(p:OfficerPerk)=>perkText(p.trait,p.param);
 
-export function perkState(m:MetaState,name:string){return m.officerPerks?.[name]??{learned:[],equipped:[]};}
+export function perkState(m:MetaState,name:string){const st=m.officerPerks?.[name];if(!st)return {learned:[],equipped:[]};return {learned:migrateIds(name,st.learned),equipped:migrateIds(name,st.equipped)};}
 export const bestLevel=(m:MetaState,name:string)=>m.officerBest?.[name]??0;
 /** 배운다: 필요 레벨에 닿았고 천명이 있으면. 칸이 비어 있으면 바로 장착한다. */
 export function learnPerk(m:MetaState,name:string,id:string){

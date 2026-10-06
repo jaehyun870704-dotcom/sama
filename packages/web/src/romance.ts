@@ -54,7 +54,7 @@ export const romance:Record<string,RomanceOfficer>={
   wei_yan:o('위연','반골의 맹장 · 자오곡 기계',[92,62,84,40,50],{name:'반골의 용맹',description:'물리 공격 피해 12% 증가',trait:'physicalPower',param:12}),
   gao_xiang:o('고상','촉의 군량 수송장',[64,48,62,40,50]),
   meng_yan:o('맹염','오장원의 촉 장수',[68,46,62,36,46]),
-  jiang_wei:o('강유','천수의 기린아 · 제갈량의 후계',[89,90,92,68,82],{name:'기린아',description:'책략 공격 피해 10% 증가',trait:'strategyPower',param:10}),
+  jiang_wei:o('강유','천수의 기린아 · 제갈량의 후계',[89,90,92,68,82],{name:'기린아',description:'물리 공격 피해 10% 증가',trait:'physicalPower',param:10}),
   wooden_zhuge:o('제갈량','와룡 · 죽은 제갈이 산 중달을 쫓다',[38,100,98,98,98],{name:'팔진도',description:'받는 책략 피해 25% 감소',trait:'strategyDamageReduction',param:25}),
   // 오
   sun_quan:o('손권','벽안자염 · 강동의 주인',[66,80,82,86,95],{name:'강동 수성',description:'받는 물리 피해 10% 감소',trait:'commandDefense'}),
