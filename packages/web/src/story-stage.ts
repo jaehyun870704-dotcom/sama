@@ -6,7 +6,6 @@
  * Stage 하나가 무대 하나를 맡는다(이야기 장면, 출진 전 진영이 함께 쓴다). DOM과 CSS 전환만 쓴다.
  */
 import type {Scene,ScriptStep,ChoiceOption,ChoiceEffect,Look,At,CastMember} from './scenario-types.ts';
-import {speak,stopVoice,voiceOn,voiceSupported,setVoice} from './voice.ts';
 import {isoScene,stepsBetween,offscreenCell,type Cell,type IsoScene} from './story-iso.ts';
 import {officerPortrait,officerLook} from './officer-art.ts';
 import {bustFace,displayName} from './faces.ts';
@@ -188,9 +187,8 @@ export class Stage {
       this.gesture(speaker,/[!！]{1}$|이놈|닥쳐|물러서/.test(line)?ANGER_FRAME(a.look):TALK_FRAME(a.look),1000);
     }
     this.talk.innerHTML=talkBox(speaker,'',a&&this.scene.toPct(a.cell)[1]>58?'top':'bottom',a?.look,this.skin);
-    if(!this.skipping)void speak(speaker,line);
     await this.typeLine(this.talk.querySelector<HTMLElement>('.ss-talk-body p')!,line,a);
-    await this.waitClick();stopVoice();if(a)a.el.classList.remove('speaking');this.talk.innerHTML='';
+    await this.waitClick();if(a)a.el.classList.remove('speaking');this.talk.innerHTML='';
   }
   /** 한 글자씩 써 내려간다. 도중에 누르면 문장을 한꺼번에 보인다. 말하는 동안 몸짓을 한두 번 더 한다. */
   private typeLine(el:HTMLElement,line:string,a?:Actor){
@@ -204,7 +202,7 @@ export class Stage {
         if(i>=chars.length)finish();},28);
     });
   }
-  async narrate(text:string){this.caption.hidden=false;this.caption.textContent=text;this.talk.innerHTML='';if(!this.skipping)void speak(null,text);await this.waitClick();stopVoice();this.caption.hidden=true;}
+  async narrate(text:string){this.caption.hidden=false;this.caption.textContent=text;this.talk.innerHTML='';await this.waitClick();this.caption.hidden=true;}
   /** 화면 위 자리(%)에 세운다. 앞(아래)에 선 사람이 위에 그려진다. */
   private moveTo(a:Actor,x:number,y:number){a.el.style.left=x+'%';a.el.style.top=y+'%';a.el.style.zIndex=String(100+Math.round(y*3));this.queueDeclutter();}
   /** 이름표가 겹치면 뒤(위쪽)에 선 사람의 이름표를 머리 위로 올린다. */
@@ -387,11 +385,10 @@ export async function playScenes(root:HTMLElement,scenes:Scene[],hooks:StageHook
   for(let si=0;si<scenes.length;si++){
     const scene=scenes[si]!;
     root.innerHTML=`<div class="ss-root"><div class="ss-head"><span class="eyebrow">${esc(hooks.heading)} · 장면 ${si+1}/${scenes.length}</span></div><div class="ss-frame"></div>
-      <div class="ss-controls">${voiceSupported()?`<button type="button" class="ss-voice" aria-pressed="${voiceOn()}">${voiceOn()?'🔊 더빙 켬':'🔇 더빙 끔'}</button>`:''}<button type="button" class="ss-skip">장면 건너뛰기 ⏭</button><button type="button" class="primary ss-next">다음 ▶</button></div></div>`;
+      <div class="ss-controls"><button type="button" class="ss-skip">장면 건너뛰기 ⏭</button><button type="button" class="primary ss-next">다음 ▶</button></div></div>`;
     const spots=scene.steps.flatMap(st=>'move' in st?[st.to]:'enter' in st?[st.at]:[]);
     const stage=new Stage(root.querySelector<HTMLElement>('.ss-frame')!,scene.art,scene.place,scene.cast,spots);stage.skipping=skipping;
-    root.querySelector<HTMLButtonElement>('.ss-skip')!.onclick=()=>{skipping=true;stage.skipping=true;stopVoice();stage.next();};
-    {const vb=root.querySelector<HTMLButtonElement>('.ss-voice');if(vb)vb.onclick=()=>{setVoice(!voiceOn());vb.setAttribute('aria-pressed',String(voiceOn()));vb.textContent=voiceOn()?'🔊 더빙 켬':'🔇 더빙 끔';};}
+    root.querySelector<HTMLButtonElement>('.ss-skip')!.onclick=()=>{skipping=true;stage.skipping=true;stage.next();};
     root.querySelector<HTMLButtonElement>('.ss-next')!.onclick=()=>stage.next();
     await stage.run(scene.steps,hooks);skipping=stage.skipping;
     if(!skipping)await wait(250);

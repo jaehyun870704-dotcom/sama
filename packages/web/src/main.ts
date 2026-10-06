@@ -1,5 +1,4 @@
 import {trialGoals,trialGoalText,trialProgress} from './expedition-objectives.ts';
-import {speak,stopVoice,voiceOn,voiceSupported,setVoice} from './voice.ts';
 import {DOCK_ICONS} from './dock-icons.ts';
 import {navalAtlas} from './naval-art.ts';
 import {evolutionChart,paintArmor,type EvoGroup} from './troop-evolution.ts';
@@ -76,7 +75,6 @@ $('#app').innerHTML=`<header class="topbar"><button id="brand" class="brand" ari
 
 function toast(text:string){$('#toast').textContent=text;$('#toast').classList.add('visible');setTimeout(()=>$('#toast').classList.remove('visible'),2800);}
 function modal(html:string,closable=true){
-  stopVoice();
   const d=$<HTMLDialogElement>('#modal');$('#modal-content').innerHTML=(closable?'<button class="modal-close" data-close aria-label="닫기">×</button>':'')+html;
   if(!d.open)d.showModal();d.scrollTop=0;$('#modal-content [data-close]')?.addEventListener('click',closeModal);
   d.oncancel=e=>{if(!closable)e.preventDefault();else setTimeout(()=>pump(),0);};
@@ -123,7 +121,6 @@ function storyScene(chapter:number,beat=0,fromArt?:number){
   <div class="modal-actions"><button id="story-back" ${beat===0?'disabled':''}>← 이전 장면</button><button id="story-skip">군의로 건너뛰기</button><button class="primary" id="story-next">${beat===beats.length-1?'출진 준비':'다음 이야기'} →</button></div></div>`,false);
   $('#story-back').onclick=()=>{if(beat>0)storyScene(chapter,beat-1,location.art);};
   $('#story-skip').onclick=()=>briefing(chapter);$('#story-next').onclick=()=>beat+1<beats.length?storyScene(chapter,beat+1,location.art):briefing(chapter);
-  void speak(b.speaker,b.line);
 }
 let menuArc=1;
 const resumeSaved=()=>{try{session=Session.load(JSON.parse(localStorage.getItem(SAVE_KEY)??'null'));activate();toast('저장한 전투를 불러왔습니다.');}catch{toast('현재 버전의 저장 기록을 읽지 못했습니다.');}};
@@ -403,7 +400,7 @@ function queueLines(){
 function showNextLine(){
   const el=$('#battle-line'),next=lineQueue.shift();
   if(!next){el.hidden=true;lineTimer=undefined;return;}
-  el.innerHTML=dialogueCaption(next.speaker,next.text);el.hidden=false;if(!menuOpen&&!$<HTMLDialogElement>('#modal').open)void speak(next.speaker,next.text);$('#latest-log').textContent=`${next.speaker}: ${next.text}`;
+  el.innerHTML=dialogueCaption(next.speaker,next.text);el.hidden=false;$('#latest-log').textContent=`${next.speaker}: ${next.text}`;
   lineTimer=setTimeout(showNextLine,Math.min(6500,2600+next.text.length*45));
 }
 function coachDone(){try{return localStorage.getItem(COACH_KEY)==='1';}catch{return false;}}
@@ -627,7 +624,7 @@ function storeSettings(){saveSettings({music:sound.musicVolume,effects:sound.eff
 {const saved=loadSettings();sound.musicVolume=saved.music;sound.effectsVolume=saved.effects;sound.enabled=saved.sound;speed=saved.speed;applySpeed();updateSound();}
 $('#help').onclick=()=>modal('<div class="dialogue"><h2>전장의 길잡이</h2><p><b>천명의 원정</b> · 게임은 3편 18층 원정으로 진행됩니다. 원정은 사마의를 따르는 장수들(조진·장합·곽회·사마랑)과 함께 떠나고, 새 장수는 모병소와 전투 보상에서 영입합니다. 장수는 공격·격파·책략마다 경험치를 얻어 전투 중에도 레벨이 오릅니다. 병종마다 전법(경기병 돌격, 창병 창벽, 궁병 선제 사격 등)이 있어 조건이 맞으면 피해가 조금 더 들어갑니다. 층마다 갈림길을 고르고, 쓰러진 장수는 돌아오지 않으며, 사마의가 쓰러지면 원정이 끝납니다. 연의 전장을 이기면 영구 기록에 남고, 원정이 끝나면 천명을 얻어 본영의 천명 해금에 씁니다.</p><p>부대 선택 → 이동 → 공격·책략·대기 → 턴 종료. 본대 다음 편입 아군을 직접 조작합니다.</p><p>1 이동 · 2 공격 · 3 첫 책략 · W 대기 · Z 무르기 · E 턴 종료 · N 다음 부대 · Esc 명령 취소. 전장은 고정되어 한눈에 보입니다. 큰 전장은 +/− 버튼으로 확대하고 드래그·미니맵으로 살피세요.</p><p>일기토(무력)는 인접, 설전(지력)은 3칸 이내. 일기토는 공격·방어·기합·필살기, 설전은 논박·반론·숙고·논파를 선택합니다.</p></div>');
 $('#topbar-save').onclick=()=>{menuOpen=true;clearTimeout(aiTimer);showSlots();};
-$('#settings').onclick=()=>{modal(`<div class="dialogue"><h2>소리 설정</h2><label>배경음 <input id="music-volume" type="range" min="0" max="1" step=".01" value="${sound.musicVolume}"></label><label>효과음 <input id="effects-volume" type="range" min="0" max="1" step=".01" value="${sound.effectsVolume}"></label>${voiceSupported()?`<label class="voice-setting"><input id="voice-on" type="checkbox" ${voiceOn()?'checked':''}> 이야기·나레이션 한국어 음성 더빙</label>`:'<p>이 브라우저는 음성 더빙을 지원하지 않습니다.</p>'}</div>`);{const v=document.querySelector<HTMLInputElement>('#voice-on');if(v)v.onchange=()=>{setVoice(v.checked);if(v.checked)void speak(null,'이야기를 우리말 목소리로 들려 드립니다.');};}$<HTMLInputElement>('#music-volume').oninput=e=>{sound.musicVolume=Number((e.target as HTMLInputElement).value);sound.update();storeSettings();};$<HTMLInputElement>('#effects-volume').oninput=e=>{sound.effectsVolume=Number((e.target as HTMLInputElement).value);sound.update();storeSettings();};};
+$('#settings').onclick=()=>{modal(`<div class="dialogue"><h2>소리 설정</h2><label>배경음 <input id="music-volume" type="range" min="0" max="1" step=".01" value="${sound.musicVolume}"></label><label>효과음 <input id="effects-volume" type="range" min="0" max="1" step=".01" value="${sound.effectsVolume}"></label></div>`);$<HTMLInputElement>('#music-volume').oninput=e=>{sound.musicVolume=Number((e.target as HTMLInputElement).value);sound.update();storeSettings();};$<HTMLInputElement>('#effects-volume').oninput=e=>{sound.effectsVolume=Number((e.target as HTMLInputElement).value);sound.update();storeSettings();};};
 $('#log-button').onclick=()=>modal(`<div class="dialogue"><h2>전투 기록</h2>${session.state.log.map(describe).filter(Boolean).slice(-60).map(t=>`<p>${esc(t)}</p>`).join('')}</div>`);
 document.addEventListener('visibilitychange',()=>void sound.visibility(document.hidden));
 // Every button answers with a soft wood-block click.
