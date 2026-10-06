@@ -2,8 +2,8 @@
  * 보물의 형태(검·창·방패·말·병서…)·등급과 그림.
  *
  * 그림은 두 곳에서 온다.
- *  · 그림 판 treasures-v2.png(6×10): 처음 60점. 칸 번호는 core treasurePowers의 순서.
- *  · 추가 그림판 treasures-extra-01~06-v1.png(3×4): 판 밖의 보물과 회차 보물.
+ *  · 그림 판 treasures-v2.webp(6×10): 처음 60점. 칸 번호는 core treasurePowers의 순서.
+ *  · 추가 그림판 treasures-extra-01~06-v1.webp(3×4): 판 밖의 보물과 회차 보물.
  * 그림이 없는 새 보물은 형태 글자를 담은 등급 테두리 패로 안전하게 돌아간다.
  */
 import {treasureInfo,type GearSlot} from './progression.ts';
@@ -72,7 +72,7 @@ function atlasIcon(i:number){const row=Math.floor(i/6),top=EDGES[row]!,height=ED
 const sheetIcon=(key:string)=>{
   const art=EXTRA_ART.get(key);if(!art)return '';
   const col=art.cell%3,row=Math.floor(art.cell/3);
-  return `<i class="treasure-icon sheet" style="background-image:url(treasures-extra-${String(art.sheet+1).padStart(2,'0')}-v1.png);background-size:300% 400%;background-position:${col*50}% ${row*100/3}%;background-repeat:no-repeat"></i>`;
+  return `<i class="treasure-icon sheet" style="background-image:url(treasures-extra-${String(art.sheet+1).padStart(2,'0')}-v1.webp);background-size:300% 400%;background-position:${col*50}% ${row*100/3}%;background-repeat:no-repeat"></i>`;
 };
 const pendingIcon=(glyph:string,grade:number,label:string)=>`<i class="treasure-icon pending g${grade}" title="${esc(label)} · 그림 준비 중">${esc(glyph)}</i>`;
 

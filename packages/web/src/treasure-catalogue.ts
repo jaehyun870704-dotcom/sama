@@ -21,7 +21,7 @@ export const extraTreasures:Treasure[]=entries.map(([id,name,slot,grade,icon,que
 
 /**
  * 연무장(훈련) 첫 승리에 얻는 새 형태의 보물: 방패·투구·암기·거울·호로·비녀·신발·영패 등.
- * 그림 판(treasures-v2.png) 밖이라 그림은 public/treasures/<id>.webp 낱장을 쓴다(treasure-art.ts).
+ * 그림 판(treasures-v2.webp) 밖이라 그림은 public/treasures/<id>.webp 낱장을 쓴다(treasure-art.ts).
  */
 const trainingEntries:Array<[string,string,GearSlot,number,string,Treasure['bonus'],string]>=[
  ['rattanShield','등패','armor',1,'T01',{defense:2,maxHp:4},'등나무를 엮어 만든 가벼운 방패. 화살을 튕겨 내는 데 쓴다.'],

@@ -24,7 +24,7 @@ let meadow:HTMLCanvasElement|undefined,atlas:Texture|undefined,noiseA:Float32Arr
 export async function loadGroundArt(){
   if(typeof document==='undefined'||(meadow&&atlas))return;
   try{
-    const [m,s]=await Promise.all(['textures/meadow.webp','scenery-v3.png'].map(async u=>{const img=new Image();img.src=new URL(u,document.baseURI).href;await img.decode();return img;}));
+    const [m,s]=await Promise.all(['textures/meadow.webp','scenery-v3.webp'].map(async u=>{const img=new Image();img.src=new URL(u,document.baseURI).href;await img.decode();return img;}));
     const w=m!.naturalWidth,h=m!.naturalHeight,c=document.createElement('canvas');c.width=w*2;c.height=h*2;const g=c.getContext('2d')!;
     for(const [fx,fy] of [[0,0],[1,0],[0,1],[1,1]] as const){g.save();g.translate(fx?w*2:0,fy?h*2:0);g.scale(fx?-1:1,fy?-1:1);g.drawImage(m!,0,0);g.restore();}
     meadow=c;atlas={source:{resource:s},width:s!.naturalWidth,height:s!.naturalHeight} as unknown as Texture;KIT.setKitImage(s!);

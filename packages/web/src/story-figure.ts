@@ -25,17 +25,17 @@ const U=FIG_H/64;
 
 type Sheet={url:string;rows:number;row:number;walk?:{url:string;rows:number}|undefined};
 const S=(url:string,rows:number,row:number,walk?:string):Sheet=>({url,rows,row,walk:walk?{url,rows}:undefined});
-const CASTERS='troops-casters-v1.png',SPECIAL='troops-specialists-v1.png';
+const CASTERS='troops-casters-v1.webp',SPECIAL='troops-specialists-v1.webp';
 const BY_LOOK:Record<Look,Sheet>={
-  strategist:S('units-v3.png',6,4),civil:S('units-v3.png',6,4),infantry:S('units-v3.png',6,0),spear:S('units-v3.png',6,1),
-  archer:S('units-v3.png',6,2),cavalry:S('units-v3.png',6,3),crossbow:S('units-extra-v1.png',4,0),heavy:S('units-extra-v1.png',4,1),
-  engineer:S('units-extra-v1.png',4,2),sage:S('units-extra-v1.png',4,3),
+  strategist:S('units-v3.webp',6,4),civil:S('units-v3.webp',6,4),infantry:S('units-v3.webp',6,0),spear:S('units-v3.webp',6,1),
+  archer:S('units-v3.webp',6,2),cavalry:S('units-v3.webp',6,3),crossbow:S('units-extra-v1.webp',4,0),heavy:S('units-extra-v1.webp',4,1),
+  engineer:S('units-extra-v1.webp',4,2),sage:S('units-extra-v1.webp',4,3),
   shaman:S(CASTERS,3,0,'w'),lady:S(CASTERS,3,1,'w'),taoist:S(CASTERS,3,2,'w'),
   physician:S(SPECIAL,4,0,'w'),monk:S(SPECIAL,4,1,'w'),horseArcher:S(SPECIAL,4,2,'w'),bandit:S(SPECIAL,4,3,'w'),assassin:S(SPECIAL,4,3,'w'),
-  elephant:S('units-extra-v1.png',4,1),
+  elephant:S('units-extra-v1.webp',4,1),
 };
 for(const s of Object.values(BY_LOOK))if(s.walk)s.walk.url=s.url.replace('-v1','-walk-v1');
-const OFFICERS={url:'officer-story-v1.png',rows:2};
+const OFFICERS={url:'officer-story-v1.webp',rows:2};
 
 export type FigArt={kind:'fig';slot:number;tint:number}|{kind:'sheet';look:Look};
 const ON_FOOT:Partial<Record<Look,Look>>={cavalry:'infantry',heavy:'infantry',horseArcher:'archer',elephant:'infantry'};

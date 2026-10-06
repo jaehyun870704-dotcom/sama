@@ -119,7 +119,7 @@ function sprite(c:UnitClass){
 const armorCanvas=(c:UnitClass)=>tierOf(c)>=2&&!classSheets.has(c)?`<canvas class="cx-armor" data-armor="${c}"></canvas>`:'';
 function sheetFor(c:UnitClass):{load:()=>Promise<HTMLCanvasElement>;rows:number;cols:number;row:number}|undefined{
   const base=artClass(c),fam=familyOf(base),art=troopArt[base]??troopArt[fam],react=basicReactionArt[base]??basicReactionArt[fam];
-  if(fam==='ram')return {load:()=>spriteAtlas('ram-v1.png',2,2),rows:2,cols:2,row:0};
+  if(fam==='ram')return {load:()=>spriteAtlas('ram-v1.webp',2,2),rows:2,cols:2,row:0};
   if(fam==='navy')return {load:navalAtlas,rows:4,cols:4,row:tierOf(c)===3?3:1};
   const sh=art??react;if(!sh)return undefined;const url=troopSheets.find(s=>s.id===sh.sheet)?.url;if(!url)return undefined;
   return {load:()=>spriteAtlas(url,sh.rows,4),rows:sh.rows,cols:4,row:sh.row};

@@ -75,7 +75,7 @@ const actTrack=(run:Run)=>`<div class="run-track" aria-label="원정 진행">${[
 /** 게임의 첫 화면. 본편은 시나리오(연의 + 가상), 레벨업용 반복 전투는 '반복 퀘스트'로 따로 둔다. */
 export function showHub(host:RunHost){
   const meta=loadMeta(),sc=scenarioSummary(),done=sc.state.done.length;
-  host.modal(`<div class="campaign run-hub"><div class="campaign-art"><img src="sima-portrait-v2.png" alt="부채를 든 사마의 창작 초상"><div class="art-caption">사 마 의 <span>천명은 기다리는 자에게 온다</span></div></div>
+  host.modal(`<div class="campaign run-hub"><div class="campaign-art"><img src="sima-portrait-v2.webp" alt="부채를 든 사마의 창작 초상"><div class="art-caption">사 마 의 <span>천명은 기다리는 자에게 온다</span></div></div>
   <div class="campaign-copy"><div class="eyebrow">삼국지 · 전략 연대기</div><p class="chapter-pretitle">사마의전 · 연의와 가상의 천하</p><h2>사마의전</h2><p class="tagline">칼을 거두고, 때를 기다린다.</p>
   <div class="hub-stats"><span><b>${done}</b><small>마친 장</small></span><span><b>${esc(sc.tag)}</b><small>지금</small></span><span><b>${meta.endings.length}/${ALL_ENDINGS.length}</b><small>본 결말</small></span><span><b>${meta.mandate}</b><small>천명</small></span></div>
   ${runBoard(sc.state,meta)}

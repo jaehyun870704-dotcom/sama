@@ -4,7 +4,7 @@ export function storyBackdrop(index:number){
   // Measured panel boundaries, inset two pixels to exclude adjacent artwork.
   const edges=index<9?[0,340,681,1024]:[0,340,665,1024],row=Math.floor(index%9/3);
   const x=index%3*512+2,y=edges[row]!+2,w=508,h=edges[row+1]!-edges[row]!-4;
-  return `background-image:url('story-backgrounds-${index<9?1:2}.png');background-size:${1536/w*100}% ${1024/h*100}%;background-position:${x/(1536-w)*100}% ${y/(1024-h)*100}%`;
+  return `background-image:url('story-backgrounds-${index<9?1:2}.webp');background-size:${1536/w*100}% ${1024/h*100}%;background-position:${x/(1536-w)*100}% ${y/(1024-h)*100}%`;
 }
 /** Atlas cell + narrative location per beat, independent of saved chapter indexes. */
 export const storyLocations:Record<string,Array<{art:number;name:string;companion:string;actor?:number}>>={

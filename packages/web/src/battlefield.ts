@@ -114,7 +114,7 @@ export class Battlefield {
     // every stroke instead of dropping random pixels, and the dark rim keeps the dot look.
     const smooth=(canvas:HTMLCanvasElement,rim=true)=>new Texture({source:new CanvasSource({resource:rim?outlinedCanvas(canvas):canvas,autoGenerateMipmaps:true,scaleMode:'linear'})});
     // Every sheet is requested at once so the worker pool cuts them in parallel.
-    const [troops,ram,naval,convoys,extra,atlas,scenery]=await Promise.all([loadBattleTextures().then(()=>Promise.all(troopSheets.map(sheet=>spriteAtlas(sheet.url,sheet.rows,4,!!(sheet as {union?:boolean}).union,(sheet as {alphaCutoff?:number}).alphaCutoff??8,!!(sheet as {strictGrid?:boolean}).strictGrid).catch(error=>{console.warn(sheet.id+' 병종 시트를 읽지 못해 기본 그림을 씁니다.',error);return undefined;})))),spriteAtlas('ram-v1.png',2,2),navalAtlas(),imageCanvas('convoys-v1.png'),spriteAtlas('units-extra-v1.png',4),spriteAtlas('units-v3.png',6),imageCanvas('scenery-v3.png')]);
+    const [troops,ram,naval,convoys,extra,atlas,scenery]=await Promise.all([loadBattleTextures().then(()=>Promise.all(troopSheets.map(sheet=>spriteAtlas(sheet.url,sheet.rows,4,!!(sheet as {union?:boolean}).union,(sheet as {alphaCutoff?:number}).alphaCutoff??8,!!(sheet as {strictGrid?:boolean}).strictGrid).catch(error=>{console.warn(sheet.id+' 병종 시트를 읽지 못해 기본 그림을 씁니다.',error);return undefined;})))),spriteAtlas('ram-v1.webp',2,2),navalAtlas(),imageCanvas('convoys-v1.webp'),spriteAtlas('units-extra-v1.webp',4),spriteAtlas('units-v3.webp',6),imageCanvas('scenery-v3.webp')]);
     // 못 읽은 시트는 건너뛴다: 그 병종은 기본 병종 그림으로 그린다.
     troopSheets.forEach((sheet,i)=>{const t=troops[i];if(t)this.troopTextures.set(sheet.id,smooth(t));});
     // 병종 전용 채색 시트(있는 것만): 계열 그림 대신 쓴다.

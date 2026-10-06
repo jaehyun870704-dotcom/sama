@@ -28,8 +28,8 @@ describe("보물 도감 필터", () => {
     expect(TREASURE_ART.size).toBe(66);
     for(const t of treasures)expect(treasureIcon(t.id),t.id).not.toContain("pending");
     for(const r of RELICS)expect(relicIcon(r.id,r.name),r.id).not.toContain("pending");
-    expect(treasureIcon("lionHelm")).toContain("treasures-extra-02-v1.png");
-    expect(relicIcon("whetstone", "숫돌")).toContain("treasures-extra-05-v1.png");
+    expect(treasureIcon("lionHelm")).toContain("treasures-extra-02-v1.webp");
+    expect(relicIcon("whetstone", "숫돌")).toContain("treasures-extra-05-v1.webp");
     expect(relicIcon("drum", "진군고")).not.toContain("pending");
   });
 });

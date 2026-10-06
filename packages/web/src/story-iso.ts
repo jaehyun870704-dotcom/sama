@@ -341,7 +341,7 @@ let SPRITES:HTMLCanvasElement[]|null=null;
 /** 그린 조형물을 미리 읽어 둔다(시작할 때). 읽은 뒤에 만든 장면부터 쓰이도록 만들어 둔 장면은 버린다. */
 export async function loadIsoArt(){
   if(SPRITES||typeof document==='undefined')return;
-  const img=new Image();img.src=new URL('scenery-v3.png',document.baseURI).href;await img.decode();
+  const img=new Image();img.src=new URL('scenery-v3.webp',document.baseURI).href;await img.decode();
   const cw=img.naturalWidth/4,ch=img.naturalHeight/2,out:HTMLCanvasElement[]=[];
   for(let f=0;f<8;f++){
     const c=document.createElement('canvas');c.width=cw;c.height=ch;const g=c.getContext('2d',{willReadFrequently:true})!;
@@ -1073,7 +1073,7 @@ interface Painted {url:string;w:number;h:number;cropTop:number;kinds:Kind[];
 function sidePanel(idx:number,kinds:Kind[],yTop:number,o:{blocks?:Array<Array<[number,number]>>;inset?:[number,number];fig?:number}={}):Painted{
   const edges=idx<9?[0,340,681,1024]:[0,340,665,1024],row=Math.floor(idx%9/3),w=508,h=edges[row+1]!-edges[row]!-4,cropTop=Math.max(0,Math.min(h-254,yTop-150));// 바닥 위 경치(지붕·성루)를 150px쯤 남기고, 남는 만큼 아래 빈 바닥을 덜어 낸다
   const [l,r]=o.inset??[6,6];
-  return {url:`story-backgrounds-${idx<9?1:2}.png`,sx:idx%3*512+2,sy:edges[row]!+2,w,h,cropTop,kinds,arts:[idx],lit:true,
+  return {url:`story-backgrounds-${idx<9?1:2}.webp`,sx:idx%3*512+2,sy:edges[row]!+2,w,h,cropTop,kinds,arts:[idx],lit:true,
     back:[w/2,yTop+2],right:[w+40,yTop+(h-yTop)*.55],figScale:o.fig??1.4,
     floor:[[l,yTop],[w-r,yTop],[w,h],[0,h]],blocks:o.blocks??[]};
 }

@@ -18,12 +18,12 @@ describe('새 화풍 전체 병종 원화',()=>{
     expect(completeTroopSheets).toHaveLength(25);
     for(const sheet of completeTroopSheets){
       expect(sheet.rows).toBeGreaterThanOrEqual(4);
-      expect(sheet.url).toMatch(/^troops-(?:complete-\d{2}|four-stage-[a-z-]+)-v[12]\.png$/);
+      expect(sheet.url).toMatch(/^troops-(?:complete-\d{2}|four-stage-[a-z-]+)-v[12]\.webp$/);
       const loaded=paintedTroopSheets.find(x=>x.id===sheet.id);
       expect(loaded?.frames).toBe(POSE);
       expect(loaded).toHaveProperty('union',true);
     }
-    expect(completeTroopSheets[9]?.url).toBe('troops-complete-10-v2.png');
+    expect(completeTroopSheets[9]?.url).toBe('troops-complete-10-v2.webp');
     expect(Object.values(fourStageCorrectionRows).flat()).toContain('divineStrategist');
     expect(Object.values(fourStageCorrectionRows).flat()).toContain('sonOfHeaven');
   });
@@ -35,7 +35,7 @@ describe('새 화풍 전체 병종 원화',()=>{
   });
 
   it('예전 manifest 전용 그림이 있어도 신규 전체 원화를 우선한다',()=>{
-    classSheets.set('infantry','troops/old-infantry.png');
+    classSheets.set('infantry','troops/old-infantry.webp');
     expect(classSprite('infantry')).toContain('--four-stage-infantry-atlas');
     expect(classSprite('infantry')).not.toContain('--own-infantry-atlas');
     classSheets.delete('infantry');

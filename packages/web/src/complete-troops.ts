@@ -26,7 +26,7 @@ export const completeTroopRows = [
 
 const baseTroopSheets = completeTroopRows.map((_,i)=>({
   id:`complete-${String(i+1).padStart(2,'0')}`,
-  url:`troops-complete-${String(i+1).padStart(2,'0')}-${i===9?'v2':'v1'}.png`,
+  url:`troops-complete-${String(i+1).padStart(2,'0')}-${i===9?'v2':'v1'}.webp`,
   rows:8,
   // 생성 원화의 희미한 반투명 배경은 인접 행을 이어 붙이므로 실루엣으로 취급하지 않는다.
   alphaCutoff:240,
@@ -47,14 +47,14 @@ export const fourStageCorrectionRows = {
 
 export const completeTroopSheets = [
   ...baseTroopSheets,
-  {id:'four-stage-infantry',url:'troops-four-stage-infantry-v1.png',rows:4,alphaCutoff:240,strictGrid:true},
-  {id:'four-stage-command',url:'troops-four-stage-command-v1.png',rows:4,alphaCutoff:240,strictGrid:true},
-  {id:'four-stage-command-extra',url:'troops-four-stage-command-extra-v1.png',rows:4,alphaCutoff:240,strictGrid:true},
-  {id:'four-stage-ranged',url:'troops-four-stage-ranged-v1.png',rows:4,alphaCutoff:240,strictGrid:true},
-  {id:'four-stage-ranged-extra',url:'troops-four-stage-ranged-extra-v1.png',rows:4,alphaCutoff:240,strictGrid:true},
-  {id:'four-stage-special',url:'troops-four-stage-special-v1.png',rows:4,alphaCutoff:240,strictGrid:true},
-  {id:'four-stage-special-extra',url:'troops-four-stage-special-extra-v1.png',rows:4,alphaCutoff:240,strictGrid:true},
-  {id:'four-stage-siege',url:'troops-four-stage-siege-v1.png',rows:4,alphaCutoff:240,strictGrid:true},
+  {id:'four-stage-infantry',url:'troops-four-stage-infantry-v1.webp',rows:4,alphaCutoff:240,strictGrid:true},
+  {id:'four-stage-command',url:'troops-four-stage-command-v1.webp',rows:4,alphaCutoff:240,strictGrid:true},
+  {id:'four-stage-command-extra',url:'troops-four-stage-command-extra-v1.webp',rows:4,alphaCutoff:240,strictGrid:true},
+  {id:'four-stage-ranged',url:'troops-four-stage-ranged-v1.webp',rows:4,alphaCutoff:240,strictGrid:true},
+  {id:'four-stage-ranged-extra',url:'troops-four-stage-ranged-extra-v1.webp',rows:4,alphaCutoff:240,strictGrid:true},
+  {id:'four-stage-special',url:'troops-four-stage-special-v1.webp',rows:4,alphaCutoff:240,strictGrid:true},
+  {id:'four-stage-special-extra',url:'troops-four-stage-special-extra-v1.webp',rows:4,alphaCutoff:240,strictGrid:true},
+  {id:'four-stage-siege',url:'troops-four-stage-siege-v1.webp',rows:4,alphaCutoff:240,strictGrid:true},
 ];
 
 export type CompleteTroopCell={sheet:string;row:number;rows:number};
