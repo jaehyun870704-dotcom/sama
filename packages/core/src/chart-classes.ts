@@ -177,7 +177,7 @@ export function chartClasses(existing: Partial<Record<UnitClass, ClassVariant>>)
     for (const [k, v] of Object.entries(f.boost)) traits[k] = (traits[k] ?? 0) + v;
     const b = prev.profile, m = 1.1;
     variants[f.id] = {
-      family: prev.family, tier: Math.min(5, prev.tier + 1) as ClassTier,
+      family: prev.family, tier: Math.min(4, prev.tier + 1) as ClassTier,
       profile: p(b.hp * m, b.mp * m, b.attack * m, b.defense * m, b.intellect * m, b.spirit * m, b.agility * m, b.movement, b.range, b.canUseStrategy),
       traits, bloom: { name: f.bloom[0], description: f.bloom[1] },
     };

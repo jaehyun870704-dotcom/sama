@@ -42,11 +42,10 @@ describe('새 병종과 진화 계통',()=>{
   expect(evolvedClass('xiliang',11)).toBe('xiliang');expect(evolvedClass('xiliang',12)).toBe('feixiong');expect(evolvedClass('xiliang',20)).toBe('liangzhouIron');
   expect(evolvedClass('heavyCav',20)).toBe('ironPagoda');expect(evolvedClass('elephant',21)).toBe('warElephant');expect(evolvedClass('elephant',22)).toBe('elephantKing');
  });
- it('evolves every lineage tier by tier (1→2→3, chart lines up to 5), siege and navy included',()=>{
-  // 기본은 1→2→3단. 병종 차트로 늘린 계통은 2~5단(검사는 5단), 기존 계통 일부는 4단(레벨 30)이 붙는다.
-  for(const line of evolutionLines()){const tiers=line.map(([c])=>tierOf(c));expect(tiers,line.map(x=>x[0]).join('→')).toEqual(tiers.map((_,i)=>i+1));expect(tiers.length).toBeGreaterThanOrEqual(2);expect(tiers.length).toBeLessThanOrEqual(5);}
+ it('evolves every lineage through exactly four tiers, siege and navy included',()=>{
+  for(const line of evolutionLines()){const tiers=line.map(([c])=>tierOf(c));expect(tiers,line.map(x=>x[0]).join('→')).toEqual([1,2,3,4]);}
   for(const c of ['ram','navy'] as const)expect(evolvedClass(c,30)).not.toBe(c);
-  for(const c of ['engineer','catapult'] as const)expect(evolvedClass(c,30)).toBe(c);
+  expect(evolvedClass('engineer',30)).toBe('divineEngineer');expect(evolvedClass('catapult',30)).toBe('divineCatapult');
   for(const line of evolutionLines())for(const [c] of line)expect(classNames[c],c).toMatch(/[가-힣]/);
  });
  it('makes each new tier 3 stronger than its tier 2 and keeps the tier 2 skills',()=>{
@@ -64,8 +63,8 @@ describe('새 병종과 진화 계통',()=>{
   }
  });
  it('removes the overlapping lines and reads their old saves as the nearest surviving class',()=>{
-  for(const c of ['physician','javelin','axeman','mountaineer','qingzhou','jishi','shieldBow','drummer','riderSage','jiangdong','langzhong','sapper','thunderCart']){expect((VARIANTS as Record<string,unknown>)[c],c).toBeUndefined();expect(RECRUITS as string[]).not.toContain(c);expect(VARIANTS[currentClass(c)]??(['fengshui','spearman','bandit','infantry','crossbow','engineer','catapult'].includes(currentClass(c))||undefined),c).toBeTruthy();}
-  expect(evolvedClass('engineer',40)).toBe('engineer');expect(evolvedClass('catapult',40)).toBe('catapult');
+  for(const c of ['physician','javelin','axeman','mountaineer','qingzhou','jishi','shieldBow','drummer','riderSage','jiangdong','langzhong']){expect((VARIANTS as Record<string,unknown>)[c],c).toBeUndefined();expect(RECRUITS as string[]).not.toContain(c);expect(VARIANTS[currentClass(c)]??(['fengshui','spearman','bandit','infantry','crossbow'].includes(currentClass(c))||undefined),c).toBeTruthy();}
+  expect(evolvedClass('engineer',40)).toBe('divineEngineer');expect(evolvedClass('catapult',40)).toBe('divineCatapult');
   expect(classFamily('arhat')).toBe(classFamily('monk'));
  });
 });

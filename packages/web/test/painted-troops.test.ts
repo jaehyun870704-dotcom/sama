@@ -27,9 +27,13 @@ import {lookText} from '../src/troop-evolution.ts';
 import {hasPaintedMotion} from '../src/troops.ts';
 import {paintedFrames,paintedTroopSheets,POSE} from '../src/painted-troops.ts';
 describe('완성 원화만 쓰는 병종 그림',()=>{
-  it('loads only the 17 complete sheets, never the old troop or chart sheets',()=>{
-    expect(paintedTroopSheets.map(s=>s.id)).toEqual(Array.from({length:17},(_,i)=>`complete-${String(i+1).padStart(2,'0')}`));
-    expect(paintedTroopSheets.every(s=>s.url.startsWith('troops-complete-'))).toBe(true);
+  it('loads the 17 complete sheets plus 7 four-stage corrections, never legacy sheets',()=>{
+    expect(paintedTroopSheets.map(s=>s.id)).toEqual([
+      ...Array.from({length:17},(_,i)=>`complete-${String(i+1).padStart(2,'0')}`),
+      'four-stage-command','four-stage-command-extra','four-stage-ranged','four-stage-ranged-extra',
+      'four-stage-special','four-stage-special-extra','four-stage-siege',
+    ]);
+    expect(paintedTroopSheets.every(s=>s.url.startsWith('troops-complete-')||s.url.startsWith('troops-four-stage-'))).toBe(true);
     expect(paintedFrames('complete-01')).toBe(POSE);
   });
   it('describes every tier as the complete art itself, not armor overlays',()=>{
@@ -66,7 +70,7 @@ describe('병종 차트로 늘린 병종', () => {
     }
     for (const c of ['swordsman', 'lord', 'commander', 'dancer', 'transport', 'yellowTurban'] as const) expect(recruitPool).toContain(c);
     expect(evolvedClass('swordsman', 40)).toBe('swordSaint');
-    expect(tierOf('swordSaint')).toBe(5);
+    expect(tierOf('swordSaint')).toBe(4);
     expect(evolvedClass('infantry', 30)).toBe('ironInfantry');
   });
 });

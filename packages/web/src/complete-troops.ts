@@ -24,7 +24,7 @@ export const completeTroopRows = [
   ['ytSpear','ytBrawler','nanmanFoot','northFoot','baguaChariot','flyingBlade','bashuRepeater','civilian'],
 ] as const satisfies readonly (readonly UnitClass[])[];
 
-export const completeTroopSheets = completeTroopRows.map((_,i)=>({
+const baseTroopSheets = completeTroopRows.map((_,i)=>({
   id:`complete-${String(i+1).padStart(2,'0')}`,
   url:`troops-complete-${String(i+1).padStart(2,'0')}-${i===9?'v2':'v1'}.png`,
   rows:8,
@@ -33,9 +33,37 @@ export const completeTroopSheets = completeTroopRows.map((_,i)=>({
   strictGrid:true,
 }));
 
+/** Four-stage corrections: weapon continuity, mounted lords, and the final chariot strategist. */
+export const fourStageCorrectionRows = {
+  'four-stage-command':['divineStrategist','lord','hegemon','sovereign'],
+  'four-stage-command-extra':['sonOfHeaven','sapper','masterBuilder','divineEngineer'],
+  'four-stage-ranged':['northRider','ytArcher','bashuRepeater','palanquin'],
+  'four-stage-ranged-extra':['fanSage','meteorSlinger','flyingBlade','heavenXiliang'],
+  'four-stage-special':['northFoot','baguaChariot','wheelSage','yellowTurban'],
+  'four-stage-special-extra':['nanmanFoot','ytBrawler','divineGaema','ytSpear'],
+  'four-stage-siege':['swordArtist','thunderCart','greatTrebuchet','divineCatapult'],
+} as const satisfies Readonly<Record<string,readonly UnitClass[]>>;
+
+export const completeTroopSheets = [
+  ...baseTroopSheets,
+  {id:'four-stage-command',url:'troops-four-stage-command-v1.png',rows:4,alphaCutoff:240,strictGrid:true},
+  {id:'four-stage-command-extra',url:'troops-four-stage-command-extra-v1.png',rows:4,alphaCutoff:240,strictGrid:true},
+  {id:'four-stage-ranged',url:'troops-four-stage-ranged-v1.png',rows:4,alphaCutoff:240,strictGrid:true},
+  {id:'four-stage-ranged-extra',url:'troops-four-stage-ranged-extra-v1.png',rows:4,alphaCutoff:240,strictGrid:true},
+  {id:'four-stage-special',url:'troops-four-stage-special-v1.png',rows:4,alphaCutoff:240,strictGrid:true},
+  {id:'four-stage-special-extra',url:'troops-four-stage-special-extra-v1.png',rows:4,alphaCutoff:240,strictGrid:true},
+  {id:'four-stage-siege',url:'troops-four-stage-siege-v1.png',rows:4,alphaCutoff:240,strictGrid:true},
+];
+
 export type CompleteTroopCell={sheet:string;row:number;rows:number};
-export const completeTroopArt=Object.fromEntries(
+const baseTroopArt=Object.fromEntries(
   completeTroopRows.flatMap((classes,sheet)=>classes.map((troop,row)=>[
     troop,{sheet:`complete-${String(sheet+1).padStart(2,'0')}`,row,rows:8},
   ])),
-) as Record<UnitClass,CompleteTroopCell>;
+) as Partial<Record<UnitClass,CompleteTroopCell>>;
+const correctedTroopArt=Object.fromEntries(
+  Object.entries(fourStageCorrectionRows).flatMap(([sheet,classes])=>classes.map((troop,row)=>[
+    troop,{sheet,row,rows:classes.length},
+  ])),
+) as Partial<Record<UnitClass,CompleteTroopCell>>;
+export const completeTroopArt={...baseTroopArt,...correctedTroopArt} as Record<UnitClass,CompleteTroopCell>;

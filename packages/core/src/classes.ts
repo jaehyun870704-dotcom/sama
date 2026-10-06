@@ -5,13 +5,13 @@
  * 병종 상성·그림은 계열의 것을 쓰고, 능력치 계수·사거리·고유 특성만 따로 둔다.
  * 그래서 병종을 늘려도 지형표와 상성표를 병종 수만큼 다시 쓰지 않는다.
  *
- * 진화: 레벨이 기준에 닿으면 같은 계통의 다음 단계 병종으로 바뀐다. 기본은 1→2→3단, 차트로 늘린 계통은 4·5단까지 있다.
+ * 진화: 모든 계통은 기본 → 정예 → 최정예 → 전설의 네 단계로 고정한다.
  */
 import type { UnitClass } from "./types.ts";
 import { chartClasses } from "./chart-classes.ts";
 
-/** 1 = 기본, 2 = 정예, 3 = 최정예, 4·5 = 차트로 늘린 전설 단계(검성은 5). */
-export type ClassTier = 1 | 2 | 3 | 4 | 5;
+/** 1 = 기본, 2 = 정예, 3 = 최정예, 4 = 전설. */
+export type ClassTier = 1 | 2 | 3 | 4;
 
 export interface ClassProfile {
   hp: number;
@@ -29,7 +29,7 @@ export interface ClassProfile {
 export interface ClassVariant {
   /** 이동·상성·그림을 물려받는 기존 병종 */
   family: UnitClass;
-  /** 1 = 기본, 2 = 정예, 3 = 최정예, 4·5 = 전설 */
+  /** 1 = 기본, 2 = 정예, 3 = 최정예, 4 = 전설 */
   tier: ClassTier;
   profile: ClassProfile;
   /** 이 병종이 되면 붙는 고유 특성 (id → 매개변수) */
@@ -183,6 +183,99 @@ export const EVOLUTION: Partial<Record<UnitClass, readonly [UnitClass, number]>>
   Object.assign(EVOLUTION, chart.evolution);
 }
 
+/**
+ * 도감과 실제 진화에 쓰는 최종 계통표. 저장 호환성을 위해 기존 병종 id는 지우지 않고
+ * 짧게 끝나던 계통의 상위 단계로 재배치한다. 검객계는 검술가 단계를 빼 네 단계로 줄였다.
+ */
+export const FOUR_STAGE_LINES: readonly (readonly [UnitClass, UnitClass, UnitClass, UnitClass])[] = [
+  ["infantry", "shieldGuard", "royalGuard", "ironInfantry"],
+  ["spearman", "pikeman", "halberdier", "divineSpear"],
+  ["cavalry", "lancer", "tigerRider", "northRider"],
+  ["heavyCav", "ironCav", "ironPagoda", "wujiHeavyCav"],
+  ["archer", "longbow", "sharpshooter", "ytArcher"],
+  ["crossbow", "repeater", "greatBow", "bashuRepeater"],
+  ["strategist", "tactician", "mastermind", "divineStrategist"],
+  ["fengshui", "sage", "immortal", "palanquin"],
+  ["horseArcher", "nomad", "whiteHorse", "fanSage"],
+  ["slinger", "hurler", "boulderCorps", "meteorSlinger"],
+  ["assassin", "phantom", "wraith", "flyingBlade"],
+  ["rattan", "rattanElite", "wuguoRattan", "northFoot"],
+  ["elephant", "warElephant", "elephantKing", "baguaChariot"],
+  ["shaman", "warlock", "demonKing", "wheelSage"],
+  ["maiden", "priestess", "celestial", "yellowTurban"],
+  ["taoist", "stormSage", "thunderGod", "heavenTaoist"],
+  ["monk", "warriorMonk", "arhat", "fistSaint"],
+  ["bandit", "outlaw", "greenwoodKing", "chieftain"],
+  ["xiliang", "feixiong", "liangzhouIron", "heavenXiliang"],
+  ["ram", "ironRam", "cloudRam", "dragonRam"],
+  ["navy", "mengchong", "louchuan", "admiral"],
+  ["swordsman", "knightErrant", "swordMaster", "swordSaint"],
+  ["lord", "hegemon", "sovereign", "sonOfHeaven"],
+  ["commander", "grandCommander", "marshal", "heavenCommander"],
+  ["dancer", "songstress", "beauty", "heavenDancer"],
+  ["mountainCav", "scoutCav", "raidCav", "pegasusCav"],
+  ["valiantCav", "dragonCav", "stormCav", "heavenCav"],
+  ["lightChariot", "assaultChariot", "heavyChariot", "divineChariot"],
+  ["siegeTower", "jinglan", "heavyJinglan", "divineJinglan"],
+  ["crownPrince", "royalPrince", "emperor", "heavenEmperor"],
+  ["transport", "baggageTrain", "woodenOx", "divineOx"],
+  ["nanmanRider", "nanmanBeast", "nanmanFoot", "ytBrawler"],
+  ["gaemaWarrior", "gaemaCaptain", "whiteTigerCav", "divineGaema"],
+  ["halberdCav", "heavyHalberdCav", "ytSpear", "swordArtist"],
+  ["engineer", "sapper", "masterBuilder", "divineEngineer"],
+  ["catapult", "thunderCart", "greatTrebuchet", "divineCatapult"],
+];
+
+const reassigned = new Set<UnitClass>([
+  "northRider", "ytArcher", "bashuRepeater", "palanquin", "fanSage",
+  "flyingBlade", "northFoot", "baguaChariot", "wheelSage", "yellowTurban",
+  "nanmanFoot", "ytBrawler", "ytSpear", "swordArtist",
+]);
+const rootProfiles: Partial<Record<UnitClass, ClassProfile>> = {
+  engineer: p(0.80, 0.3, 0.50, 0.80, 0.7, 0.9, 0.8, 5, [1, 1]),
+  catapult: p(0.95, 0.3, 1.10, 0.75, 0.6, 0.8, 0.6, 3, [2, 4]),
+};
+const improve = (b: ClassProfile, m = 1.1): ClassProfile => p(
+  b.hp * m, b.mp * m, b.attack * m, b.defense * m, b.intellect * m,
+  b.spirit * m, b.agility * m, b.movement, b.range, b.canUseStrategy,
+);
+
+// chart-classes의 임시 계통을 버리고, 위 36개 계통만 실제 진화표로 노출한다.
+const originalEvolution = { ...EVOLUTION };
+for (const key of Object.keys(EVOLUTION) as UnitClass[]) delete EVOLUTION[key];
+for (const line of FOUR_STAGE_LINES) {
+  const root = line[0];
+  const family = VARIANTS[root]?.family ?? root;
+  const fallbackLevels = [8, 16, 30] as const;
+  const candidateLevels = line.slice(0, 3).map((id, i) => originalEvolution[id]?.[1] ?? fallbackLevels[i]!);
+  const evolutionLevels = candidateLevels.every((level, i) => i === 0 || level > candidateLevels[i - 1]!)
+    ? candidateLevels : [...fallbackLevels];
+  line.forEach((id, index) => {
+    if (index > 0) {
+      const previous = line[index - 1]!;
+      const previousVariant = VARIANTS[previous];
+      const current = VARIANTS[id];
+      if (!current || reassigned.has(id)) {
+        const previousProfile = previousVariant?.profile ?? rootProfiles[previous];
+        if (!previousProfile) throw new Error(`4단계 병종의 앞 단계 정보가 없다: ${previous}`);
+        VARIANTS[id] = {
+          family,
+          tier: (index + 1) as ClassTier,
+          profile: improve(previousProfile),
+          traits: { ...(previousVariant?.traits ?? {}), attackBoost: index + 3 },
+          bloom: { name: "전설의 경지", description: "앞 단계의 무기와 전법을 완성한 전설 병종" },
+        };
+      } else {
+        current.family = family;
+        current.tier = (index + 1) as ClassTier;
+      }
+      EVOLUTION[previous] = [id, evolutionLevels[index - 1]!];
+    } else if (VARIANTS[id]) {
+      VARIANTS[id]!.tier = 1;
+    }
+  });
+}
+
 /** 이동·상성·그림의 기준이 되는 병종. 기존 병종은 자기 자신. */
 export function familyOf(unitClass: UnitClass): UnitClass {
   return VARIANTS[unitClass]?.family ?? unitClass;
@@ -227,7 +320,6 @@ export const RETIRED_CLASSES: Readonly<Record<string, UnitClass>> = {
   riderSage: "wheelSage", swiftSage: "fanSage", divineSage: "fanSage",
   jiangdong: "infantry", bawang: "shieldGuard", overlordGuard: "royalGuard",
   langzhong: "valiantCav", yulin: "dragonCav", huben: "stormCav",
-  sapper: "engineer", masterBuilder: "engineer", thunderCart: "catapult", greatTrebuchet: "catapult",
 };
 /** 저장에서 읽은 병종 이름을 지금 병종으로(지운 병종이면 이어받는 병종). */
 export function currentClass(c: string): UnitClass { return RETIRED_CLASSES[c] ?? (c as UnitClass); }

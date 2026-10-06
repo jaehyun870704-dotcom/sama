@@ -81,7 +81,7 @@ export function showHub(host:RunHost){
   ${runBoard(sc.state,meta)}
   ${treasurePanel()}
   <div class="hub-actions"><button id="hub-scenario" class="primary">${done?'천명의 길 이어하기':'천명의 길 시작'}${sc.state.run?` · 제${sc.state.run.no}회차`:''} · ${esc(sc.tag)} 「${esc(sc.title)}」</button>
-  <button id="hub-quests">반복 퀘스트 <small>원정 · 수련 · 회상</small></button>${host.resumeSaved?'<button id="hub-resume">전투 이어하기</button>':''}<button id="hub-codex">삼국지 인물열전 <small>장수 · 병종 · 책략</small></button><button id="hub-research">연구 <small>전투 · 내정 · 편성</small></button><button id="hub-custom">신장수 · 신세력</button><button id="hub-slots">저장 칸</button><button id="hub-troops">병종 진화표 <small>1→2→3단</small></button><button id="hub-officers">장수 · 연의 장수록</button><button id="hub-fate">갈림길 지도 <small>정사 · 가상 · 신세력</small></button></div>
+  <button id="hub-quests">반복 퀘스트 <small>원정 · 수련 · 회상</small></button>${host.resumeSaved?'<button id="hub-resume">전투 이어하기</button>':''}<button id="hub-codex">삼국지 인물열전 <small>장수 · 병종 · 책략</small></button><button id="hub-research">연구 <small>전투 · 내정 · 편성</small></button><button id="hub-custom">신장수 · 신세력</button><button id="hub-slots">저장 칸</button><button id="hub-troops">병종 진화표 <small>기본→정예→최정예→전설</small></button><button id="hub-officers">장수 · 연의 장수록</button><button id="hub-fate">갈림길 지도 <small>정사 · 가상 · 신세력</small></button></div>
   <p class="prototype-note">기록은 이 브라우저에 저장됩니다.</p></div></div>`,false);
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
   on('hub-scenario',host.showScenario);on('hub-quests',()=>showQuests(host));on('hub-custom',()=>showCustomEditor(host,()=>showHub(host)));

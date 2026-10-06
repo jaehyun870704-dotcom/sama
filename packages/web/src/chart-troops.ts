@@ -16,9 +16,9 @@ export const CHART_ROLES:Partial<Record<UnitClass,Role>>={
   // 검사계
   swordsman:r('검객','날랜 칼 한 자루로 싸우는 검사 계통의 시작','infantry',0xe8dcc0),
   knightErrant:r('협객','검사 2단계 · 회심 일격이 잦아진다','infantry',0xc8a880),
-  swordArtist:r('검술가','검사 3단계 · 회심과 공격력이 오른다','infantry',0xc0c8d8),
-  swordMaster:r('검사','검사 4단계 · 검기로 방어를 꿰뚫는다','infantry',0xd8a060),
-  swordSaint:r('검성','검사 5단계 · 궁지에서 더 날카로워지는 검의 끝','infantry',0xfff0b0),
+  swordArtist:r('신극기병','극기병 전설 · 같은 극을 끝까지 단련한 기병','cavalry',0xc0c8d8),
+  swordMaster:r('검사','검사 최정예 · 검기로 방어를 꿰뚫는다','infantry',0xd8a060),
+  swordSaint:r('검성','검사 전설 · 궁지에서 더 날카로워지는 검의 끝','infantry',0xfff0b0),
   // 군주계
   lord:r('군주','말 위에서 군을 이끄는 군주 계통 · 사기를 북돋운다','cavalry',0x9ab8e8,LEAD),
   hegemon:r('패주','군주 2단계 · 궁지에서 받는 피해가 줄어든다','cavalry',0xc0a070,LEAD),
@@ -73,22 +73,22 @@ export const CHART_ROLES:Partial<Record<UnitClass,Role>>={
   halberdCav:r('극기병','극을 든 기병 · 창병 상대로 버틴다','cavalry',0xb09070),
   heavyHalberdCav:r('중장극기병','극기병 2단계 · 반격이 강해진다','cavalry',0x9098a0),
   wheelSage:r('사륜거 책사','수레 위의 책사 · 느리지만 책략이 강하다','strategist',0xe0e0d0,CAST),
-  fanSage:r('백우선 사륜거','사륜거 2단계 · 백우선의 신산','strategist',0xc0f0d0,CAST2),
-  yellowTurban:r('황건병','황건의 무리 · 궁지에서 사나워진다','infantry',0xf0d040),
-  ytArcher:r('황건궁병','황건의 궁수','archer',0xe8c840),
-  ytSpear:r('황건창병','황건의 창병 · 반격이 강하다','spearman',0xe8c840),
-  ytBrawler:r('황건무인','맨손의 황건 무인 · 회심 일격','monk',0xe8c840),
-  nanmanFoot:r('남만보병','험지를 가리지 않는 남만의 보병','infantry',0xc08860),
-  northFoot:r('북방보병','북방 이민족의 보병','infantry',0xb0a890),
-  northRider:r('북방기병','말 위에서 활을 쏘는 북방 기병','horseArcher',0xb0a078),
-  palanquin:r('어가','천자의 가마 · 책략 피해를 덜 받는다','strategist',0xf0a0a0,HEAL),
-  baguaChariot:r('팔괘전차','팔괘진을 새긴 전차 · 책략을 쓴다','heavyCav',0x90e0b0,CAST),
-  flyingBlade:r('비도수','칼을 던지는 자객 · 사거리 1~2','bandit',0x909090),
-  bashuRepeater:r('파촉 연노병','파촉의 연노 부대','crossbow',0xa0b070),
+  fanSage:r('천궁기','기마궁병 전설 · 같은 활로 달리며 백발백중한다','horseArcher',0xc0f0d0),
+  yellowTurban:r('천녀','무녀 전설 · 같은 방울로 하늘의 가호를 부른다','maiden',0xf0d040,DANCE),
+  ytArcher:r('신궁','궁병 전설 · 같은 활로 가장 먼 적을 꿰뚫는다','archer',0xe8c840),
+  ytSpear:r('철극기병','극기병 최정예 · 같은 극으로 돌진과 반격을 잇는다','cavalry',0xe8c840),
+  ytBrawler:r('남만수왕기','남만기병 전설 · 같은 도를 든 맹수 기병','cavalry',0xe8c840),
+  nanmanFoot:r('남만맹호기','남만기병 최정예 · 같은 도를 든 중갑 기병','cavalry',0xc08860),
+  northFoot:r('금강등갑병','등갑병 전설 · 같은 칼과 방패를 든 불굴의 병사','infantry',0xb0a890),
+  northRider:r('천호기병','경기병 전설 · 같은 창으로 돌파하는 기병','cavalry',0xb0a078),
+  palanquin:r('천풍수사','풍수사 전설 · 같은 팔괘 지팡이로 진을 다스린다','fengshui',0xf0a0a0,HEAL),
+  baguaChariot:r('백상왕','코끼리병 전설 · 같은 장창을 든 금갑 전투 코끼리','elephant',0x90e0b0),
+  flyingBlade:r('귀영살수','자객 전설 · 같은 비도로 그림자처럼 벤다','assassin',0x909090),
+  bashuRepeater:r('신노','노병 전설 · 같은 연노로 철갑을 꿰뚫는다','crossbow',0xa0b070),
   // 기존 계통의 4단계
   ironInfantry:r('무극보병','보병 4단계 · 철갑 보병','infantry',0xffd060),
   divineSpear:r('신창','창병 4단계 · 금창의 달인','spearman',0xffd060),
-  divineStrategist:r('신산','책사 4단계 · 신묘한 계산','strategist',0xfff0c0,['fire','embers','gust','windDragon','ambush','fireWall','rockfall','whirlwind','feint','tempest','breakArmor','chainFire','skyFire','shatter']),
+  divineStrategist:r('신산','책사 전설 · 백우선을 들고 사륜거에서 신묘한 계책을 펼친다','strategist',0xfff0c0,['fire','embers','gust','windDragon','ambush','fireWall','rockfall','whirlwind','feint','tempest','breakArmor','chainFire','skyFire','shatter']),
   heavenTaoist:r('천도사','도사 4단계 · 하늘의 도를 부린다','taoist',0xfff0a0,['fire','gust','windDragon','flood','waterSurge','thunder','whirlwind','tempest','thunderbolt','gale','mire','tidalLine','thunderCross','quake']),
   fistSaint:r('권성','무도가 4단계 · 주먹의 성인','monk',0xffd060,['mend','march','fortify']),
   chieftain:r('두령','산적 4단계 · 산채의 두령','bandit',0xe0a060),
@@ -96,3 +96,18 @@ export const CHART_ROLES:Partial<Record<UnitClass,Role>>={
   wujiHeavyCav:r('무극중기병','중기병 4단계 · 금장 중기병','heavyCav',0xffd060),
   dragonRam:r('신충차','충차 4단계 · 용머리 충차','ram',0x80c080),
 };
+
+// 기존 저장 id는 유지하되, 빈 4단계와 공성 계통을 별도 병종으로 채운다.
+Object.assign(CHART_ROLES, {
+  meteorSlinger:r('천석투병','투석병 전설 · 같은 투석구로 내리꽂는다','archer',0xd8b870),
+  heavenXiliang:r('천량철기','서량기병 전설 · 같은 장창으로 설원을 돌파한다','cavalry',0xd8c090),
+  divineGaema:r('신개마무사','개마무사 전설 · 같은 장창으로 중장 돌격한다','heavyCav',0xd8c8a0),
+  sapper:r('축성병','공병 정예 · 같은 사각 망치로 방책과 기계를 다룬다','engineer',0x80a890),
+  masterBuilder:r('공성장인','공병 최정예 · 같은 사각 망치로 견고하게 보수한다','engineer',0x7098a8),
+  divineEngineer:r('신기장','공병 전설 · 같은 사각 망치로 전장을 요새화한다','engineer',0xd0b870),
+  thunderCart:r('벽력거','포차 정예 · 같은 투석 기구로 거석을 날린다','catapult',0xb09068),
+  greatTrebuchet:r('천균거','포차 최정예 · 같은 투석 기구를 대형화한다','catapult',0x9b8060),
+  divineCatapult:r('신포차','포차 전설 · 같은 투석 기구로 성곽을 붕괴시킨다','catapult',0xd0a050),
+});
+CHART_ROLES.ytArcher={...CHART_ROLES.ytArcher!,name:'천궁수'};
+CHART_ROLES.wheelSage={...CHART_ROLES.wheelSage!,name:'천요술사',role:'주술사 전설 · 같은 나무 지팡이와 부적으로 요술을 완성한다',base:'shaman',spells:CAST2};

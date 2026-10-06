@@ -1,7 +1,7 @@
 /**
  * 병종 진화표 — 병종이 어떻게 강해지는가를 한눈에.
- * 계통마다 1단(기본) → 2단(정예) → 3단(최정예) 카드: 진화 레벨, 능력치 변화(▲), 사거리·이동, 개화 스킬, 겉모습의 변화.
- * 그림은 도감과 같은 완성 병종 원화.
+ * 계통마다 1단(기본) → 2단(정예) → 3단(최정예) → 4단(전설) 카드.
+ * 그림은 도감과 같은 완성 병종 원화다.
  */
 import type {UnitClass} from '../../core/src/index.ts';
 import {VARIANTS,tierOf,familyOf,profileOf,classTactics} from '../../core/src/index.ts';
@@ -33,7 +33,7 @@ function card(c:UnitClass,lv:number,prev?:UnitClass){
 export function evolutionChart(group:EvoGroup='all'){
   const fams=EVO_GROUPS.find(g=>g[0]===group)![2];
   const lines=evolutionLines().filter(l=>!fams.length||fams.includes(familyOf(l[0]![0])));
-  return `<div class="evo-tabs">${EVO_GROUPS.map(([id,name])=>`<button data-evo-group="${id}" class="${id===group?'active':''}">${name}</button>`).join('')}<span class="muted">${lines.length}계통 · 3~5단 진화</span></div>
+  return `<div class="evo-tabs">${EVO_GROUPS.map(([id,name])=>`<button data-evo-group="${id}" class="${id===group?'active':''}">${name}</button>`).join('')}<span class="muted">${lines.length}계통 · 모두 4단 진화</span></div>
   <div class="evo-lines">${lines.map(l=>`<section class="evo-line"><h3>${esc(classNames[l[0]![0]]??l[0]![0])} 계통 <small>${esc(classNames[familyOf(l[0]![0])]??'')} 계열 · ${l.map(([,lv],i)=>i?`Lv.${lv}`:'Lv.1').join(' → ')}</small></h3>
     <div class="evo-row">${l.map(([c,lv],i)=>`${i?'<i class="evo-arrow2">▶</i>':''}${card(c,lv,i?l[i-1]![0]:undefined)}`).join('')}</div></section>`).join('')}</div>`;
 }

@@ -68,9 +68,12 @@ export type UnitClass =
   | "elephant" | "warElephant"
   | "ironPagoda" | "elephantKing" | "boulderCorps" | "wraith" | "wuguoRattan" | "greenwoodKing" | "arhat"
   | "demonKing" | "celestial" | "thunderGod"
-  // v41: 모든 계통 3단 진화
+  // v41에 추가된 진화 병종
   | "liangzhouIron"
   | "ironRam" | "cloudRam" | "mengchong" | "louchuan"
+  | "meteorSlinger" | "heavenXiliang" | "divineGaema"
+  | "sapper" | "masterBuilder" | "divineEngineer"
+  | "thunderCart" | "greatTrebuchet" | "divineCatapult"
   // 명부대(이름난 부대) 계통
   | "xiliang" | "feixiong"
   // 병종 차트로 늘린 계통·4단계·모병 특수 병과 (chart-classes.ts)
