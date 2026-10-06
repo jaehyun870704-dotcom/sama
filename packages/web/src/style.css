@@ -1372,3 +1372,7 @@ body.left-open .left-close{display:block;position:absolute;right:8px;top:8px;z-i
 .rogue-rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px 12px;margin:0;padding:0;list-style:none;font-size:12px;color:#cfc3a6}
 .rogue-rules li{display:flex;gap:8px;align-items:flex-start}.rogue-rules i{display:grid;place-items:center;flex:none;width:24px;height:24px;border-radius:50%;background:#5a4620;color:#ffe2a0;font-style:normal;font-weight:800}
 .rogue-rules b{display:block;color:#f0cf86}
+/* 첫 화면 그림 준비 띠: 본영을 먼저 띄우고 그림은 뒤에서 자른다 */
+#art-loading{position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:10px;padding:7px 14px;border:1px solid #6f6a50;border-radius:4px;background:#132322ee;font-size:11px;color:#cfc6a6;pointer-events:none;white-space:nowrap}
+#art-loading>i{display:block;width:120px;height:4px;background:#34433b;border-radius:2px;overflow:hidden}#art-loading>i>i{display:block;height:100%;background:#c2a36b;transition:width .3s}
+#art-loading small{font-variant-numeric:tabular-nums;color:#8c9a95}#art-loading.waiting{border-color:#c2a36b;color:#f0dcae}#art-loading.waiting b:after{content:' — 누른 메뉴를 곧 엽니다'}

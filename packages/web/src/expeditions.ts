@@ -59,7 +59,7 @@ export function missionEnemyScale(id:string){
 }
 /** 도전 단계의 세기: 처음부터 깔린 추가 적, 증원 물결(차례), 물결마다 적 수, 수문장. */
 export function challengePlan(step:number){
- return {extra:Math.floor(step/5),waves:step<3?[]:step<5?[3]:step<8?[3,5]:[3,5,7],waveSize:step<8?1:2,boss:step===5||step===10,attack:.76+step*.03,hp:1+step*.04};
+ return {extra:step<5?0:1,waves:step<3?[]:step<5?[3]:step<8?[3,5]:step<9?[3,5,7]:[4,7,10],waveSize:step<8?1:2,boss:step===5||step===10,attack:.76+step*.03,hp:1+step*.04};
 }
 export const storyWins=(c:Campaign)=>new Set(c.rewards.filter(x=>x.endsWith(':normal')).map(x=>x.split(':')[0])).size;
 export function canExpedition(c:Campaign,id:string){const m=expeditions.find(x=>x.id===id);if(!m||storyWins(c)<m.requires)return false;
@@ -118,10 +118,12 @@ const CHALLENGE_TROOPS:UnitClass[][]=[['infantry','spearman','archer'],['spearma
 /** 도전 단계마다 추가 적·증원 물결·수문장을 붙인다. 적은 동쪽 증원 지점에서 나와 밀고 들어온다. */
 function escalate(stage:StageDef,map:MapFile,step:number,level:number){
  const plan=challengePlan(step),troops=CHALLENGE_TROOPS[Math.min(CHALLENGE_TROOPS.length-1,Math.floor((step-1)/2))]!,w=map.rows[0]!.length;
+ // 증원 물결은 4단 병종(방패·연노·창기)까지만: 9·10단계 물결이 철기·저격병 여섯으로 사마의만 노려 단계 하나에 레벨 +20이 필요하던 절벽을 없앤다. 최상위 병종은 정예·수문장이 맡는다.
+ const waveTroops=CHALLENGE_TROOPS[Math.min(3,Math.floor((step-1)/2))]!;
  map.regions??={};map.regions.trial_reinforcements??=[{x:w-2,y:4},{x:w-2,y:5},{x:w-3,y:4},{x:w-3,y:5}];
  const events=stage.events??=[],first=events[0]!.actions.find(a=>a.type==='spawn_units')!;
  for(let i=0;i<plan.extra;i++)first.units!.push({id:'challenge_guard_'+i,name:'도전 정예',template:troops[i%troops.length]!,level:level+1,region:'trial_reinforcements',behavior:'advance'});
  if(plan.boss)first.units!.push({id:'challenge_boss',name:step===10?'패왕의 수문장':'군수고 수문장',template:step===10?'ironPagoda':'tigerRider',level:level+3,region:'trial_reinforcements',behavior:'hold'});
- plan.waves.forEach((turn,k)=>events.push({id:stage.id+'/challenge-wave/'+turn,trigger:{type:'turn_start',turn,side:'enemy'},actions:[{type:'spawn_units',side:'enemy',units:Array.from({length:plan.waveSize},(_,i)=>({id:'challenge_wave_'+turn+'_'+i,name:'증원 '+(k+1)+'진',template:troops[(k+i)%troops.length]!,level,region:'trial_reinforcements',behavior:'advance' as const}))}]}));
+ plan.waves.forEach((turn,k)=>events.push({id:stage.id+'/challenge-wave/'+turn,trigger:{type:'turn_start',turn,side:'enemy'},actions:[{type:'spawn_units',side:'enemy',units:Array.from({length:plan.waveSize},(_,i)=>({id:'challenge_wave_'+turn+'_'+i,name:'증원 '+(k+1)+'진',template:waveTroops[(k+i)%waveTroops.length]!,level,region:'trial_reinforcements',behavior:'advance' as const}))}]}));
  stage.synopsis=(stage.synopsis?stage.synopsis+' · ':'')+'도전 '+step+'단계'+(plan.waves.length?' · 증원 '+plan.waves.length+'회':'')+(plan.boss?' · 수문장 등장':'');
 }

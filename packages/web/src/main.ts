@@ -301,6 +301,8 @@ function showExpeditionResult(){if(resultShown)return;resultShown=true;const run
  $('#expedition-again').onclick=()=>briefing(7,m.id);const nextStep=document.getElementById('expedition-next-step');if(nextStep)nextStep.onclick=()=>expeditionStory('C'+String(m.step!+1).padStart(2,'0'));$('#expedition-list').onclick=()=>showExpeditions(m.kind);$('#expedition-menu').onclick=showChronicle;
 }
 function activate(){
+  // 전장 그림이 아직이면 기다렸다가 시작한다(첫 화면을 빨리 띄우느라 그림은 뒤에서 준비한다).
+  if(!fieldReady){modal('<div class="briefing"><h2>전장 준비 중</h2><p>전장 그림을 마저 준비하고 있습니다. 끝나면 바로 시작합니다.</p></div>',false);void fieldInit?.then(activate,()=>modal('<div class="briefing"><h2>전장 그래픽 오류</h2><p class="render-error">전장 그래픽을 초기화하지 못했습니다. 새로고침해 주세요.</p></div>',false));return;}
   hasStarted=true;menuOpen=false;resultShown=false;duelPresented=false;mode='move';
   selected=session.state.living(session.state.currentSide).find(u=>!u.hasActed)?.id??'sima_yi';
   lastLog=session.state.log.length;field.load(session.state);const u=session.state.find(selected);if(u)field.focusUnit(u.pos);
@@ -390,7 +392,7 @@ function render(){
   $('#tactical-tip').textContent=session.revision>=4&&session.chapter===4?'여포는 물리 공격이 강합니다. 무력보다 지력 차이를 활용해 설전 승리와 혼란을 노리세요. 각 대결이 끝나면 체력·MP가 회복됩니다.':session.revision>=4?'일기토는 인접한 적, 설전은 3칸 이내 적을 선택합니다. 충차는 성문·감시탑에 피해 3배. 풍수사는 MP 8로 3칸 이내 아군을 치유합니다.':'목표와 승리 조건을 확인하세요. 본대 다음 편입 아군을 직접 지휘합니다.';
   sound.scene=s.outcome!=='ongoing'?'result':session.chapter===4?'dream':s.living('player').some(u=>u.hp<u.stats.maxHp*.35)?'crisis':bossNear(s.living())?'boss':'battle';
   renderCoach();queueLines();
-  consumeLog();field.render(s,selected,mode,threat,session.scouted);checkModal();
+  if(fieldReady){consumeLog();field.render(s,selected,mode,threat,session.scouted);}checkModal();
 }
 let lineSeen=new Set<string>(),lineQueue:{speaker:string;text:string}[]=[],lineTimer:ReturnType<typeof setTimeout>|undefined;
 function queueLines(){
@@ -642,7 +644,42 @@ document.addEventListener('keydown',e=>{if($<HTMLDialogElement>('#modal').open||
   else{const id=({1:'move',2:'attack',3:session.state.find(selected)?.strategies[0],w:'wait'} as Record<string,string|undefined>)[e.key.toLowerCase()];if(id)document.querySelector<HTMLButtonElement>(`[data-command="${id}"]`)?.click();}});
 // Story and gallery art reads the cut sheets through CSS; a blob URL avoids encoding megapixels into a string.
 const atlasUrl=(canvas:HTMLCanvasElement)=>new Promise<string>(resolve=>canvas.toBlob(blob=>resolve(blob?URL.createObjectURL(blob):canvas.toDataURL())));
-async function boot(){try{await Promise.all([...[['officer-story','officer-story-v1.png',2,4,false,8,false],['base','units-v3.png',6,4,false,8,false],['extra','units-extra-v1.png',4,4,false,8,false],['ram','ram-v1.png',2,2,false,8,false],...troopSheets.map(s=>[s.id,s.url,s.rows,4,!!(s as {union?:boolean}).union,(s as {alphaCutoff?:number}).alphaCutoff??8,!!(s as {strictGrid?:boolean}).strictGrid])].map(async([name,url,rows,columns,union,alphaCutoff,strictGrid])=>{const atlas=await spriteAtlas(String(url),Number(rows),Number(columns),Boolean(union),Number(alphaCutoff),Boolean(strictGrid));document.documentElement.style.setProperty('--'+name+'-atlas','url('+await atlasUrl(atlas)+')');}),navalAtlas().then(async c=>document.documentElement.style.setProperty('--naval-atlas','url('+await atlasUrl(c)+')')),loadFigures(),loadIsoArt(),loadPaintedScenes(),loadClassSheets().then(()=>Promise.all([...classSheets].map(async([c,url])=>{try{document.documentElement.style.setProperty('--own-'+c+'-atlas','url('+await atlasUrl(await spriteAtlas(url,3))+')');}catch{/* 계열 그림 */}}))),field.init($('#map'))]);field.load(session.state);render();showMenu();}catch(error){$('#map').innerHTML='<p class="render-error">전장 그래픽을 초기화하지 못했습니다. 새로고침해 주세요.</p>';console.error(error);}}
+/**
+ * 그림 준비: 시트를 모두 자르기까지 몇 초~수십 초(모바일)가 걸린다. 본영은 바로 띄우고,
+ * 그림은 뒤에서 준비한다. 시트 하나가 실패해도 게임 전체가 멈추지 않게 하나씩 따로 받는다.
+ * 준비가 끝나기 전에 누른 단추는 기다렸다가 이어서 실행한다(전투·이야기 장면은 그림이 있어야 한다).
+ */
+let artReady=false,fieldReady=false,fieldInit:Promise<void>|undefined;
+function artProgress(done:number,total:number){
+  let bar=document.getElementById('art-loading');
+  if(!bar){bar=document.createElement('div');bar.id='art-loading';bar.setAttribute('role','status');document.body.appendChild(bar);}
+  bar.innerHTML=`<b>그림 준비 중</b><i><i style="width:${Math.round(done/total*100)}%"></i></i><small>${done}/${total}</small>`;
+  bar.classList.toggle('waiting',!!pendingClick);
+}
+let pendingClick:HTMLElement|undefined;
+// 준비 전에 누른 본영·이야기 단추: 막았다가 준비가 끝나면 그대로 다시 누른다.
+document.addEventListener('click',e=>{
+  if(artReady)return;const btn=(e.target as HTMLElement|null)?.closest?.('#modal button:not(.modal-close)') as HTMLElement|null;if(!btn)return;
+  e.preventDefault();e.stopImmediatePropagation();pendingClick=btn;document.getElementById('art-loading')?.classList.add('waiting');
+},true);
+async function boot(){
+  const soft=<T,>(p:Promise<T>,what:string)=>p.catch(error=>{console.warn(what+' 그림을 읽지 못해 대신 그림을 씁니다.',error);});
+  const cssAtlas=async(name:string,url:string,rows:number,columns=4,union=false,alphaCutoff=8,strictGrid=false)=>{const atlas=await spriteAtlas(url,rows,columns,union,alphaCutoff,strictGrid);document.documentElement.style.setProperty('--'+name+'-atlas','url('+await atlasUrl(atlas)+')');};
+  fieldInit=field.init($('#map')).then(()=>{fieldReady=true;field.load(session.state);});
+  const jobs:Promise<unknown>[]=[fieldInit.catch(()=>undefined),
+    ...([['officer-story','officer-story-v1.png',2],['base','units-v3.png',6],['extra','units-extra-v1.png',4],['ram','ram-v1.png',2,2]] as const).map(([name,url,rows,columns])=>soft(cssAtlas(name,url,rows,columns),name)),
+    ...troopSheets.map(s=>soft(cssAtlas(s.id,s.url,s.rows,4,!!(s as {union?:boolean}).union,(s as {alphaCutoff?:number}).alphaCutoff??8,!!(s as {strictGrid?:boolean}).strictGrid),s.id)),
+    soft(navalAtlas().then(async c=>document.documentElement.style.setProperty('--naval-atlas','url('+await atlasUrl(c)+')')),'수군'),
+    soft(loadFigures(),'인물'),soft(loadIsoArt(),'조형물'),soft(loadPaintedScenes(),'이야기 배경'),
+    soft(loadClassSheets().then(()=>Promise.all([...classSheets].map(async([c,url])=>{try{document.documentElement.style.setProperty('--own-'+c+'-atlas','url('+await atlasUrl(await spriteAtlas(url,3))+')');}catch{/* 계열 그림 */}}))),'병종')];
+  let done=0;artProgress(0,jobs.length);jobs.forEach(j=>void j.then(()=>artProgress(++done,jobs.length)));
+  render();showMenu();
+  await Promise.all(jobs);
+  if(!fieldReady){$('#map').innerHTML='<p class="render-error">전장 그래픽을 초기화하지 못했습니다. 새로고침해 주세요.</p>';await fieldInit?.catch(error=>console.error(error));}
+  artReady=true;document.getElementById('art-loading')?.remove();
+  // 그림이 늦게 들어온 본영을 다시 그린다(열린 화면이 본영일 때만).
+  if(pendingClick){const btn=pendingClick;pendingClick=undefined;if(btn.isConnected)btn.click();}else if(menuOpen&&document.getElementById('hub-quests'))showMenu();
+}
 // ?dev only: a handle for QA scripts to inspect or nudge the running battle.
 if(devMode)Object.assign(window,{__sama:{get session(){return session;},get field(){return field;},render,start(chapter:number){session=new Session(chapter,'normal',215,'survival',RULES,{...deployment(campaign,true),wide:1});activate();},story(chapter:number){storyScene(chapter);},act(cmd:Command){act(cmd);}}});
 void boot();

@@ -356,6 +356,8 @@ for (const chapter of targets) {
       }
     }
 
+    // SIM_DEBUG=1: 패배 이유별 횟수(전멸·생존 장수 퇴각·시간 초과를 가려 본다).
+    if (process.env.SIM_DEBUG && reasons.size) console.log("  패배 이유: " + [...reasons].map(([r, n]) => `${r} ×${n}`).join(" · "));
     const clearRate = runs === 0 ? 0 : victories / runs;
     const avgTurns = turns.length === 0 ? 0 : turns.reduce((a, b) => a + b, 0) / turns.length;
     const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
