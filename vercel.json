@@ -3,5 +3,6 @@
   "framework": null,
   "installCommand": "npm ci",
   "buildCommand": "npm run build",
-  "outputDirectory": "packages/web/dist"
+  "outputDirectory": "packages/web/dist",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- packages package.json package-lock.json vercel.json"
 }
