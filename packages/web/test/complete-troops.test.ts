@@ -14,18 +14,20 @@ describe('새 화풍 전체 병종 원화',()=>{
     for(const c of classes)expect(paintedTroopArt[c],c).toEqual(completeTroopArt[c]);
   });
 
-  it('25개 시트가 4열 동작과 고정된 행 매핑을 사용한다',()=>{
-    expect(completeTroopSheets).toHaveLength(25);
+  it('36개 진화 시트와 민간인 시트가 모두 4행·4열 규격을 사용한다',()=>{
+    expect(completeTroopSheets).toHaveLength(37);
     for(const sheet of completeTroopSheets){
-      expect(sheet.rows).toBeGreaterThanOrEqual(4);
-      expect(sheet.url).toMatch(/^troops-(?:complete-\d{2}|four-stage-[a-z-]+)-v[12]\.webp$/);
+      expect(sheet.rows).toBe(4);
+      expect(sheet.url).toMatch(/^troops-four-stage-[a-z-]+-v1\.webp$/);
       const loaded=paintedTroopSheets.find(x=>x.id===sheet.id);
       expect(loaded?.frames).toBe(POSE);
       expect(loaded).toHaveProperty('union',true);
     }
-    expect(completeTroopSheets[9]?.url).toBe('troops-complete-10-v2.webp');
+    expect(Object.values(fourStageCorrectionRows)).toHaveLength(36);
+    expect(Object.values(fourStageCorrectionRows).every(line=>line.length===4)).toBe(true);
     expect(Object.values(fourStageCorrectionRows).flat()).toContain('divineStrategist');
     expect(Object.values(fourStageCorrectionRows).flat()).toContain('sonOfHeaven');
+    expect(completeTroopArt.civilian).toEqual({sheet:'four-stage-civilian',row:0,rows:4});
   });
 
   it('보병 계열은 기본부터 전설까지 새 화풍의 정확한 4단계 행을 쓴다',()=>{

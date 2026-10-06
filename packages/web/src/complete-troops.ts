@@ -1,71 +1,72 @@
 import type {UnitClass} from '../../core/src/index.ts';
 
 /**
- * 새 레퍼런스 화풍으로 다시 그린 전체 병종 시트.
- * 한 시트는 8행(병종) x 4열(대기·준비/걷기·공격/책략·피격/방어)이다.
+ * 실제 진화표와 같은 36개 계보. 각 시트는 4행(기본·숙련·정예·전설) x
+ * 4열(대기·준비·공격/책략·피격/방어)이며 모두 같은 픽셀 화풍과 투명 배경을 쓴다.
  */
-export const completeTroopRows = [
-  ['infantry','shieldGuard','royalGuard','ironInfantry','spearman','pikeman','halberdier','divineSpear'],
-  ['cavalry','lancer','tigerRider','heavyCav','ironCav','ironPagoda','wujiHeavyCav','xiliang'],
-  ['archer','longbow','sharpshooter','crossbow','repeater','greatBow','slinger','hurler'],
-  ['strategist','tactician','mastermind','divineStrategist','fengshui','sage','immortal','crownPrince'],
-  ['shaman','warlock','demonKing','maiden','priestess','celestial','taoist','stormSage'],
-  ['thunderGod','heavenTaoist','monk','warriorMonk','arhat','fistSaint','bandit','outlaw'],
-  ['greenwoodKing','chieftain','assassin','phantom','wraith','rattan','rattanElite','wuguoRattan'],
-  ['elephant','warElephant','elephantKing','horseArcher','nomad','whiteHorse','boulderCorps','feixiong'],
-  ['liangzhouIron','ram','ironRam','cloudRam','dragonRam','catapult','engineer','navy'],
-  ['mengchong','louchuan','admiral','siegeTower','jinglan','heavyJinglan','divineJinglan','swordsman'],
-  ['knightErrant','swordArtist','swordMaster','swordSaint','commander','grandCommander','marshal','heavenCommander'],
-  ['lord','hegemon','sovereign','sonOfHeaven','dancer','songstress','beauty','heavenDancer'],
-  ['royalPrince','emperor','heavenEmperor','wheelSage','fanSage','palanquin','mountainCav','scoutCav'],
-  ['raidCav','pegasusCav','valiantCav','dragonCav','stormCav','heavenCav','lightChariot','assaultChariot'],
-  ['heavyChariot','divineChariot','transport','baggageTrain','woodenOx','divineOx','nanmanRider','nanmanBeast'],
-  ['gaemaWarrior','gaemaCaptain','whiteTigerCav','halberdCav','heavyHalberdCav','northRider','yellowTurban','ytArcher'],
-  ['ytSpear','ytBrawler','nanmanFoot','northFoot','baguaChariot','flyingBlade','bashuRepeater','civilian'],
-] as const satisfies readonly (readonly UnitClass[])[];
-
-const baseTroopSheets = completeTroopRows.map((_,i)=>({
-  id:`complete-${String(i+1).padStart(2,'0')}`,
-  url:`troops-complete-${String(i+1).padStart(2,'0')}-${i===9?'v2':'v1'}.webp`,
-  rows:8,
-  // 생성 원화의 희미한 반투명 배경은 인접 행을 이어 붙이므로 실루엣으로 취급하지 않는다.
-  alphaCutoff:240,
-  strictGrid:true,
-}));
-
-/** Four-stage corrections: complete progression rows, mounted lords, and the final chariot strategist. */
 export const fourStageCorrectionRows = {
   'four-stage-infantry':['infantry','shieldGuard','royalGuard','ironInfantry'],
-  'four-stage-command':['divineStrategist','lord','hegemon','sovereign'],
-  'four-stage-command-extra':['sonOfHeaven','sapper','masterBuilder','divineEngineer'],
-  'four-stage-ranged':['northRider','ytArcher','bashuRepeater','palanquin'],
-  'four-stage-ranged-extra':['fanSage','meteorSlinger','flyingBlade','heavenXiliang'],
-  'four-stage-special':['northFoot','baguaChariot','wheelSage','yellowTurban'],
-  'four-stage-special-extra':['nanmanFoot','ytBrawler','divineGaema','ytSpear'],
-  'four-stage-siege':['swordArtist','thunderCart','greatTrebuchet','divineCatapult'],
-} as const satisfies Readonly<Record<string,readonly UnitClass[]>>;
+  'four-stage-spearman':['spearman','pikeman','halberdier','divineSpear'],
+  'four-stage-cavalry':['cavalry','lancer','tigerRider','northRider'],
+  'four-stage-heavy-cavalry':['heavyCav','ironCav','ironPagoda','wujiHeavyCav'],
+  'four-stage-archer':['archer','longbow','sharpshooter','ytArcher'],
+  'four-stage-crossbow':['crossbow','repeater','greatBow','bashuRepeater'],
+  'four-stage-strategist':['strategist','tactician','mastermind','divineStrategist'],
+  'four-stage-fengshui':['fengshui','sage','immortal','palanquin'],
+  'four-stage-horse-archer':['horseArcher','nomad','whiteHorse','fanSage'],
+  'four-stage-slinger':['slinger','hurler','boulderCorps','meteorSlinger'],
+  'four-stage-assassin':['assassin','phantom','wraith','flyingBlade'],
+  'four-stage-rattan':['rattan','rattanElite','wuguoRattan','northFoot'],
+  'four-stage-elephant':['elephant','warElephant','elephantKing','baguaChariot'],
+  'four-stage-shaman':['shaman','warlock','demonKing','wheelSage'],
+  'four-stage-maiden':['maiden','priestess','celestial','yellowTurban'],
+  'four-stage-taoist':['taoist','stormSage','thunderGod','heavenTaoist'],
+  'four-stage-monk':['monk','warriorMonk','arhat','fistSaint'],
+  'four-stage-bandit':['bandit','outlaw','greenwoodKing','chieftain'],
+  'four-stage-xiliang':['xiliang','feixiong','liangzhouIron','heavenXiliang'],
+  'four-stage-ram':['ram','ironRam','cloudRam','dragonRam'],
+  'four-stage-navy':['navy','mengchong','louchuan','admiral'],
+  'four-stage-swordsman':['swordsman','knightErrant','swordMaster','swordSaint'],
+  'four-stage-lord':['lord','hegemon','sovereign','sonOfHeaven'],
+  'four-stage-commander':['commander','grandCommander','marshal','heavenCommander'],
+  'four-stage-dancer':['dancer','songstress','beauty','heavenDancer'],
+  'four-stage-mountain-cavalry':['mountainCav','scoutCav','raidCav','pegasusCav'],
+  'four-stage-valiant-cavalry':['valiantCav','dragonCav','stormCav','heavenCav'],
+  'four-stage-chariot':['lightChariot','assaultChariot','heavyChariot','divineChariot'],
+  'four-stage-siege-tower':['siegeTower','jinglan','heavyJinglan','divineJinglan'],
+  'four-stage-crown-prince':['crownPrince','royalPrince','emperor','heavenEmperor'],
+  'four-stage-transport':['transport','baggageTrain','woodenOx','divineOx'],
+  'four-stage-nanman':['nanmanRider','nanmanBeast','nanmanFoot','ytBrawler'],
+  'four-stage-gaema':['gaemaWarrior','gaemaCaptain','whiteTigerCav','divineGaema'],
+  'four-stage-halberd-cavalry':['halberdCav','heavyHalberdCav','ytSpear','swordArtist'],
+  'four-stage-engineer':['engineer','sapper','masterBuilder','divineEngineer'],
+  'four-stage-catapult':['catapult','thunderCart','greatTrebuchet','divineCatapult'],
+} as const satisfies Readonly<Record<string,readonly [UnitClass,UnitClass,UnitClass,UnitClass]>>;
 
+const sheet = (id:string)=>({
+  id,
+  url:`troops-${id}-v1.webp`,
+  rows:4,
+  // 투명 배경의 미세한 가장자리는 살리되 이웃 칸의 실루엣은 합치지 않는다.
+  alphaCutoff:240,
+  strictGrid:true,
+});
+
+/** 36개 진화 계보와 진화하지 않는 민간인 전용 시트. */
 export const completeTroopSheets = [
-  ...baseTroopSheets,
-  {id:'four-stage-infantry',url:'troops-four-stage-infantry-v1.webp',rows:4,alphaCutoff:240,strictGrid:true},
-  {id:'four-stage-command',url:'troops-four-stage-command-v1.webp',rows:4,alphaCutoff:240,strictGrid:true},
-  {id:'four-stage-command-extra',url:'troops-four-stage-command-extra-v1.webp',rows:4,alphaCutoff:240,strictGrid:true},
-  {id:'four-stage-ranged',url:'troops-four-stage-ranged-v1.webp',rows:4,alphaCutoff:240,strictGrid:true},
-  {id:'four-stage-ranged-extra',url:'troops-four-stage-ranged-extra-v1.webp',rows:4,alphaCutoff:240,strictGrid:true},
-  {id:'four-stage-special',url:'troops-four-stage-special-v1.webp',rows:4,alphaCutoff:240,strictGrid:true},
-  {id:'four-stage-special-extra',url:'troops-four-stage-special-extra-v1.webp',rows:4,alphaCutoff:240,strictGrid:true},
-  {id:'four-stage-siege',url:'troops-four-stage-siege-v1.webp',rows:4,alphaCutoff:240,strictGrid:true},
+  ...Object.keys(fourStageCorrectionRows).map(sheet),
+  sheet('four-stage-civilian'),
 ];
 
 export type CompleteTroopCell={sheet:string;row:number;rows:number};
-const baseTroopArt=Object.fromEntries(
-  completeTroopRows.flatMap((classes,sheet)=>classes.map((troop,row)=>[
-    troop,{sheet:`complete-${String(sheet+1).padStart(2,'0')}`,row,rows:8},
+const evolvedTroopArt=Object.fromEntries(
+  Object.entries(fourStageCorrectionRows).flatMap(([sheetId,classes])=>classes.map((troop,row)=>[
+    troop,{sheet:sheetId,row,rows:4},
   ])),
 ) as Partial<Record<UnitClass,CompleteTroopCell>>;
-const correctedTroopArt=Object.fromEntries(
-  Object.entries(fourStageCorrectionRows).flatMap(([sheet,classes])=>classes.map((troop,row)=>[
-    troop,{sheet,row,rows:classes.length},
-  ])),
-) as Partial<Record<UnitClass,CompleteTroopCell>>;
-export const completeTroopArt={...baseTroopArt,...correctedTroopArt} as Record<UnitClass,CompleteTroopCell>;
+
+/** 게임의 145개 병종 모두 새 4행 규격만 사용한다. */
+export const completeTroopArt={
+  ...evolvedTroopArt,
+  civilian:{sheet:'four-stage-civilian',row:0,rows:4},
+} as Record<UnitClass,CompleteTroopCell>;

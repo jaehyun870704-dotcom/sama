@@ -5,14 +5,14 @@ describe('dedicated troop art',()=>{
   it('uses separate elephant and harness designs, never horse armor overlays',()=>{
     for(const [row,c] of (['elephant','warElephant','elephantKing'] as const).entries()){
       expect(paintedTroopArt[c]?.row).toBe(row);
-      expect(classSprite(c)).toContain('--complete-08-atlas');
+      expect(classSprite(c)).toContain('--four-stage-elephant-atlas');
       expect(classSprite(c)).not.toContain('cx-armor');
     }
   });
   it('retains distinct rattan evolution rows without metal armor overlays',()=>{
     for(const [row,c] of (['rattan','rattanElite','wuguoRattan'] as const).entries()){
-      expect(paintedTroopArt[c]?.row).toBe(row+5);
-      expect(classSprite(c)).toContain('--complete-07-atlas');
+      expect(paintedTroopArt[c]?.row).toBe(row);
+      expect(classSprite(c)).toContain('--four-stage-rattan-atlas');
       expect(classSprite(c)).not.toContain('cx-armor');
     }
   });
@@ -26,16 +26,15 @@ describe('dedicated troop art',()=>{
 import {lookText} from '../src/troop-evolution.ts';
 import {hasPaintedMotion} from '../src/troops.ts';
 import {paintedFrames,paintedTroopSheets,POSE} from '../src/painted-troops.ts';
+import {fourStageCorrectionRows} from '../src/complete-troops.ts';
 describe('완성 원화만 쓰는 병종 그림',()=>{
-  it('loads the 17 complete sheets plus 8 four-stage corrections, never legacy sheets',()=>{
+  it('loads only the 36 four-stage families and the civilian sheet',()=>{
     expect(paintedTroopSheets.map(s=>s.id)).toEqual([
-      ...Array.from({length:17},(_,i)=>`complete-${String(i+1).padStart(2,'0')}`),
-      'four-stage-infantry',
-      'four-stage-command','four-stage-command-extra','four-stage-ranged','four-stage-ranged-extra',
-      'four-stage-special','four-stage-special-extra','four-stage-siege',
+      ...Object.keys(fourStageCorrectionRows),
+      'four-stage-civilian',
     ]);
-    expect(paintedTroopSheets.every(s=>s.url.startsWith('troops-complete-')||s.url.startsWith('troops-four-stage-'))).toBe(true);
-    expect(paintedFrames('complete-01')).toBe(POSE);
+    expect(paintedTroopSheets.every(s=>s.url.startsWith('troops-four-stage-'))).toBe(true);
+    expect(paintedFrames('four-stage-infantry')).toBe(POSE);
   });
   it('describes every tier as the complete art itself, not armor overlays',()=>{
     for(const c of ['rattan','rattanElite','wuguoRattan','elephantKing'] as const){const t=lookText(c);expect(t).toContain('완성 원화');expect(t).not.toMatch(/강철|금빛/);}
@@ -44,13 +43,13 @@ describe('완성 원화만 쓰는 병종 그림',()=>{
     expect(hasPaintedMotion('rattan')).toBe(true);expect(hasPaintedMotion('wuguoRattan')).toBe(true);
   });
   it('maps the families to their own complete sheets by tier',()=>{
-    for(const [a,b,c,sheet,row,rows] of [['infantry','shieldGuard','royalGuard','four-stage-infantry',0,4],['spearman','pikeman','halberdier','complete-01',4,8],['archer','longbow','sharpshooter','complete-03',0,8],['cavalry','lancer','tigerRider','complete-02',0,8]] as const){
+    for(const [a,b,c,sheet,row,rows] of [['infantry','shieldGuard','royalGuard','four-stage-infantry',0,4],['spearman','pikeman','halberdier','four-stage-spearman',0,4],['archer','longbow','sharpshooter','four-stage-archer',0,4],['cavalry','lancer','tigerRider','four-stage-cavalry',0,4]] as const){
       expect(paintedTroopArt[a]).toEqual({sheet,row,rows});expect(paintedTroopArt[b]?.row).toBe(row+1);expect(paintedTroopArt[c]?.row).toBe(row+2);
     }
-    for(const [a,c,aSheet,aRow,cSheet,cRow] of [['assassin','wraith','complete-07',2,'complete-07',4],['slinger','boulderCorps','complete-03',6,'complete-08',6],['shaman','demonKing','complete-05',0,'complete-05',2]] as const){
-      expect(paintedTroopArt[a]).toEqual({sheet:aSheet,row:aRow,rows:8});expect(paintedTroopArt[c]).toEqual({sheet:cSheet,row:cRow,rows:8});
+    for(const [a,c,aSheet,aRow,cSheet,cRow] of [['assassin','wraith','four-stage-assassin',0,'four-stage-assassin',2],['slinger','boulderCorps','four-stage-slinger',0,'four-stage-slinger',2],['shaman','demonKing','four-stage-shaman',0,'four-stage-shaman',2]] as const){
+      expect(paintedTroopArt[a]).toEqual({sheet:aSheet,row:aRow,rows:4});expect(paintedTroopArt[c]).toEqual({sheet:cSheet,row:cRow,rows:4});
     }
-    expect(paintedTroopSheets.find(s=>s.id==='complete-08')).toHaveProperty('union',true);
+    expect(paintedTroopSheets.find(s=>s.id==='four-stage-elephant')).toHaveProperty('union',true);
   });
 });
 
