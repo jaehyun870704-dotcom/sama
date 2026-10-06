@@ -105,6 +105,7 @@ const officerNames:Record<string,string>={sima_yi:'사마의',sima_lang:'사마�
 function growthText(){const l=levelInfo(campaign.xp.sima_yi??0);return '사마의 Lv.'+l.level+' · 경험치 '+l.xp+'/'+l.next;}
 function saveCampaign(){try{writeCampaign(campaign);return true;}catch{toast('성장 기록을 저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.');return false;}}
 function storyScene(chapter:number,beat=0,fromArt?:number){
+  if(!storyReady){menuOpen=true;modal(waitPanel('이야기 준비 중','인물과 배경 그림을 마저 받고 있습니다. 끝나면 바로 시작합니다.'),false);void storyArt.then(()=>storyScene(chapter,beat,fromArt));return;}
   menuOpen=true;clearTimeout(aiTimer);sound.scene=chapter===4?'dream':'camp';void sound.start().then(updateSound);
   const c=chapters[chapter]!,beats=storyBeats[c.stage.id]!,b=beats[beat]!;
   const location=storyLocations[c.stage.id]![beat]!;
@@ -299,7 +300,7 @@ function showExpeditionResult(){if(resultShown)return;resultShown=true;const run
 }
 function activate(){
   // 전장 그림이 아직이면 기다렸다가 시작한다(첫 화면을 빨리 띄우느라 그림은 뒤에서 준비한다).
-  if(!fieldReady){modal('<div class="briefing"><h2>전장 준비 중</h2><p>전장 그림을 마저 준비하고 있습니다. 끝나면 바로 시작합니다.</p></div>',false);void fieldInit?.then(activate,()=>modal('<div class="briefing"><h2>전장 그래픽 오류</h2><p class="render-error">전장 그래픽을 초기화하지 못했습니다. 새로고침해 주세요.</p></div>',false));return;}
+  if(!fieldReady){startRest();modal(waitPanel('전장 준비 중','전장 그림을 마저 받고 있습니다. 끝나면 바로 시작합니다.'),false);void fieldInit?.then(activate,()=>modal('<div class="briefing"><h2>전장 그래픽 오류</h2><p class="render-error">전장 그래픽을 초기화하지 못했습니다. 새로고침해 주세요.</p></div>',false));return;}
   hasStarted=true;menuOpen=false;resultShown=false;duelPresented=false;mode='move';
   selected=session.state.living(session.state.currentSide).find(u=>!u.hasActed)?.id??'sima_yi';
   lastLog=session.state.log.length;field.load(session.state);const u=session.state.find(selected);if(u)field.focusUnit(u.pos);
@@ -646,36 +647,46 @@ const atlasUrl=(canvas:HTMLCanvasElement)=>new Promise<string>(resolve=>canvas.t
  * 그림은 뒤에서 준비한다. 시트 하나가 실패해도 게임 전체가 멈추지 않게 하나씩 따로 받는다.
  * 준비가 끝나기 전에 누른 단추는 기다렸다가 이어서 실행한다(전투·이야기 장면은 그림이 있어야 한다).
  */
-let artReady=false,fieldReady=false,fieldInit:Promise<void>|undefined;
+let fieldReady=false,fieldInit:Promise<void>|undefined;
+// 이야기 장면에 필요한 그림(인물·배경)만 따로 기다린다. 본영·도감 단추는 그림 준비 중에도 바로 열린다.
+let storyReady=false,storyArt:Promise<unknown>=new Promise(()=>{});
+let artCount='';
 function artProgress(done:number,total:number){
   let bar=document.getElementById('art-loading');
   if(!bar){bar=document.createElement('div');bar.id='art-loading';bar.setAttribute('role','status');document.body.appendChild(bar);}
-  bar.innerHTML=`<b>그림 준비 중</b><i><i style="width:${Math.round(done/total*100)}%"></i></i><small>${done}/${total}</small>`;
-  bar.classList.toggle('waiting',!!pendingClick);
+  artCount=Math.round(done/total*100)+'%';
+  bar.innerHTML=`<b>그림 준비 중</b><i><i style="width:${artCount}"></i></i><small>${done}/${total}</small>`;
+  document.querySelectorAll('.art-wait-count').forEach(e=>e.textContent=artCount);
 }
-let pendingClick:HTMLElement|undefined;
-// 준비 전에 누른 본영·이야기 단추: 막았다가 준비가 끝나면 그대로 다시 누른다.
-document.addEventListener('click',e=>{
-  if(artReady)return;const btn=(e.target as HTMLElement|null)?.closest?.('#modal button:not(.modal-close)') as HTMLElement|null;if(!btn)return;
-  e.preventDefault();e.stopImmediatePropagation();pendingClick=btn;document.getElementById('art-loading')?.classList.add('waiting');
-},true);
+const waitPanel=(title:string,line:string)=>`<div class="briefing art-wait"><h2>${title}</h2><p>${line}</p><p class="art-wait-line">그림 받는 중 <b class="art-wait-count">${artCount}</b></p></div>`;
+// 느린 회선·느린 PC: 그림 하나가 끝나지 않아도 게임 전체가 멈추지 않게 시간을 둔다.
+const within=<T,>(p:Promise<T>,ms:number)=>Promise.race([p,new Promise<never>((_,reject)=>setTimeout(()=>reject(new Error('timed out')),ms))]);
+// 그림 받기 순서: 이야기 그림(인물·배경)을 먼저 받고, 전장·도감 그림은 그다음에 받는다.
+// 회선이 느려도 첫 이야기가 빨리 열리게 하려는 것이다. 전투를 먼저 고르면 전장 그림을 바로 받기 시작한다.
+let startRest:()=>void=()=>{};
 async function boot(){
-  const soft=<T,>(p:Promise<T>,what:string)=>p.catch(error=>{console.warn(what+' 그림을 읽지 못해 대신 그림을 씁니다.',error);});
+  const soft=<T,>(p:Promise<T>,what:string)=>within(p,180000).catch(error=>{console.warn(what+' 그림을 읽지 못해 대신 그림을 씁니다.',error);});
   const cssAtlas=async(name:string,url:string,rows:number,columns=4,union=false,alphaCutoff=8,strictGrid=false)=>{const atlas=await spriteAtlas(url,rows,columns,union,alphaCutoff,strictGrid);document.documentElement.style.setProperty('--'+name+'-atlas','url('+await atlasUrl(atlas)+')');};
-  fieldInit=field.init($('#map')).then(()=>{fieldReady=true;field.load(session.state);});
-  const jobs:Promise<unknown>[]=[fieldInit.catch(()=>undefined),
-    ...([['officer-story','officer-story-v1.webp',2],['base','units-v3.webp',6],['extra','units-extra-v1.webp',4],['ram','ram-v1.webp',2,2]] as const).map(([name,url,rows,columns])=>soft(cssAtlas(name,url,rows,columns),name)),
-    ...troopSheets.map(s=>soft(cssAtlas(s.id,s.url,s.rows,4,!!(s as {union?:boolean}).union,(s as {alphaCutoff?:number}).alphaCutoff??8,!!(s as {strictGrid?:boolean}).strictGrid),s.id)),
-    soft(navalAtlas().then(async c=>document.documentElement.style.setProperty('--naval-atlas','url('+await atlasUrl(c)+')')),'수군'),
-    soft(loadFigures(),'인물'),soft(loadIsoArt(),'조형물'),soft(loadPaintedScenes(),'이야기 배경'),
-    soft(loadClassSheets().then(()=>Promise.all([...classSheets].map(async([c,url])=>{try{document.documentElement.style.setProperty('--own-'+c+'-atlas','url('+await atlasUrl(await spriteAtlas(url,3))+')');}catch{/* 계열 그림 */}}))),'병종')];
-  let done=0;artProgress(0,jobs.length);jobs.forEach(j=>void j.then(()=>artProgress(++done,jobs.length)));
+  const storyJobs=[soft(cssAtlas('officer-story','officer-story-v1.webp',2),'officer-story'),soft(loadFigures(),'인물'),soft(loadIsoArt(),'조형물'),soft(loadPaintedScenes(),'이야기 배경')];
+  const total=storyJobs.length+6+troopSheets.length;let done=0;const tick=(j:Promise<unknown>)=>void j.then(()=>artProgress(++done,total));
+  storyJobs.forEach(tick);artProgress(0,total);
+  storyArt=Promise.all(storyJobs).then(()=>{storyReady=true;});
+  let rest:Promise<unknown>|undefined;
+  startRest=()=>{if(rest)return;
+    fieldInit=field.init($('#map')).then(()=>{fieldReady=true;field.load(session.state);});
+    const jobs:Promise<unknown>[]=[fieldInit.catch(()=>undefined),
+      ...([['base','units-v3.webp',6],['extra','units-extra-v1.webp',4],['ram','ram-v1.webp',2,2]] as const).map(([name,url,rows,columns])=>soft(cssAtlas(name,url,rows,columns),name)),
+      ...troopSheets.map(s=>soft(cssAtlas(s.id,s.url,s.rows,4,!!(s as {union?:boolean}).union,(s as {alphaCutoff?:number}).alphaCutoff??8,!!(s as {strictGrid?:boolean}).strictGrid),s.id)),
+      soft(navalAtlas().then(async c=>document.documentElement.style.setProperty('--naval-atlas','url('+await atlasUrl(c)+')')),'수군'),
+      soft(loadClassSheets().then(()=>Promise.all([...classSheets].map(async([c,url])=>{try{document.documentElement.style.setProperty('--own-'+c+'-atlas','url('+await atlasUrl(await spriteAtlas(url,3))+')');}catch{/* 계열 그림 */}}))),'병종')];
+    jobs.forEach(tick);rest=Promise.all(jobs);};
+  void storyArt.then(()=>startRest());
   render();showMenu();
-  await Promise.all(jobs);
+  await storyArt;startRest();await rest;
   if(!fieldReady){$('#map').innerHTML='<p class="render-error">전장 그래픽을 초기화하지 못했습니다. 새로고침해 주세요.</p>';await fieldInit?.catch(error=>console.error(error));}
-  artReady=true;document.getElementById('art-loading')?.remove();
+  document.getElementById('art-loading')?.remove();
   // 그림이 늦게 들어온 본영을 다시 그린다(열린 화면이 본영일 때만).
-  if(pendingClick){const btn=pendingClick;pendingClick=undefined;if(btn.isConnected)btn.click();}else if(menuOpen&&document.getElementById('hub-quests'))showMenu();
+  if(menuOpen&&document.getElementById('hub-quests'))showMenu();
 }
 // ?dev only: a handle for QA scripts to inspect or nudge the running battle.
 if(devMode)Object.assign(window,{__sama:{get session(){return session;},get field(){return field;},render,start(chapter:number){session=new Session(chapter,'normal',215,'survival',RULES,{...deployment(campaign,true),wide:1});activate();},story(chapter:number){storyScene(chapter);},act(cmd:Command){act(cmd);}}});

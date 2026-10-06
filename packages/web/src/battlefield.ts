@@ -111,7 +111,7 @@ export class Battlefield {
   onCell:(c:Coord)=>void=()=>{};
   onHover:(c:Coord|undefined)=>void=()=>{};
   async init(privateHost:HTMLElement){
-    await this.app.init({resizeTo:privateHost,backgroundAlpha:0,antialias:false,resolution:Math.min(devicePixelRatio,3),autoDensity:true,preference:'webgl'});
+    await this.app.init({resizeTo:privateHost,backgroundAlpha:0,antialias:false,resolution:Math.min(devicePixelRatio,2),autoDensity:true,preference:'webgl'});
     // Painted art is far larger than its cell on screen: mipmapped smooth reduction keeps
     // every stroke instead of dropping random pixels, and the dark rim keeps the dot look.
     const smooth=(canvas:HTMLCanvasElement,rim=true)=>new Texture({source:new CanvasSource({resource:rim?outlinedCanvas(canvas):canvas,autoGenerateMipmaps:true,scaleMode:'linear'})});

@@ -171,11 +171,12 @@ function toCanvas(p:AtlasPixels){
   const g=canvas.getContext('2d',{willReadFrequently:true})!,img=g.createImageData(p.width,p.height);img.data.set(p.data);g.putImageData(img,0,0);return canvas;
 }
 /** Small worker pool: every sheet is cut in parallel, away from the main thread. */
-type Job={url:string;rows:number;columns:number;union:boolean;alphaCutoff:number;strictGrid:boolean;resolve:(c:HTMLCanvasElement)=>void;reject:(e:unknown)=>void};
+type Job={url:string;blob:Blob;rows:number;columns:number;union:boolean;alphaCutoff:number;strictGrid:boolean;resolve:(c:HTMLCanvasElement)=>void;reject:(e:unknown)=>void};
 const queue:Job[]=[],idle:Worker[]=[],pending=new Map<number,Job>(),running=new Map<Worker,number>();let workers=0,jobs=0;
 /** 작업자 파일을 못 불러오면(배포 누락·차단) 다시 쓰지 않고 메인 스레드에서 자른다. 대기가 끝나지 않아 화면이 멈추는 일을 막는다. */
 let workerBroken=false;
-const JOB_TIMEOUT=20000;
+const JOB_TIMEOUT=45000;
+async function download(url:string){const r=await fetch(url);if(!r.ok)throw new Error('sheet '+r.status+' '+url);return r.blob();}
 const poolSize=()=>Math.max(1,Math.min(4,(navigator.hardwareConcurrency||2)-1));
 function failAll(reason:string){
   workerBroken=true;
@@ -195,9 +196,9 @@ function dispatch(){
         if(job){if(d.error)job.reject(new Error(d.error));else{const plain=toCanvas({width:d.width,height:d.height,data:new Uint8ClampedArray(d.plain)});rims.set(plain,toCanvas({width:d.width,height:d.height,data:new Uint8ClampedArray(d.rim)}));job.resolve(plain);}}
         dispatch();};}
     const job=queue.shift()!,id=++jobs;pending.set(id,job);running.set(w,id);
-    // 답이 오지 않는 작업은 메인 스레드로 넘긴다(작업자가 조용히 죽은 경우).
+    // 답이 오지 않는 작업은 메인 스레드로 넘긴다(작업자가 조용히 죽은 경우). 시간은 자르기만 잰다.
     setTimeout(()=>{const j=pending.get(id);if(j){pending.delete(id);j.reject(new Error('atlas worker timed out'));}},JOB_TIMEOUT);
-    w.postMessage({id,url:new URL(job.url,location.href).href,rows:job.rows,columns:job.columns,union:job.union,alphaCutoff:job.alphaCutoff,strictGrid:job.strictGrid});
+    w.postMessage({id,url:new URL(job.url,location.href).href,blob:job.blob,rows:job.rows,columns:job.columns,union:job.union,alphaCutoff:job.alphaCutoff,strictGrid:job.strictGrid});
   }
 }
 async function onMainThread(url:string,rows:number,columns:number,union=false,alphaCutoff=8,strictGrid=false){
@@ -211,7 +212,8 @@ export function spriteAtlas(url:string,rows:number,columns=4,union=false,alphaCu
   url=typeof document!=='undefined'?new URL(url,document.baseURI).href:url;
   const key=url+':'+rows+':'+columns+(union?':u':'')+':a'+alphaCutoff+(strictGrid?':g':'');
   if(!cache.has(key))cache.set(key,workerBroken||typeof Worker==='undefined'||typeof OffscreenCanvas==='undefined'?onMainThread(url,rows,columns,union,alphaCutoff,strictGrid):
-    new Promise<HTMLCanvasElement>((resolve,reject)=>{queue.push({url,rows,columns,union,alphaCutoff,strictGrid,resolve,reject});dispatch();}).catch(()=>onMainThread(url,rows,columns,union,alphaCutoff,strictGrid)));
+    // 받기는 메인 스레드가 브라우저에 맡기고(느린 회선에서도 시간 제한에 걸리지 않게), 자르기만 작업자에게 넘긴다.
+    download(url).then(blob=>new Promise<HTMLCanvasElement>((resolve,reject)=>{queue.push({url,blob,rows,columns,union,alphaCutoff,strictGrid,resolve,reject});dispatch();})).catch(()=>onMainThread(url,rows,columns,union,alphaCutoff,strictGrid)));
   return cache.get(key)!;
 }
 
