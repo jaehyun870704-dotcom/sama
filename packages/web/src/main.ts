@@ -54,7 +54,7 @@ import { Session, chapters, campaignOrder, type Preparation } from './session.ts
 import { Battlefield, classNames, terrainNames, unitName } from './battlefield.ts';
 import { Soundscape } from './audio.ts';
 import {placeFor,bossNear} from './music.ts';
-import { unitEffectNotes, CONTROLLABLE, ignoresRough, awardedSeals, estimatePhysical, estimateStrategy, previewAttack, doubleAttackChance, criticalChance, manhattan, inReach, reachLabel,unitReachLabel, tierOf, familyOf, classTactics, STRATEGY_TIER_NAMES } from '../../core/src/index.ts';
+import { unitEffectNotes, CONTROLLABLE, ignoresRough, awardedSeals, estimatePhysical, estimateStrategy, previewAttack, doubleAttackChance, criticalChance, manhattan, inReach, reachLabel,unitReachLabel, tierOf, familyOf, troopEffectOf, troopEffectText, classTactics, STRATEGY_TIER_NAMES } from '../../core/src/index.ts';
 import type { BattleState, Command, Coord, LogEntry, TerrainKind, Unit } from '../../core/src/index.ts';
 import {strategyIconUrl} from './strategy-icons.ts';
 import {과와,을를} from './josa.ts';
@@ -67,7 +67,7 @@ const sound=new Soundscape(), field=new Battlefield();
 /** Developer shortcuts (straight into a late battle) only appear with ?dev in the address. */
 const devMode=new URLSearchParams(location.search).has('dev');
 /** 새 전투가 쓰는 규칙판: 5 = 조조전 병과 체계(등급 성장·지형 효율·명중/2회 공격/회심 비율). 예전 저장은 저장된 규칙판 그대로. */
-const RULES=9 as const;
+const RULES=10 as const;
 let session=new Session(),selected='sima_yi',mode='move',threat=false,speed=1,menuOpen=true,aiTimer:ReturnType<typeof setTimeout>|undefined,lastLog=0,resultShown=false;
 let saveAvailable=false,hasStarted=false;
 try{saveAvailable=!!localStorage.getItem(SAVE_KEY);}catch{/* Private browsing may disable storage. */}
@@ -306,7 +306,7 @@ function romanceCard(u:Unit){
   const r=romanceOf(u);if(!r||u.name.endsWith('환영'))return '';
   const bars=([['무력',r.war],['지력',r.int],['통솔',r.lead],['정치',r.pol],['매력',r.cha]] as const).map(([k,v])=>`<span><small>${k}</small><b>${v}</b><i style="width:${v}%"></i></span>`).join('');
   const temper=temperOf(r.name);
-  return `<div class="romance-card"><div class="romance-epithet">${r.epithet}${temper?` <span class="temper-tag" title="일기토·설전에 응하는 방식">성격 · ${temperNames[temper]}</span>`:''}</div><div class="romance-stats">${bars}</div>${session.revision>=8?signatureSkills(r.name,u.traitParams['sig:'+r.name]??1).filter(g=>g.open).map(g=>`<p><b>${g.name}</b> ${g.description}</p>`).join(''):(()=>{const sk=r.skill??officerFeatures[u.id];return sk?`<p><b>${sk.name}</b> ${sk.description}</p>`:'';})()}</div>`;
+  return `<div class="romance-card"><div class="romance-epithet">${r.epithet}${temper?` <span class="temper-tag" title="일기토·설전에 응하는 방식">성격 · ${temperNames[temper]}</span>`:''}</div><div class="romance-stats">${bars}</div>${session.revision>=8?(()=>{const te=troopEffectOf(u.unitClass);return te?`<p><b>병종 특성 「${te.effect.name}」</b> ${troopEffectText(te.effect,te.tier)}</p>`:'';})()+signatureSkills(r.name,u.traitParams['sig:'+r.name]??1).filter(g=>g.open).map(g=>`<p><b>고유특성 「${g.name}」</b> ${g.description}</p>`).join(''):(()=>{const sk=r.skill??officerFeatures[u.id];return sk?`<p><b>${sk.name}</b> ${sk.description}</p>`:'';})()}</div>`;
 }
 function milestoneMarkup(items:ReturnType<typeof growthMilestones>){return items.map(x=>`<div class="growth-summary"><b>${officerNames[x.id]}${x.to>x.from?' · Lv.'+x.from+' → '+x.to:''}</b>${x.evolution?`<p class="evo-news">병종 진화: ${x.evolution.from} → <b>${x.evolution.to}</b>${x.evolution.bloom?` · 개화 「${x.evolution.bloom.name}」 ${x.evolution.bloom.description}`:''}</p>`:''}${x.strategies.length?'<p>새 책략: '+x.strategies.join(' · ')+'</p>':''}</div>`).join('');}
 function showExpeditionResult(){if(resultShown)return;resultShown=true;const run=session.deployment!.mission!,m=expeditions.find(x=>x.id===run.id)!,win=session.state.outcome==='victory';const before=structuredClone(campaign);

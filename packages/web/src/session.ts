@@ -131,7 +131,7 @@ export const strategies: StrategyDef[] = [
   {id:'fire',name:'화계',element:'fire',shape:'single',range:3,radius:0,mpCost:12,power:110,inflicts:['burn'],targetSides:['enemy']},
 ];
 type Intent = Command | {kind:'aiTick'};
-export interface Save {version:2; revision?:2|3|4|5|6|7|8|9; deployment?:Deployment; chapter:number; difficulty:Difficulty; seed:number; preparation:Preparation; journal:Intent[]; checkpoints:number[]}
+export interface Save {version:2; revision?:2|3|4|5|6|7|8|9|10; deployment?:Deployment; chapter:number; difficulty:Difficulty; seed:number; preparation:Preparation; journal:Intent[]; checkpoints:number[]}
 
 /** Persist commands, not mutable engine internals. Replay also restores terrain,
  * counter budgets, patrol progress and RNG when undoing across a phase boundary. */
@@ -187,7 +187,7 @@ export class Session {
   phase='';
   failure='';
   phaseCheckpoint:number|null=null;
-  constructor(public chapter=2, public difficulty:Difficulty='normal', public seed=215, public preparation:Preparation='survival', public revision:2|3|4|5|6|7|8|9=3, public deployment?:Deployment) {this.battle=this.create();this.resetScenario();}
+  constructor(public chapter=2, public difficulty:Difficulty='normal', public seed=215, public preparation:Preparation='survival', public revision:2|3|4|5|6|7|8|9|10=3, public deployment?:Deployment) {this.battle=this.create();this.resetScenario();}
   get state(){return this.battle.state;}
   private create(){
     this.balancedEnemies.clear();this.romanced.clear();this.honed.clear();this.capped.clear();this.geared.clear();this.xpEarned={};this.xpGains=new WeakMap();this.xpCursor=0;
@@ -482,7 +482,8 @@ export class Session {
       if(edge&&u.side==='enemy'&&!(this.revision>=6?/^gate_/:/^(gate|tower)_/).test(u.id)){const hp=u.hp/u.stats.maxHp;u.stats.attack=Math.round(u.stats.attack*(1+edge/100));u.stats.maxHp=Math.round(u.stats.maxHp*(1+edge/100));u.hp=Math.max(1,Math.round(u.stats.maxHp*hp));}}
     // 규칙판 7: 모든 부대에 병종 부대효과(승급 단계만큼), 이름 있는 장수에게 장수 특성 하나, 이름난 장수는 사거리 +1.
     if(this.revision>=7)for(const u of state.living())if(!this.honed.has(u.id)){this.honed.add(u.id);
-      if(escorts.has(u.id)||structureKind(u.id)||u.unitClass==='civilian'||/^(gate|tower)_/.test(u.id))continue;
+      // 규칙판 10: 지켜야 할 장수(호송·보호 대상 조조 등)도 병종 특성과 고유특성을 함께 쓴다. 피난민 같은 백성은 그대로 뺀다.
+      if((this.revision<10&&escorts.has(u.id))||structureKind(u.id)||u.unitClass==='civilian'||/^(gate|tower)_/.test(u.id))continue;
       // 꿈속·가상 전장의 환영은 연의 능력을 입히지 않듯 부대효과·장수 특성·이름난 장수 범위도 받지 않는다.
       if(u.name.endsWith('환영'))continue;
       syncTroopEffect(u);
@@ -696,7 +697,7 @@ export class Session {
   static load(raw:unknown){
     const data=raw as Save;
     if(!data || data.version!==2 || !chapters[data.chapter] || !['survival','strategy','command'].includes(data.preparation) || !['normal','extreme'].includes(data.difficulty) || !Number.isSafeInteger(data.seed) || !Array.isArray(data.journal) || data.journal.length>20000 || !Array.isArray(data.checkpoints) || !data.checkpoints.every((n,i,a)=>Number.isInteger(n)&&n>=0&&n<data.journal.length&&(i===0||n>a[i-1]!))) throw new Error('저장 파일을 읽을 수 없습니다.');
-    if(data.revision!==undefined&&data.revision!==2&&data.revision!==3&&data.revision!==4&&data.revision!==5&&data.revision!==6&&data.revision!==7&&data.revision!==8&&data.revision!==9)throw new Error('지원하지 않는 전장 버전입니다.');
+    if(data.revision!==undefined&&data.revision!==2&&data.revision!==3&&data.revision!==4&&data.revision!==5&&data.revision!==6&&data.revision!==7&&data.revision!==8&&data.revision!==9&&data.revision!==10)throw new Error('지원하지 않는 전장 버전입니다.');
     if(data.deployment){const d=data.deployment;if(!d.levels||!d.equipped||!OFFICERS.every(id=>Number.isInteger(d.levels[id])&&d.levels[id]!>=1&&d.levels[id]!<=40)||Object.entries(d.equipped).some(([id,item])=>!OFFICERS.includes(id as typeof OFFICERS[number])||!treasures.some(t=>t.id===item))||(d.xp!==undefined&&(typeof d.xp!=='object'||Object.entries(d.xp).some(([id,n])=>!OFFICERS.includes(id as typeof OFFICERS[number])||!Number.isInteger(n)||n<0||n>=1000))))throw new Error('잘못된 출진 기록입니다.');}
     if(data.deployment?.run){const r=data.deployment.run;
       if(!Number.isInteger(r.floor)||r.floor<1||r.floor>RUN_FLOORS||!['battle','elite','boss','tale'].includes(r.kind)||(r.kind==='tale')!==!!taleById(r.tale)||(r.route!==undefined&&!validRoute(r.route))||!Number.isSafeInteger(r.seed)||!Array.isArray(r.party)||r.party.length<1||r.party.length>PARTY_LIMIT||!r.party.some(u=>u.hero)||!Array.isArray(r.relics)

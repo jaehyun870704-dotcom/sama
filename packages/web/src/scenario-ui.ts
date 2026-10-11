@@ -29,7 +29,7 @@ import {loadMeta,saveMeta,recordStory,buyUnlock,UNLOCKS,recordOfficerLevels} fro
 import {xpMult,restMult,mandateBonus,recruitBonus,heroLevelBonus} from './research.ts';
 import {deploymentPerks} from './officer-perks.ts';
 import {showResearch} from './research-ui.ts';
-import {classTactics,evolvedClass,tierOf,familyOf,type BattleState,type UnitClass} from '../../core/src/index.ts';
+import {classTactics,evolvedClass,tierOf,familyOf,troopEffectOf,troopEffectText,type BattleState,type UnitClass} from '../../core/src/index.ts';
 import type {ChapterScript,ChoiceEffect,Look,Scene,Camp} from './scenario-types.ts';
 import {과와,으로,은는,을를,이가} from './josa.ts';
 import {setStoryEra} from './youth.ts';
@@ -304,7 +304,7 @@ export function showIfPrep(host:ScenarioHost,state:ScenarioState,step:ScenarioSt
   <div class="prep-body"><div class="prep-list">${card('사마의')}${required.map(card).join('')}${optional.map(card).join('')}</div>
   <div class="prep-detail"><div class="prep-portrait">${portraitImage(f)?`<span class="prep-sprite big prep-face">${cardFace(f)}</span>`:`<span class="prep-sprite big prep-troop">${classSprite(c)}</span>`}<div><h3>${esc(f)}</h3><p>${esc(classNames[c]??c)} · Lv.${u.level} · 경험치 ${u.xp}/${XP_PER_LEVEL}</p>${r?`<p class="muted">${esc(r.epithet)}</p>`:''}</div></div>
     ${r?`<div class="romance-stats prep-stats">${([['무력',r.war],['지력',r.int],['통솔',r.lead],['정치',r.pol],['매력',r.cha]] as const).map(([k,v])=>`<span><small>${k}</small><b>${v}</b><i style="width:${v}%"></i></span>`).join('')}</div>`:''}
-    ${temper?`<p>성격 <b>${temperNames[temper]}</b> — 일기토·설전에 응하는 방식</p>`:''}${r?signatureSkills(r.name).map((g,k)=>`<p><b>고유특성 ${k+1} 「${esc(g.name)}」</b> ${esc(g.description)} <small>(${esc(g.unlock)})</small></p>`).join(''):''}
+    ${temper?`<p>성격 <b>${temperNames[temper]}</b> — 일기토·설전에 응하는 방식</p>`:''}${r&&signatureSkills(r.name).length?(()=>{const te=troopEffectOf(c);return te?`<p><b>병종 특성 「${esc(te.effect.name)}」</b> ${esc(troopEffectText(te.effect,te.tier))} <small>(${esc(classNames[c]??c)} · 장수도 함께 쓴다)</small></p>`:'';})():''}${r?signatureSkills(r.name).map((g,k)=>`<p><b>고유특성 ${k+1} 「${esc(g.name)}」</b> ${esc(g.description)} <small>(${esc(g.unlock)})</small></p>`).join(''):''}
     ${t.map(x=>`<p><b class="tactic-name">전법 「${esc(x.name)}」</b> ${esc(x.description)}</p>`).join('')}<p class="muted">${esc(nextEvolutionText(c))}</p></div></div>
   <div class="run-actions"><button class="primary" id="prep-go">출진 ▶</button>${host.showSlots?'<button id="prep-save">💾 저장</button>':''}<button id="prep-camp">← 진영으로</button><button id="prep-back">장 목록</button></div></div>`,false);
   const get=()=>[...document.querySelectorAll<HTMLInputElement>('[data-sortie]')].filter(x=>x.checked).map(x=>x.dataset.sortie!);

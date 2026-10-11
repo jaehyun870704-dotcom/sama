@@ -70,7 +70,7 @@ function peopleTab(pick:string,side:Side|'all'){
     ${r?`<div class="cx-stats">${STAT_ROWS.map(([k,label])=>{const v=r[k] as number;return `<div class="cx-stat"><span>${label}</span><i><i style="width:${v}%" class="${v>=90?'hi':v<40?'lo':''}"></i></i><b>${v}</b></div>`;}).join('')}</div>`:''}
     ${(()=>{const te=troopEffectOf(cls);return te?`<p class="cx-unique"><b>병종 특성 「${esc(te.effect.name)}」</b> ${esc(troopEffectText(te.effect,te.tier))}<br><span class="cx-tiers"><i>${esc(classNames[cls]??cls)}의 병종 특성 · 장수도 고유특성과 함께 쓴다</i></span></p>`:'';})()}
     ${skill?signatureSkills(name,tier).map((g,k)=>`<p class="cx-unique${g.open?'':' muted'}"><b>${g.open?'◆':'◇'} 고유특성 ${k+1} 「${esc(g.name)}」</b> ${esc(g.description)}<br><span class="cx-tiers"><i>${esc(g.unlock)}${g.open?' · 열림':''}</i></span></p>`).join('')+'<p class="cx-tiers"><i>병종이 진화할수록 고유특성이 하나씩 열리고 수치도 커진다(1단계 ×1 · 2단계 ×1.3 · 3단계 ×1.6 · 4단계 ×2).</i></p>':'<p class="cx-unique muted">고유특성 없음 — 병종 능력으로 싸운다.</p>'}
-    <p class="cx-evo">진화 단계 <b>${'◆'.repeat(tier)}${'◇'.repeat(4-tier)}</b> <small>병종이 진화할수록 장수 효과와 고유특성이 Ⅰ→Ⅱ→Ⅲ→Ⅳ(전설)로 강해진다${best?` · 최고 Lv.${best} 기준`:''}</small></p>
+    <p class="cx-evo">진화 단계 <b>${'◆'.repeat(tier)}${'◇'.repeat(4-tier)}</b> <small>병종이 진화할수록 병종 특성과 고유특성이 Ⅰ→Ⅱ→Ⅲ→Ⅳ(전설)로 강해진다${best?` · 최고 Lv.${best} 기준`:''}</small></p>
     <div class="cx-bio"><h4>열전</h4><p>${esc(biography(name))}</p></div>
     ${isChuHan(name)?legacyBlock(meta,name):''}
   </div>`;

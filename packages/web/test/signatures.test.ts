@@ -41,6 +41,25 @@ describe('규칙판 8: 이름있는 장수는 고유특성, 목록 밖 인물은
     expect(sy.traits.filter(t=>t.startsWith('sig:'))[0]).toBe('sig:사마의');
     expect(sy.traits.filter(t=>OLD.includes(t)||t==='physicalPower'||t.startsWith('officer:'))).toEqual([]);
   });
+  it('본편 전장 전체(규칙판 10): 이름있는 장수는 아군·적·지켜야 할 우군 모두 병종 특성과 고유특성을 둘 다 가진다', () => {
+    let both=0;
+    for(let c=1;c<chapters.length;c++){
+      const s=new Session(c,'normal',215,'survival',10,{...deployment(freshCampaign(),true),wide:2});
+      for(const u of s.state.units.values()){
+        const r=romanceOf(u);if(!r||u.name.endsWith('환영')||u.unitClass==='civilian'||!signatureSkill(r.name))continue;
+        expect(u.traits.some(t=>t.startsWith('sig:')),`${s.state.stage.id} ${u.name} 고유특성`).toBe(true);
+        expect(u.traits.some(t=>t.startsWith('troop:')),`${s.state.stage.id} ${u.name} 병종 특성`).toBe(true);
+        both++;
+      }
+    }
+    expect(both).toBeGreaterThan(40);
+    // 지켜야 할 장수(S1-09 조조)도 둘 다 갖고, 저장·불러오기 뒤에도 그대로다.
+    const s9=new Session(chapters.findIndex(c=>c.stage.id==='S1-09'),'normal',215,'survival',10,{...deployment(freshCampaign(),true),wide:2});
+    const back=Session.load(JSON.parse(JSON.stringify(s9.save())));
+    const cc=back.state.find('cao_cao')!;
+    expect(back.revision).toBe(10);
+    expect(cc.traits.some(t=>t.startsWith('troop:'))&&cc.traits.includes('sig:조조')).toBe(true);
+  });
   it('장수는 병종 특성과 고유특성을 함께 쓰고, 고유특성은 단계마다 병종 특성보다 세다', () => {
     const s=new Session(chapters.findIndex(c=>c.stage.id==='S1-06'),'normal',215,'survival',8,deployment(freshCampaign(),true));
     for(const u of s.state.units.values())if(u.traits.some(t=>t.startsWith('sig:')))expect(u.traits.some(t=>t.startsWith('troop:')),u.name).toBe(true);
