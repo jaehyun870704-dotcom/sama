@@ -71,11 +71,7 @@ function peopleTab(pick:string,side:Side|'all'){
     ${skill?`<p class="cx-unique"><b>고유특성 「${esc(skill.name)}」</b> ${esc(signatureSkill(name,tier)?.description??skill.description)}<br><span class="cx-tiers"><i>병종이 진화할수록 수치가 커진다(1단계 ×1 · 2단계 ×1.15 · 3단계 ×1.3 · 4단계 ×1.5)</i></span></p>`:'<p class="cx-unique muted">고유특성 없음 — 병종 능력으로 싸운다.</p>'}
     <p class="cx-evo">진화 단계 <b>${'◆'.repeat(tier)}${'◇'.repeat(4-tier)}</b> <small>병종이 진화할수록 장수 효과와 고유특성이 Ⅰ→Ⅱ→Ⅲ→Ⅳ(전설)로 강해진다${best?` · 최고 Lv.${best} 기준`:''}</small></p>
     <div class="cx-bio"><h4>열전</h4><p>${esc(biography(name))}</p></div>
-    ${isChuHan(name)?legacyBlock(meta,name):`    <div class="cx-perks"><h4>장수 효과 <small>장착 ${st.equipped.length}/${slots} · 천명 ${meta.mandate}</small></h4>
-      ${perks.map(p=>{const learned=st.learned.includes(p.id),on=st.equipped.includes(p.id),reach=best>=p.level;
-        return `<div class="cx-perk ${learned?'learned':''} ${on?'equipped':''} ${!learned&&!reach?'locked':''}"><span class="cx-perk-glyph">${on?'◆':learned?'◇':'🔒'}</span><div><b>${esc(perkAt(p,tier).name)}</b> <small>${p.source}</small><br><span class="cx-tiers">${[1,2,3,4].map(t=>`<i class="${t===tier?'now':''}">${PERK_TIERS[t-1]!.mark} ${esc(perkText(p.trait,perkAt(p,t).param))}</i>`).join('')}</span><br><small>필요 Lv.${p.level} · 천명 ${p.cost}</small></div>
-        ${learned?`<button data-cx-toggle="${p.id}">${on?'해제':'장착'}</button>`:`<button data-cx-learn="${p.id}" ${reach&&meta.mandate>=p.cost?'':'disabled'}>${reach?'습득':'Lv.'+p.level+' 필요'}</button>`}</div>`;}).join('')}
-      <p class="muted">필요 레벨은 이 장수가 어느 회차에서든 닿은 가장 높은 레벨입니다. 장착한 효과는 이 장수가 천명의 길에서 출진할 때 적용되고, 교체는 무료입니다.</p></div>`}
+    ${isChuHan(name)?legacyBlock(meta,name):''}
   </div>`;
   return {html:`<div class="cx-split"><div class="cx-list">${list}</div>${detail}</div>`,name};
 }

@@ -29,10 +29,11 @@ export function grantPerk(u:Unit,id:string,param:number){
   u.traitParams[id]=(u.traitParams[id]??0)+param;
 }
 /** 전장의 아군에게 연구·장수 효과를 입힌다. */
-export function applyPerkGrants(state:BattleState,g:PerkGrants){
+/** officers=false(규칙판 8): 장수 특성은 고유특성 하나뿐이라 장수별 장수 효과(byName)는 붙이지 않는다. 연구(전원·계열)는 그대로. */
+export function applyPerkGrants(state:BattleState,g:PerkGrants,officers=true){
   for(const u of state.living('player')){
     for(const [id,n] of g.all)grantPerk(u,id,n);
-    for(const [id,n] of g.byName[u.name]??[])grantPerk(u,id,n);
+    if(officers)for(const [id,n] of g.byName[u.name]??[])grantPerk(u,id,n);
     for(const [id,n] of g.byFamily?.[familyOf(u.unitClass)]??[])grantPerk(u,id,n);
   }
 }

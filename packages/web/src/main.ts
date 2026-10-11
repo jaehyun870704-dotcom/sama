@@ -308,7 +308,7 @@ function romanceCard(u:Unit){
   const temper=temperOf(r.name);
   return `<div class="romance-card"><div class="romance-epithet">${r.epithet}${temper?` <span class="temper-tag" title="일기토·설전에 응하는 방식">성격 · ${temperNames[temper]}</span>`:''}</div><div class="romance-stats">${bars}</div>${(()=>{const sk=session.revision>=8?signatureSkill(r.name,u.traitParams['sig:'+r.name]??1):r.skill??officerFeatures[u.id];return sk?`<p><b>${sk.name}</b> ${sk.description}</p>`:'';})()}</div>`;
 }
-function milestoneMarkup(items:ReturnType<typeof growthMilestones>){return items.map(x=>`<div class="growth-summary"><b>${officerNames[x.id]}${x.to>x.from?' · Lv.'+x.from+' → '+x.to:''}</b>${x.evolution?`<p class="evo-news">병종 진화: ${x.evolution.from} → <b>${x.evolution.to}</b>${x.evolution.bloom?` · 개화 「${x.evolution.bloom.name}」 ${x.evolution.bloom.description}`:''}</p>`:''}${x.strategies.length?'<p>새 책략: '+x.strategies.join(' · ')+'</p>':''}${x.talents.length?'<p>고유특성 해금: '+x.talents.join(' · ')+'</p>':''}</div>`).join('');}
+function milestoneMarkup(items:ReturnType<typeof growthMilestones>){return items.map(x=>`<div class="growth-summary"><b>${officerNames[x.id]}${x.to>x.from?' · Lv.'+x.from+' → '+x.to:''}</b>${x.evolution?`<p class="evo-news">병종 진화: ${x.evolution.from} → <b>${x.evolution.to}</b>${x.evolution.bloom?` · 개화 「${x.evolution.bloom.name}」 ${x.evolution.bloom.description}`:''}</p>`:''}${x.strategies.length?'<p>새 책략: '+x.strategies.join(' · ')+'</p>':''}</div>`).join('');}
 function showExpeditionResult(){if(resultShown)return;resultShown=true;const run=session.deployment!.mission!,m=expeditions.find(x=>x.id===run.id)!,win=session.state.outcome==='victory';const before=structuredClone(campaign);
  const reward=expeditionReward(campaign,m.id,run.runId,win);saveCampaign();
  const milestones=growthMilestones(before,campaign);
@@ -510,7 +510,7 @@ function xpOf(u:Unit){return session.xpProgress(u.id);}
 function xpBar(u:Unit):Array<[string,string,number,number]>{const x=xpOf(u);return x&&x.need?[['xp',`경험치 · 이번 전투 +${x.gained}`,x.now,x.need]]:[];}
 function renderUnit(u:Unit|undefined){
   if(!u)return;const s=session.state,can=u.alive&&!u.hasActed&&u.side===s.currentSide&&CONTROLLABLE.has(u.side)&&s.outcome==='ongoing';
-  const feature=session.revision>=4?officerFeatures[u.id]:undefined;const talents=session.deployment?.growth?talentTree(u.id,u.level,session.deployment.growth):[];
+  const feature=session.revision>=4?officerFeatures[u.id]:undefined;const talents=session.revision<8&&session.deployment?.growth?talentTree(u.id,u.level,session.deployment.growth):[];
   // 한 화면 장수 카드: 초상·이름·체력/책략/경험 막대·능력치 8칸·성격·특성(이름만)·책략(눌러서 선택)·상태
   const r=romanceOf(u),temper=r?temperOf(r.name):undefined,sk=session.revision>=8?undefined:r?.skill??feature;
   const ab=u.ccRules?u.ability:undefined;

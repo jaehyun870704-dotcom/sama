@@ -288,7 +288,7 @@ export class Session {
     // 천명의 시련: 로그라이크(천명의 길·원정) 전투의 적은 처음부터 단단하다. 연구가 쌓일수록 상대적으로 쉬워진다.
     if(this.deployment?.trial)for(const e of state.living('enemy')){const T=this.revision>=6?TRIAL6:TRIAL,fk=this.revision>=6&&this.deployment.run?TRIAL6_FLOOR[this.deployment.run.kind+':'+this.deployment.run.floor]??1:1;if(/^(gate|tower)_/.test(e.id)||e.stats.movement===0)continue;
       e.stats.maxHp=Math.round(e.stats.maxHp*T.hp*fk);e.hp=e.stats.maxHp;e.stats.attack=Math.round(e.stats.attack*T.attack*fk);e.stats.defense=Math.round(e.stats.defense*T.defense);}
-    if(this.deployment?.perks)applyPerkGrants(state,this.deployment.perks);
+    if(this.deployment?.perks)applyPerkGrants(state,this.deployment.perks,this.revision<8);
     this.applyRomanceToNew(state);this.applyGear(state);
     return battle;
   }

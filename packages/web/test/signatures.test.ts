@@ -31,4 +31,13 @@ describe('규칙판 8: 이름있는 장수는 고유특성, 목록 밖 인물은
     expect(back.revision).toBe(8);
     expect(sigs(back)).toEqual(sigs(s));
   });
+  it('장수 특성은 하나만: 성장 특성 나무·장수 효과(장착)를 붙이지 않는다', () => {
+    const OLD=['simaPatience','caoVanguard','familyShield','commandDefense','zhouStrategy','westernValor','guardian','flyingGeneral','strategicGuard'];
+    const grown={...deployment(freshCampaign(),true),growth:{storyWins:9,trainingWins:9,questWins:9},
+      perks:{all:[],byName:{사마의:[['physicalPower',10]] as [string,number][]}}};
+    const s=new Session(chapters.findIndex(c=>c.stage.id==='S1-08'),'normal',215,'survival',8,grown);
+    const sy=s.state.find('sima_yi')!;
+    expect(sy.traits.filter(t=>t.startsWith('sig:'))).toEqual(['sig:사마의']);
+    expect(sy.traits.filter(t=>OLD.includes(t)||t==='physicalPower'||t.startsWith('officer:'))).toEqual([]);
+  });
 });
