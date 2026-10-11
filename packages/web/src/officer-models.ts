@@ -51,8 +51,8 @@ export const officerManifest:OfficerEntry[]=[
   E('zhong_hui','종회',c('zhong_hui','fengshui')),E('hao_zhao','학소',c('hao_zhao','crossbow')),E('cao_hong','조홍',c('cao_hong','infantry')),E('cao_zhang','조창',c('cao_zhang','cavalry')),
   E('wen_ping','문빙',c('wen_ping','spearman')),E('guan_ping','관평',c('guan_ping','infantry')),E('ma_dai','마대',c('ma_dai','infantry')),E('xu_sheng','서성',c('xu_sheng','spearman')),
   E('ding_feng','정봉',c('ding_feng','infantry')),E('yan_liang','안량',c('yan_liang','cavalry')),E('wen_chou','문추',c('wen_chou','cavalry')),E('ju_shou','저수',c('ju_shou','strategist')),
-  E('tian_feng','전풍',c('tian_feng','strategist')),E('shen_pei','심배',c('shen_pei','strategist')),E('han_xin','한신',c('han_xin','spearman')),E('zhang_liang','장량',{strategist:['zhang_liang-battle-v1.webp',384,384,1]}),
-  E('xiao_he','소하',{fengshui:['xiao_he-battle-v1.webp',384,384,1]}),E('ying_bu','영포',c('ying_bu','cavalry')),E('peng_yue','팽월',c('peng_yue','infantry')),E('fan_kuai','번쾌',c('fan_kuai','cavalry')),
+  E('tian_feng','전풍',c('tian_feng','strategist')),E('shen_pei','심배',c('shen_pei','strategist')),E('han_xin','한신',c('han_xin','spearman')),E('zhang_liang','장량',c('zhang_liang','strategist')),
+  E('xiao_he','소하',c('xiao_he','fengshui')),E('ying_bu','영포',c('ying_bu','cavalry')),E('peng_yue','팽월',c('peng_yue','infantry')),E('fan_kuai','번쾌',c('fan_kuai','cavalry')),
   E('chen_ping','진평',c('chen_ping','strategist')),E('fan_zeng','범증',c('fan_zeng','strategist')),E('zhongli_mo','종리매',c('zhongli_mo','cavalry')),E('ji_bu','계포',c('ji_bu','infantry')),
 ];
 

@@ -17,7 +17,8 @@ const priorityBattle=[
 const namedBattle=[
   ['jia_xu','wheelSage'],['yu_jin','spearman'],['yue_jin','infantry'],['deng_ai','infantry'],['zhong_hui','fengshui'],['hao_zhao','crossbow'],['cao_hong','infantry'],
   ['cao_zhang','cavalry'],['wen_ping','spearman'],['guan_ping','infantry'],['ma_dai','infantry'],['xu_sheng','spearman'],['ding_feng','infantry'],['yan_liang','cavalry'],
-  ['wen_chou','cavalry'],['ju_shou','strategist'],['tian_feng','strategist'],['shen_pei','strategist'],['han_xin','spearman'],['ying_bu','cavalry'],['peng_yue','infantry'],
+  ['wen_chou','cavalry'],['ju_shou','strategist'],['tian_feng','strategist'],['shen_pei','strategist'],['han_xin','spearman'],['zhang_liang','strategist'],['xiao_he','fengshui'],
+  ['ying_bu','cavalry'],['peng_yue','infantry'],
   ['fan_kuai','cavalry'],['chen_ping','strategist'],['fan_zeng','strategist'],['zhongli_mo','cavalry'],['ji_bu','infantry'],
 ] as const;
 function webpSize(file:URL){
@@ -127,7 +128,7 @@ describe('장수별 전투 SD와 대결 모델',()=>{
     }
   });
 
-  it('이름있는 장수 26명은 병종별 표준 SD 시트를 쓴다',()=>{
+  it('이름있는 장수 28명은 병종별 표준 SD 시트를 쓴다',()=>{
     for(const [id,unitClass] of namedBattle){
       const model=officerBattleSheet({id,name:id,unitClass})!;
       expect(model.action.sheet,id).toBe(`officers/${id}-battle-${unitClass}-v1.webp`);
