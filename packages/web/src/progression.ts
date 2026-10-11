@@ -4,11 +4,11 @@ import {extraTreasures,trainingTreasures,questTreasures} from './treasure-catalo
 import type {Difficulty,Unit,UnitClass} from '../../core/src/index.ts';
 
 export const OFFICERS=['sima_yi','sima_lang','sima_fang','cao_zhen'] as const;
-export interface Campaign {version:1; xp:Record<string,number>; rewards:string[]; treasures:string[]; equipped:Record<string,string>;loadouts?:Record<string,Partial<Record<GearSlot,string>>>;completedRuns?:string[];trainingWins?:number;quests?:string[];/** 넘은 도전 단계(C01~C10) */challenges?:string[];/** 반복 퀘스트(보물 사냥) 승리 수 */bountyWins?:number}
+export interface Campaign {version:1; xp:Record<string,number>; rewards:string[]; treasures:string[]; equipped:Record<string,string>;loadouts?:Record<string,Partial<Record<GearSlot,string>>>;completedRuns?:string[];trainingWins?:number;quests?:string[];/** 넘은 도전 단계(C01~C10) */challenges?:string[];/** 반복 퀘스트(보물 사냥) 승리 수 */bountyWins?:number;/** 받은 연의 인장 보상(S1:22 꼴) */sealRewards?:string[]}
 export interface Growth {storyWins:number;trainingWins:number;questWins:number}
 /** 시나리오 모드의 장: 장 id와 대사 선택이 남긴 전투 효과. */
 export interface ScenarioDeployment {chapter:string;mods?:import('./roguelike.ts').BattleMods;/** 가상 전장을 극한으로 */difficulty?:'extreme';/** 로그라이크 회차: 연의 장에 들고 가는 보물과 사마의의 남은 체력 */relics?:string[];heroHp?:number;/** 회차에서 영입한 장수(연의 장에 함께 나선다, 최대 3) */recruits?:import('./roguelike.ts').RunUnit[]}
-export interface Deployment {scenario?:ScenarioDeployment;/** 연구·장수 효과(출진 순간의 값) */perks?:import('./perks.ts').PerkGrants;/** 연의 장에 더 데려가는 장수(필수 장수 밖) */extraOfficers?:string[];treasureRules?:1;/** 넓은 전장(연의 지도 1.5배 · 이동 +2) — 새로 시작한 전투만. 2는 큰 전투(중편 후반·하편의 복잡한 장에 아군·적군 증원)까지 */wide?:1|2;/** 천명의 시련(로그라이크 난이도): 적 체력 +20%·공격 +12%·방어 +10% — 연구로 이겨낸다 */trial?:1;/** 천명의 원정 전투 (로그라이크) */run?:RunBattleRef;/** 원정 안의 연의 전장 */runStory?:RunStoryRef;levels:Record<string,number>;/** 연의 장수의 이번 레벨 안 경험치(전투 중에 싸워서 번 경험치가 여기서부터 쌓인다) */xp?:Record<string,number>;equipped:Record<string,string>;loadouts?:Record<string,Partial<Record<GearSlot,string>>>;growth?:Growth;mission?:{id:string;runId:string;version?:2|3|4;balance?:1;supportClasses?:UnitClass[]}}
+export interface Deployment {scenario?:ScenarioDeployment;/** 연의 장에 데려가는 등용 장수(본편 · 최대 2명) */retinue?:import('./roguelike.ts').RunUnit[];/** 연구·장수 효과(출진 순간의 값) */perks?:import('./perks.ts').PerkGrants;/** 연의 장에 더 데려가는 장수(필수 장수 밖) */extraOfficers?:string[];treasureRules?:1;/** 넓은 전장(연의 지도 1.5배 · 이동 +2) — 새로 시작한 전투만. 2는 큰 전투(중편 후반·하편의 복잡한 장에 아군·적군 증원)까지 */wide?:1|2;/** 천명의 시련(로그라이크 난이도): 적 체력 +20%·공격 +12%·방어 +10% — 연구로 이겨낸다 */trial?:1;/** 천명의 원정 전투 (로그라이크) */run?:RunBattleRef;/** 원정 안의 연의 전장 */runStory?:RunStoryRef;levels:Record<string,number>;/** 연의 장수의 이번 레벨 안 경험치(전투 중에 싸워서 번 경험치가 여기서부터 쌓인다) */xp?:Record<string,number>;equipped:Record<string,string>;loadouts?:Record<string,Partial<Record<GearSlot,string>>>;growth?:Growth;mission?:{id:string;runId:string;version?:2|3|4;balance?:1;supportClasses?:UnitClass[]}}
 export type GearSlot="weapon"|"armor"|"accessory";
 export interface Treasure {id:string;name:string;stage:string;glyph:string;effect:string;description:string;bonus:Partial<Unit['stats']>;slot?:GearSlot;grade?:number;icon?:number;quest?:string}
 export const treasures:Treasure[]=[
@@ -78,19 +78,21 @@ export function applyTreasure(unit:Unit,id:string|undefined,uniqueEffects=true){
   if(uniqueEffects&&treasurePowers.some(t=>t.id===id)&&!unit.traits.includes("treasure:"+id))unit.traits.push("treasure:"+id);
   unit.hp=unit.stats.maxHp;unit.mp=unit.stats.maxMp;
 }
-export function readCampaign():Campaign{
-  try{const value=JSON.parse(localStorage.getItem('sama-campaign-v1')??'null') as Campaign;
+/** 성장 기록 칸: 연의(본편)와 천명의 길(로그라이크 회차)은 따로 저장한다 — 새 회차가 연의의 레벨·보물을 지우지 않게. */
+export const CAMPAIGN_KEYS={main:'sama-campaign-v1',run:'sama-campaign-run-v1'} as const;
+export function readCampaign(key:string=CAMPAIGN_KEYS.main):Campaign{
+  try{const value=JSON.parse(localStorage.getItem(key)??'null') as Campaign;
     if(value?.version!==1||!value.xp||!Array.isArray(value.rewards)||!Array.isArray(value.treasures)||!value.equipped)return freshCampaign();
     if(Object.values(value.xp).some(n=>!Number.isFinite(n)||n<0)||value.rewards.some(n=>typeof n!=='string'))return freshCampaign();
     const clean=freshCampaign();for(const id of OFFICERS)clean.xp[id]=Math.min(100000,Math.floor(value.xp[id]??clean.xp[id]!));
     clean.rewards=[...new Set(value.rewards.filter(id=>/^S[123]-\d{2}:(normal|extreme)$/.test(id)))];clean.treasures=[...new Set(value.treasures.filter(id=>treasures.some(t=>t.id===id)))];
-    clean.completedRuns=Array.isArray(value.completedRuns)?[...new Set(value.completedRuns.filter(x=>typeof x==='string'&&x.length<100))]:[];clean.trainingWins=Number.isSafeInteger(value.trainingWins)?Math.max(0,value.trainingWins!):0;clean.quests=Array.isArray(value.quests)?[...new Set(value.quests.filter(x=>typeof x==='string'&&/^Q\d{2}$/.test(x)))]:[];clean.challenges=Array.isArray(value.challenges)?[...new Set(value.challenges.filter(x=>typeof x==='string'&&/^C\d{2}$/.test(x)))]:[];clean.bountyWins=Number.isSafeInteger(value.bountyWins)?Math.max(0,value.bountyWins!):0;
+    clean.completedRuns=Array.isArray(value.completedRuns)?[...new Set(value.completedRuns.filter(x=>typeof x==='string'&&x.length<100))]:[];clean.trainingWins=Number.isSafeInteger(value.trainingWins)?Math.max(0,value.trainingWins!):0;clean.quests=Array.isArray(value.quests)?[...new Set(value.quests.filter(x=>typeof x==='string'&&/^Q\d{2}$/.test(x)))]:[];clean.challenges=Array.isArray(value.challenges)?[...new Set(value.challenges.filter(x=>typeof x==='string'&&/^C\d{2}$/.test(x)))]:[];clean.bountyWins=Number.isSafeInteger(value.bountyWins)?Math.max(0,value.bountyWins!):0;clean.sealRewards=Array.isArray(value.sealRewards)?[...new Set(value.sealRewards.filter(x=>typeof x==='string'&&/^S[123]:\d{1,3}$/.test(x)))]:[];
     for(const item of treasures)if(!item.quest&&clean.rewards.some(r=>r.startsWith(item.stage+':'))&&!clean.treasures.includes(item.id))clean.treasures.push(item.id);
     for(const id of OFFICERS)if(typeof value.equipped[id]==='string')equip(clean,id,value.equipped[id]!);
     if(value.loadouts&&typeof value.loadouts==='object')for(const id of Object.keys(value.loadouts).filter(validGearKey)){const gear=value.loadouts[id];if(!gear||typeof gear!=='object')continue;for(const slot of Object.keys(gearNames) as GearSlot[])equipSlot(clean,id,slot,typeof gear[slot]==='string'?gear[slot]!:'');}
     return clean;
   }catch{return freshCampaign();}
 }
-export function writeCampaign(c:Campaign){localStorage.setItem('sama-campaign-v1',JSON.stringify(c));}
+export function writeCampaign(c:Campaign,key:string=CAMPAIGN_KEYS.main){localStorage.setItem(key,JSON.stringify(c));}
 
 export {treasurePowerText};

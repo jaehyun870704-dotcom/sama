@@ -35,6 +35,10 @@ export interface RunHost {
   backToBattle():void;
   /** 연의 회상(이긴 연의 전장 다시 치르기) */
   showChronicle():void;
+  /** 연의(본편): 다음에 이길 장이 있는 편을 바로 연다 */
+  showChronicleNext():void;
+  /** 연의 진행 요약: 다음 장 · 이긴 장 · 인장 */
+  chronicleSummary():{next?:string;won:number;total:number;seals:number;sealMax:number};
   showTroops():void;
   showSlots():void;
   /** 시나리오 모드(본편: 연의 + 가상) */
@@ -88,14 +92,14 @@ const tile=(id:string,seal:string,title:string,line:string,meta='',cls='')=>`<bu
  * 그림·제목은 모두 이 게임이 직접 만든 것이다(다른 게임의 로고·그림을 쓰지 않는다).
  */
 export function showTitle(host:RunHost){
-  const sc=scenarioSummary(),started=sc.state.done.length>0||!!sc.state.run;
+  const c=host.chronicleSummary(),started=c.won>0;
   host.modal(`<div class="title-screen"><div class="title-bg" aria-hidden="true"></div><img class="title-hero" src="sima-portrait-v2.webp" alt="부채를 든 사마의 창작 초상">
   <div class="title-copy"><p class="title-eyebrow">삼국지 · 사마의 연대기</p><h1 class="title-logo">사마의전</h1><p class="title-tag">칼을 거두고, 때를 기다린다.</p>
-  <div class="title-actions">${started?`<button id="title-continue" class="primary">이어서 하기 <small>${esc(sc.tag)} 「${esc(sc.title)}」</small></button>`:`<button id="title-start" class="primary">천명의 길 시작 <small>189년, 낙양에서</small></button>`}
-  <button id="title-lobby">본영으로</button><button id="title-codex">도감 보기</button></div>
+  <div class="title-actions"><button id="title-start" class="primary">${started?'연의 이어하기':'연의 시작'} <small>${c.next?esc(c.next):'32장을 모두 이겼다 · 극한 인장에 도전'}</small></button>
+  <button id="title-lobby">본영으로</button><button id="title-codex">도감 보기</button><button id="title-roguelike" class="title-sub">천명의 길 · 로그라이크 <small>회차마다 갈림길과 결말이 바뀐다</small></button></div>
   <p class="title-note">비상업 팬 창작 게임 · 등장인물은 『삼국지연의』와 정사를 바탕으로 새로 그렸다</p></div></div>`,false);
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
-  on('title-continue',host.showScenario);on('title-start',host.showScenario);on('title-lobby',()=>showHub(host));on('title-codex',()=>showCollections(host));
+  on('title-start',host.showChronicleNext);on('title-roguelike',host.showScenario);on('title-lobby',()=>showHub(host));on('title-codex',()=>showCollections(host));
 }
 
 /**
@@ -103,23 +107,23 @@ export function showTitle(host:RunHost){
  * 보물은 첫 화면에 늘어놓지 않고 도감에서 본다.
  */
 export function showHub(host:RunHost){
-  const meta=loadMeta(),sc=scenarioSummary(),done=sc.state.done.length,run=loadRun();
+  const meta=loadMeta(),sc=scenarioSummary(),run=loadRun(),c=host.chronicleSummary();
   host.modal(`<div class="lobby"><div class="lobby-bg" aria-hidden="true"></div>
   <header class="lobby-head"><div><p class="eyebrow">본영 · 사마의의 군막</p><h2>오늘은 무엇을 하는가</h2></div>
-  <div class="hub-stats"><span><b>${done}</b><small>마친 장</small></span><span><b>${esc(sc.tag)}</b><small>지금</small></span><span><b>${meta.endings.length}/${ALL_ENDINGS.length}</b><small>본 결말</small></span><span><b>${meta.mandate}</b><small>천명</small></span></div></header>
+  <div class="hub-stats"><span><b>${c.won}/${c.total}</b><small>이긴 연의</small></span><span><b>${c.seals}/${c.sealMax}</b><small>인장</small></span><span><b>${(meta.recruited??[]).length}</b><small>등용</small></span><span><b>${meta.mandate}</b><small>천명</small></span></div></header>
   <div class="lobby-main">
-    ${tile('hub-scenario','出',done?'천명의 길 이어하기':'천명의 길 시작','본편 · 연의 32장과 갈림길의 가상 전장',`${esc(sc.tag)} 「${esc(sc.title)}」${sc.state.run?` · 제${sc.state.run.no}회차`:''}`,'primary wide')}
-    ${tile('hub-chronicle','演','연의','편을 골라 한 장씩 진군 · 이긴 장 다시 치르기','상편 · 중편 · 하편')}
-    ${tile('hub-training','練','수련장','막혔을 때 레벨업 · 다음 장 권장 레벨까지 키운다','승리마다 경험치 · 천명의 길 동료도 함께')}
+    ${tile('hub-chronicle','演',c.won?'연의 이어하기':'연의 시작','본편 · 상편 11장 · 중편 14장 · 하편 7장 · 일반/극한과 인장',c.next?`다음 · ${esc(c.next)}`:'32장 완료 · 극한 인장과 인장 보상을 모아 보자','primary wide')}
+    ${tile('hub-training','練','수련장','막혔을 때 레벨업 · 다음 연의 장 권장 레벨까지','승리마다 경험치 · 연의 장수 모두')}
     ${tile('hub-challenge','關','도전의 관문','10단계 · 단계마다 적이 늘고 강해진다','처음 넘는 단계마다 보물')}
-    ${tile('hub-run','征','천명의 원정','로그라이크 · 3편 18층을 오르는 한 번뿐인 길',ongoing(run)?`원정 중 · ${run.floor}층`:`최고 ${meta.best}층 · 천명 ${meta.mandate}`)}
+    ${tile('hub-recruit','聘','등용','계보마다 조건을 채워 장수를 휘하로 · 연의에 데려간다',`등용 ${(meta.recruited??[]).length}/${RECRUITABLE.length}명`)}
     ${tile('hub-archive','書','시나리오 보기','지난 이야기를 다시 보고, 이긴 장을 다시 싸운다',`결말 ${meta.endings.length}/${ALL_ENDINGS.length}`)}
-    ${tile('hub-recruit','聘','등용','계보마다 조건을 채워 장수를 휘하로',`등용 ${(meta.recruited??[]).length}/${RECRUITABLE.length}명`)}
     ${tile('hub-collections','鑑','도감','인물 · 병종 · 책략 · 보물 · 갈림길',`보물 ${treasureSummary().owned}/${treasureSummary().total}`)}
+    ${tile('hub-scenario','命','천명의 길','서브 · 로그라이크 회차 · 갈림길의 가상 전장과 결말',sc.state.run?`제${sc.state.run.no}회차 · ${esc(sc.tag)} 「${esc(sc.title)}」`:'연의와 성장 기록을 따로 쓴다','sub')}
+    ${tile('hub-run','征','천명의 원정','서브 · 로그라이크 · 3편 18층을 오르는 한 번뿐인 길',ongoing(run)?`원정 중 · ${run.floor}층`:`최고 ${meta.best}층 · 천명 ${meta.mandate}`,'sub')}
   </div>
   <nav class="lobby-sub">${host.resumeSaved?'<button id="hub-resume" class="primary">전투 이어하기</button>':''}<button id="hub-research">연구</button><button id="hub-custom">신장수 · 신세력</button><button id="hub-slots">저장 칸</button><button id="hub-title">첫 화면</button></nav></div>`,false);
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
-  on('hub-scenario',host.showScenario);on('hub-chronicle',host.showChronicle);on('hub-training',host.showTraining);on('hub-challenge',()=>host.showExpeditions('challenge'));on('hub-run',()=>showQuests(host));
+  on('hub-scenario',host.showScenario);on('hub-chronicle',host.showChronicleNext);on('hub-training',host.showTraining);on('hub-challenge',()=>host.showExpeditions('challenge'));on('hub-run',()=>showQuests(host));
   on('hub-archive',host.showStoryArchive);on('hub-recruit',host.showRecruit);on('hub-collections',()=>showCollections(host));on('hub-custom',()=>showCustomEditor(host,()=>showHub(host)));
   on('hub-research',()=>showResearch({modal:host.modal,toast:host.toast,back:()=>showHub(host),codex:()=>codexOf(host)()}));
   on('hub-resume',()=>host.resumeSaved?.());on('hub-slots',host.showSlots);on('hub-title',()=>showTitle(host));

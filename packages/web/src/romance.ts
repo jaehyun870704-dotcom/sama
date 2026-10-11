@@ -201,8 +201,8 @@ const byName:Record<string,RomanceOfficer>={
 const DECOYS=new Set(['decoy']);
 export function romanceOf(u:{id:string;name:string}):RomanceOfficer|undefined{
   if(DECOYS.has(u.id))return undefined;
-  // 우두머리·가상 전장 적장, 원정 부대의 장수(id 'of…'), 대규모 전투 증원(id 'hx_…')은 이름으로 찾는다.
-  return romance[u.id]??(u.id==='boss'||u.id==='target'||/^(of|hx_)\d+$/.test(u.id)?byName[u.name]:undefined);
+  // 우두머리·가상 전장 적장, 원정 부대의 장수(id 'of…'), 대규모 전투 증원(id 'hx_…'), 연의에 데려간 등용 장수('rt_…')·천명의 길 동료('rc_of…')는 이름으로 찾는다.
+  return romance[u.id]??(u.id==='boss'||u.id==='target'||/^(of|hx_|rt_|rc_of)\d+$/.test(u.id)?byName[u.name]:undefined);
 }
 /** 영입 화면에 보이는 한 줄 능력: 무력·지력·통솔. */
 export function romanceStats(name:string){const r=byName[name];return r?`무력 ${r.war} · 지력 ${r.int} · 통솔 ${r.lead}`:'';}

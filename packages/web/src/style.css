@@ -1898,3 +1898,31 @@ dialog:has(.title-screen),dialog:has(.lobby){width:min(1240px,calc(100vw - 24px)
 }
 .stage-status.locked{color:#8c8f86;border-color:#4f5650}
 .coach.yield{opacity:0;pointer-events:none;transition:opacity .2s}
+/* 연의가 본편: 로그라이크(천명의 길·원정)는 서브 칸으로 한 단계 낮춰 보인다 */
+.lobby-tile.sub{background:#12191ad9;border-style:dashed;border-color:#4d5a52}.lobby-tile.sub .lobby-seal{filter:saturate(.55) brightness(.85)}
+.lobby-tile.sub .lobby-text strong{color:#cfc6ae}
+.title-actions .title-sub{background:transparent;border-style:dashed;color:#cbbf9f}.title-actions .title-sub small{display:block;color:#8f8a7a;font-size:calc(11.5px*var(--fs,1))}
+/* 연의 장 상세: 인장 조건 세 줄(일반 ◆ · 극한 ◆) */
+.campaign-stage-detail .stage-seals{display:block}.stage-seals>span{display:flex;justify-content:space-between;color:#c9bd9a;font-size:12px}.stage-seals>span small{margin:0;color:#8f978f}
+.stage-seals ol{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:3px}.stage-seals li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:center;padding:3px 8px;background:#101716;border-left:2px solid #4a4a3a}
+.stage-seals li b{font-weight:400;color:#ddd3b8;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.stage-seals li i{font-size:12px}.stage-seals li i.x.earned{color:#e58a6a;text-shadow:0 0 8px #c8604b}
+/* 편별 인장 보상 */
+.seal-rewards{display:grid;grid-template-columns:minmax(150px,.8fr) minmax(0,2fr);gap:10px;align-items:center;margin:0 0 10px;padding:8px 10px;background:#141b1b;border:1px solid #5d5134}
+.sr-head{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;align-items:center}.sr-head b{color:#e4cf9c}.sr-head span{justify-self:end;color:#e2bf72;font:700 14px Georgia,serif}
+.sr-meter{grid-column:1/-1;display:block;height:5px;background:#0c1514;border:1px solid #3c4a40}.sr-meter>i{display:block;height:100%;background:linear-gradient(90deg,#b08a2a,#f0d070)}
+.sr-tiers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.sr-tier{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-height:0;padding:5px 9px;text-align:left;background:#182224;border:1px solid #3d4038}
+.sr-tier strong{color:#efe2c0;font-size:13px}.sr-tier small{color:#9e978a;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.sr-tier.ready{border-color:#9fd18a;box-shadow:0 0 0 1px #9fd18a55;animation:sr-glow 1.6s ease-in-out infinite}.sr-tier.ready small{color:#cde8bf}
+.sr-tier.got{opacity:.6}.sr-tier.got strong::after{content:' ✓';color:#9fd18a}
+@keyframes sr-glow{50%{box-shadow:0 0 0 3px #9fd18a33}}
+@media (orientation:landscape) and (max-height:520px){.seal-rewards{grid-template-columns:1fr;gap:4px;padding:5px 8px;margin-bottom:6px}.sr-tier{padding:3px 6px}.stage-seals li{padding:2px 6px}}
+/* 정비: 연의에 데려가는 등용 장수 */
+.retinue-pick{margin-top:10px;padding:8px 10px;border:1px dashed #6c5a36;background:#151a17}
+.rp-head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.rp-head b{color:#e4cf9c}.rp-head small{color:#9e978a}
+.rp-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.rp-chip{display:flex;gap:8px;align-items:center;min-height:0;padding:4px 10px 4px 4px;background:#182224;border:1px solid #3d4038;text-align:left}
+.rp-chip strong{display:block;color:#efe2c0;font-size:13px}.rp-chip small{color:#9e978a;font-size:11px}
+.rp-chip.on{border-color:#e0bd75;background:#2a2414;box-shadow:0 0 0 1px #e0bd7555}.rp-chip .rc-face{width:34px;height:34px}
+.campaign-journey .campaign-path{max-height:min(452px,calc(100vh - 390px));max-height:min(452px,calc(100dvh - 390px));min-height:220px}
+@media (orientation:landscape) and (max-height:520px){.seal-rewards{grid-template-columns:minmax(110px,.5fr) 2fr;gap:8px}.sr-tier small{display:none}.campaign-journey .campaign-path{min-height:0;max-height:calc(100dvh - 190px)}}

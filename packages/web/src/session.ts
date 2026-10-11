@@ -292,6 +292,8 @@ export class Session {
     if(this.deployment?.scenario?.mods&&!this.deployment.run)applyBattleMods(state,this.deployment.scenario.mods);
     // 로그라이크 회차의 연의 장: 회차 보물이 본대에 실리고, 사마의는 남은 체력으로 나선다.
     if(this.deployment?.scenario&&!this.deployment.run){const sc=this.deployment.scenario;if(sc.recruits?.length)addRecruits(state,sc.recruits,this.revision);if(sc.relics?.length)applyRelics(state,sc.relics);const h=state.find('sima_yi');if(h&&sc.heroHp!==undefined)h.hp=Math.max(1,Math.round(h.stats.maxHp*sc.heroHp));}
+    // 연의(본편) 장: 등용한 장수를 사마의 곁에 세운다(이미 그 장에 나오는 이름은 건너뛴다).
+    if(this.deployment?.retinue?.length&&!this.deployment.scenario&&!this.deployment.run&&!this.deployment.runStory&&!this.deployment.mission)addRecruits(state,this.deployment.retinue,this.revision);
     // 원정의 연의 전장: 사마의는 원정에서 남은 체력으로 나서고, 원정 보물이 본대에 실린다.
     if(this.deployment?.runStory){const r=this.deployment.runStory,h=state.find('sima_yi');if(h)h.hp=Math.max(1,Math.round(h.stats.maxHp*r.heroHp));applyRelics(state,r.relics);}
     // 연구·장수 효과: 출진할 때 적어 둔 값 그대로(저장 재생도 같게).
@@ -548,6 +550,7 @@ export class Session {
     const base:Record<string,{level:number;xp:number;curve?:true}>={};
     for(const id of OFFICERS)if(d.levels[id]!==undefined)base[id]={level:d.levels[id]!,xp:d.xp?.[id]??0,curve:true};
     for(const r of d.scenario?.recruits??[])base[r.id]={level:r.level,xp:r.xp};
+    for(const r of d.retinue??[])base[r.id]={level:r.level,xp:r.xp};
     return base;
   }
   /** 시작점에 번 경험치를 더한 레벨·이번 레벨 안의 경험치·다음 레벨까지 필요한 양. */
@@ -688,7 +691,7 @@ export class Session {
   get somber(){return stageRules[this.state.stage.id]?.somber===true;}
   get canCalm(){return stageRules[this.state.stage.id]?.calm===true;}
   get weather(){return this.chapter===4?'☾ 흉몽 · 짙은 안개':stageRules[this.state.stage.id]?.weather??'☀ 맑음 · 바람 약함';}
-  get sealNames(){const named=stageRules[this.state.stage.id]?.sealNames;if(named)return named;return this.chapter===10?['맹약 성사','실언 없는 설득','손권을 단번에']:this.chapter===9?['조조 탈출','조운 봉쇄','신속한 철수']:this.chapter===8?['야곡 출구 도착','손실 최소화','신속한 철수']:this.chapter===7?['전초 수비망 격파','전 부대 생환','신속한 진격']:this.chapter===6?['관문 돌파','호위 부대 보존','신속한 제압']:this.chapter===5?['수송대 탈출','수송대 두 부대 생존','신속한 철수']:this.chapter===4?['흉몽 돌파','사마의 생존','빠른 각성']:this.chapter===0?['탈출 성공','무발각 잠입','형제 체력 50%']:this.chapter===2?['가문 수호','민중·부대 전원 생존','신속한 방어']:this.chapter===3?['산길 탈출','형제 생존','추격 따돌리기']:['성채 점령','신속한 결단','병력 보존'];}
+  get sealNames(){return sealNamesOf(this.chapter);}
   restorePhase(){if(this.phaseCheckpoint===null)return false;this.journal=this.journal.slice(0,this.phaseCheckpoint);this.checkpoints=this.checkpoints.filter(n=>n<this.journal.length);this.replay();return true;}
   tick(){
     if(this.state.outcome!=='ongoing' || this.state.activeDialogue || this.activeDuel) return false;
@@ -730,6 +733,7 @@ export class Session {
       for(const x of sc?.recruits??[])statsFor(x.unitClass,1);
       if(sc&&((sc.relics!==undefined&&(!Array.isArray(sc.relics)||sc.relics.length>12||sc.relics.some(x=>typeof x!=='string')))||(sc.heroHp!==undefined&&!(sc.heroHp>0&&sc.heroHp<=1))))throw new Error('잘못된 시나리오 기록');
       if(data.deployment.run&&data.deployment.run.enemyBase!==undefined&&(!Number.isInteger(data.deployment.run.enemyBase)||data.deployment.run.enemyBase<1||data.deployment.run.enemyBase>60))throw new Error('잘못된 시나리오 기록');}
+    {const rt=data.deployment?.retinue;if(rt!==undefined&&(!Array.isArray(rt)||rt.length>2||rt.some(x=>typeof x?.name!=='string'||typeof x.id!=='string'||!(x.level>=1&&x.level<=99)||!(x.hp>0&&x.hp<=1))))throw new Error('잘못된 등용 기록');for(const x of rt??[])statsFor(x.unitClass,1);}
     if(data.deployment?.runStory){const r=data.deployment.runStory;
       if(!Number.isInteger(r.floor)||r.floor<1||r.floor>RUN_FLOORS||typeof r.stage!=='string'||!chapters.some(c=>c.stage.id===r.stage)||chapters[data.chapter]?.stage.id!==r.stage||!Number.isSafeInteger(r.seed)
         ||!Number.isInteger(r.heroLevel)||r.heroLevel<1||r.heroLevel>60||(r.heroXp!==undefined&&(!Number.isInteger(r.heroXp)||r.heroXp<0||r.heroXp>=XP_PER_LEVEL))||!(r.heroHp>0&&r.heroHp<=1)||!Array.isArray(r.relics)||r.relics.some(x=>typeof x!=='string'))throw new Error('잘못된 원정 기록');
@@ -745,3 +749,5 @@ export class Session {
     session.journal=structuredClone(data.journal);session.checkpoints=[...data.checkpoints];session.replay();return session;
   }
 }
+/** 장의 인장 세 개 이름(전투 전에도 보이게 — 연의 장 상세·정비 화면). */
+export function sealNamesOf(chapter:number):readonly [string,string,string]{const named=stageRules[chapters[chapter]?.stage.id??'']?.sealNames;if(named)return named;const self={chapter};return (self.chapter===10?['맹약 성사','실언 없는 설득','손권을 단번에']:self.chapter===9?['조조 탈출','조운 봉쇄','신속한 철수']:self.chapter===8?['야곡 출구 도착','손실 최소화','신속한 철수']:self.chapter===7?['전초 수비망 격파','전 부대 생환','신속한 진격']:self.chapter===6?['관문 돌파','호위 부대 보존','신속한 제압']:self.chapter===5?['수송대 탈출','수송대 두 부대 생존','신속한 철수']:self.chapter===4?['흉몽 돌파','사마의 생존','빠른 각성']:self.chapter===0?['탈출 성공','무발각 잠입','형제 체력 50%']:self.chapter===2?['가문 수호','민중·부대 전원 생존','신속한 방어']:self.chapter===3?['산길 탈출','형제 생존','추격 따돌리기']:['성채 점령','신속한 결단','병력 보존']) as [string,string,string];}
