@@ -1,5 +1,5 @@
 import {familyOf,type UnitClass} from '../../core/src/index.ts';
-import {allStrategies} from './officers.ts';
+import {findStrategy} from './officers.ts';
 
 /** Battle events the soundtrack reacts to. Pure mapping so it can be tested. */
 export interface SoundEvent {
@@ -23,7 +23,7 @@ const HORSE=['cavalry','heavyCav','horseArcher'],BOW=['archer','horseArcher'],SA
 /** Recipe for a strategy: element first, then the kind of support. */
 export function strategySound(id=''):string{
   if(id==='heal'||id==='calm')return 'heal';if(id==='repair')return 'repair';
-  const s=allStrategies.find(x=>x.id===id);
+  const s=findStrategy(id);
   if(!s)return 'cast';
   if(s.support)return s.support==='heal'||s.support==='cleanse'?'heal':'buff';
   if(s.element==='support')return 'confuse';

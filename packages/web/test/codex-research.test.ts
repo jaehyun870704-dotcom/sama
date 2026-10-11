@@ -4,7 +4,7 @@ import {RESEARCH,buyResearch,nodeState,researchGrants,xpMult,perkSlots,mandateBo
 import {perksFor,learnPerk,togglePerk,officerGrants,deploymentPerks,perkAt,officerTier} from '../src/officer-perks.ts';
 import {applyRomance,skillParam} from '../src/romance.ts';
 import {validGrants,grantPerk} from '../src/perks.ts';
-import {allStrategies} from '../src/officers.ts';
+import {allStrategies,legacyStrategies} from '../src/officers.ts';
 import {troopRoles,recruitPool,classNames} from '../src/troops.ts';
 import {OFFICER_RECRUITS} from '../src/roguelike.ts';
 import {BIOS} from '../src/officer-bios.ts';
@@ -103,7 +103,7 @@ describe('병종과 책략',()=>{
   for(const c of ['axeman','mountaineer','qingzhou','jishi','shieldBow','drummer','riderSage'])expect(recruitPool as string[]).not.toContain(c);
   expect(OFFICER_RECRUITS.find(o=>o.name==='학소')?.unitClass).toBe('crossbow');expect(OFFICER_RECRUITS.find(o=>o.name==='가후')?.unitClass).toBe('wheelSage');
   expect(profileOf('wheelSage').canUseStrategy).toBe(true);
-  for(const r of Object.values(troopRoles))for(const sp of r!.spells)expect(allStrategies.some(s=>s.id===sp),sp).toBe(true);
+  for(const r of Object.values(troopRoles))for(const sp of r!.spells)expect(legacyStrategies.some(s=>s.id===sp),sp).toBe(true);
  });
  it('shapes: cross arms, a line away from the caster',()=>{
   expect(strategyArea({shape:'cross',radius:2},{x:5,y:5})).toHaveLength(9);
@@ -155,8 +155,8 @@ describe('초한의 선대 영웅',()=>{
   expect(buyResearch(m,'unify')).toBe(false);
  });
  it('adds the legendary strategies, units and relics',()=>{
-  for(const id of ['hongmen','secretPath','burnBoats','backWater','fourSongs','weiRiver','tenAmbush'])expect(allStrategies.find(s=>s.id===id),id).toBeDefined();
-  expect(allStrategies.find(s=>s.id==='fourSongs')!.inflicts).toEqual(['confusion','weaken']);
+  for(const id of ['hongmen','secretPath','burnBoats','backWater','fourSongs','weiRiver','tenAmbush'])expect(legacyStrategies.find(s=>s.id===id),id).toBeDefined();
+  expect(legacyStrategies.find(s=>s.id==='fourSongs')!.inflicts).toEqual(['confusion','weaken']);
   expect((EVOLUTION as Record<string,unknown>).jiangdong).toBeUndefined();expect((EVOLUTION as Record<string,unknown>).langzhong).toBeUndefined();
   for(const id of ['bawangJi','huangshi','xiaoheLedger','yuJade'])expect(RELICS.some(r=>r.id===id)).toBe(true);
  });

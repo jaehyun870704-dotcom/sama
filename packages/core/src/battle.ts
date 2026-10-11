@@ -27,7 +27,7 @@ export interface BattleOptions {
   maxTurns?: number;
 }
 
-const NEGATIVE_STATUS = new Set<StatusKind>(["confusion", "immobile", "bound", "bleed", "burn", "shock", "seal", "weaken", "breach", "slow"]);
+const NEGATIVE_STATUS = new Set<StatusKind>(["confusion", "immobile", "bound", "bleed", "burn", "shock", "seal", "weaken", "breach", "slow", "sluggish", "dispirit"]);
 
 /** 한 방에 쓰러지지 않는 대상: 적이 아닌 부대(아군·편입 아군·우군)가 체력이 가득할 때. */
 function sparesFullHp(u: Unit): boolean {
@@ -205,9 +205,18 @@ export class Battle {
         targets.push(t.id);
         damages.push(res.damage);
         if (res.hit) {
-          this.damage(t, res.damage, c);
-          for (const s of def.inflicts ?? []) {
-            if (t.alive) this.state.applyStatus(t, { kind: s, turns: 2, magnitude: 1 });
+          // 흡수: 상대 MP를 빼앗는 책략은 피해 대신 MP를 옮긴다(피해 숫자는 빼앗은 MP).
+          if (def.drain === "mp") {
+            const took = Math.min(t.mp, Math.max(1, Math.round(def.power / 4)));
+            t.mp -= took; c.mp = Math.min(c.stats.maxMp, c.mp + took); damages[damages.length - 1] = took;
+          } else {
+            this.damage(t, res.damage, c);
+            if (def.drain === "hp" && c.alive) c.hp = Math.min(c.stats.maxHp, c.hp + res.damage);
+          }
+          const pool = def.inflicts ?? [];
+          const give = def.randomInflict && pool.length ? [pool[Math.floor(this.state.rng.next() * pool.length)]!] : pool;
+          for (const s of give) {
+            if (t.alive) this.state.applyStatus(t, { kind: s, turns: def.statusTurns ?? 2, magnitude: 1 });
           }
         }
       }

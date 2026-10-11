@@ -1,15 +1,15 @@
 import {describe,it,expect} from 'vitest';
 import {Session} from '../src/session.ts';
 import {freshCampaign,deployment} from '../src/progression.ts';
-import {allStrategies} from '../src/officers.ts';
+import {allStrategies,findStrategy} from '../src/officers.ts';
 import {LINEAGE_SPELLS,LINEAGE_SKILL,SHARED,classSpells} from '../src/class-spells.ts';
 import {fourStageCorrectionRows} from '../src/complete-troops.ts';
 import {profileOf,tieredStrategy,MAX_SINGLE_RANGE,MAX_AREA_RANGE} from '../../core/src/index.ts';
 
 function trial(id:string,level=1){const c=freshCampaign(),d=deployment(c,true);for(const who of Object.keys(d.levels))d.levels[who]=Math.max(d.levels[who]!,level);d.mission={id,runId:'test-'+id,version:2};return new Session(7,'normal',215,'survival',4,d);}
-const def=(id:string)=>allStrategies.find(s=>s.id===id)!;
+const def=(id:string)=>findStrategy(id)!;
 
-describe('계통별 책략·특수기',()=>{
+describe('계통별 책략·특수기(규칙판 11 이하 목록)',()=>{
  it('책략 계통끼리 기본기(소회복·정화·명상) 말고는 같은 책략을 쓰지 않는다',()=>{
   const owner=new Map<string,string>();
   for(const [lin,ids] of Object.entries(LINEAGE_SPELLS))for(const id of ids!){expect(def(id),id).toBeTruthy();if(SHARED.has(id))continue;expect(owner.get(id),`${id}: ${owner.get(id)} / ${lin}`).toBeUndefined();owner.set(id,lin);}
@@ -19,11 +19,11 @@ describe('계통별 책략·특수기',()=>{
   for(const [lin,classes] of Object.entries(fourStageCorrectionRows)){
    const caster=profileOf(classes[0]).canUseStrategy&&!['four-stage-lord','four-stage-commander','four-stage-monk'].includes(lin);
    if(caster)continue;const sk=LINEAGE_SKILL[lin as keyof typeof LINEAGE_SKILL];expect(sk,lin).toBeTruthy();expect(def(sk!).physical,sk).toBe(true);expect(skills.has(sk!),sk).toBe(false);skills.add(sk!);
-   for(const c of classes)expect(classSpells(c,1)).toContain(sk);
+   for(const c of classes)expect(classSpells(c,1,11)).toContain(sk);
   }
  });
  it('범위는 주변·십자 반경 1, 직선 3칸, 사거리 5(범위 책략 4)를 넘지 않고 3단에서도 넓어지지 않는다',()=>{
-  for(const s of allStrategies){if(s.shape==='global')continue;
+  for(const s of allStrategies){if(s.shape==='global'||(s.support&&s.range>=99))continue;
    for(const t of [s,tieredStrategy(s,3)]){
     if(t.shape==='line')expect(t.radius,s.id).toBeLessThanOrEqual(2);else if(t.shape!=='single')expect(t.radius,s.id).toBeLessThanOrEqual(1);
     expect(t.range,s.id).toBeLessThanOrEqual(t.shape==='single'?MAX_SINGLE_RANGE:MAX_AREA_RANGE);

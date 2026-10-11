@@ -1,5 +1,6 @@
 import {OFFICERS,deployment,levelInfo,type Campaign} from './progression.ts';
-import {allStrategies,talentTree} from './officers.ts';
+import {findStrategy,talentTree} from './officers.ts';
+import {V12_LINEAGE} from './strategies-v12.ts';
 import {evolvedClass,VARIANTS,type UnitClass} from '../../core/src/index.ts';
 import {classNames} from './troops.ts';
 
@@ -14,6 +15,6 @@ export function growthMilestones(before:Campaign,after:Campaign){
  return OFFICERS.map(id=>{
   const from=levelInfo(before.xp[id]??0).level,to=levelInfo(after.xp[id]??0).level;
   const previous=talentTree(id,from,old.growth!);
-  return {id,from,to,evolution:officerEvolution(id,from,to),talents:talentTree(id,to,next.growth!).filter(t=>t.ready&&!previous.some(p=>p.trait===t.trait&&p.ready)).map(t=>t.name),strategies:id==='sima_yi'?allStrategies.filter(s=>s.level>from&&s.level<=to).map(s=>s.name):[]};
+  return {id,from,to,evolution:officerEvolution(id,from,to),talents:talentTree(id,to,next.growth!).filter(t=>t.ready&&!previous.some(p=>p.trait===t.trait&&p.ready)).map(t=>t.name),strategies:id==='sima_yi'?(V12_LINEAGE['four-stage-strategist']??[]).filter(([,lv])=>lv>from&&lv<=to).map(([sid])=>findStrategy(sid)?.name??sid):[]};
  }).filter(x=>x.to>x.from||x.talents.length||x.strategies.length||x.evolution);
 }

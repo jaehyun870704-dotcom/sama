@@ -22,8 +22,9 @@ import {navalAtlas} from './naval-art.ts';
 import {paintedTroopArt} from './painted-troops.ts';
 import {armorFrame,MOUNTED_FAMILIES,ROBE_FAMILIES,MACHINE_FAMILIES,type ArmorTier} from './armor.ts';
 import {adviceFor} from './troop-tactics.ts';
-import {allStrategies,STATUS_NAMES,SHAPE_TEXT,familyAllows,schoolOf,SCHOOL_NAMES,type LearnedStrategy} from './officers.ts';
+import {allStrategies,findStrategy,STATUS_NAMES,SHAPE_TEXT,familyAllows,schoolOf,SCHOOL_NAMES,type LearnedStrategy} from './officers.ts';
 import {classSpellBook} from './class-spells.ts';
+import {V12_TEXT} from './strategies-v12.ts';
 import {officerFeatures} from './officers.ts';
 import {loadMeta,saveMeta} from './meta.ts';
 import {perksFor,perkState,bestLevel,learnPerk,togglePerk,officerClass,perkAt,officerTier,PERK_TIERS} from './officer-perks.ts';
@@ -159,7 +160,7 @@ function classesTab(pick:string){
     ${v?.bloom?`<p class="cx-unique"><b>개화 「${esc(v.bloom.name)}」</b> ${esc(classTraitSummary(v.traits)||v.bloom.description)}</p>`:''}
     ${classTactics(c).map(t=>`<p class="cx-unique"><b>전법 「${esc(t.name)}」</b> ${esc(t.description)}</p>`).join('')}
     ${line?`<div class="cx-line">${line.map(([k,lv],i)=>`${i?`<span class="evo-arrow">Lv.${lv} →</span>`:''}<button data-cx-class="${k}" class="evo-node ${k===c?'chosen':''}"><b>${'◆'.repeat(tierOf(k))}</b>${esc(classNames[k]??k)}</button>`).join('')}</div>`:''}
-    ${spells.length?`<div class="cx-spells"><b>쓰는 책략 ${spells.length}</b><div>${spells.map(id=>{const s=allStrategies.find(x=>x.id===id);return s?`<button data-cx-spell="${s.id}" title="${esc(s.name)} · Lv.${s.level}"><img src="${strategyIcon(s.id)}" alt=""><small>${esc(s.name)}</small></button>`:'';}).join('')}</div></div>`:''}</div>`;
+    ${spells.length?`<div class="cx-spells"><b>쓰는 책략 ${spells.length}</b><div>${spells.map(id=>{const s=findStrategy(id);return s?`<button data-cx-spell="${s.id}" title="${esc(s.name)} · Lv.${s.level}"><img src="${strategyIcon(s.id)}" alt=""><small>${esc(s.name)}</small></button>`:'';}).join('')}</div></div>`:''}</div>`;
   return `<div class="cx-split"><div class="cx-list">${grid}</div>${detail}</div>`;
 }
 
@@ -226,6 +227,7 @@ export const STRATEGY_TEXT:Record<string,string>={
   fourSongs:'사면초가 — 사방에서 고향 노래가 들려 넓은 땅의 적이 혼란에 빠지고 힘이 빠진다.',weiRiver:'유수 수공 — 상류의 모래주머니를 터뜨려 한 줄의 적을 끊고 쓸어 간다.',tenAmbush:'십면매복 — 열 겹의 복병이 넓은 땅의 적을 덮쳐 포박한다.',
   inspire:'북을 울려 둘레 아군의 사기를 올린다.',warCry:'함성으로 둘레 아군의 공격 피해를 늘린다.',grandDrum:'큰 북소리로 넓은 땅의 아군을 고무한다.',valor:'결사의 각오 — 한 부대가 더 세게 치고 덜 다친다.',
 };
+Object.assign(STRATEGY_TEXT,V12_TEXT);
 /** 책략 그림 아이콘(진화 단계별). */
 export const strategyIcon=(id:string,tier:StrategyTier=1)=>strategyIconUrl(id,tier);
 /** 9×9 격자: 가운데가 시전자(또는 찍은 칸). */

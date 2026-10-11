@@ -4,10 +4,10 @@
  * 명검·명마·갑주는 전투 특성을 더한다. 장착한 장수가 출진하면 전투 시작에 걸린다.
  */
 import type {BattleState,Unit} from '../../core/src/index.ts';
-import {allStrategies} from './officers.ts';
+import {strategiesFor,upgradeStrategyId,findStrategy} from './officers.ts';
 import {grantPerk} from './perks.ts';
 
-export interface TreasureSpecial {name:string;text:string;strategies?:string[];mp?:number;traits?:Array<[string,number]>}
+export interface TreasureSpecial {name:string;text:string;strategies?:string[];mp?:number;traits?:Array<[string,number]>;/** 규칙판 11 이하(예전 저장)에서 주던 책략 */legacy?:string[]}
 export const TREASURE_SPECIALS:Record<string,TreasureSpecial>={
   dunjia:{name:'기문둔갑',text:'책략 「돌풍·풍룡·허보」를 쓸 수 있다 · 최대 MP +20 · 차례마다 MP +2',strategies:['gust','windDragon','feint'],mp:20,traits:[['manaRegen',2]]},
   taiping:{name:'태평요술',text:'책략 「소회복·정화·낙뢰」를 쓸 수 있다 · 최대 MP +18 · 차례마다 체력 3% 회복',strategies:['mend','purify','thunder'],mp:18,traits:[['regen',3]]},
@@ -44,9 +44,23 @@ export const TREASURE_SPECIALS:Record<string,TreasureSpecial>={
 };
 export const specialOf=(id:string)=>TREASURE_SPECIALS[id];
 /** 장착 보물의 특기를 전장의 장수에게 건다(책략은 전장 책략표에도 올린다). */
-export function applyTreasureSpecial(state:BattleState,u:Unit,id:string){
+export function applyTreasureSpecial(state:BattleState,u:Unit,id:string,rev=12){
   const sp=TREASURE_SPECIALS[id];if(!sp)return;
   if(sp.mp){u.stats.maxMp+=sp.mp;u.mp+=sp.mp;}
-  for(const s of sp.strategies??[]){const d=allStrategies.find(x=>x.id===s);if(!d)continue;if(!state.strategies.has(s))state.strategies.set(s,d);if(!u.strategies.includes(s))u.strategies.push(s);}
+  const pool=strategiesFor(rev);
+  for(const s of (rev>=12?sp.strategies:sp.legacy??sp.strategies)??[]){const d=pool.find(x=>x.id===s);if(!d)continue;if(!state.strategies.has(s))state.strategies.set(s,d);if(!u.strategies.includes(s))u.strategies.push(s);}
   for(const [t,n] of sp.traits??[])grantPerk(u,t,n);
+}
+
+/** 사신보옥: 규칙판 12의 사신 책략을 쓰게 한다(예전 저장에는 없다). */
+Object.assign(TREASURE_SPECIALS,{
+  azureJewel:{name:'청룡의 부름',text:'책략 「청룡의 뇌우」를 쓸 수 있다 · 최대 MP +20',strategies:['azureStorm'],legacy:[],mp:20},
+  vermilionJewel:{name:'주작의 부름',text:'책략 「주작의 불길」을 쓸 수 있다 · 최대 MP +20',strategies:['vermilionBlaze'],legacy:[],mp:20},
+  blackTortoiseJewel:{name:'현무의 부름',text:'책략 「현무의 저주」를 쓸 수 있다 · 최대 MP +20',strategies:['blackTortoiseHex'],legacy:[],mp:20},
+  whiteTigerJewel:{name:'백호의 부름',text:'책략 「백호의 가호」를 쓸 수 있다 · 최대 MP +20',strategies:['whiteTigerGrace'],legacy:[],mp:20},
+} satisfies Record<string,TreasureSpecial>);
+// 규칙판 12: 보물이 주는 예전 책략을 새 목록의 가장 가까운 책략으로 바꾸고, 설명의 책략 이름도 새 이름으로 고친다.
+for(const sp of Object.values(TREASURE_SPECIALS))if(sp.strategies&&!sp.legacy){
+  sp.legacy=sp.strategies;sp.strategies=[...new Set(sp.strategies.map(upgradeStrategyId).filter((x):x is string=>!!x))];
+  sp.text=sp.text.replace(/책략 「[^」]*」/,`책략 「${sp.strategies.map(id=>findStrategy(id)?.name??id).join('·')}」`);
 }

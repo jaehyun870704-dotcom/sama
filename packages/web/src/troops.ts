@@ -82,7 +82,7 @@ export const troopRoles:Partial<Record<UnitClass,{name:string;role:string;base:U
 };
 export const supportOptions:UnitClass[]=['infantry','fengshui','strategist','shaman','maiden','taoist','monk','horseArcher','bandit','spearman','javelin','crossbow','sniper','archer','cavalry','qiang','heavyCav','catapult','ram','engineer'];
 /** 병종이 쓰는 책략·특수기(계통별, class-spells.ts). 쓸 것이 없는 병종(민중)은 undefined. */
-export function troopStrategies(kind:UnitClass,level:number){const l=classSpells(kind,level);return l.length?l:undefined;}
+export function troopStrategies(kind:UnitClass,level:number,rev?:number){const l=classSpells(kind,level,rev);return l.length?l:undefined;}
 export function visualClass(kind:UnitClass){return troopRoles[kind]?.base??kind;}
 export const classNames:Record<string,string>={infantry:'보병',spearman:'창병',cavalry:'경기병',heavyCav:'중기병',archer:'궁병',crossbow:'노병',strategist:'책사',fengshui:'풍수사',ram:'충차',catapult:'포차',engineer:'공병',navy:'수군',civilian:'민중',...Object.fromEntries(Object.entries(troopRoles).map(([k,v])=>[k,v.name]))};
 /** The class whose sprite a unit is drawn with: extended classes borrow their lineage's art. */

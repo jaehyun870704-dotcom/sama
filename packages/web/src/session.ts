@@ -14,7 +14,7 @@ import {applyRomance,temperOf,romanceOf} from './romance.ts';
 import {applyCC} from './cc-apply.ts';
 import {expeditionBattle,expeditions,missionEnemyScale} from './expeditions.ts';
 import {newDuel,duelRound,duelResponse,historicPair,DUEL_LOSS_DEBUFF,type DuelState,type DuelAction} from './duel.ts';
-import {availableStrategies,allStrategies,applyOfficerFeatures,martialPower,debatePower,contestKindOf} from './officers.ts';
+import {availableStrategies,strategiesFor,findStrategy,upgradeStrategyId,applyOfficerFeatures,martialPower,debatePower,contestKindOf} from './officers.ts';
 import {은는} from './josa.ts';
 import approachStage from '../../data/stages/S1-07.json';
 import approachMap from '../../data/maps/hanzhong-approach.json';
@@ -131,7 +131,7 @@ export const strategies: StrategyDef[] = [
   {id:'fire',name:'화계',element:'fire',shape:'single',range:3,radius:0,mpCost:12,power:110,inflicts:['burn'],targetSides:['enemy']},
 ];
 type Intent = Command | {kind:'aiTick'};
-export interface Save {version:2; revision?:2|3|4|5|6|7|8|9|10|11; deployment?:Deployment; chapter:number; difficulty:Difficulty; seed:number; preparation:Preparation; journal:Intent[]; checkpoints:number[]}
+export interface Save {version:2; revision?:2|3|4|5|6|7|8|9|10|11|12; deployment?:Deployment; chapter:number; difficulty:Difficulty; seed:number; preparation:Preparation; journal:Intent[]; checkpoints:number[]}
 
 /** Persist commands, not mutable engine internals. Replay also restores terrain,
  * counter budgets, patrol progress and RNG when undoing across a phase boundary. */
@@ -187,7 +187,7 @@ export class Session {
   phase='';
   failure='';
   phaseCheckpoint:number|null=null;
-  constructor(public chapter=2, public difficulty:Difficulty='normal', public seed=215, public preparation:Preparation='survival', public revision:2|3|4|5|6|7|8|9|10|11=3, public deployment?:Deployment) {this.battle=this.create();this.resetScenario();}
+  constructor(public chapter=2, public difficulty:Difficulty='normal', public seed=215, public preparation:Preparation='survival', public revision:2|3|4|5|6|7|8|9|10|11|12=3, public deployment?:Deployment) {this.battle=this.create();this.resetScenario();}
   get state(){return this.battle.state;}
   private create(){
     this.balancedEnemies.clear();this.romanced.clear();this.honed.clear();this.capped.clear();this.geared.clear();this.xpEarned={};this.xpGains=new WeakMap();this.xpCursor=0;
@@ -235,7 +235,7 @@ export class Session {
       if(this.preparation==='command')u.stats.movement+=1;
     }
     for(const unit of state.living('ally')) if(['strategist','fengshui'].includes(unit.unitClass)) unit.strategies=['windDragon'];
-    const battle=new Battle(state,{seed:this.seed,strategies:new Map((this.revision>=4?allStrategies:strategies).map(s=>[s.id,this.revision>=4?s:this.deployment?{...s,mpCost:s.id==='fire'?6:9}:s])),undoDepth:0,maxTurns:60});
+    const battle=new Battle(state,{seed:this.seed,strategies:new Map((this.revision>=4?strategiesFor(this.revision):strategies).map(s=>[s.id,this.revision>=4?s:this.deployment?{...s,mpCost:s.id==='fire'?6:9}:s])),undoDepth:0,maxTurns:60});
     if((this.deployment?.mission?.version??1)>=3)state.survivalClocks.set('trial_defense',1);
     battle.start();
     const rules=stageRules[entry.stage.id];
@@ -270,20 +270,22 @@ export class Session {
       applyOfficerFeatures(state.living(),this.deployment?.growth,this.revision>=8);
       for(const u of state.living()){
         if(familyOf(u.unitClass)==='ram'){for(const trait of ['siegeRam','noCounterAttack'])if(!u.traits.includes(trait))u.traits.push(trait);}
-        const officer=(OFFICERS as readonly string[]).includes(u.id)&&u.side==='player',specialty=troopStrategies(u.unitClass,u.level);
+        const officer=(OFFICERS as readonly string[]).includes(u.id)&&u.side==='player',specialty=troopStrategies(u.unitClass,u.level,this.revision);
         // 주인공 장수(책사 계열)는 모든 책략을 익힐 수 있다. 그 밖의 부대는 계통의 책략·특수기만 쓴다.
-        if(officer&&['strategist','fengshui'].includes(familyOf(u.unitClass)))u.strategies=availableStrategies(u.level,!!this.deployment?.growth,undefined);else if(specialty)u.strategies=specialty;
+        if(officer&&this.revision<12&&['strategist','fengshui'].includes(familyOf(u.unitClass)))u.strategies=availableStrategies(u.level,!!this.deployment?.growth,undefined);else if(specialty)u.strategies=specialty;
       }
+      // 규칙판 12: 전장 데이터·옛 장에 적힌 예전 책략은 새 목록의 가장 가까운 책략으로 바꾼다.
+      if(this.revision>=12)for(const u of state.living())u.strategies=[...new Set(u.strategies.map(id=>upgradeStrategyId(id)).filter((x):x is string=>!!x&&state.strategies.has(x)))];
       addSiegeCompany(state);
       // 보물 특기: 병서·도술서는 책략을 부여하고, 명검·명마·갑주는 전투 특성을 더한다.
-      if(this.deployment&&!this.deployment.run)for(const u of state.living('player'))for(const item of equippedItems(this.deployment,u.id))applyTreasureSpecial(state,u,item);
+      if(this.deployment&&!this.deployment.run)for(const u of state.living('player'))for(const item of equippedItems(this.deployment,u.id))applyTreasureSpecial(state,u,item,this.revision);
     }
     // 원정 부대의 병종·체력·책략·보물은 기본 정비가 끝난 뒤 덮어쓴다.
-    if(this.deployment?.run)prepareRunBattle(state,this.deployment.run);
+    if(this.deployment?.run)prepareRunBattle(state,this.deployment.run,this.revision);
     // 시나리오 모드의 연의 장: 대사 선택의 효과(사기·방어 태세·책략 MP).
     if(this.deployment?.scenario?.mods&&!this.deployment.run)applyBattleMods(state,this.deployment.scenario.mods);
     // 로그라이크 회차의 연의 장: 회차 보물이 본대에 실리고, 사마의는 남은 체력으로 나선다.
-    if(this.deployment?.scenario&&!this.deployment.run){const sc=this.deployment.scenario;if(sc.recruits?.length)addRecruits(state,sc.recruits);if(sc.relics?.length)applyRelics(state,sc.relics);const h=state.find('sima_yi');if(h&&sc.heroHp!==undefined)h.hp=Math.max(1,Math.round(h.stats.maxHp*sc.heroHp));}
+    if(this.deployment?.scenario&&!this.deployment.run){const sc=this.deployment.scenario;if(sc.recruits?.length)addRecruits(state,sc.recruits,this.revision);if(sc.relics?.length)applyRelics(state,sc.relics);const h=state.find('sima_yi');if(h&&sc.heroHp!==undefined)h.hp=Math.max(1,Math.round(h.stats.maxHp*sc.heroHp));}
     // 원정의 연의 전장: 사마의는 원정에서 남은 체력으로 나서고, 원정 보물이 본대에 실린다.
     if(this.deployment?.runStory){const r=this.deployment.runStory,h=state.find('sima_yi');if(h)h.hp=Math.max(1,Math.round(h.stats.maxHp*r.heroHp));applyRelics(state,r.relics);}
     // 연구·장수 효과: 출진할 때 적어 둔 값 그대로(저장 재생도 같게).
@@ -340,13 +342,17 @@ export class Session {
     const s=this.state;
     if(this.state.outcome!=='ongoing')return {ok:false,error:'이미 종료된 전투입니다.'};
     if(cmd.kind==='strategy'&&this.revision>=4){
-      const base=allStrategies.find(x=>x.id===cmd.strategy),u=s.find(cmd.unit),def=base&&u?evolveStrategy(base,u.level):base;
+      const base=strategiesFor(this.revision).find(x=>x.id===cmd.strategy),u=s.find(cmd.unit),def=base&&u?evolveStrategy(base,u.level):base;
       if(def?.support){
         if(!u?.alive||!u.strategies.includes(def.id)||u.mp<def.mpCost||s.hasStatus(u,'seal')||manhattan(u.pos,cmd.at)>def.range)return {ok:false,error:'지원 책략의 습득·MP·사거리를 확인하세요.'};
-        const area=strategyArea(def,cmd.at,u.pos),targets=s.living().filter(t=>t.side!=='enemy'&&area.some(c=>c.x===t.pos.x&&c.y===t.pos.y));
+        const area=strategyArea(def,cmd.at,u.pos),targets=s.living().filter(t=>t.side!=='enemy'&&(def.shape==='global'||area.some(c=>c.x===t.pos.x&&c.y===t.pos.y))&&!(base?.noSelf&&t.id===u.id));
         if(def.support==='again'){const keep=targets.filter(t=>t.id!==u.id&&t.hasActed);targets.length=0;targets.push(...keep);if(!targets.length)return {ok:false,error:'회귀는 이미 행동을 마친 다른 아군에게만 쓸 수 있습니다.'};}
         if(!targets.length)return {ok:false,error:'지원할 아군을 선택하세요.'};
-        const damage:number[]=[];for(const t of targets){let healed=0;if(def.support==='heal'){healed=Math.min(t.stats.maxHp-t.hp,healAmount(def.power,u.stats.intellect,u.traitParams.healPower??0));t.hp+=healed;}else if(def.support==='cleanse')t.statuses=t.statuses.filter(x=>['guard','haste','rally'].includes(x.kind));else if(def.support==='mana'){const before=t.mp;t.mp=Math.min(t.stats.maxMp,t.mp+def.power);healed=0;void before;}else if(def.support==='valor'){s.applyStatus(t,{kind:'rally',turns:3,magnitude:1});s.applyStatus(t,{kind:'guard',turns:3,magnitude:1});}else if(def.support==='again'){t.hasActed=false;t.hasMoved=false;}else if(['guard','haste','rally'].includes(def.support))s.applyStatus(t,{kind:def.support as 'guard'|'haste'|'rally',turns:3,magnitude:1});damage.push(-healed);}
+        const damage:number[]=[];for(const t of targets){let healed=0;if(def.support==='heal'){healed=Math.min(t.stats.maxHp-t.hp,healAmount(def.power,u.stats.intellect,u.traitParams.healPower??0));t.hp+=healed;}else if(def.support==='cleanse')t.statuses=t.statuses.filter(x=>['guard','haste','rally','swift','spirited'].includes(x.kind));else if(def.support==='mana'){const before=t.mp;t.mp=Math.min(t.stats.maxMp,t.mp+def.power);healed=0;void before;}else if(def.support==='valor'){s.applyStatus(t,{kind:'rally',turns:3,magnitude:1});s.applyStatus(t,{kind:'guard',turns:3,magnitude:1});}else if(def.support==='again'){t.hasActed=false;t.hasMoved=false;}
+          else if(def.support==='renew'){healed=Math.min(t.stats.maxHp-t.hp,healAmount(def.power,u.stats.intellect,u.traitParams.healPower??0));t.hp+=healed;t.statuses=t.statuses.filter(x=>['guard','haste','rally','swift','spirited'].includes(x.kind));}
+          else if(def.support==='meditate'){const cost=Math.min(def.power,t.hp-1,t.stats.maxMp-t.mp);t.hp-=Math.max(0,cost);t.mp+=Math.max(0,cost);}
+          else if(def.support==='empower'){for(const k of ['rally','guard','swift','spirited'] as const)s.applyStatus(t,{kind:k,turns:def.power||3,magnitude:1});}
+          else if(['guard','haste','rally','swift','spirited'].includes(def.support))s.applyStatus(t,{kind:def.support as 'guard'|'haste'|'rally'|'swift'|'spirited',turns:this.revision>=12&&def.power?def.power:3,magnitude:def.support==='haste'?base?.boost??1:1});damage.push(-healed);}
         u.mp-=def.mpCost;s.push({t:'strategy',caster:u.id,strategy:def.id,targets:targets.map(t=>t.id),damage});const result=this.battle.execute({kind:'wait',unit:u.id});this.advanceScenario();return result;
       }
     }
@@ -557,8 +563,8 @@ export class Session {
       const up=to>from&&!!u?.alive&&u.level===from;let learned:string[]=[];
       if(up){levelUpInBattle(u!,to);
         // 레벨이 오를 때마다 그 레벨에 열린 계통 책략을 새로 익힌다(이미 아는 것은 그대로).
-        {const hero=(OFFICERS as readonly string[]).includes(u!.id)&&u!.side==='player'&&['strategist','fengshui'].includes(familyOf(u!.unitClass)),now=hero?availableStrategies(to,!!this.deployment?.growth,undefined):troopStrategies(u!.unitClass,to)??[],fresh=now.filter(id=>!u!.strategies.includes(id));
-          u!.strategies=[...u!.strategies,...fresh];learned=fresh.map(id=>allStrategies.find(x=>x.id===id)?.name??id);}}
+        {const hero=(OFFICERS as readonly string[]).includes(u!.id)&&u!.side==='player'&&['strategist','fengshui'].includes(familyOf(u!.unitClass)),now=hero&&this.revision<12?availableStrategies(to,!!this.deployment?.growth,undefined):troopStrategies(u!.unitClass,to,this.revision)??[],fresh=now.filter(id=>!u!.strategies.includes(id));
+          u!.strategies=[...u!.strategies,...fresh];learned=fresh.map(id=>findStrategy(id)?.name??id);}}
       this.xpGains.set(entry,{...gain,...(up?{level:to}:{}),...(learned.length?{learned}:{})});
     }
   }
@@ -699,7 +705,7 @@ export class Session {
   static load(raw:unknown){
     const data=raw as Save;
     if(!data || data.version!==2 || !chapters[data.chapter] || !['survival','strategy','command'].includes(data.preparation) || !['normal','extreme'].includes(data.difficulty) || !Number.isSafeInteger(data.seed) || !Array.isArray(data.journal) || data.journal.length>20000 || !Array.isArray(data.checkpoints) || !data.checkpoints.every((n,i,a)=>Number.isInteger(n)&&n>=0&&n<data.journal.length&&(i===0||n>a[i-1]!))) throw new Error('저장 파일을 읽을 수 없습니다.');
-    if(data.revision!==undefined&&data.revision!==2&&data.revision!==3&&data.revision!==4&&data.revision!==5&&data.revision!==6&&data.revision!==7&&data.revision!==8&&data.revision!==9&&data.revision!==10&&data.revision!==11)throw new Error('지원하지 않는 전장 버전입니다.');
+    if(data.revision!==undefined&&data.revision!==2&&data.revision!==3&&data.revision!==4&&data.revision!==5&&data.revision!==6&&data.revision!==7&&data.revision!==8&&data.revision!==9&&data.revision!==10&&data.revision!==11&&data.revision!==12)throw new Error('지원하지 않는 전장 버전입니다.');
     if(data.deployment){const d=data.deployment;if(!d.levels||!d.equipped||!OFFICERS.every(id=>Number.isInteger(d.levels[id])&&d.levels[id]!>=1&&d.levels[id]!<=40)||Object.entries(d.equipped).some(([id,item])=>!OFFICERS.includes(id as typeof OFFICERS[number])||!treasures.some(t=>t.id===item))||(d.xp!==undefined&&(typeof d.xp!=='object'||Object.entries(d.xp).some(([id,n])=>!OFFICERS.includes(id as typeof OFFICERS[number])||!Number.isInteger(n)||n<0||n>=1000))))throw new Error('잘못된 출진 기록입니다.');}
     if(data.deployment?.run){const r=data.deployment.run;
       if(!Number.isInteger(r.floor)||r.floor<1||r.floor>RUN_FLOORS||!['battle','elite','boss','tale'].includes(r.kind)||(r.kind==='tale')!==!!taleById(r.tale)||(r.route!==undefined&&!validRoute(r.route))||!Number.isSafeInteger(r.seed)||!Array.isArray(r.party)||r.party.length<1||r.party.length>PARTY_LIMIT||!r.party.some(u=>u.hero)||!Array.isArray(r.relics)

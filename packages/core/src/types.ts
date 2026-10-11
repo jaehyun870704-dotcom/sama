@@ -125,6 +125,18 @@ export interface StrategyDef {
   readonly physical?: boolean;
   /** 아군 지원 책략(회복·고무 등). 적 AI는 이런 책략을 공격에 쓰지 않는다. */
   readonly support?: string;
+  /** 규칙판 12 목록: 이 책략이 낼 수 있는 최대 명중률(%). */
+  readonly maxHit?: number;
+  /** 맞힌 피해만큼 시전자 체력(hp)을, 또는 상대 MP를 빼앗아 시전자 MP(mp)를 채운다. */
+  readonly drain?: "hp" | "mp";
+  /** inflicts 가운데 하나만 무작위로 건다. */
+  readonly randomInflict?: boolean;
+  /** 상대 정신력을 대부분 무시한다(정신력 40%만 센다). */
+  readonly ignoreSpirit?: boolean;
+  /** 반드시 맞는다. */
+  readonly sureHit?: boolean;
+  /** 건 상태이상의 지속 턴(기본 2). */
+  readonly statusTurns?: number;
 }
 
 // ─────────────────────────────────────────────────────────── 상태이상
@@ -142,7 +154,11 @@ export type StatusKind =
   | "rally"       // 사기 상승
   | "weaken"      // 쇠약 (공격 피해 15% 감소)
   | "breach"      // 파갑 (받는 피해 15% 증가)
-  | "slow";       // 둔화 (이동력 감소)
+  | "slow"        // 둔화 (이동력 감소)
+  | "swift"       // 경신 (순발력 20% 상승) — 규칙판 12
+  | "spirited"    // 고양 (사기 20% 상승)
+  | "sluggish"    // 지체 (순발력 20% 감소)
+  | "dispirit";   // 낙담 (사기 20% 감소)
 
 export interface Status {
   readonly kind: StatusKind;

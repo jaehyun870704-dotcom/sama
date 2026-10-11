@@ -58,6 +58,20 @@ export function effectiveMatchup(attacker: Unit, defender: Unit): number {
   return attacker.ratioRules ? 1 + (m - 1) * 0.5 : m;
 }
 
+/** 상태이상을 반영한 순발력·사기(경신·지체 ±20%, 고양·낙담 ±20%). 상태가 없으면 능력치 그대로. */
+export function effAgility(u: Unit): number {
+  let v = u.stats.agility;
+  if (u.statuses.some((s) => s.kind === "swift")) v *= 1.2;
+  if (u.statuses.some((s) => s.kind === "sluggish")) v *= 0.8;
+  return v;
+}
+export function effMorale(u: Unit): number {
+  let v = u.stats.morale;
+  if (u.statuses.some((s) => s.kind === "spirited")) v *= 1.2;
+  if (u.statuses.some((s) => s.kind === "dispirit")) v *= 0.8;
+  return v;
+}
+
 /** 사기 보정. 사기 0 → 0.8배, 50 → 1.0배, 100 → 1.2배 */
 export function moraleMultiplier(morale: number): number {
   return 0.8 + (clamp(morale, 0, 100) / 100) * 0.4;
@@ -101,13 +115,13 @@ export function accuracy(ctx: DamageContext, map: BattleMap): number {
   // 조조전 규칙: 물리는 순발력 비율, 책략은 (정신력+사기) 비율로 명중을 정한다. 지형 회피는 지형 효율이 대신한다.
   if (ctx.attacker.ccRules) {
     const a = ctx.attacker.stats, d = ctx.defender.stats;
-    const base = ctx.kind === "strategy" ? ccHitChance(a.spirit + a.morale, d.spirit + d.morale) : ccHitChance(a.agility, d.agility);
-    return clamp(base + ctx.accuracyMod, 5, 100);
+    const base = ctx.kind === "strategy" ? ccHitChance(a.spirit + effMorale(ctx.attacker), d.spirit + effMorale(ctx.defender)) : ccHitChance(effAgility(ctx.attacker), effAgility(ctx.defender));
+    return clamp(base + ctx.accuracyMod, 5, ctx.maxHit ?? 100);
   }
   const agiDiff = ctx.attacker.stats.agility - ctx.defender.stats.agility;
   const raw =
     BASE_ACCURACY + agiDiff * 0.5 - map.evasionBonus(ctx.defender.pos) + ctx.accuracyMod;
-  return clamp(raw, 5, 100);
+  return clamp(raw, 5, ctx.maxHit ?? 100);
 }
 
 /** 물리 피해의 분산 전 값과 지형 배율(내역 표시용). 실제 계산·AI 추정·공격 미리보기가 같은 계수를 쓴다. */
@@ -129,7 +143,7 @@ function physicalRaw(attacker: Unit, defender: Unit, map: BattleMap, ctx: Damage
 function criticalChanceOf(ctx: DamageContext): number {
   const officer = ctx.kind === "physical" ? ctx.attacker.officerCrit ?? 0 : 0;
   // 회심을 막는 특성(사마사 「눈을 잃어도」)은 큰 음수를 더하므로 0 아래로 내려가지 않게 한다.
-  return Math.max(0, ctx.attacker.ccRules ? Math.min(100, ccRatioChance(ctx.attacker.stats.morale, ctx.defender.stats.morale) + ctx.criticalChance + officer) : Math.min(100, ctx.criticalChance + officer));
+  return Math.max(0, ctx.attacker.ccRules ? Math.min(100, ccRatioChance(effMorale(ctx.attacker), effMorale(ctx.defender)) + ctx.criticalChance + officer) : Math.min(100, ctx.criticalChance + officer));
 }
 /** 물리 공격의 회심 확률(%) — 공격 미리보기용. */
 export function criticalChance(attacker: Unit, defender: Unit): number {
@@ -141,7 +155,7 @@ export function criticalChance(attacker: Unit, defender: Unit): number {
 export function doubleAttackChance(attacker: Unit, defender: Unit): number {
   // 여포 「인중여포」처럼 반드시 2회 연속으로 치는 특성
   if (strikesTwice(attacker)) return 100;
-  return attacker.ccRules ? ccRatioChance(attacker.stats.agility, defender.stats.agility) : 0;
+  return attacker.ccRules ? ccRatioChance(effAgility(attacker), effAgility(defender)) : 0;
 }
 
 /** 물리 공격 피해 계산. */
@@ -250,14 +264,17 @@ export function computeStrategy(
  * 다만 기본 공격 사거리 밖의 칸을 쳐도 감쇠하지 않는다(스킬 사거리로 이미 정해져 있다).
  */
 function strategyContext(caster: Unit, target: Unit, strategy: StrategyDef): DamageContext {
-  if (!strategy.physical) return { ...createDamageContext(caster, target, "strategy"), element: strategy.element };
+  if (!strategy.physical) return { ...createDamageContext(caster, target, "strategy"), element: strategy.element, ...(strategy.maxHit !== undefined ? { maxHit: strategy.maxHit } : {}), ...(strategy.sureHit ? { alwaysHit: true } : {}) };
   const ctx = createDamageContext(caster, target, "physical");
+  if (strategy.maxHit !== undefined) ctx.maxHit = strategy.maxHit;
+  if (strategy.sureHit) ctx.alwaysHit = true;
   const reach = reachMul(caster, target.pos);
   if (reach > 0) ctx.attackMul /= reach;
   return ctx;
 }
 
 export function strategyBase(caster: Unit, target: Unit, strategy: StrategyDef, attackMul = 1): number {
+  if (strategy.ignoreSpirit) target = { ...target, stats: { ...target.stats, spirit: Math.round(target.stats.spirit * 0.4) } };
   if (strategy.physical) {
     if (caster.ccRules) return Math.max(1, ccPhysicalBase(caster, target, 1, 1, attackMul) * (strategy.power / 100));
     const atk = Math.max(1, caster.stats.attack), def = Math.max(1, target.stats.defense);

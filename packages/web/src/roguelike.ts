@@ -11,7 +11,7 @@
 import {ccLevelDelta} from './cc-apply.ts';
 import {Rng,VARIANTS,makeUnit,evolvedClass,nextEvolution,profileOf,evolveUnit,familyOf,statsFor,type UnitClass,type StageDef,type MapFile,type UnitSpawnSpec,type BattleState,type LogEntry,type Unit} from '../../core/src/index.ts';
 import {classNames,troopStrategies} from './troops.ts';
-import {availableStrategies,allStrategies} from './officers.ts';
+import {availableStrategies,strategiesFor} from './officers.ts';
 import {ROUTES,routeById,routesFor,fatePoint,type Tale} from './fate.ts';
 import {romanceOf,romanceStats} from './romance.ts';
 import {을를} from './josa.ts';
@@ -436,17 +436,17 @@ export function refBattle(ref:RunBattleRef){
 }
 
 /** 전투 시작 직후: 원정 부대의 체력·병종·책략, 보물 효과를 전장에 반영한다. */
-export function prepareRunBattle(state:BattleState,ref:RunBattleRef){
+export function prepareRunBattle(state:BattleState,ref:RunBattleRef,rev=12){
   for(const ru of ref.party){
     const u=state.find(ru.id);if(!u)continue;
     if(u.unitClass!==ru.unitClass)evolveUnit(u,ru.unitClass);
     if(ru.hero){(u as {name:string}).name='사마의';}
     u.hp=Math.max(1,Math.round(u.stats.maxHp*ru.hp));
-    u.strategies=ru.hero&&casts(u.unitClass)?availableStrategies(u.level,true,undefined):troopStrategies(u.unitClass,u.level)??[];
+    u.strategies=ru.hero&&casts(u.unitClass)&&rev<12?availableStrategies(u.level,true,undefined):troopStrategies(u.unitClass,u.level,rev)??[];
     u.canUseItems=true;
   }
   // 진화 책사·적 술사가 쓰는 책략을 전장 책략표에 올린다.
-  for(const u of state.living())for(const id of u.strategies){const d=allStrategies.find(x=>x.id===id);if(d&&!state.strategies.has(id))state.strategies.set(id,d);}
+  for(const u of state.living())for(const id of u.strategies){const d=strategiesFor(rev).find(x=>x.id===id);if(d&&!state.strategies.has(id))state.strategies.set(id,d);}
   applyRelics(state,ref.relics);
   if(ref.mods)applyBattleMods(state,ref.mods);
 }
@@ -466,7 +466,7 @@ export function stageOfficerNames(stage:StageDef):Set<string>{
   for(const ev of stage.events??[])for(const a of ev.actions)if(a.type==='spawn_units')for(const u of a.units??[])if(u.name)names.add(u.name);
   return names;
 }
-export function addRecruits(state:BattleState,recruits:RunUnit[]){
+export function addRecruits(state:BattleState,recruits:RunUnit[],rev=12){
   const hero=state.find('sima_yi');if(!hero)return;
   // 같은 장수가 둘 서지 않게: 이미 전장에 있거나 이 전장이 나중에 세우는 이름은 건너뛴다(예: 연의 장의 사마랑·조진).
   const taken=new Set([...state.units.values()].map(u=>u.name));for(const n of stageOfficerNames(state.stage))taken.add(n);
@@ -476,8 +476,8 @@ export function addRecruits(state:BattleState,recruits:RunUnit[]){
   const free=cells.filter(p=>!state.unitAt(p)&&open.includes(state.map.tileAt(p).terrain)).sort((a,b)=>(Math.abs(a.x-hero.pos.x)+Math.abs(a.y-hero.pos.y))-(Math.abs(b.x-hero.pos.x)+Math.abs(b.y-hero.pos.y)));
   recruits.forEach((r,i)=>{const pos=free[i];if(!pos||state.find(r.id))return;
     const u=makeUnit({id:r.id,name:r.name,side:'player',unitClass:landClass(r.unitClass),level:r.level,pos});u.hp=Math.max(1,Math.round(u.stats.maxHp*r.hp));u.canUseItems=true;
-    u.strategies=troopStrategies(u.unitClass,u.level)??[];
-    for(const id of u.strategies){const d=allStrategies.find(x=>x.id===id);if(d&&!state.strategies.has(id))state.strategies.set(id,d);}
+    u.strategies=troopStrategies(u.unitClass,u.level,rev)??[];
+    for(const id of u.strategies){const d=strategiesFor(rev).find(x=>x.id===id);if(d&&!state.strategies.has(id))state.strategies.set(id,d);}
     state.add(u);});
 }
 /** 보물 효과를 아군 전원에 입힌다(원정 전투·연의 전장 공통). */

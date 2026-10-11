@@ -1,6 +1,7 @@
 import type {UnitClass} from '../../core/src/index.ts';
 import {fourStageCorrectionRows,singleStageCorrectionRows} from './complete-troops.ts';
-import {allStrategies} from './officers.ts';
+import {legacyStrategies} from './officers.ts';
+import {V12_LINEAGE,V12_SKILL_REPLACED} from './strategies-v12.ts';
 
 /**
  * 계통(4단 진화 줄)마다 쓰는 책략과 특수기.
@@ -64,13 +65,18 @@ export const LINEAGE_SKILL:Partial<Record<Lineage,string>>={
   'four-stage-javelin':'javelinCast','four-stage-qiang':'qiangCharge','four-stage-sniper':'sniperShot',
 };
 
-const levelOf=new Map(allStrategies.map(s=>[s.id,s.level]));
-/** 이 병종의 특수기 id(없으면 undefined). */
-export function classSkill(c:UnitClass){return LINEAGE_SKILL[lineageOf(c)];}
-/** 이 병종이 레벨 level에서 쓰는 책략·특수기. 소회복은 처음부터 쓴다. */
-export function classSpells(c:UnitClass,level:number):string[]{
-  const lin=lineageOf(c),list=(LINEAGE_SPELLS[lin]??[]).filter(id=>(levelOf.get(id)??99)<=level||id==='mend'),skill=LINEAGE_SKILL[lin];
+const levelOf=new Map(legacyStrategies.map(s=>[s.id,s.level]));
+/** 새 전투가 쓰는 규칙판(규칙판 12부터 새 책략 목록). */
+export const CURRENT_SPELL_RULES=12;
+/** 이 병종의 특수기 id(없으면 undefined). 규칙판 12에서 검사는 특수기 대신 검술 셋을 배운다. */
+export function classSkill(c:UnitClass,rev=CURRENT_SPELL_RULES){const lin=lineageOf(c);return rev>=12&&V12_SKILL_REPLACED.has(lin)?undefined:LINEAGE_SKILL[lin];}
+/** 이 병종이 레벨 level에서 쓰는 책략·특수기. 예전 목록은 소회복을 처음부터 쓴다. */
+export function classSpells(c:UnitClass,level:number,rev=CURRENT_SPELL_RULES):string[]{
+  const lin=lineageOf(c),skill=classSkill(c,rev);
+  const list=rev>=12?(V12_LINEAGE[lin]??[]).filter(([,lv])=>lv<=level).map(([id])=>id):(LINEAGE_SPELLS[lin]??[]).filter(id=>(levelOf.get(id)??99)<=level||id==='mend');
   return skill?[skill,...list]:[...list];
 }
+/** 이 계통이 그 책략을 배우는 레벨(규칙판 12). */
+export function learnLevelFor(c:UnitClass,id:string):number|undefined{return V12_LINEAGE[lineageOf(c)]?.find(([x])=>x===id)?.[1];}
 /** 이 병종이 언젠가 쓰게 될 책략 전부(도감용). */
-export function classSpellBook(c:UnitClass){return classSpells(c,99);}
+export function classSpellBook(c:UnitClass,rev=CURRENT_SPELL_RULES){return classSpells(c,99,rev);}

@@ -8,6 +8,7 @@
  */
 import type {Graphics} from 'pixi.js';
 import type {BattleFx} from './battle-fx.ts';
+import {V12_ART_FROM} from './strategies-v12.ts';
 
 type P={x:number;y:number};
 const TAU=Math.PI*2;
@@ -329,6 +330,21 @@ const BY_ELEMENT:Record<string,StratFx>={
   fire:STRATEGY_FX.fire!,water:STRATEGY_FX.flood!,wind:STRATEGY_FX.windDragon!,thunder:STRATEGY_FX.thunder!,earth:STRATEGY_FX.shatter!,
   support:STRATEGY_FX.hex!,physical:STRATEGY_FX.shieldBash!,heal:STRATEGY_FX.mend!,buff:STRATEGY_FX.inspire!,
 };
+/**
+ * 규칙판 12 책략의 연출: 성격이 가장 가까운 옛 책략의 연출을 하나씩(겹치지 않게) 물려받는다.
+ * 맞는 옛 연출이 없는 독·재정비·새 검술은 아래에 따로 만든다.
+ */
+for(const [id,src] of Object.entries(V12_ART_FROM))STRATEGY_FX[id]=STRATEGY_FX[src]!;
+Object.assign(STRATEGY_FX,{
+  deadlyVenom:F('cast','orb',0x4ab030,[{k:'cloud',c:0x3a8a20,s:.9},bu(0x8aff6a,0x2a6a10,14,{fall:true}),gl(0x9aff7a,'skull')]),
+  venomFlood:F('cast','wave',0x6aa040,[{k:'wave',c:0x5a9030,s:1.1},bu(0xa0e080,0x4a8a20,16,{fall:true})]),
+  venomSea:F('raise','sky',0x5ab040,[{k:'rain',c:0x8ad060,n:16,tilt:.2},{k:'cloud',c:0x3a6a20,s:1.4}]),
+  venomSpear:F('cast','beam',0x6ad040,[{k:'streaks',c:0x8aff6a,n:6},{k:'cloud',c:0x4a8a30,s:.7}]),
+  greatRegroup:F('raise','rise',0x60e0ff,[{k:'swirl',c:0x60e0ff,n:6,s:1.2},gl(0xc0f8ff,'clock',1.2)]),
+  boneBreaker:F('lunge','none',0xd0a0a0,[{k:'slash',c:0xffd0d0,n:2,s:1},{k:'shards',c:0xc04040,n:8}]),
+  poisonBlade:F('lunge','spear',0x80d060,[{k:'slash',c:0xa0ff80,n:1,s:.9},{k:'cloud',c:0x4a8a30,s:.6}]),
+  skyRend:F('dash','none',0xfff0c0,[{k:'flash',c:0xffffff,a:.3},{k:'slash',c:0xfff0c0,n:4,s:1.3},ri(0xffe0a0,2,1.1)],5),
+} satisfies Record<string,StratFx>);
 export function strategyFx(id:string,element?:string,healing=false,friendly=false):StratFx{
   return STRATEGY_FX[id]??(healing?BY_ELEMENT.heal!:friendly?BY_ELEMENT.buff!:BY_ELEMENT[element??'support']??BY_ELEMENT.support!);
 }

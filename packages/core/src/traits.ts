@@ -42,6 +42,8 @@ export interface DamageContext {
   bonusDamage?: number;
   /** 책략 공격의 속성(fire·wind…). 장수 고유특성이 읽는다. */
   element?: string;
+  /** 명중률 상한(%) — 규칙판 12 책략의 최대 명중. */
+  maxHit?: number;
 }
 
 export interface TraitHooks {

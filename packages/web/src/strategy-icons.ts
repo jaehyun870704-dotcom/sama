@@ -4,13 +4,14 @@
  * 결과는 SVG 문자열 또는 data URL(img src)로 쓴다.
  */
 import type {StrategyTier} from '../../core/src/index.ts';
-import {allStrategies,type LearnedStrategy} from './officers.ts';
+import {findStrategy,type LearnedStrategy} from './officers.ts';
+import {V12_ART_FROM} from './strategies-v12.ts';
 
 const O='stroke="#140c06" stroke-width="1.6" stroke-linejoin="round"';
 type Pal=[string,string,string];
 const PAL:Record<string,Pal>={fire:['#ffd27a','#d4421a','#3b0a02'],wind:['#c8f7dc','#2f9e6e','#0b2e22'],water:['#b8e0ff','#2563eb','#0a1a3d'],thunder:['#f1e4ff','#8b5cf6','#1e0b3d'],
   earth:['#ecdcae','#8a6a2a','#2a1c08'],curse:['#f6c8ff','#9b2fae','#2a0632'],heal:['#e2ffd0','#3f9a4a','#0c2a10'],buff:['#fff0c0','#c88a1a','#3a2204'],physical:['#f0e2d0','#a8452e','#2a0c06']};
-export function paletteKey(s:Pick<LearnedStrategy,'element'|'support'>){if(s.support)return s.support==='heal'||s.support==='cleanse'||s.support==='mana'?'heal':'buff';return s.element==='support'?'curse':s.element;}
+export function paletteKey(s:Pick<LearnedStrategy,'element'|'support'>){if(s.support)return ['heal','cleanse','mana','meditate','renew'].includes(s.support)?'heal':'buff';return s.element==='support'?'curse':s.element;}
 
 // ── 그림 조각(64칸 기준)
 const flame=(x:number,y:number,s=1,c1='#ffe27a',c2='#ff7a1a',c3='#c0200a')=>`<g transform="translate(${x} ${y}) scale(${s})"><path d="M0 14 C-12 12 -14 0 -8 -8 C-7 -2 -3 -1 -3 -4 C-4 -12 2 -18 4 -22 C5 -14 14 -10 12 2 C11 9 6 14 0 14Z" fill="${c3}" ${O}/><path d="M0 12 C-8 10 -9 2 -5 -3 C-4 1 0 1 0 -3 C0 -9 3 -12 5 -15 C6 -8 10 -4 8 4 C7 9 4 12 0 12Z" fill="${c2}"/><path d="M0 11 C-4 10 -5 5 -2 2 C-1 5 2 4 2 1 C3 -2 4 -4 5 -6 C6 -1 6 5 4 8 C3 10 2 11 0 11Z" fill="${c1}"/></g>`;
@@ -121,12 +122,24 @@ const MOTIF:Record<string,()=>string>={
   chainFist:()=>fist(22,36,.8)+fist(42,34,.8)+chain(32,48,.5,'#d8b070'),royalStrike:()=>sword(32,35,1.15)+burst(32,20,.5,'#ffe48a'),commandStrike:()=>sword(40,36,.95,35)+flag(20,31,.7,'#c0342a'),yellowSlash:()=>sword(32,35,1.15,50)+`<path d="M13 43 Q32 13 53 28" fill="none" stroke="#ffd84a" stroke-width="4"/>`,boardingSlash:()=>boat(26,45,.65)+sword(43,29,.85,40),
   javelinCast:()=>spear(34,34,1.05,70)+burst(50,24,.35),qiangCharge:()=>shield(20,39,.55,'#79552f','#d6b274')+spear(39,32,.8,65),sniperShot:()=>bow(28,35,.85)+eye(49,22,.45,'#ffd56a'),
 };
+// 규칙판 12 책략: 성격이 가까운 옛 책략의 그림을 하나씩 물려받고(바탕색은 새 책략의 갈래를 따른다), 새로 생긴 것은 따로 그린다.
+for(const [id,src] of Object.entries(V12_ART_FROM))if(MOTIF[src])MOTIF[id]=MOTIF[src]!;
+Object.assign(MOTIF,{
+  deadlyVenom:()=>skull(32,30,1.1)+drops(32,46,.7,'#8aff6a'),
+  venomFlood:()=>wave(32,38,1,'#5a9030','#c8f0a0')+skull(44,22,.6),
+  venomSea:()=>cloud(32,22,1.1,'#3a6a20','#8ad060')+drops(32,44,.9,'#8ad060'),
+  venomSpear:()=>spear(32,34,1.1,45)+drops(44,24,.6,'#8aff6a'),
+  greatRegroup:()=>spiral(32,32,1.2,'#c0f8ff')+cross(32,34,.6,'#e8fcff'),
+  boneBreaker:()=>sword(32,34,1.05,40)+rock(44,44,.55,'#d8c8c0'),
+  poisonBlade:()=>sword(32,34,1,60)+drops(46,22,.55,'#8aff6a'),
+  skyRend:()=>sword(32,34,1.25,90)+burst(32,18,.6,'#fff0c0'),
+} satisfies Record<string,()=>string>);
 const fallback=(s:LearnedStrategy)=>{const k=paletteKey(s);return k==='fire'?flame(32,34):k==='wind'?swirl(32,32):k==='water'?wave(32,36):k==='thunder'?bolt(32,34):k==='earth'?rock(32,34,1.2):k==='curse'?spiral(32,32):k==='heal'?cross(32,34):drum(32,36);};
 
 const FRAME:Record<StrategyTier,[string,string]>={1:['#8a6a3a','#d8b070'],2:['#9aa8b8','#eef4ff'],3:['#c88a10','#ffe48a']};
 /** 책략 아이콘 SVG(64×64). tier가 오를수록 테두리·장식이 화려해진다. */
 export function strategyIconSvg(id:string,tier:StrategyTier=1){
-  const s=allStrategies.find(x=>x.id===id);const key=s?paletteKey(s):'buff',[l,m,d]=PAL[key]!;
+  const s=findStrategy(id);const key=s?paletteKey(s):'buff',[l,m,d]=PAL[key]!;
   const motif=s?(MOTIF[id]??(()=>fallback(s)))():drum(32,36);const [fo,fi]=FRAME[tier];const uid=`${id}${tier}`;
   const rays=tier===3?`<g opacity=".38">${Array.from({length:16},(_,i)=>{const a=i*Math.PI/8;return `<path d="M32 34 L${32+Math.cos(a-.09)*44} ${34+Math.sin(a-.09)*44} L${32+Math.cos(a+.09)*44} ${34+Math.sin(a+.09)*44}Z" fill="${l}"/>`;}).join('')}</g>`:'';
   const aura=tier>=2?`<circle cx="32" cy="34" r="22" fill="none" stroke="${l}" stroke-width="${tier===3?2.4:1.6}" stroke-dasharray="${tier===3?'none':'4 3'}" opacity=".8"/>`:'';

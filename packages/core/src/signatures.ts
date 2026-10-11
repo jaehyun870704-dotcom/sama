@@ -65,7 +65,7 @@ function heal(u: Unit, rate: number) {
   if (u.hp >= u.stats.maxHp) return;
   u.hp = Math.min(u.stats.maxHp, u.hp + Math.max(1, Math.round(u.stats.maxHp * rate)));
 }
-const NEGATIVE: StatusKind[] = ["confusion", "immobile", "bound", "bleed", "burn", "shock", "seal", "weaken", "breach", "slow"];
+const NEGATIVE: StatusKind[] = ["confusion", "immobile", "bound", "bleed", "burn", "shock", "seal", "weaken", "breach", "slow", "sluggish", "dispirit"];
 function cleanse(u: Unit, kinds: readonly StatusKind[] = NEGATIVE) {
   u.statuses = u.statuses.filter((s) => !kinds.includes(s.kind));
 }

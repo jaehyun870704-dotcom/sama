@@ -2,6 +2,7 @@ import type {Growth} from './progression.ts';
 import type {StrategyDef,Unit} from '../../core/src/index.ts';
 import {capArea} from '../../core/src/index.ts';
 import {romanceInt,romanceWar} from './romance.ts';
+import {V12_STRATEGIES,v12Equivalent} from './strategies-v12.ts';
 export const officerFeatures:Record<string,{name:string;description:string;trait:string;strength:number}>={
   sima_yi:{name:'은인자중',description:'책략 피해 15% 감소 · 매 턴 MP 3 회복',trait:'simaPatience',strength:30},
   cao_zhen:{name:'선봉 지휘',description:'물리 공격 피해 12% 증가',trait:'caoVanguard',strength:78},
@@ -30,8 +31,9 @@ export function martialPower(u:Unit){return (romanceWar(u)??officerFeatures[u.id
 export function debatePower(u:Unit){return (romanceInt(u)??Math.min(95,40+u.stats.intellect))+u.level;}
 /** 장수 성향: 무력이 지력 이상이면 무력형(일기토), 아니면 지력형(설전). 연의에 실제로 있었던 맞수 대결은 성향과 상관없이 정해진 대로 한다. */
 export function contestKindOf(u:Unit):'duel'|'debate'{return martialPower(u)>=debatePower(u)?'duel':'debate';}
-export type SupportEffect='heal'|'cleanse'|'guard'|'haste'|'rally'|'mana'|'valor'|'again';
-export type LearnedStrategy=StrategyDef&{level:number;support?:SupportEffect};
+export type SupportEffect='heal'|'cleanse'|'guard'|'haste'|'rally'|'mana'|'valor'|'again'|'swift'|'spirited'|'meditate'|'renew'|'empower';
+/** boost: 이동력 상승량(급행) · noSelf: 자기 자신에게는 쓸 수 없다(진언·헌계). */
+export type LearnedStrategy=StrategyDef&{level:number;support?:SupportEffect;boost?:number;noSelf?:boolean};
 export const learnedStrategies:LearnedStrategy[]=[
   {id:'fire',name:'화계',level:1,element:'fire',shape:'single',range:3,radius:0,mpCost:6,power:100,inflicts:['burn'],targetSides:['enemy']},
   {id:'windDragon',name:'풍룡',level:3,element:'wind',shape:'spread',range:4,radius:1,mpCost:10,power:105,targetSides:['enemy']},
@@ -108,17 +110,26 @@ const skills:LearnedStrategy[]=([
   ['javelinCast','비창 투척','single',2,0,4,125,'bleed'],['qiangCharge','강족 돌격','line',1,1,5,110,'slow'],['sniperShot','천리 저격','single',5,0,6,150,'breach'],
 ] as const).map(([id,name,shape,range,radius,mpCost,power,status])=>({id,name,level:1,element:'physical' as const,physical:true,shape,range,radius,mpCost,power,targetSides:['enemy' as const],...(status?{inflicts:[status]}:{})} as LearnedStrategy));
 export const SKILL_IDS=new Set(skills.map(s=>s.id));
-export const allStrategies:LearnedStrategy[]=[...learnedStrategies,...more,...wider,...legends,...stratagems,...signature,...skills].map(capArea).sort((a,b)=>a.level-b.level);
-for(const s of allStrategies)(s as {learnLevel?:number}).learnLevel=s.level;
-export function strategyHint(id:string){const s=allStrategies.find(x=>x.id===id);if(!s)return '';const effect=s.physical?`공격력 위력 ${s.power}${s.inflicts?.length?' · '+s.inflicts.map(x=>STATUS_NAMES[x]??x).join(' · '):''}`:s.support?({again:'행동을 마친 아군 하나가 한 번 더 움직인다',heal:'아군 체력 회복',cleanse:'해로운 상태이상 제거',guard:'받는 피해 15% 감소',haste:'이동력 +1',rally:'공격 피해 12% 증가',mana:`MP ${s.power} 회복`,valor:'공격 피해 12% 증가 · 받는 피해 15% 감소'}[s.support]):`위력 ${s.power}${s.inflicts?.length?' · '+s.inflicts.map(x=>STATUS_NAMES[x]??x).join(' · '):''}`;return `${effect} · 사거리 ${s.shape==='global'?'제한 없음':s.range} · ${SHAPE_TEXT(s)}`;}
+/** 규칙판 11 이하(예전 저장 재생)의 책략 목록. */
+export const legacyStrategies:LearnedStrategy[]=[...learnedStrategies,...more,...wider,...legends,...stratagems,...signature,...skills].map(capArea).sort((a,b)=>a.level-b.level);
+/** 지금 목록(규칙판 12): 새 책략 + 물리 계통 특수기. 사거리 무제한 지원 책략은 범위 상한을 받지 않는다. */
+export const allStrategies:LearnedStrategy[]=[...V12_STRATEGIES,...skills].map(s=>s.support&&s.range>=99?s:capArea(s)).sort((a,b)=>a.level-b.level);
+for(const s of [...legacyStrategies,...allStrategies])(s as {learnLevel?:number}).learnLevel=s.level;
+/** 규칙판에 맞는 책략 목록. */
+export function strategiesFor(revision:number):LearnedStrategy[]{return revision>=12?allStrategies:legacyStrategies;}
+/** 예전 책략 id를 지금 목록의 가장 가까운 책략으로(지금 목록에 있으면 그대로). 물리 특수기는 그대로 둔다. */
+export function upgradeStrategyId(id:string):string|undefined{if(allStrategies.some(x=>x.id===id))return id;const old=legacyStrategies.find(x=>x.id===id);return old?v12Equivalent(old):undefined;}
+/** id로 책략 찾기(지금 목록을 먼저, 없으면 예전 목록). 이름 표시용. */
+export function findStrategy(id:string):LearnedStrategy|undefined{return allStrategies.find(x=>x.id===id)??legacyStrategies.find(x=>x.id===id);}
+export function strategyHint(id:string){const s=findStrategy(id);if(!s)return '';const effect=s.physical?`공격력 위력 ${s.power}${s.inflicts?.length?' · '+s.inflicts.map(x=>STATUS_NAMES[x]??x).join(' · '):''}`:s.support?({again:'행동을 마친 아군 하나가 한 번 더 움직인다',heal:'아군 체력 회복',cleanse:'해로운 상태이상 제거',guard:`받는 피해 15% 감소 ${s.power||3}턴`,haste:`이동력 +${s.boost??1}`,rally:`공격 피해 12% 증가 ${s.power||3}턴`,mana:`MP ${s.power} 회복${s.noSelf?'(자신 제외)':''}`,valor:'공격 피해 12% 증가 · 받는 피해 15% 감소',swift:`순발력 20% 상승 ${s.power}턴`,spirited:`사기 20% 상승 ${s.power}턴`,meditate:`체력 ${s.power}을 MP ${s.power}로 바꾼다`,renew:'체력 회복 · 해로운 상태이상 제거',empower:'공격·방어·순발·사기 모두 상승 3턴'}[s.support]):`위력 ${s.power}${s.inflicts?.length?' · '+s.inflicts.map(x=>STATUS_NAMES[x]??x).join(' · '):''}`;return `${effect}${s.maxHit!==undefined&&s.maxHit<100?` · 명중 상한 ${s.maxHit}%`:''}${s.drain?` · ${s.drain==='hp'?'피해만큼 체력 흡수':'MP 흡수'}`:''} · 사거리 ${s.shape==='global'||s.range>=99?'제한 없음':s.range===0?'자신':s.range} · ${SHAPE_TEXT(s)}`;}
 /** 상태이상 이름. */
-export const STATUS_NAMES:Record<string,string>={burn:'화상',bleed:'출혈',seal:'책략 봉인',confusion:'혼란',immobile:'이동 불가',bound:'포박',shock:'감전',guard:'견고',haste:'강행',rally:'사기',weaken:'쇠약',breach:'파갑',slow:'둔화'};
+export const STATUS_NAMES:Record<string,string>={swift:'경신',spirited:'고양',sluggish:'지체',dispirit:'낙담',burn:'화상',bleed:'출혈',seal:'책략 봉인',confusion:'혼란',immobile:'이동 불가',bound:'포박',shock:'감전',guard:'견고',haste:'강행',rally:'사기',weaken:'쇠약',breach:'파갑',slow:'둔화'};
 /** 범위 모양을 말로. */
-export const SHAPE_TEXT=(s:Pick<LearnedStrategy,'shape'|'radius'>)=>s.shape==='global'?'전 맵의 적':s.shape==='line'?`직선 ${s.radius+1}칸`:s.shape==='cross'?`십자 ${Math.max(1,s.radius)}칸`:s.radius?`주변 ${s.radius}칸`:'한 부대';
+export const SHAPE_TEXT=(s:Pick<LearnedStrategy,'shape'|'radius'>&{targetSides?:readonly string[]})=>s.shape==='global'?(s.targetSides&&!s.targetSides.includes('enemy')?'전 맵의 아군':'전 맵의 적'):s.shape==='line'?`직선 ${s.radius+1}칸`:s.shape==='cross'?`십자 ${Math.max(1,s.radius)}칸`:s.radius?`주변 ${s.radius}칸`:'한 부대';
 /** 책략 갈래: 공격(오행) · 술법(적 약화) · 회복 · 고무(아군 강화) */
 export type StrategySchool='attack'|'mind'|'heal'|'buff'|'skill';
 export const SCHOOL_NAMES:Record<StrategySchool,string>={attack:'공격 책략',mind:'술법',heal:'회복',buff:'고무·지원',skill:'병종 특수기'};
-export function schoolOf(s:LearnedStrategy):StrategySchool{return s.physical?'skill':s.support?(s.support==='heal'||s.support==='cleanse'||s.support==='mana'?'heal':'buff'):s.element==='support'?'mind':'attack';}
+export function schoolOf(s:LearnedStrategy):StrategySchool{return s.physical?'skill':s.support?(['heal','cleanse','mana','meditate','renew'].includes(s.support)?'heal':'buff'):s.element==='support'?'mind':'attack';}
 const LEGEND_IDS=new Set(legends.map(s=>s.id));
 /**
  * 계통이 쓰는 책략. 책사 계열(책사·군사·신산)은 공격 책략과 술법, 풍수사 계열(풍수사·선도·선인)은
@@ -129,4 +140,4 @@ export function familyAllows(family:string|undefined,s:LearnedStrategy){
   if(family==='strategist')return k==='attack'||k==='mind';
   if(family==='fengshui')return k==='heal'||k==='buff'||s.element==='earth'||s.element==='water';
   return true;}
-export function availableStrategies(level:number,expanded=false,family?:string){return (expanded?allStrategies:learnedStrategies).filter(s=>s.level<=level&&!s.physical&&familyAllows(family,s)).map(s=>s.id);}
+export function availableStrategies(level:number,expanded=false,family?:string){return (expanded?legacyStrategies:learnedStrategies).filter(s=>s.level<=level&&!s.physical&&familyAllows(family,s)).map(s=>s.id);}
