@@ -410,6 +410,16 @@ export const tough8:Record<string,Array<{unit:string;hpScale:number;defense?:num
   'S1-02':[{unit:'sima_lang',hpScale:1.35,defense:6}],'S1-03':[{unit:'sima_lang',hpScale:1.35,defense:6}],
 };
 
+/** 규칙판 9: 넓은 전장(실제 새 전투)에서만 더하는 적 보정. 길이 길어져 지켜야 할 장수·NPC가 더 오래 맞는 장. */
+export const foeEdgesWide:Record<string,{normal?:number;extreme?:number}>={
+  'S1-01':{normal:-25},'S1-02':{extreme:-10},'S1-09':{normal:-30},'S2-01':{extreme:-20},'S2-11':{normal:-15},'S3-01':{normal:-10},
+};
+
+/** 규칙판 9: 넓은 전장에서 지켜야 할 장수를 그만큼 더 단단하게(적 보정이 바닥 -85%에 닿은 장). */
+export const toughWide:Record<string,Array<{unit:string;hpScale:number;defense?:number}>>={
+  'S1-02':[{unit:'sima_lang',hpScale:1.3,defense:4},{unit:'sima_yi',hpScale:1.25,defense:4}],
+};
+
 /** Korean subject particle: 이 after a final consonant, 가 otherwise. */
 export function subject(name:string){const c=name.charCodeAt(name.length-1);return name+(c>=0xac00&&c<=0xd7a3&&(c-0xac00)%28!==0?'이':'가');}
 export function protectedFailure(s:BattleState,ids:string[]){

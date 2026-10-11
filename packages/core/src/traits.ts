@@ -176,7 +176,8 @@ export function capHit(defender: Unit, damage: number): number {
   const steady = defender.traits.includes("steadfast") ? defender.traitParams["steadfast"] ?? 0 : 0;
   // 성문·망루는 충차가 몇 번에 부술 수 있어야 하므로 상한을 두지 않는다(버팀만 적용).
   if (/^(gate|tower)_/.test(defender.id)) return steady > 0 ? Math.min(damage, Math.ceil(defender.stats.maxHp * steady / 100)) : damage;
-  const cap = defender.ratioRules ? (steady > 0 ? Math.min(steady, MAX_HIT_SHARE) : MAX_HIT_SHARE) : steady;
+  let cap = defender.ratioRules ? (steady > 0 ? Math.min(steady, MAX_HIT_SHARE) : MAX_HIT_SHARE) : steady;
+  if (defender.hitCap && defender.hitCap > 0) cap = cap > 0 ? Math.min(cap, defender.hitCap) : defender.hitCap;
   if (cap <= 0) return damage;
   return Math.min(damage, Math.max(1, Math.ceil(defender.stats.maxHp * cap / 100)));
 }

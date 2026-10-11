@@ -156,9 +156,12 @@ export class Battle {
   private strike(a: Unit, d: Unit, isCounter: boolean): void {
     // 체력이 가득한 아군은 한 번의 공격(연속 타격 포함)으로 쓰러지지 않는다.
     const full = sparesFullHp(d);
+    // 규칙판 9: 한 번의 공격에서 잃는 체력은 연속 공격까지 합쳐 hitCap%를 넘지 않는다.
+    let budget = d.hitCap && d.hitCap > 0 ? Math.max(1, Math.ceil(d.stats.maxHp * d.hitCap / 100)) : Infinity;
     const once = (double: boolean): boolean => {
       const raw = computePhysical(a, d, this.state.map, this.state.rng, { isCounter });
-      const capped = raw.hit ? survive(d, capHit(d, raw.damage), full) : raw.damage;
+      let capped = raw.hit ? survive(d, capHit(d, raw.damage), full) : raw.damage;
+      if (raw.hit && budget !== Infinity) { capped = Math.min(capped, budget); budget -= capped; }
       const res = capped === raw.damage ? raw : { ...raw, damage: capped, lethal: capped >= d.hp };
       const extra = double ? { double: true } : {};
       if (isCounter) this.state.push({ t: "counter", attacker: a.id, defender: d.id, damage: res.damage, hit: res.hit, ...(res.hit && res.tactic ? { tactic: res.tactic } : {}), ...extra });
