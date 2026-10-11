@@ -5,6 +5,7 @@ import {validRoute} from './fate.ts';
 import {applyPerkGrants,validGrants} from './perks.ts';
 import {stretchMap,stretchStage,canStretch,wideCoord,shapeGoals} from './stretch.ts';
 import {LARGE_BATTLES,enlargeStage,enlargedRegions} from './large-battle.ts';
+import {HISTORIC_BATTLES,HISTORIC_EDGE,reinforceHistoric} from './historic-battles.ts';
 import {applyTreasureSpecial} from './treasure-specials.ts';
 import './scenario.ts';
 import {battleConditions,type BattleConditions} from './battle-conditions.ts';
@@ -22,10 +23,10 @@ import tongguanStage from '../../data/stages/S1-06.json';
 import tongguanMap from '../../data/maps/tongguan-pass.json';
 import retreatStage from '../../data/stages/S1-05.json';
 import retreatMap from '../../data/maps/yangtze-retreat.json';
-import {stageRules,foeEdges,foeEdges6,foeEdges7,foeEdges8,foeEdgesWide,toughWide,tough8,foeLevelCap6} from './stage-rules.ts';
+import {stageRules,foeEdges,foeEdges6,foeEdges7,foeEdges8,foeEdgesWide,foeEdges13,toughWide,tough8,foeLevelCap6} from './stage-rules.ts';
 import {campaignStage,addFortifications,addSiegeCompany,structureKind,encircled,encounterLevels} from './campaign-rules.ts';
 import {applyTreasure,equippedItems,treasureInfo,gearKey,validGearKey,type Deployment,OFFICERS,treasures} from './progression.ts';
-import { assemble, Battle, CONTROLLABLE, isHostile, key, manhattan, statsFor, familyOf, evolvedClass, evolveUnit, healAmount, strategyArea, evolveStrategy, syncTroopEffect, applyOfficerEffect, applySignature, applyFamedReach, topAbility, tierOf, classCanUseStrategy } from '../../core/src/index.ts';
+import { assemble, Battle, CONTROLLABLE, isHostile, key, manhattan, statsFor, familyOf, evolvedClass, evolveUnit, healAmount, strategyArea, evolveStrategy, syncTroopEffect, applyOfficerEffect, applySignature, applyFamedReach, topAbility, tierOf, classCanUseStrategy, fireScripted } from '../../core/src/index.ts';
 import type { BattleState, Command, Difficulty, MapFile, StageDef, StrategyDef, LogEntry, Unit } from '../../core/src/index.ts';
 import escapeStage from '../../data/stages/S1-02.json';
 import fortStage from '../../data/stages/S1-08.json';
@@ -131,7 +132,7 @@ export const strategies: StrategyDef[] = [
   {id:'fire',name:'화계',element:'fire',shape:'single',range:3,radius:0,mpCost:12,power:110,inflicts:['burn'],targetSides:['enemy']},
 ];
 type Intent = Command | {kind:'aiTick'};
-export interface Save {version:2; revision?:2|3|4|5|6|7|8|9|10|11|12; deployment?:Deployment; chapter:number; difficulty:Difficulty; seed:number; preparation:Preparation; journal:Intent[]; checkpoints:number[]}
+export interface Save {version:2; revision?:2|3|4|5|6|7|8|9|10|11|12|13; deployment?:Deployment; chapter:number; difficulty:Difficulty; seed:number; preparation:Preparation; journal:Intent[]; checkpoints:number[]}
 
 /** Persist commands, not mutable engine internals. Replay also restores terrain,
  * counter budgets, patrol progress and RNG when undoing across a phase boundary. */
@@ -158,6 +159,8 @@ export class Session {
   activeDuel:DuelState|null=null;
   /** 넓은 전장(지도 1.5배 · 이동 +2)으로 만든 전투인가 */
   wide=false;
+  /** 규칙판 13: 연의·정사의 대규모 전투 — 적 장수·병사를 늘린 전장. */
+  historic=false;
   /** 아군·적군을 늘린 큰 전투인가. */
   large=false;
   /** 방금 도전을 거절당했다면 그 사연(화면이 한 번 보여 준다) */
@@ -187,7 +190,7 @@ export class Session {
   phase='';
   failure='';
   phaseCheckpoint:number|null=null;
-  constructor(public chapter=2, public difficulty:Difficulty='normal', public seed=215, public preparation:Preparation='survival', public revision:2|3|4|5|6|7|8|9|10|11|12=3, public deployment?:Deployment) {this.battle=this.create();this.resetScenario();}
+  constructor(public chapter=2, public difficulty:Difficulty='normal', public seed=215, public preparation:Preparation='survival', public revision:2|3|4|5|6|7|8|9|10|11|12|13=3, public deployment?:Deployment) {this.battle=this.create();this.resetScenario();}
   get state(){return this.battle.state;}
   private create(){
     this.balancedEnemies.clear();this.romanced.clear();this.honed.clear();this.capped.clear();this.geared.clear();this.xpEarned={};this.xpGains=new WeakMap();this.xpCursor=0;
@@ -210,6 +213,7 @@ export class Session {
     if(wide)entry={...entry,map:shapeGoals(stretchMap(entry.map),entry.stage,entry.map,large?enlargedRegions(entry.stage):undefined),stage:stretchStage(entry.stage)};
     this.large=large;
     this.wide=wide;
+    this.historic=wide&&this.deployment?.wide===2&&this.revision>=13&&!!HISTORIC_BATTLES[entry.stage.id];
     const level=entry.stage.difficulty[this.difficulty].recommendedLevel;
     const state=assemble({stage:entry.stage,map:entry.map,difficulty:this.difficulty,seed:this.seed,roster:[
       {id:'sima_yi',name:'사마의',unitClass:'strategist',level,strategies:['windDragon','fire'],traits:['alwaysHit']},
@@ -239,6 +243,8 @@ export class Session {
     if((this.deployment?.mission?.version??1)>=3)state.survivalClocks.set('trial_defense',1);
     battle.start();
     const rules=stageRules[entry.stage.id];
+    // 지켜야 할 대상·붙박이(목표물)는 늘리지 않는다.
+    if(this.historic)reinforceHistoric(state,entry.stage.id,new Set([...(rules?.anchored??[]),...(rules?.protect??[]).map(p=>p.unit)]));
     for(const p of rules?.protect??[]){const u=state.find(p.unit);if(!u)continue;
       // 지켜야 할 대상도 같은 레벨 병사만큼의 체력은 갖는다(정해 둔 체력이 더 낮으면 병종 체력을 쓴다).
       u.stats.maxHp=this.revision>=6?Math.max(p.hp,u.stats.maxHp):p.hp;u.hp=u.stats.maxHp;u.range=[0,0];u.canUseItems=false;if(p.movement)u.stats.movement=p.movement;}
@@ -476,12 +482,12 @@ export class Session {
     for(const u of state.living())if(!u.traits.includes('steadfast')&&this.mustSurvive(state,u)){u.traits.push('steadfast');u.traitParams.steadfast=STEADFAST_CAP;}
     // 극한 한중 정벌전 下: 경쟁 우군 기병이 한 칸 더 빨리 성채로 달린다.
     if(this.chapter===1&&this.difficulty==='extreme')for(const u of state.living('allyAi'))if(u.behavior==='race'&&!this.romanced.has(u.id))u.stats.movement+=1;
-    // 극한: 성채 수비대장이 오래 버텨, 우군과의 선점 경쟁이 실제로 빠듯해진다.
-    if(this.chapter===1&&this.difficulty==='extreme'){const z=state.find('zhang_lu');if(z?.alive&&!this.romanced.has(z.id)){z.stats.maxHp=Math.round(z.stats.maxHp*(this.revision>=6?2:4.3));z.hp=z.stats.maxHp;}}
+    // 극한: 성채 수비대장이 오래 버텨, 우군과의 선점 경쟁이 실제로 빠듯해진다(규칙판 13: 극한 75% 기준에 맞춰 2배→1.6배).
+    if(this.chapter===1&&this.difficulty==='extreme'){const z=state.find('zhang_lu');if(z?.alive&&!this.romanced.has(z.id)){z.stats.maxHp=Math.round(z.stats.maxHp*(this.revision>=13?1.6:this.revision>=6?2:4.3));z.hp=z.stats.maxHp;}}
     if(this.revision<4)return;
     // 꿈속의 환영과 호위 대상(일부러 맞춘 체력·이동)은 연의 능력을 입히지 않는다.
     const escorts=new Set([...(stageRules[state.stage.id]?.protect??[]).map(p=>p.unit),...(this.chapter===8||this.chapter===9?['cao_cao']:[])]);
-    const edge=Math.max(-85,((stageRules[state.stage.id]?.foeEdge??foeEdges[state.stage.id])?.[this.difficulty]??0)+(this.revision>=6?foeEdges6[state.stage.id]?.[this.difficulty]??0:0)+(this.revision>=7?foeEdges7[state.stage.id]?.[this.difficulty]??0:0)+(this.revision>=8?foeEdges8[state.stage.id]?.[this.difficulty]??0:0)+(this.revision>=9&&this.deployment?.wide?foeEdgesWide[state.stage.id]?.[this.difficulty]??0:0));
+    const edge=Math.max(-85,((stageRules[state.stage.id]?.foeEdge??foeEdges[state.stage.id])?.[this.difficulty]??0)+(this.revision>=6?foeEdges6[state.stage.id]?.[this.difficulty]??0:0)+(this.revision>=7?foeEdges7[state.stage.id]?.[this.difficulty]??0:0)+(this.revision>=8?foeEdges8[state.stage.id]?.[this.difficulty]??0:0)+(this.revision>=9&&this.deployment?.wide?foeEdgesWide[state.stage.id]?.[this.difficulty]??0:0)+(this.historic?HISTORIC_EDGE[state.stage.id]?.[this.difficulty]??0:0)+(this.revision>=13?foeEdges13[state.stage.id]?.[this.difficulty]??0:0));
     const cap6=this.revision>=6?foeLevelCap6[state.stage.id]?.[this.difficulty]:undefined,top=Math.max(1,...state.living('player').map(u=>u.level));
     for(const u of state.living())if(!this.romanced.has(u.id)){this.romanced.add(u.id);u.classTactics=true;if(cap6!==undefined&&u.side==='enemy'&&u.level>top+cap6&&!/^(gate|tower)_/.test(u.id))u.level=top+cap6;if(this.revision>=5){const fixed=escorts.has(u.id)||!!structureKind(u.id);if(this.revision<8&&!u.name.endsWith('환영')&&!escorts.has(u.id))applyRomance(u,false);if(this.revision>=6)u.ratioRules=true;applyCC(u,fixed);}else if(!u.name.endsWith('환영')&&!escorts.has(u.id))applyRomance(u);
       // 규칙판 6부터는 망루도 같은 보정을 받는다(성문은 공격하지 않으므로 제외).
@@ -614,7 +620,10 @@ export class Session {
       this.phase=`조운 봉쇄 ${encircled(s,'zhao_yun')}/4 · 사방을 막으세요`;
       if(s.outcome==='defeat'&&!s.find('cao_cao')?.alive)this.failure='조조가 퇴각했습니다.';
     }else if(this.chapter===8&&s.scenarioPhase==='부교 재건'){
-      this.phase=`부교 재건 ${Math.min(2,s.heldTurns('bridge_bank','player'))}/2 · 강변을 지키세요`;
+      // 규칙판 13: 편입 아군이 강변 두 칸을 차지해도 우리 편이 지킨 것이다(아군 AI가 강변에 서 버리면 부교를 영영 못 놓던 교착).
+      const held=Math.max(s.heldTurns('bridge_bank','player'),this.revision>=13?s.heldTurns('bridge_bank','ally'):0);
+      if(this.revision>=13&&held>=2&&s.outcome==='ongoing')fireScripted(s,'hanshui/bridge');
+      this.phase=s.scenarioPhase==='부교 재건'?`부교 재건 ${Math.min(2,held)}/2 · 강변을 지키세요`:s.scenarioPhase;
       if(s.outcome==='defeat'&&!s.find('cao_cao')?.alive)this.failure='조조가 퇴각했습니다.';
     }else if(s.scenarioPhase){
       this.phase=s.scenarioPhase;
@@ -705,7 +714,7 @@ export class Session {
   static load(raw:unknown){
     const data=raw as Save;
     if(!data || data.version!==2 || !chapters[data.chapter] || !['survival','strategy','command'].includes(data.preparation) || !['normal','extreme'].includes(data.difficulty) || !Number.isSafeInteger(data.seed) || !Array.isArray(data.journal) || data.journal.length>20000 || !Array.isArray(data.checkpoints) || !data.checkpoints.every((n,i,a)=>Number.isInteger(n)&&n>=0&&n<data.journal.length&&(i===0||n>a[i-1]!))) throw new Error('저장 파일을 읽을 수 없습니다.');
-    if(data.revision!==undefined&&data.revision!==2&&data.revision!==3&&data.revision!==4&&data.revision!==5&&data.revision!==6&&data.revision!==7&&data.revision!==8&&data.revision!==9&&data.revision!==10&&data.revision!==11&&data.revision!==12)throw new Error('지원하지 않는 전장 버전입니다.');
+    if(data.revision!==undefined&&data.revision!==2&&data.revision!==3&&data.revision!==4&&data.revision!==5&&data.revision!==6&&data.revision!==7&&data.revision!==8&&data.revision!==9&&data.revision!==10&&data.revision!==11&&data.revision!==12&&data.revision!==13)throw new Error('지원하지 않는 전장 버전입니다.');
     if(data.deployment){const d=data.deployment;if(!d.levels||!d.equipped||!OFFICERS.every(id=>Number.isInteger(d.levels[id])&&d.levels[id]!>=1&&d.levels[id]!<=40)||Object.entries(d.equipped).some(([id,item])=>!OFFICERS.includes(id as typeof OFFICERS[number])||!treasures.some(t=>t.id===item))||(d.xp!==undefined&&(typeof d.xp!=='object'||Object.entries(d.xp).some(([id,n])=>!OFFICERS.includes(id as typeof OFFICERS[number])||!Number.isInteger(n)||n<0||n>=1000))))throw new Error('잘못된 출진 기록입니다.');}
     if(data.deployment?.run){const r=data.deployment.run;
       if(!Number.isInteger(r.floor)||r.floor<1||r.floor>RUN_FLOORS||!['battle','elite','boss','tale'].includes(r.kind)||(r.kind==='tale')!==!!taleById(r.tale)||(r.route!==undefined&&!validRoute(r.route))||!Number.isSafeInteger(r.seed)||!Array.isArray(r.party)||r.party.length<1||r.party.length>PARTY_LIMIT||!r.party.some(u=>u.hero)||!Array.isArray(r.relics)

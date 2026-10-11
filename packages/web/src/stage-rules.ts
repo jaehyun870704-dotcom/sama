@@ -415,6 +415,11 @@ export const foeEdgesWide:Record<string,{normal?:number;extreme?:number}>={
   'S1-01':{normal:-25},'S1-02':{extreme:-10},'S1-09':{normal:-30},'S2-01':{extreme:-20},'S2-11':{normal:-15},'S3-01':{normal:-10},
 };
 
+/** 규칙판 13: 클리어율 기준(일반 95%·극한 75%)에 못 미치던 장의 적 보정(%). 넓은 전장에서 잰 값. */
+export const foeEdges13:Record<string,{normal?:number;extreme?:number}>={
+  'S2-05':{normal:-15},
+};
+
 /** 규칙판 9: 넓은 전장에서 지켜야 할 장수를 그만큼 더 단단하게(적 보정이 바닥 -85%에 닿은 장). */
 export const toughWide:Record<string,Array<{unit:string;hpScale:number;defense?:number}>>={
   'S1-02':[{unit:'sima_lang',hpScale:1.3,defense:4},{unit:'sima_yi',hpScale:1.25,defense:4}],

@@ -230,7 +230,7 @@ function withoutCaptureGoals(state: any) {
 }
 
 /** 측정할 규칙판(기본: 새 전투가 쓰는 규칙판). SIM_REVISION=4로 예전 규칙과 비교한다. */
-const SIM_REVISION = (Number(process.env.SIM_REVISION) || 12) as 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+const SIM_REVISION = (Number(process.env.SIM_REVISION) || 13) as 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
 
 /** AI 자동 플레이 1회. 사람 실력의 하한선 근사치로 쓴다. */
 function play(chapter: number, difficulty: Difficulty, seed: number) {
