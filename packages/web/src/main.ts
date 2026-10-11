@@ -25,9 +25,9 @@ import {SLOT_COUNT,slotKey,readSlot,slotLabel,readFull,snapshotKeys,restoreKeys,
 import {encounterLevels,structureKind,structureFrame,raceGap} from './campaign-rules.ts';
 import {readCampaign,freshCampaign,writeCampaign,deployment,levelInfo,award,equip,equipSlot,treasureInfo,gearKey,type GearSlot,treasures,OFFICERS} from './progression.ts';
 import {storyBeats,storyLocations,storyBackdrop,storyAftermath,acts,stories,epilogueLines} from './story.ts';
-import {showHub,showQuests,finishRunBattle,finishRunStory,RUN_CHAPTER,type RunHost} from './run-ui.ts';
+import {showHub,showQuests,showTitle,showCollections,finishRunBattle,finishRunStory,RUN_CHAPTER,type RunHost} from './run-ui.ts';
 import {showScenario,campOf,finishIfBattle,finishStoryBattle,noteDefeatReason,type ScenarioHost} from './scenario-ui.ts';
-import {scriptOf} from './scenario.ts';
+import {scriptOf,loadScenario,saveScenario,trainCompanions,currentStep,joinRecruits} from './scenario.ts';
 import {conditionsHtml,goalMarks,winText} from './battle-conditions.ts';
 import {optionalOfficers,pickExtras,storySortieLimit,storyCostSheet,unitCost,storyClassAt} from './sortie.ts';
 import {isoBackdrop,loadIsoArt,loadPaintedScenes} from './story-iso.ts';
@@ -46,8 +46,11 @@ void loadPortraitImages('');
 const scenarioYear=(id:string)=>scriptOf(id)?.year??'';
 import type {ScenarioDeployment} from './progression.ts';
 import {loadMeta,saveMeta,recordStory} from './meta.ts';
+import {ALL_ENDINGS,endingFor} from './fate.ts';
+import {LINEAGES,condMet,condText,recruitStatus,previousOf,type RecruitContext} from './recruit.ts';
+import {officerClass} from './officer-perks.ts';
 import {RUN_FLOORS,RELICS,newRun,startingOfficers,battleRef} from './roguelike.ts';
-import {romance,romanceOf,temperOf,signatureSkills} from './romance.ts';
+import {romance,romanceOf,romanceByName,temperOf,signatureSkills} from './romance.ts';
 import './style.css';
 import catalogue from './campaign.json';
 import { Session, chapters, campaignOrder, type Preparation } from './session.ts';
@@ -130,9 +133,10 @@ try{writeCampaign(campaign);}catch{/* Session remains playable without persisten
 const officerNames:Record<string,string>={sima_yi:'사마의',sima_lang:'사마랑',sima_fang:'사마방',cao_zhen:'조진'};
 function growthText(){const l=levelInfo(campaign.xp.sima_yi??0);return '사마의 Lv.'+l.level+' · 경험치 '+l.xp+'/'+l.next;}
 function saveCampaign(){try{writeCampaign(campaign);return true;}catch{toast('성장 기록을 저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.');return false;}}
-function storyScene(chapter:number,beat=0,fromArt?:number){
+/** viewOnly: 「시나리오 보기」에서 연 이야기 — 끝나면 출진 대신 목록으로 돌아간다. */
+function storyScene(chapter:number,beat=0,fromArt?:number,viewOnly=false){
   setStoryEra(chapters[chapter]?.stage.id);
-  if(!storyReady){menuOpen=true;modal(waitPanel('이야기 준비 중','인물과 배경 그림을 마저 받고 있습니다. 끝나면 바로 시작합니다.'),false);void storyArt.then(()=>storyScene(chapter,beat,fromArt));return;}
+  if(!storyReady){menuOpen=true;modal(waitPanel('이야기 준비 중','인물과 배경 그림을 마저 받고 있습니다. 끝나면 바로 시작합니다.'),false);void storyArt.then(()=>storyScene(chapter,beat,fromArt,viewOnly));return;}
   menuOpen=true;clearTimeout(aiTimer);sound.scene=chapter===4?'dream':'camp';void sound.start().then(updateSound);
   const c=chapters[chapter]!,beats=storyBeats[c.stage.id]!,b=beats[beat]!;
   const location=storyLocations[c.stage.id]![beat]!;
@@ -146,15 +150,16 @@ function storyScene(chapter:number,beat=0,fromArt?:number){
     <div class="story-actor hero ${b.actor===4?'speaking':''}" style="${storyActorStyle(chapter===2?'소년 사마의':'사마의',4)}" role="img" aria-label="${chapter===2?'소년 사마의':'사마의'}"></div>
     <div class="story-actor companion ${b.actor!==4?'speaking':''}" style="${storyActorStyle(location.companion,companion)}" role="img" aria-label="${location.companion}"></div>
   </div>${dialogueCaption(b.speaker,b.line)}
-  <div class="modal-actions"><button id="story-back" ${beat===0?'disabled':''}>← 이전 장면</button><button id="story-skip">군의로 건너뛰기</button><button class="primary" id="story-next">${beat===beats.length-1?'출진 준비':'다음 이야기'} →</button></div></div>`,false);
-  $('#story-back').onclick=()=>{if(beat>0)storyScene(chapter,beat-1,location.art);};
-  $('#story-skip').onclick=()=>briefing(chapter);$('#story-next').onclick=()=>beat+1<beats.length?storyScene(chapter,beat+1,location.art):briefing(chapter);
+  <div class="modal-actions"><button id="story-back" ${beat===0?'disabled':''}>← 이전 장면</button><button id="story-skip">${viewOnly?'목록으로':'군의로 건너뛰기'}</button><button class="primary" id="story-next">${beat===beats.length-1?(viewOnly?'다 보았다 · 목록으로':'출진 준비'):'다음 이야기'} →</button></div></div>`,false);
+  $('#story-back').onclick=()=>{if(beat>0)storyScene(chapter,beat-1,location.art,viewOnly);};
+  const end=()=>viewOnly?showStoryArchive(chapter):briefing(chapter);
+  $('#story-skip').onclick=end;$('#story-next').onclick=()=>beat+1<beats.length?storyScene(chapter,beat+1,location.art,viewOnly):end();
 }
 let menuArc=0,menuStage='';
 const resumeSaved=()=>{try{session=Session.load(JSON.parse(localStorage.getItem(SAVE_KEY)??'null'));activate();toast('저장한 전투를 불러왔습니다.');}catch{toast('현재 버전의 저장 기록을 읽지 못했습니다.');}};
 const runHost:RunHost={modal:(html,closable)=>modal(html,closable),showMenu:()=>showMenu(),toast:t=>toast(t),startBattle:(dep,seed)=>{session=new Session(RUN_CHAPTER,'normal',seed,'survival',RULES,dep);activate();persist();},
   startStory:(chapter,dep,seed)=>{session=new Session(chapter,'normal',seed,'survival',RULES,dep);activate();persist();},
-  showChronicle:()=>showChronicleLanding(),showScenario:()=>showScenario(scenarioHost),showExpeditions:(tab?:Expedition['kind'])=>showExpeditions(tab),showTroops:()=>showTroopGallery(),showSlots:()=>showSlots(),
+  showChronicle:()=>showChronicleLanding(),showScenario:()=>showScenario(scenarioHost),showTraining:()=>showTraining(),showStoryArchive:()=>showStoryArchive(),showRecruit:()=>showRecruit(),showExpeditions:(tab?:Expedition['kind'])=>showExpeditions(tab),showTroops:()=>showTroopGallery(),showSlots:()=>showSlots(),
   get resumeSaved(){return saveAvailable&&!openRunSession()?resumeSaved:undefined;},
   liveRunBattle:()=>{const s=openRunSession();if(!s)return undefined;const d=s.deployment!;return d.run?{seed:d.run.seed,floor:d.run.floor,kind:d.run.kind}:{seed:d.runStory!.seed,floor:d.runStory!.floor,kind:'story'};},
   backToBattle:()=>{const s=openRunSession();if(s&&s!==session){session=s;activate();return;}menuOpen=false;closeModal();}};
@@ -178,6 +183,27 @@ function showMenu(){resetStoryEra();menuOpen=true;clearTimeout(aiTimer);sound.sc
 /** 연의 회상: 원정에서 이긴 연의 전장(또는 예전 연의 진행에서 깬 전장)을 다시 치른다. */
 function replayable(chapter:number){return cleared(chapter)||loadMeta().chronicle.includes(chapters[chapter]!.stage.id);}
 function showChronicleLanding(){menuArc=0;menuStage='';showChronicle();}
+/**
+ * 시나리오 보기: 연의 32장의 이야기를 편별로 모아 다시 본다(싸우지 않고 이야기만).
+ * 닿은 장(열린 장)만 볼 수 있고, 이긴 장은 바로 다시 싸울 수도 있다. 본 결말도 여기 모은다.
+ */
+function showStoryArchive(focus?:number){
+  menuOpen=true;clearTimeout(aiTimer);sound.scene='title';sound.combat=false;resetStoryEra();
+  const meta=loadMeta(),arcs:Array<[string,string,string]>=[['S1','상편','살아남는 자'],['S2','중편','맞서는 자'],['S3','하편','거머쥐는 자']];
+  const row=(i:number)=>{const c=chapters[i]!,open=unlocked(i)||replayable(i),won=cleared(i);
+    return `<li class="sa-row ${won?'won':open?'open':'locked'}${focus===i?' focus':''}"><span class="sa-no">${c.stage.id.slice(-2)}</span><span class="sa-title"><strong>${open?esc(stories[i]?.[0]??c.stage.id):'??? · 아직 닿지 않은 장'}</strong><small>${esc(c.year)}${open?' · '+esc(c.label):''}</small></span><span class="sa-state">${won?'◆ 이김':open?'열림':'잠김'}</span><span class="sa-acts"><button data-sa-read="${i}" ${open?'':'disabled'}>이야기 보기</button><button data-sa-fight="${i}" ${won?'':'disabled'} title="${won?'이 장을 다시 싸운다':'이긴 장만 다시 싸울 수 있다'}">다시 싸우기</button></span></li>`;};
+  const seenEnd=ALL_ENDINGS.filter(id=>meta.endings.includes(id));
+  modal(`<div class="briefing story-archive"><div class="eyebrow">시나리오 보기 · 연의 32장</div><h2>지난 이야기를 다시 펼친다</h2>
+  <p class="muted">닿은 장은 싸우지 않고 이야기만 다시 볼 수 있다. 이긴 장은 「다시 싸우기」로 일반·극한을 다시 치른다. 아직 닿지 않은 장은 제목도 가려 둔다.</p>
+  ${arcs.map(([pre,arc,sub])=>{const list=campaignOrder.filter(i=>chapters[i]!.stage.id.startsWith(pre));const won=list.filter(cleared).length;
+    return `<section class="sa-arc"><h3>${arc} <small>${sub} · 이김 ${won}/${list.length}</small></h3><ol class="sa-list">${list.map(row).join('')}</ol></section>`;}).join('')}
+  <section class="sa-arc"><h3>본 결말 <small>${seenEnd.length}/${ALL_ENDINGS.length}</small></h3><div class="chronicle-list">${ALL_ENDINGS.map(id=>{const e=endingFor({3:id}),seen=meta.endings.includes(id);return `<span class="${seen?'done':''}">${seen?'◆ '+esc(e.title):'· 아직 보지 못한 결말'}</span>`;}).join('')}</div></section>
+  <div class="modal-actions"><button id="sa-back">← 본영</button></div></div>`,false);
+  document.querySelectorAll<HTMLButtonElement>('[data-sa-read]').forEach(b=>b.onclick=()=>storyScene(Number(b.dataset.saRead),0,undefined,true));
+  document.querySelectorAll<HTMLButtonElement>('[data-sa-fight]').forEach(b=>b.onclick=()=>storyScene(Number(b.dataset.saFight)));
+  $('#sa-back').onclick=showMenu;
+  if(focus!==undefined)document.querySelector('.sa-row.focus')?.scrollIntoView({block:'center'});
+}
 function showChronicle(){
   menuOpen=true;clearTimeout(aiTimer);sound.scene='title';sound.combat=false;
   const p=progress(),names=['살아남는 자','맞서는 자','거머쥐는 자'];
@@ -185,7 +211,7 @@ function showChronicle(){
     const subtitles=['소년과 피난 · 출사와 시험 · 한중과 외교','위의 방패 · 군략의 대결 · 위수와 오장원','원정과 구원 · 권력과 후계'];
     const gateArt=[0,10,14];
     const gates=[1,2,3].map((arc,index)=>{const stages=catalogue.filter(c=>c.id.startsWith(`S${arc}-`)),won=stages.filter(c=>{const i=chapters.findIndex(x=>x.stage.id===c.id);return i>=0&&cleared(i);}),last=won.at(-1),rate=Math.round(won.length/stages.length*100);return `<article class="chronicle-gate"><div class="chronicle-gate-art" style="${storyBackdrop(gateArt[index]!)}"><span>제 ${['일','이','삼'][index]}편</span><strong>${names[index]}</strong></div><div class="chronicle-gate-copy"><div><small>${subtitles[index]}</small><h3>${['상편','중편','하편'][index]}</h3><p>달성률 <b>${rate}%</b><i style="--rate:${rate}%"></i></p><em>${last?`최근 기록 · ${esc(last.name)}`:'아직 기록 없음 · 첫 장부터 시작'}</em></div><button data-chronicle-arc="${arc}" class="${arc===1?'primary':''}">입장 <span>→</span></button></div></article>`;}).join('');
-    modal(`<div class="chronicle-landing"><header><div><div class="eyebrow">삼국지 · 사마의전</div><h2>연의</h2><p>한 편을 고르면 장별 진군 경로가 열립니다.</p></div><div class="growth-summary">${growthText()}<br>보물 ${campaign.treasures.length}점</div></header><section class="chronicle-gates">${gates}</section><footer><button id="chronicle-run-home">← 원정 본영</button>${saveAvailable?'<button id="resume" class="primary">전투 이어하기 →</button>':''}<small>각 편의 전장은 앞 장을 마치면 차례로 열립니다.</small></footer></div>`,false);
+    modal(`<div class="chronicle-landing"><header><div><div class="eyebrow">삼국지 · 사마의전</div><h2>연의</h2><p>한 편을 고르면 장별 진군 경로가 열립니다.</p></div><div class="growth-summary">${growthText()}<br>보물 ${campaign.treasures.length}점</div></header><section class="chronicle-gates">${gates}</section><footer><button id="chronicle-run-home">← 본영</button>${saveAvailable?'<button id="resume" class="primary">전투 이어하기 →</button>':''}<small>각 편의 전장은 앞 장을 마치면 차례로 열립니다.</small></footer></div>`,false);
     document.querySelectorAll<HTMLButtonElement>('[data-chronicle-arc]').forEach(b=>b.onclick=()=>{menuArc=Number(b.dataset.chronicleArc);menuStage='';showChronicle();});
     $('#chronicle-run-home').onclick=showMenu;
     $('#resume')?.addEventListener('click',resumeSaved);
@@ -203,11 +229,11 @@ function showChronicle(){
     const status=s.won?'완료':s.open?'출진 가능':'잠김';
     return `${act?`<h3 class="act-title"><span>${String(act.from).padStart(2,'0')}—${String(act.to).padStart(2,'0')}</span>${act.title}</h3>`:''}<button class="journey-node ${s.won?'cleared':''} ${c.id===selected.id?'selected':''}" data-stage="${c.id}" ${s.open?'':'disabled'} aria-current="${c.id===selected.id?'step':'false'}"><span class="route-mark">${s.won?'✓':s.open?String(no).padStart(2,'0'):'鎖'}</span><span class="journey-thumb" style="${storyBackdrop(art)}"></span><span class="journey-copy"><small>${c.id} · ${status}</small><strong>${esc(c.name)}</strong><em>${s.ready?`권장 Lv.${encounterLevels[c.id]} · ${esc(chapters[s.i]!.label)}`:'제작 예정'}</em></span><b>${c.id===selected.id?'◆':s.won?'완':'›'}</b></button>`;
   }).join('');
-  modal(`<div class="campaign campaign-journey"><div class="campaign-copy"><div class="chronicle-heading"><div><div class="eyebrow">삼국지 · 전략 연대기</div><p class="chapter-pretitle">연의 회상 · 장별 진군 경로</p><h2>사마의전</h2></div><p class="growth-summary">${growthText()}<br>보물 ${campaign.treasures.length}점</p></div><div class="arc-tabs" role="tablist" aria-label="연의 편 선택">${['상편','중편','하편'].map((n,i)=>`<button role="tab" aria-selected="${menuArc===i+1}" data-arc="${i+1}">${n}<small>${[11,14,7][i]} 전장</small></button>`).join('')}</div><div class="section-label">${names[menuArc-1]} <span>${selectedAct?.title??''} · 단계별 개방</span></div><div class="campaign-route"><nav class="campaign-path" aria-label="전장 진행 단계">${path}</nav><section class="campaign-stage-detail" aria-live="polite"><div class="stage-landscape" style="${storyBackdrop(selectedArt)}"><span>${esc(chapter?.year??'연의')}</span><b>${selected.id}</b></div><div class="stage-detail-heading"><span class="route-mark large">${String(selectedNo).padStart(2,'0')}</span><div><small>${selectedAct?.title??'연의'}</small><h3>${esc(selected.name)}</h3></div><span class="stage-status ${selectedState.won?'done':'ready'}">${selectedState.won?'완료':'출진 가능'}</span></div><dl class="stage-brief"><div><dt>단계 목표</dt><dd>${esc(selected.objective)}</dd></div><div><dt>판단 지점</dt><dd>${esc(selected.choice)}</dd></div></dl><div class="stage-rewards"><span><i>命</i><small>기본 보상</small><b>경험치 · 천명</b></span><span><i>${reward?.glyph??'印'}</i><small>첫 승리 보상</small><b>${esc(reward?.name??'전장 인장')}</b></span></div><div class="stage-seals"><span>달성 인장</span>${[1,2,3].map(n=>`<i class="${seals.has(n)?'earned':''}">◆</i>`).join('')}<small>${seals.size}/3</small></div><button id="chapter-enter" class="primary" ${selectedState.open?'':'disabled'}>${selectedState.won?'이 전장 다시 보기':'이야기부터 시작'} <span>→</span></button></section></div><div class="menu-actions"><button id="chronicle-home">← 편 선택</button><button id="run-open">원정 본영</button>${saveAvailable?'<button id="resume" class="primary">전투 이어하기 →</button>':''}${hasStarted?'<button id="back-battle">현재 전장</button>':''}${devMode?'<button id="art-preview">개발 · 한중 바로 체험</button>':''}<button id="save-slots">저장 칸</button><button id="expeditions">수련 · 보물 인연</button><button id="troop-gallery">병종 도감</button><button id="chronicle">연의 기록</button></div></div></div>`,false);
+  modal(`<div class="campaign campaign-journey"><div class="campaign-copy"><div class="chronicle-heading"><div><div class="eyebrow">삼국지 · 전략 연대기</div><p class="chapter-pretitle">연의 회상 · 장별 진군 경로</p><h2>사마의전</h2></div><p class="growth-summary">${growthText()}<br>보물 ${campaign.treasures.length}점</p></div><div class="arc-tabs" role="tablist" aria-label="연의 편 선택">${['상편','중편','하편'].map((n,i)=>`<button role="tab" aria-selected="${menuArc===i+1}" data-arc="${i+1}">${n}<small>${[11,14,7][i]} 전장</small></button>`).join('')}</div><div class="section-label">${names[menuArc-1]} <span>${selectedAct?.title??''} · 단계별 개방</span></div><div class="campaign-route"><nav class="campaign-path" aria-label="전장 진행 단계">${path}</nav><section class="campaign-stage-detail" aria-live="polite"><div class="stage-landscape" style="${storyBackdrop(selectedArt)}"><span>${esc(chapter?.year??'연의')}</span><b>${selected.id}</b></div><div class="stage-detail-heading"><span class="route-mark large">${String(selectedNo).padStart(2,'0')}</span><div><small>${selectedAct?.title??'연의'}</small><h3>${esc(selected.name)}</h3></div><span class="stage-status ${selectedState.won?'done':'ready'}">${selectedState.won?'완료':'출진 가능'}</span></div><dl class="stage-brief"><div><dt>단계 목표</dt><dd>${esc(selected.objective)}</dd></div><div><dt>판단 지점</dt><dd>${esc(selected.choice)}</dd></div></dl><div class="stage-rewards"><span><i>命</i><small>기본 보상</small><b>경험치 · 천명</b></span><span><i>${reward?.glyph??'印'}</i><small>첫 승리 보상</small><b>${esc(reward?.name??'전장 인장')}</b></span></div><div class="stage-seals"><span>달성 인장</span>${[1,2,3].map(n=>`<i class="${seals.has(n)?'earned':''}">◆</i>`).join('')}<small>${seals.size}/3</small></div><button id="chapter-enter" class="primary" ${selectedState.open?'':'disabled'}>${selectedState.won?'이 전장 다시 보기':'이야기부터 시작'} <span>→</span></button></section></div><div class="menu-actions"><button id="chronicle-home">← 편 선택</button><button id="run-open">본영</button>${saveAvailable?'<button id="resume" class="primary">전투 이어하기 →</button>':''}${hasStarted?'<button id="back-battle">현재 전장</button>':''}${devMode?'<button id="art-preview">개발 · 한중 바로 체험</button>':''}<button id="save-slots">저장 칸</button><button id="expeditions">수련장</button><button id="troop-gallery">병종 도감</button><button id="chronicle">연의 기록</button></div></div></div>`,false);
   document.querySelectorAll<HTMLButtonElement>('[data-stage]').forEach(b=>b.onclick=()=>{menuStage=b.dataset.stage??menuStage;showChronicle();});
   $('#chapter-enter').onclick=()=>storyScene(selectedState.i);
   document.querySelectorAll<HTMLButtonElement>('[data-arc]').forEach(b=>b.onclick=()=>{menuArc=Number(b.dataset.arc);menuStage='';showChronicle();});
-  $('#expeditions').onclick=()=>showExpeditions();
+  $('#expeditions').onclick=()=>showTraining();
   $('#chronicle-home').onclick=showChronicleLanding;
   $('#run-open').onclick=showMenu;
   $('#troop-gallery').onclick=()=>showTroopGallery();
@@ -283,7 +309,7 @@ function briefing(chapter:number,expeditionId?:string,scenario?:ScenarioDeployme
     document.querySelectorAll<HTMLInputElement>('[data-extra]').forEach(el=>el.onchange=()=>{const id=el.dataset.extra!;const next=el.checked?[...extras,id]:extras.filter(x=>x!==id);const ok=pickExtras(c.stage,c.map,next,difficulty,deployment(campaign,true).levels);if(el.checked&&!ok.includes(id)){el.checked=false;toast(`남은 COST나 출진 시작 칸이 부족합니다. 다른 장수를 해제한 뒤 선택하세요.`);return;}extras=ok;draw();});
     $('#auto-sortie')?.addEventListener('click',()=>{const lv=deployment(campaign,true).levels,{allowed}=optionalOfficers(c.stage,c.map);extras=pickExtras(c.stage,c.map,[...allowed].sort((a,b)=>unitCost(storyClassAt(a,lv[a]??1))-unitCost(storyClassAt(b,lv[b]??1))),difficulty,lv);draw();});
     $('#clear-sortie')?.addEventListener('click',()=>{extras=[];draw();});
-    $('#brief-back').onclick=scenario?()=>showScenario(scenarioHost,scenario.chapter):expedition?()=>showExpeditions(expedition.kind):showChronicle;
+    $('#brief-back').onclick=scenario?()=>showScenario(scenarioHost,scenario.chapter):expedition?()=>expedition.kind==='training'?showTraining():showExpeditions(expedition.kind):showChronicle;
     if(scenario)$('#brief-camp').onclick=()=>campOf(scenarioHost,scenario.chapter);
     document.querySelectorAll<HTMLSelectElement>('[data-support]').forEach(el=>el.onchange=()=>{const k=supportOptions.find(k=>k===el.value);if(k){supports[Number(el.dataset.support)]=k;draw();}});
     $('#recommend-support')?.addEventListener('click',()=>{if(recommendation){supports=[...recommendation.classes];draw();}});
@@ -298,7 +324,70 @@ function showTroopGallery(group:EvoGroup='all'){
  menuOpen=true;clearTimeout(aiTimer);
  modal(`<div class="briefing troop-evolution"><div class="eyebrow">병종 · 진화표</div><h2>병종은 이렇게 강해진다</h2><p class="muted">레벨이 오르면 진화하고, 공격 범위가 넓어진다.</p>${evolutionChart(group)}<div class="modal-actions"><button id="troop-back">← 본영</button></div></div>`,false);
  document.querySelectorAll<HTMLButtonElement>('[data-evo-group]').forEach(b=>b.onclick=()=>showTroopGallery(b.dataset.evoGroup as EvoGroup));
- void paintArmor();void fitEvoSprites();$('#troop-back').onclick=showMenu;
+ void paintArmor();void fitEvoSprites();$('#troop-back').onclick=()=>showCollections(runHost);
+}
+/**
+ * 수련장: 천명의 길에서 막혔을 때 레벨을 올리는 곳. 지금 갈 장의 권장 레벨과 사마의·동료 레벨을 나란히 보여 주고,
+ * 지금 레벨에 맞는 수련장을 골라 준다. 수련에서 이기면 사마의·연의 장수와 천명의 길 동료가 함께 자란다.
+ */
+function showTraining(){
+  menuOpen=true;clearTimeout(aiTimer);sound.scene='title';sound.combat=false;resetStoryEra();
+  const sc=loadScenario(),step=currentStep(sc),hero=levelInfo(campaign.xp.sima_yi??0).level,mates=Object.values(sc.officers);
+  const target=step?.kind==='story'&&step.stage?encounterLevels[step.stage]:undefined;
+  const stepName=step?.kind==='story'&&step.stage?(stories[chapters.findIndex(c=>c.stage.id===step.stage)]?.[0]??step.stage):step?'가상 전장 · 우두머리':'결말까지 보았다';
+  const grounds=expeditions.filter(m=>m.kind==='training');
+  const pick=grounds.filter(m=>canExpedition(campaign,m.id)&&m.level<=hero+1).at(-1)??grounds[0]!;
+  const gap=target!==undefined?target-hero:0;
+  const verdict=target===undefined?(step?'가상 전장·우두머리는 아군 평균 레벨에 맞춰 적이 정해진다 — 레벨보다 보물·병종 조합·연구가 힘이 된다.':'본편을 모두 마쳤다. 수련은 언제든 할 수 있다.'):gap>0?`권장 레벨까지 ${gap}레벨 모자란다 · ${growthAdvice(campaign,target)}`:'권장 레벨을 넘었다 — 막혔다면 지형·병종 상성과 보물을 다시 살펴보자.';
+  const card=(m:Expedition)=>{const open=canExpedition(campaign,m.id);return `<button class="tg-card ${m.id===pick.id?'pick':''}" data-train="${m.id}" ${open?'':'disabled'}><span class="tg-lv">Lv.${m.level}</span><strong>${esc(m.name)}</strong><small>${open?`승리마다 경험치 +${trainingXp(campaign,m)} · 동료도 함께`:`본편 ${m.requires}승 필요 (${storyWins(campaign)}/${m.requires})`}</small>${m.id===pick.id?'<em>지금 추천</em>':''}</button>`;};
+  modal(`<div class="briefing training-screen"><div class="eyebrow">수련장 · 막혔을 때 레벨업</div><h2>힘이 모자라면, 길러서 다시 간다</h2>
+  <section class="tg-target"><div><small>지금 갈 곳</small><strong>${esc(stepName)}</strong>${target!==undefined?`<span>권장 Lv.${target}</span>`:''}</div>
+    <div><small>사마의</small><strong>Lv.${hero}</strong>${target!==undefined?`<i class="tg-meter"><i style="width:${Math.min(100,Math.round(hero/target*100))}%"></i></i>`:''}</div>
+    <div><small>천명의 길 동료</small><strong>${mates.length?mates.map(o=>`${esc(o.name)} ${o.level}`).join(' · '):'아직 없음'}</strong></div></section>
+  <p class="tg-verdict">${esc(verdict)}</p>
+  <div class="run-actions"><button id="tg-go" class="primary">추천 수련 바로 출진 · ${esc(pick.name)} (Lv.${pick.level})</button></div>
+  <h3 class="tg-h">수련장 고르기 <small>지금 레벨보다 크게 낮은 곳은 경험치가 줄어든다</small></h3>
+  <div class="tg-grid">${grounds.map(card).join('')}</div>
+  <h3 class="tg-h">보물 모으기 <small>레벨 대신 장비로 강해지기</small></h3>
+  <div class="run-actions"><button id="tg-bounty">보물 사냥 (반복 · 이길 때마다 보물 1점)</button><button id="tg-quest">보물 인연 외전 (한 번씩 · 보물 4종)</button></div>
+  <div class="run-actions"><button id="tg-back">← 본영</button></div></div>`,false);
+  document.querySelectorAll<HTMLButtonElement>('[data-train]').forEach(b=>b.onclick=()=>expeditionStory(b.dataset.train!));
+  $('#tg-go').onclick=()=>expeditionStory(pick.id);$('#tg-bounty').onclick=()=>showExpeditions('bounty');$('#tg-quest').onclick=()=>showExpeditions('quest');$('#tg-back').onclick=showMenu;
+}
+/** 등용 조건을 따질 때 쓰는 지금의 기록(연의 승리·극한·레벨·인장·도전·수련·결말·보물·등용한 장수). */
+function recruitContext():RecruitContext{
+  const p=progress(),sc=loadScenario(),meta=loadMeta();
+  const seals=campaignOrder.reduce((n,i)=>{const id=chapters[i]!.stage.id;return n+new Set([...(p[id+':normal']??[]),...(p[id+':extreme']??[])]).size;},0);
+  const idx=(stage:string)=>chapters.findIndex(c=>c.stage.id===stage);
+  return {won:stage=>{const i=idx(stage);return (i>=0&&cleared(i))||sc.done.includes(stage);},extreme:stage=>Array.isArray(p[stage+':extreme']),
+    heroLevel:levelInfo(campaign.xp.sima_yi??0).level,seals,challenges:(campaign.challenges??[]).length,trainingWins:campaign.trainingWins??0,endings:meta.endings.length,treasures:campaign.treasures.length,
+    recruited:new Set(meta.recruited??[]),stageName:stage=>{const i=idx(stage);return i>=0?(stories[i]?.[0]??stage):stage;}};
+}
+/**
+ * 등용: 계보마다 장수가 위에서 아래로 늘어선다. 앞 단계를 들여야 다음 단계가 열리고, 장수마다 '해낸 일'이 조건이다.
+ * 들인 장수는 천명의 길 동료로 합류한다(회차가 바뀌어도 다시 합류).
+ */
+function showRecruit(focus?:string,joined?:string){
+  menuOpen=true;clearTimeout(aiTimer);sound.scene='title';sound.combat=false;
+  const x=recruitContext(),all=LINEAGES.flatMap(l=>l.officers),got=all.filter(o=>x.recruited.has(o.name)).length;
+  const sel=all.find(o=>o.name===focus)??all.find(o=>recruitStatus(o.name,x)==='ready')??all.find(o=>recruitStatus(o.name,x)!=='recruited')??all[0]!;
+  const badge:Record<string,string>={recruited:'등용함',ready:'등용 가능',locked:'조건 남음',sealed:'앞 단계 먼저'};
+  const node=(name:string)=>{const st=recruitStatus(name,x);return `<button class="rc-node ${st}${name===sel.name?' sel':''}" data-rc="${esc(name)}"><span class="rc-face">${cardFace(name)}</span><b>${esc(name)}</b><small>${badge[st]}</small></button>`;};
+  const st=recruitStatus(sel.name,x),r=romanceByName(sel.name),prev=previousOf(sel.name);
+  const conds=[...(prev?[`<li class="${x.recruited.has(prev)?'ok':''}">${x.recruited.has(prev)?'✓':'·'} 계보 앞 단계 ${esc(prev)} 등용</li>`]:[]),...LINEAGES.flatMap(l=>l.officers).find(o=>o.name===sel.name)!.conds.map(c=>`<li class="${condMet(c,x)?'ok':''}">${condMet(c,x)?'✓':'·'} ${esc(condText(c,x))}</li>`)].join('');
+  const lineage=LINEAGES.find(l=>l.officers.some(o=>o.name===sel.name))!;
+  modal(`<div class="briefing recruit-screen"><div class="eyebrow">등용 · 계보 · ${got}/${all.length}명</div><h2>천하의 인재를 휘하로</h2>
+  <p class="muted">계보마다 위에서부터 차례로 들인다. 돈으로 사지 않는다 — 그 장수와 얽힌 싸움을 이기고, 그릇을 보여 주면 스스로 찾아온다. 들인 장수는 천명의 길 동료로 합류한다.</p>
+  ${joined?`<div class="rc-joined"><span class="rc-face big">${cardFace(joined)}</span><div><b>${esc(joined)}</b> — 사마의 휘하에 들었다.<p>「${esc(all.find(o=>o.name===joined)!.line)}」</p></div></div>`:''}
+  <div class="rc-body"><div class="rc-tree">${LINEAGES.map(l=>`<section class="rc-line"><h3><span class="lobby-seal" aria-hidden="true">${l.seal}</span>${esc(l.name)}<small>${esc(l.blurb)}</small></h3><div class="rc-steps">${l.officers.map(o=>node(o.name)).join('<i class="rc-arrow" aria-hidden="true">▼</i>')}</div></section>`).join('')}</div>
+  <aside class="rc-detail"><div class="rc-head"><span class="rc-face big">${cardFace(sel.name)}</span><div><small>${esc(lineage.name)}</small><h3>${esc(sel.name)}</h3><p>${esc(r?.epithet??'')}</p><p class="rc-stats">${r?`무력 ${r.war} · 지력 ${r.int} · 통솔 ${r.lead}`:''} · ${esc(classNames[officerClass(sel.name)]??'')}</p></div></div>
+    <h4>등용 조건</h4><ul class="rc-conds">${conds}</ul>
+    <button id="rc-go" class="primary" ${st==='ready'?'':'disabled'}>${st==='recruited'?'이미 휘하에 있다':st==='ready'?esc(sel.name)+' 등용':'조건을 채우면 등용할 수 있다'}</button></aside></div>
+  <div class="run-actions"><button id="rc-back">← 본영</button></div></div>`,false);
+  document.querySelectorAll<HTMLButtonElement>('[data-rc]').forEach(b=>b.onclick=()=>showRecruit(b.dataset.rc));
+  $('#rc-back').onclick=showMenu;
+  $('#rc-go').onclick=()=>{const now=recruitContext();if(recruitStatus(sel.name,now)!=='ready')return;const m=loadMeta();m.recruited=[...new Set([...(m.recruited??[]),sel.name])];saveMeta(m);
+    const sc=loadScenario();joinRecruits(sc,[sel.name],levelInfo(campaign.xp.sima_yi??0).level,officerClass);saveScenario(sc);sound.event({kind:'victory'});showRecruit(sel.name,sel.name);};
 }
 function showExpeditions(tab:Expedition['kind']='challenge'){
  menuOpen=true;clearTimeout(aiTimer);
@@ -317,11 +406,11 @@ function showExpeditions(tab:Expedition['kind']='challenge'){
  const [,title,note]=sections.find(x=>x[0]===tab)!;
  modal(`<div class="briefing expedition-hub"><div class="eyebrow">연무장 · 반복·도전 퀘스트</div><h2>다음 승리를 준비하다</h2><p>${growthText()} · 도전 ${cleared}/10 · 보물 사냥 ${campaign.bountyWins??0}승 · 보물 외전 ${campaign.quests?.length??0}/11 · 수련 ${campaign.trainingWins??0}승</p><div class="expedition-tabs" role="tablist">${sections.map(([kind,label])=>`<button role="tab" data-exp-tab="${kind}" class="${kind===tab?'on':''}" aria-selected="${kind===tab}">${label.split(' · ')[0]}</button>`).join('')}</div><h3>${title}</h3>${note?`<p class="muted">${note}</p>`:''}<div class="expedition-grid${tab==='challenge'?' challenge-ladder':''}">${expeditions.filter(m=>m.kind===tab).map(card).join('')}</div><p class="muted">권장 레벨보다 4레벨 이상 높으면 수련 경험치가 단계적으로 줄어듭니다. 보물 외전과 도전의 경험치·보물은 첫 승리 보상입니다.</p><button id="expedition-back">← 반복 퀘스트</button></div>`,false);
  document.querySelectorAll<HTMLButtonElement>('[data-exp-tab]').forEach(el=>el.onclick=()=>showExpeditions(el.dataset.expTab as Expedition['kind']));
- document.querySelectorAll<HTMLButtonElement>('[data-expedition]').forEach(el=>el.onclick=()=>expeditionStory(el.dataset.expedition!));$('#expedition-back').onclick=()=>showQuests(runHost);
+ document.querySelectorAll<HTMLButtonElement>('[data-expedition]').forEach(el=>el.onclick=()=>expeditionStory(el.dataset.expedition!));$('#expedition-back').onclick=tab==='challenge'?showMenu:showTraining;
 }
 function expeditionStory(id:string,beat=0){const m=expeditions.find(x=>x.id===id);if(!m||!canExpedition(campaign,id))return;const scenes=trialStory(m.id,m.name,m.art,m.lines),scene=scenes[beat]!,spoken=splitSpokenLine(scene.line),heroSpeaking=spoken.speaker==='사마의',other=heroSpeaking?'조진':spoken.speaker;
  modal(`<div class="story-scene"><div class="eyebrow">${KIND_LABEL[m.kind]} · ${beat+1}/${scenes.length} · ${scene.place}</div><h2>${m.name}</h2><p class="trial-objective">${trialGoalText(id)}</p><div class="story-stage"><div class="story-backdrop incoming" style="${storyBackdrop(scene.art)}"></div><div class="story-actor hero ${heroSpeaking?'speaking':''}" style="${storyActorStyle('사마의',4)}"></div><div class="story-actor companion ${!heroSpeaking?'speaking':''}" style="${storyActorStyle(other,0)}"></div></div>${dialogueCaption(spoken.speaker,spoken.line)}<div class="modal-actions"><button id="expedition-cancel">의뢰 목록</button><button id="expedition-next" class="primary">${beat<scenes.length-1?'다음 이야기':'출진 정비'} →</button></div></div>`,false);
- $('#expedition-cancel').onclick=()=>showExpeditions(m.kind);$('#expedition-next').onclick=()=>beat<scenes.length-1?expeditionStory(id,beat+1):briefing(7,id);
+ $('#expedition-cancel').onclick=()=>m.kind==='training'?showTraining():showExpeditions(m.kind);$('#expedition-next').onclick=()=>beat<scenes.length-1?expeditionStory(id,beat+1):briefing(7,id);
 }
 /** 연의 장수록: 별호 · 다섯 능력 · 고유능력. 연의에 없는 졸병은 표시하지 않는다. */
 function romanceCard(u:Unit){
@@ -334,8 +423,11 @@ function milestoneMarkup(items:ReturnType<typeof growthMilestones>){return items
 function showExpeditionResult(){if(resultShown)return;resultShown=true;const run=session.deployment!.mission!,m=expeditions.find(x=>x.id===run.id)!,win=session.state.outcome==='victory';const before=structuredClone(campaign);
  const reward=expeditionReward(campaign,m.id,run.runId,win);saveCampaign();
  const milestones=growthMilestones(before,campaign);
+ // 수련장: 천명의 길 동료도 사마의가 얻은 만큼(그의 한 레벨에 대한 몫) 함께 자란다.
+ let companions:string[]=[];if(win&&m.kind==='training'&&reward.xp>0){const lv=levelInfo(before.xp.sima_yi??0),sc=loadScenario();companions=trainCompanions(sc,reward.xp/(lv.next||200),levelInfo(campaign.xp.sima_yi??0).level);saveScenario(sc);}
  modal(`<div class="result"><div class="result-character">${win?'승':'련'}</div><h2>${win?'성장의 한 걸음':'다시 준비할 시간'}</h2><p>${m.name} · ${session.state.turn}턴</p>${win?`<div class="story-stage reward-scene"><div class="story-backdrop incoming" style="${storyBackdrop(m.art)}"></div><div class="story-actor hero speaking" style="${storyActorStyle('사마의',4)}"></div><div class="story-actor companion" style="${storyActorStyle('조진',0)}"></div></div>`:''}${win?dialogueCaption(splitSpokenLine(m.lines[2]!).speaker,splitSpokenLine(m.lines[2]!).line):`<p class="battle-aftermath">${esc(session.failure)}<br>패배해도 경험치와 보물은 잃지 않습니다. 정비 후 다시 도전하세요.</p>`}<p>${win&&!reward.xp?'이미 보상을 받은 전투입니다. · ':'경험치 +'+reward.xp+' · '}${growthText()}</p>${reward.items.length?`<p class="treasure-reward">보물 해금: ${reward.items.map(id=>treasures.find(t=>t.id===id)!.name).join(' · ')}</p>`:''}${milestoneMarkup(milestones)}<div class="modal-actions"><button id="expedition-again">${m.kind==='training'?'다시 수련':'다시 도전'}</button>${m.kind==='challenge'&&win&&m.step!<10?'<button id="expedition-next-step" class="primary">다음 단계 →</button>':''}<button id="expedition-list">연무장 목록</button><button id="expedition-menu">연의 회상</button></div></div>`,false);
- $('#expedition-again').onclick=()=>briefing(7,m.id);const nextStep=document.getElementById('expedition-next-step');if(nextStep)nextStep.onclick=()=>expeditionStory('C'+String(m.step!+1).padStart(2,'0'));$('#expedition-list').onclick=()=>showExpeditions(m.kind);$('#expedition-menu').onclick=showChronicle;
+ if(companions.length){const p=document.createElement('p');p.className='companion-growth';p.textContent='천명의 길 동료도 함께 자랐다 · '+companions.join(' · ');document.querySelector('#modal .result h2')?.after(p);}
+ $('#expedition-again').onclick=()=>briefing(7,m.id);const nextStep=document.getElementById('expedition-next-step');if(nextStep)nextStep.onclick=()=>expeditionStory('C'+String(m.step!+1).padStart(2,'0'));$('#expedition-list').onclick=()=>m.kind==='training'?showTraining():showExpeditions(m.kind);$('#expedition-menu').onclick=m.kind==='challenge'?showMenu:showTraining;
 }
 function activate(){
   // 전장 그림이 아직이면 기다렸다가 시작한다(첫 화면을 빨리 띄우느라 그림은 뒤에서 준비한다).
@@ -818,12 +910,12 @@ async function boot(){
       ];
     jobs.forEach(tick);rest=Promise.all(jobs);};
   void storyArt.then(()=>startRest());
-  render();showMenu();
+  render();showTitle(runHost);
   await storyArt;startRest();await rest;
   if(!fieldReady){$('#map').innerHTML='<p class="render-error">전장 그래픽을 초기화하지 못했습니다. 새로고침해 주세요.</p>';await fieldInit?.catch(error=>console.error(error));}
   document.getElementById('art-loading')?.remove();
   // 그림이 늦게 들어온 본영을 다시 그린다(열린 화면이 본영일 때만).
-  if(menuOpen&&document.getElementById('hub-quests'))showMenu();
+  if(menuOpen&&document.getElementById('hub-training'))showMenu();
 }
 // ?dev only: a handle for QA scripts to inspect or nudge the running battle.
 if(devMode)Object.assign(window,{__sama:{get session(){return session;},get field(){return field;},render,start(chapter:number){session=new Session(chapter,'normal',215,'survival',RULES,{...deployment(campaign,true),wide:2});activate();},story(chapter:number){storyScene(chapter);},run(floor:number,kind:'battle'|'elite'|'boss'|'tale',seed=7,route?:Record<number,string>,tale?:string){const r=newRun(seed,startingOfficers());r.floor=floor;if(route)r.route=route as {1?:string;2?:string;3?:string};runHost.startBattle({levels:{sima_yi:2+floor,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},run:battleRef(r,kind,tale),trial:1},seed);},brief(chapter:number){briefing(chapter);},get campaign(){return campaign;},act(cmd:Command){act(cmd);}}});

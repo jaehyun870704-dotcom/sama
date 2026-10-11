@@ -191,6 +191,22 @@ export function choose(state:ScenarioState,step:ScenarioStep,optionId:string,eff
  * 아직 마치지 않은 장의 이야기를 다시 시작할 때: 그 장에서 전에 고른 대사의 효과(표식·바꿔치기·영입)를 걷어 낸다.
  * 그러지 않으면 다른 답을 고를 때 서로 어긋나는 표식(자비와 엄벌 등)과 영입이 함께 남는다. 갈림길·마친 장은 건드리지 않는다.
  */
+/**
+ * 수련장에서 이기면 천명의 길 동료(설득해 데려온 장수)도 함께 자란다. share는 사마의가 이번에 얻은 경험치가
+ * 그의 한 레벨에서 차지하는 몫(0.5면 반 레벨)이다. 동료는 사마의 레벨+1까지만 오른다(앞질러 키우지 못하게).
+ * 오른 장수들의 「이름 Lv」 목록을 돌려준다.
+ */
+export function trainCompanions(state:ScenarioState,share:number,heroLevel:number):string[]{
+  const ups:string[]=[],cap=heroLevel+1;
+  for(const o of Object.values(state.officers)){
+    if(o.level>=cap)continue;
+    const before=o.level;o.xp+=Math.max(1,Math.round(XP_PER_LEVEL*share));
+    while(o.xp>=XP_PER_LEVEL&&o.level<cap){o.xp-=XP_PER_LEVEL;o.level++;}
+    if(o.level>=cap)o.xp=0;
+    if(o.level>before)ups.push(`${o.name} Lv.${o.level}`);
+  }
+  return ups;
+}
 export function undoChoice(state:ScenarioState,step:ScenarioStep){
   if(step.kind==='fate'||state.done.includes(step.id))return;
   const picked=state.choices[step.id],script=scriptOf(step.id);if(!picked)return;
@@ -284,6 +300,16 @@ export function newScenarioRun(no:number,seed:number,unlocks:readonly string[]=[
   syncFaction(s);return s;
 }
 /** 회차가 없는 예전 기록은 지금 자리에서 첫 회차로 이어 간다(진행을 지우지 않는다). */
+/**
+ * 등용한 장수(meta.recruited)를 천명의 길 동료로 들인다 — 회차가 바뀌어 동료가 비어도 다시 합류한다.
+ * 이번 길의 적(가상 루트의 적장)은 들이지 않는다. 새로 들어온 장수 이름을 돌려준다.
+ */
+export function joinRecruits(state:ScenarioState,names:readonly string[],heroLevel:number,classOf:(name:string)=>UnitClass):string[]{
+  const foes=new Set((['1','2','3'] as const).flatMap(a=>{const rt=routeById(state.route[Number(a) as 1|2|3]);return rt?foesOf(rt):[];}));
+  const joined:string[]=[];
+  for(const name of names)if(!state.officers[name]&&!foes.has(name)){state.officers[name]={name,unitClass:landClass(classOf(name)),level:Math.max(1,heroLevel-1),xp:0};joined.push(name);}
+  return joined;
+}
 export function ensureRun(state:ScenarioState,seed:number,unlocks:readonly string[]=[],heroLevel=1){
   if(state.run)return false;
   // 곁에 장수가 없으면(연의 길의 예전 기록) 사마랑·조진이 행군에 함께한다(그 길의 적이 아니면).

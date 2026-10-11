@@ -3,7 +3,7 @@
  * 규칙은 scenario.ts, 무대 연출은 story-stage.ts. 연의 장의 정비·전투·보상은 main.ts의 기존 흐름을 쓴다.
  */
 import {loadScenario,saveScenario,scenarioPath,winOver,currentStep,scriptOf,choose,undoChoice,finishStep,fateChoices,floorFor,scenarioParty,rewardOfficers,endingNotes,routeTales,COMPANIONS,
-  ensureRun,newScenarioRun,inWhatIf,joinCaptive,pendingMarch,marchNodes,recruitOffer,relicOffer,recruitOfficer,healAll,finishMarch,marchFloor,afterFight,loseFight,runMandate,omenOffer,omenOf,chooseOmen,omenReward,addRunBonus,EXTRA_TALES,type ScenarioState,type ScenarioStep,type MarchNode} from './scenario.ts';
+  ensureRun,joinRecruits,newScenarioRun,inWhatIf,joinCaptive,pendingMarch,marchNodes,recruitOffer,relicOffer,recruitOfficer,healAll,finishMarch,marchFloor,afterFight,loseFight,runMandate,omenOffer,omenOf,chooseOmen,omenReward,addRunBonus,EXTRA_TALES,type ScenarioState,type ScenarioStep,type MarchNode} from './scenario.ts';
 import {playScenes,playNarration,Stage} from './story-stage.ts';
 import {startPersuasion,speak,reaction,PITCH,GREETING,AGREE,REFUSE,APPROACH_NAMES,PERSUADE_GOAL,type Approach} from './persuade.ts';
 import {openCamp} from './story-camp.ts';
@@ -27,7 +27,7 @@ import {classSprite} from './codex-ui.ts';
 import {nextEvolutionText,XP_PER_LEVEL,RELICS,survivorsOf,stageOfficerNames,type BattleMods,type RunBattleRef,type RunUnit} from './roguelike.ts';
 import {loadMeta,saveMeta,recordStory,buyUnlock,UNLOCKS,recordOfficerLevels} from './meta.ts';
 import {xpMult,restMult,mandateBonus,recruitBonus,heroLevelBonus} from './research.ts';
-import {deploymentPerks} from './officer-perks.ts';
+import {deploymentPerks,officerClass} from './officer-perks.ts';
 import {showResearch} from './research-ui.ts';
 import {classTactics,evolvedClass,tierOf,familyOf,troopEffectOf,troopEffectText,type BattleState,type UnitClass} from '../../core/src/index.ts';
 import type {ChapterScript,ChoiceEffect,Look,Scene,Camp} from './scenario-types.ts';
@@ -140,6 +140,8 @@ export function showScenario(host:ScenarioHost,selected?:string){
     // 처음 여는 사람은 새 회차(연의 첫 장부터), 예전 기록은 그 자리에서 첫 회차로 이어 간다.
     if(!s0.run&&!s0.done.length)return startNewRun(host,1);
     else if(ensureRun(s0,newSeed(),unlocks,host.hero().level))saveScenario(s0);
+    // 등용한 장수는 회차가 바뀌어도 동료로 다시 합류한다(recruit.ts).
+    if(joinRecruits(s0,loadMeta().recruited??[],host.hero().level,officerClass).length)saveScenario(s0);
     if(s0.run&&s0.run.status!=='alive')return showRunOver(host);}
   const state=loadScenario(),path=scenarioPath(state),cur=currentStep(state),done=new Set(state.done),run=state.run!,march=pendingMarch(state);
   flagOf(state);

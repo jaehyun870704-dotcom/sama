@@ -33,6 +33,8 @@ export interface MetaState {
   officerPerks?:Record<string,{learned:string[];equipped:string[]}>;
   /** 장수가 어느 회차에서든 닿은 가장 높은 레벨(장수 효과의 필요 레벨) */
   officerBest?:Record<string,number>;
+  /** 등용한 장수(recruit.ts 계보) — 회차가 바뀌어도 남는다 */
+  recruited?:string[];
   /** 계승: 연 초한 영웅의 유산들과 지금 계승한 영웅(chuhan.ts) */
   legacies?:string[];heir?:string;
 }
@@ -63,6 +65,7 @@ export function readMeta(raw:string|null):MetaState{
       tales:Array.isArray(m.tales)?m.tales.filter(x=>typeof x==='string'&&TALE_IDS.has(x)):[],
       endings:Array.isArray(m.endings)?m.endings.filter(x=>typeof x==='string'&&ALL_ENDINGS.includes(x)):[],
       ...(Array.isArray(m.customOfficers)?{customOfficers:readCustoms(m.customOfficers)}:{}),
+      ...(Array.isArray(m.recruited)?{recruited:strList(m.recruited,80)}:{}),
       ...cleanProgress(m)};
   }catch{return freshMeta();}
 }
