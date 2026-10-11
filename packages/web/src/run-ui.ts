@@ -176,12 +176,12 @@ export function showFateMap(host:Pick<RunHost,'modal'>,back:()=>void){
   host.modal(`<div class="briefing fate-map-screen"><div class="eyebrow">천명의 길 · 갈림길 지도</div><h2>정사와 가상, 어디서 갈라지는가</h2>${fateMap()}<div class="run-actions"><button id="fm-back">← 돌아가기</button></div></div>`,false);
   document.getElementById('fm-back')!.onclick=back;
 }
-/** 반복 퀘스트: 본편(시나리오)과 따로 레벨을 올리고 보물을 모으는 곳. */
+/** 반복 퀘스트: 연의 밖에서 레벨을 올리고 보물을 모으는 곳(성장 기록은 연의와 같다). */
 /** 천명의 원정(로그라이크) 입구: 이어 하기 · 새 원정 · 천명 해금. 수련·도전·시나리오 보기는 본영에 따로 있다. */
 export function showQuests(host:RunHost){
   const meta=loadMeta(),run=loadRun();
   host.modal(`<div class="briefing run-screen quest-screen"><div class="eyebrow">천명의 원정 · 로그라이크</div><h2>한 번뿐인 원정</h2>
-  <p>3편 18층을 오른다. 층마다 갈림길(전투·정예·모병·휴식·보물)을 고르고, 쓰러진 장수는 돌아오지 않는다. 원정이 끝나면 오른 만큼 천명을 얻어 영구 해금에 쓴다. 본편(천명의 길)과 따로 간다.</p>
+  <p>3편 18층을 오른다. 층마다 갈림길(전투·정예·모병·휴식·보물)을 고르고, 쓰러진 장수는 돌아오지 않는다. 원정이 끝나면 오른 만큼 천명을 얻어 영구 해금에 쓴다. 원정 부대는 연의·천명의 길과 따로 꾸린다.</p>
   <div class="quest-grid one">
     <article><h3>원정 <small>천명 ${meta.mandate} · 최고 ${meta.best}층 · ${meta.runs}회</small></h3>
       <div class="run-actions">${ongoing(run)?`<button id="q-run-continue" class="primary">원정 이어하기 · ${run.floor}층</button>`:''}<button id="q-run-new" class="${ongoing(run)?'':'primary'}">${ongoing(run)?'새 원정 (지금 원정은 포기)':'새 원정 시작'}</button><button id="q-shop">천명 해금 ${meta.unlocks.length}/${UNLOCKS.length}</button></div></article>

@@ -10,7 +10,7 @@ import {applyTreasureSpecial} from './treasure-specials.ts';
 import './scenario.ts';
 import {battleConditions,type BattleConditions} from './battle-conditions.ts';
 import {trialGoalText} from './expedition-objectives.ts';
-import {pickExtras} from './sortie.ts';
+import {pickExtras,soloStage,unitCost} from './sortie.ts';
 import {applyRomance,temperOf,romanceOf} from './romance.ts';
 import {applyCC} from './cc-apply.ts';
 import {expeditionBattle,expeditions,missionEnemyScale} from './expeditions.ts';
@@ -201,7 +201,7 @@ export class Session {
     else if(this.deployment)entry={...entry,stage:campaignStage(entry.stage)};
     // 연의 장: 필수 장수에 더해 고른 장수를 데려간다(시기·출진 칸·난이도 인원 안에서).
     if(this.deployment?.extraOfficers?.length&&!this.deployment.run&&!this.deployment.mission){
-      const extra=pickExtras(entry.stage,entry.map,this.deployment.extraOfficers,this.difficulty,this.deployment.levels);
+      const extra=pickExtras(entry.stage,entry.map,this.deployment.extraOfficers,this.difficulty,this.deployment.levels,(this.deployment.retinue??[]).reduce((n,u)=>n+unitCost(u.unitClass),0));
       if(extra.length)entry={...entry,stage:{...entry.stage,deployment:{...entry.stage.deployment,forced:[...entry.stage.deployment.forced,...extra]}}};
     }
     // 넓은 전장: 연의 지도를 1.5배로(지형·영역·등장 위치), 이동력은 +2로 걸음을 맞춘다.
@@ -293,7 +293,7 @@ export class Session {
     // 로그라이크 회차의 연의 장: 회차 보물이 본대에 실리고, 사마의는 남은 체력으로 나선다.
     if(this.deployment?.scenario&&!this.deployment.run){const sc=this.deployment.scenario;if(sc.recruits?.length)addRecruits(state,sc.recruits,this.revision);if(sc.relics?.length)applyRelics(state,sc.relics);const h=state.find('sima_yi');if(h&&sc.heroHp!==undefined)h.hp=Math.max(1,Math.round(h.stats.maxHp*sc.heroHp));}
     // 연의(본편) 장: 등용한 장수를 사마의 곁에 세운다(이미 그 장에 나오는 이름은 건너뛴다).
-    if(this.deployment?.retinue?.length&&!this.deployment.scenario&&!this.deployment.run&&!this.deployment.runStory&&!this.deployment.mission)addRecruits(state,this.deployment.retinue,this.revision);
+    if(this.deployment?.retinue?.length&&!this.deployment.scenario&&!this.deployment.run&&!this.deployment.runStory&&!this.deployment.mission&&!soloStage(entry.stage))addRecruits(state,this.deployment.retinue,this.revision);
     // 원정의 연의 전장: 사마의는 원정에서 남은 체력으로 나서고, 원정 보물이 본대에 실린다.
     if(this.deployment?.runStory){const r=this.deployment.runStory,h=state.find('sima_yi');if(h)h.hp=Math.max(1,Math.round(h.stats.maxHp*r.heroHp));applyRelics(state,r.relics);}
     // 연구·장수 효과: 출진할 때 적어 둔 값 그대로(저장 재생도 같게).

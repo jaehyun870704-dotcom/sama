@@ -46,7 +46,10 @@ type Book=Record<string,string[]>;
 function book():Book{try{const v=JSON.parse(localStorage.getItem(KEY)??'{}') as Record<string,unknown>;const out:Book={};for(const [k,x] of Object.entries(v))if(/^S[123]-\d\d$/.test(k)&&Array.isArray(x))out[k]=x.filter((y):y is string=>typeof y==='string'&&y.length<80).slice(0,20);return out;}catch{return {};}}
 /** 연의 장을 이겼을 때: 그 장에서 고른 선택으로 그 장의 몫을 새로 쓴다. */
 export function recordStageChoices(stage:string,choices:ReadonlyArray<{nodeId:string;optionId:string}>){
-  if(!/^S[123]-\d\d$/.test(stage))return;const b=book();b[stage]=choices.map(c=>`${c.nodeId}:${c.optionId}`);try{localStorage.setItem(KEY,JSON.stringify(b));}catch{/* storage optional */}
+  if(!/^S[123]-\d\d$/.test(stage))return;const b=book();
+  // 같은 물음에 여러 번 답했으면(설전에서 틀려 다시 묻는 경우) 마지막 답만 친다.
+  const last=new Map<string,string>();for(const c of choices)last.set(c.nodeId,c.optionId);
+  b[stage]=[...last].map(([n,o])=>`${n}:${o}`);try{localStorage.setItem(KEY,JSON.stringify(b));}catch{/* storage optional */}
 }
 /** 지금의 야망: 이긴 장의 선택을 모두 더한다. */
 export function ambition(){const b=book();let n=0;for(const [stage,list] of Object.entries(b))for(const c of list){const [node,opt]=c.split(':');n+=choiceAmbition(stage,node??'',opt??'');}return n;}

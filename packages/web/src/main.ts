@@ -29,7 +29,7 @@ import {showHub,showQuests,showTitle,showCollections,finishRunBattle,finishRunSt
 import {showScenario,campOf,finishIfBattle,finishStoryBattle,noteDefeatReason,type ScenarioHost} from './scenario-ui.ts';
 import {scriptOf,loadScenario,saveScenario,trainCompanions,currentStep,joinRecruits} from './scenario.ts';
 import {conditionsHtml,goalMarks,winText} from './battle-conditions.ts';
-import {optionalOfficers,pickExtras,storySortieLimit,storyCostSheet,unitCost,storyClassAt} from './sortie.ts';
+import {optionalOfficers,soloStage,pickExtras,storySortieLimit,storyCostSheet,unitCost,storyClassAt} from './sortie.ts';
 import {isoBackdrop,loadIsoArt,loadPaintedScenes} from './story-iso.ts';
 import {loadFigures} from './story-figure.ts';
 import {registerCustoms} from './custom.ts';
@@ -141,9 +141,10 @@ function growthText(){const l=levelInfo(campaign.xp.sima_yi??0);return '사마�
 /** 등용 장수의 레벨: 처음 나설 때는 사마의 레벨−1, 그 뒤로는 자기가 싸워 번 경험치로 오른다. */
 function retinueLevel(name:string){const x=campaign.retinueXp?.[name];return x!==undefined?levelInfo(x).level:Math.max(1,levelInfo(campaign.xp.sima_yi??0).level-1);}
 /** 등용 장수 경험치 적립: 싸워 번 만큼 + 승리 몫. 오른 레벨 글을 돌려준다. */
-function growRetinue(units:ReadonlyArray<{id:string;name:string}>,earned:Record<string,number>,bonus:number){
+function growRetinue(units:ReadonlyArray<{id:string;name:string;level?:number}>,earned:Record<string,number>,bonus:number){
   const out:string[]=[];const r=campaign.retinueXp??={};
-  for(const u of units){const before=retinueLevel(u.name),base=r[u.name]??xpAtLevel(before);r[u.name]=base+Math.max(0,earned[u.id]??0)+bonus;const after=levelInfo(r[u.name]!).level;if(after>before)out.push(`${u.name} Lv.${before} → ${after}`);}
+  // 기록이 없으면 이번에 나선 레벨에서 시작한다(사마의가 방금 오른 레벨로 계산하지 않게).
+  for(const u of units){const before=r[u.name]!==undefined?retinueLevel(u.name):u.level??retinueLevel(u.name),base=r[u.name]??xpAtLevel(before);r[u.name]=base+Math.max(0,earned[u.id]??0)+bonus;const after=levelInfo(r[u.name]!).level;if(after>before)out.push(`${u.name} Lv.${before} → ${after}`);}
   return out;
 }
 function saveCampaign(){try{writeCampaign(campaign);return true;}catch{toast('성장 기록을 저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.');return false;}}
@@ -180,6 +181,8 @@ function battleWhere(){const st=session.state.stage,cat=catalogue.find(c=>c.id==
  * 적·우군 차례 도중에 저장됐으면 그 차례를 화면 없이 끝까지 돌려, 아군 차례가 막 시작된 자리에서 넘겨준다.
  */
 const resumeSaved=()=>{try{const loaded=Session.load(JSON.parse(localStorage.getItem(SAVE_KEY)??'null'));
+  // 끝났지만 결과(승리 기록·보상)를 받기 전에 꺼진 전투: 불러와 결과 화면부터 잇는다.
+  if(loaded.state.outcome!=='ongoing'&&lastBattle()?.ongoing&&lastBattle()!.at>0){session=loaded;activate();toast('마지막 전투 · 결과를 이어서 받습니다');return;}
   if(loaded.state.outcome!=='ongoing'){toast('마지막 전투는 이미 끝났습니다.');try{const l=lastBattle();if(l)localStorage.setItem(LAST_KEY,JSON.stringify({...l,ongoing:false}));}catch{/* optional */}return;}
   for(let i=0;i<4000;i++){const st=loaded.state;if(st.outcome!=='ongoing'||st.activeDialogue||loaded.activeDuel)break;if(CONTROLLABLE.has(st.currentSide)&&st.living(st.currentSide).some(u=>!u.hasActed))break;if(!loaded.tick())break;}
   session=loaded;activate();persist();toast(`마지막 전투 · ${session.state.turn}턴 · ${CONTROLLABLE.has(session.state.currentSide)?'내 차례부터 이어갑니다':'이어갑니다'}`);}
@@ -421,7 +424,8 @@ function briefing(chapter:number,expeditionId?:string,scenario?:ScenarioDeployme
   let extras:string[]=[];
   // 연의(본편)에만: 등용한 장수를 데려간다(일반 2명 · 극한 1명). 사마의 레벨−1로 선다.
   let retinue:string[]=[];
-  const retinueCap=()=>difficulty==='extreme'?1:2,retinueOk=!scenario&&!expedition;
+  // 홀로 서는 장(꿈속 대결·건업 설전)에는 데려가지 못한다.
+  const retinueCap=()=>difficulty==='extreme'?1:2,retinueOk=!scenario&&!expedition&&!soloStage(c.stage);
   const retinueCost=()=>retinueOk?retinueUnits().reduce((n,u)=>n+unitCost(u.unitClass),0):0;
   const retinueUnits=()=>retinue.slice(0,retinueCap()).map((name,i)=>({id:'rt_'+i,name,unitClass:evolvedClass(officerClass(name),retinueLevel(name)),level:retinueLevel(name),xp:0,hp:1,officer:true as const}));
   const dispatch=(preview=false)=>{const d=deployment(campaign,true);if(!expedition)d.wide=2;if(scenario)d.trial=1;if(scenario)d.scenario=structuredClone(scenario);if(retinueOk&&retinue.length)d.retinue=retinueUnits();
@@ -588,7 +592,7 @@ function showExpeditionResult(){if(resultShown)return;resultShown=true;const run
 function activate(){
   // 전장 그림이 아직이면 기다렸다가 시작한다(첫 화면을 빨리 띄우느라 그림은 뒤에서 준비한다).
   if(!fieldReady){startRest();modal(waitPanel('전장 준비 중','전장 그림을 마저 받고 있습니다. 끝나면 바로 시작합니다.'),false);void fieldInit?.then(activate,error=>{console.error(error);modal(`<div class="briefing"><h2>전장 그래픽 오류</h2><p class="render-error">전장 그래픽을 준비하지 못했습니다. 브라우저를 최신으로 올리거나, 다른 탭을 닫고 다시 시도해 주세요.</p><p class="muted">원인: ${String((error as Error)?.message??error).replace(/[<>&]/g,'').slice(0,160)}</p><div class="modal-actions"><button class="primary" id="field-retry">다시 시도</button></div></div>`,false);$('#field-retry').onclick=()=>location.reload();});return;}
-  hasStarted=true;menuOpen=false;resultShown=false;duelPresented=false;mode='move';setAuto(false);
+  hasStarted=true;menuOpen=false;resultShown=false;scored=false;duelPresented=false;mode='move';setAuto(false);
   selected=session.state.living(session.state.currentSide).find(u=>!u.hasActed)?.id??'sima_yi';
   setStoryEra(session.state.stage.id);
   preloadDuelArt([...session.state.units.values()].map(u=>officerDuelSheetUrl(u)));
@@ -599,7 +603,7 @@ function activate(){
   lineSeen=new Set(session.journal.length?dueLines(session.state.stage.id,session.state,new Set()).map(l=>l.id):[]);lineQueue=[];clearTimeout(lineTimer);lineTimer=undefined;lineToken++;$('#battle-line').hidden=true;$('#latest-log').textContent='';
   objectiveBox.open=true;goalSeen.session=undefined;$<HTMLDialogElement>('#modal').close();render();setObjectiveOpen(true,8000);pump();
 }
-function persist(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(session.save()));saveAvailable=true;localStorage.setItem(LAST_KEY,JSON.stringify({where:battleWhere(),turn:session.state.turn,ongoing:session.state.outcome==='ongoing',at:Date.now()}));$('#save-status').textContent='✓ 자동 저장됨';}catch{$('#save-status').textContent='저장 공간 사용 불가';}}
+function persist(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(session.save()));saveAvailable=true;localStorage.setItem(LAST_KEY,JSON.stringify({where:battleWhere(),turn:session.state.turn,ongoing:session.state.outcome==='ongoing'||!resultShown,at:Date.now()}));$('#save-status').textContent='✓ 자동 저장됨';}catch{$('#save-status').textContent='저장 공간 사용 불가';}}
 function describe(e:LogEntry){const name=(id:string)=>session.state.find(id)?.name??id;switch(e.t){case 'telegraph':return e.warning?`⚠ ${e.label??'적 증원'} 예고 · ${e.turns}턴 뒤 노란 칸으로 적이 들어옵니다. 미리 대비하세요.`:`⚠ ${e.label??'광역 공격'} 예고 · ${e.turns}턴 뒤 붉은 칸에 떨어집니다. 칸을 비우세요.`;case 'strike':return `${e.hits.length?e.hits.map(h=>name(h.unit)+' −'+h.damage).join(', '):'아무도 맞지 않았습니다'} · 예고된 공격이 떨어졌습니다.`;
   case 'turnStart':return `${e.turn}턴 · ${sideNames[e.side]}의 차례입니다.`;
   case 'move':return `${name(e.unit)} 이동 · ${terrainNames[session.state.map.tileAt(e.to).terrain]}`;
@@ -698,7 +702,7 @@ function render(){
   renderCoach();queueLines();stackOverlays();
   // 첫 차례(아직 아무도 움직이지 않음)에는 아군 전원을, 그 뒤에는 고른 장수를 상자 밖에 둔다. 대화 선택으로 합류한 장수도 포함된다.
   {const st=session.state,fresh=st.turn===1&&st.currentSide==='player'&&!st.living('player').some(u=>u.hasMoved||u.hasActed);keepUnitsClear(!fresh);}
-  if(fieldReady){consumeLog();field.render(s,selected,mode,threat,session.scouted);}checkModal();
+  if(fieldReady){consumeLog();field.render(s,selected,mode,threat,session.scouted);}checkModal();if(resultShown)markScored();
 }
 let lineSeen=new Set<string>(),lineQueue:{speaker:string;text:string}[]=[],lineTimer:ReturnType<typeof setTimeout>|undefined,lineToken=0;
 function queueLines(){
@@ -937,6 +941,11 @@ function showDuel(){
   document.querySelectorAll<HTMLButtonElement>('[data-duel-action]').forEach(el=>el.onclick=()=>{sound.event({kind:'duel',critical:el.dataset.duelAction==='special',debate:d.kind==='debate'});act({kind:'item',unit:d.player.id,item:'duel-round:'+el.dataset.duelAction});});
   $('#duel-return')?.addEventListener('click',()=>{duelPresented=true;$<HTMLDialogElement>('#modal').close();render();pump();});
 }
+/** 결과를 받은 전투: '이어하기' 기록을 끝남으로 바꾼다(결과를 받기 전에 꺼졌으면 이어하기가 결과부터 잇는다). */
+let scored=false;
+function markScored(){if(scored)return;scored=true;try{const l=lastBattle();if(l)localStorage.setItem(LAST_KEY,JSON.stringify({...l,ongoing:false}));}catch{/* optional */}}
+/** 보상을 이미 친 전투(무르기 뒤 다시 이겨도 두 번 치지 않는다). */
+const rewarded=new WeakSet<Session>();
 function checkModal(){
   if(menuOpen||field.busy)return;const s=session.state;
   if(session.activeDuel||session.lastDuel&&!duelPresented){showDuel();return;}
@@ -959,13 +968,15 @@ function checkModal(){
   }
   if(s.outcome!=='ongoing'){
     if(resultShown)return;resultShown=true;const win=s.outcome==='victory',seals=session.seals;
-    if(!session.deployment?.scenario&&chapters.some(c=>c.stage.id===s.stage.id))countSortie(s.stage.id,win);
+    // 결과 화면의 '무르기'로 되돌렸다 다시 이긴 전투는 싸워 번 경험치·등용 성장·천명·출진 횟수를 한 번만 친다.
+    const again=rewarded.has(session);rewarded.add(session);
+    if(!again&&!session.deployment?.scenario&&chapters.some(c=>c.stage.id===s.stage.id))countSortie(s.stage.id,win);
     if(win&&!session.deployment?.scenario&&chapters.some(c=>c.stage.id===s.stage.id))recordStageChoices(s.stage.id,s.choices);
     const before=structuredClone(campaign);
     const reward=win?award(campaign,s.stage.id,s.difficulty,[...s.units.keys()],seals):null;
     // 싸워서 번 경험치(때리기·물리치기): 이긴 전투면 처음이든 다시 하는 전투든 장수에게 남는다.
-    const fought=win?OFFICERS.reduce((n,id)=>{const g=session.xpEarned[id]??0;if(g>0)campaign.xp[id]=(campaign.xp[id]??0)+g;return n+Math.max(0,g);},0):0;
-    const retinueUps=win&&session.deployment?.retinue?.length&&!session.deployment.scenario?growRetinue(session.deployment.retinue,session.xpEarned,50):[];
+    const fought=win&&!again?OFFICERS.reduce((n,id)=>{const g=session.xpEarned[id]??0;if(g>0)campaign.xp[id]=(campaign.xp[id]??0)+g;return n+Math.max(0,g);},0):0;
+    const retinueUps=win&&!again&&session.deployment?.retinue?.length&&!session.deployment.scenario?growRetinue(session.deployment.retinue,session.xpEarned,50):[];
     if(reward?.xp||fought||retinueUps.length||session.deployment?.retinue?.length)saveCampaign();
     if(retinueUps.length)setTimeout(()=>toast('등용 장수 성장 · '+retinueUps.join(' · ')),1200);
     if(win)try{const p=progress(),k=s.stage.id+':'+s.difficulty;p[k]=[...new Set([...(p[k]??[]),...seals])];localStorage.setItem(PROGRESS_KEY,JSON.stringify(p));}catch{/* optional persistence */}
@@ -973,7 +984,7 @@ function checkModal(){
     let mandateGain=0;
     if(win&&chapters.some(c=>c.stage.id===s.stage.id)){const m=loadMeta();if(!m.chronicle.includes(s.stage.id))recordStory(m,s.stage.id);
       // 연의 회상·수련 전투(천명의 길 밖)도 천명을 조금 준다: 연구가 로그라이크의 성장이다.
-      if(!session.deployment?.scenario&&!session.deployment?.mission){mandateGain=s.difficulty==='extreme'?2:1;m.mandate+=mandateGain;m.earned+=mandateGain;}saveMeta(m);}
+      if(!again&&!session.deployment?.scenario&&!session.deployment?.mission){mandateGain=s.difficulty==='extreme'?2:1;m.mandate+=mandateGain;m.earned+=mandateGain;}saveMeta(m);}
     sound.sfx(win?(session.somber?'somber':'victory'):'defeat');
     if(session.deployment?.scenario){
       // 시나리오 모드의 연의 장: 보상은 같고, 전투 뒤 장면과 다음 장은 시나리오 흐름이 맡는다.
@@ -985,12 +996,12 @@ function checkModal(){
     if(after){let k=0;$('#aftermath-next')?.addEventListener('click',e=>{k=(k+1)%after.beats.length;const b=after.beats[k]!;$('#aftermath-line').innerHTML=dialogueCaption(b.speaker,b.line);(e.currentTarget as HTMLButtonElement).textContent=k===after.beats.length-1?'↺ 처음 장면':'다음 장면 →';});}
     $('#result-undo').onclick=undo;$('#result-menu').onclick=showChronicle;
     $('#phase-restore')?.addEventListener('click',()=>{if(session.restorePhase()){activate();persist();}});
-    $('#retry').onclick=()=>{session=new Session(session.chapter,session.difficulty,215,session.preparation,session.revision,session.deployment?{...deployment(campaign,true),...(session.wide?{wide:(session.deployment?.wide??1)}:{})}:undefined);activate();persist();};
+    $('#retry').onclick=()=>{session=new Session(session.chapter,session.difficulty,215,session.preparation,session.revision,session.deployment?{...deployment(campaign,true),...(session.wide?{wide:(session.deployment?.wide??1)}:{}),...(session.deployment.retinue?{retinue:structuredClone(session.deployment.retinue)}:{}),...(session.deployment.extraOfficers?{extraOfficers:[...session.deployment.extraOfficers]}:{})}:undefined);activate();persist();};
     $('#epilogue')?.addEventListener('click',showEpilogue);
     $('#next-chapter')?.addEventListener('click',()=>storyScene(campaignOrder[campaignOrder.indexOf(session.chapter)+1]!));return;
   }
   if(s.activeDialogue){const node=session.battle.dialogue.node(s.activeDialogue);{const who=node.speaker?s.find(node.speaker)?.name??node.speaker:'사마의',extra=`${session.chapter===0?fundsNote(s.activeDialogue):''}${session.chapter===10?'<p class="ink-extra">틀리면 신뢰가 깎이고 같은 물음을 다시 받습니다</p>':'<button id="dialogue-undo" class="ink-undo">직전 선택 무르기</button>'}`;
-    modal(`<div class="dialogue ink-mode"><div class="eyebrow">${session.chapter===10?'설전 · 건업 궁정':'전장의 갈림길'}</div>${inkChoice(who,node.text,node.options.map(o=>{const v=session.deployment?.scenario||session.deployment?.run?0:choiceAmbition(s.stage.id,node.id,o.id);return {text:v?`${o.text} · ${v>0?'야망':'충의'} ${v>0?'+':'−'}${Math.abs(v)}`:o.text,id:o.id};}),{attr:'data-choice',extra,...(session.chapter===10?{gauge:{label:'신뢰',value:session.trust/Math.max(1,session.trustLimit)}}:{})})}</div>`,false);}$('#dialogue-undo')?.addEventListener('click',undo);document.querySelectorAll<HTMLButtonElement>('[data-choice]').forEach(b=>b.onclick=()=>{$<HTMLDialogElement>('#modal').close();act({kind:'choose',nodeId:node.id,optionId:b.dataset.choice!});const last=[...session.state.log].reverse().find(e=>e.t==='choice');if(last&&last.t==='choice'&&last.correct===false)toast(session.chapter===10?`설득이 먹히지 않았습니다. 신뢰 ${session.trust}/${session.trustLimit}`:'선택의 대가를 치렀습니다.');});}
+    modal(`<div class="dialogue ink-mode"><div class="eyebrow">${session.chapter===10?'설전 · 건업 궁정':'전장의 갈림길'}</div>${inkChoice(who,node.text,node.options.map(o=>{const v=session.deployment?.scenario||session.deployment?.run||session.deployment?.runStory||session.deployment?.mission?0:choiceAmbition(s.stage.id,node.id,o.id);return {text:v?`${o.text} · ${v>0?'야망':'충의'} ${v>0?'+':'−'}${Math.abs(v)}`:o.text,id:o.id};}),{attr:'data-choice',extra,...(session.chapter===10?{gauge:{label:'신뢰',value:session.trust/Math.max(1,session.trustLimit)}}:{})})}</div>`,false);}$('#dialogue-undo')?.addEventListener('click',undo);document.querySelectorAll<HTMLButtonElement>('[data-choice]').forEach(b=>b.onclick=()=>{$<HTMLDialogElement>('#modal').close();act({kind:'choose',nodeId:node.id,optionId:b.dataset.choice!});const last=[...session.state.log].reverse().find(e=>e.t==='choice');if(last&&last.t==='choice'&&last.correct===false)toast(session.chapter===10?`설득이 먹히지 않았습니다. 신뢰 ${session.trust}/${session.trustLimit}`:'선택의 대가를 치렀습니다.');});}
 }
 field.onSound=e=>sound.event(e);field.xpFor=e=>session.xpGains.get(e);field.weaponFor=u=>{const key=gearKey(u),id=session.deployment?.loadouts?.[key]?.weapon??session.deployment?.equipped[key];return id&&treasureInfo(id).slot==='weapon'?id:undefined;};field.onAnimationEnd=()=>{render();pump();setTimeout(()=>{hudLock=false;hudHover(hudAt);},900);};
 field.onCell=at=>{

@@ -2009,3 +2009,6 @@ dialog:has(.title-screen),dialog:has(.lobby){width:min(1240px,calc(100vw - 24px)
 .ym-ambition i.ym-amb em{position:absolute;right:50%;top:0;bottom:0}.ym-ambition i.ym-amb b{position:absolute;left:50%;top:0;bottom:0}
 .ym-ambition small b.up{color:#f08a6a}.ym-ambition small b.down{color:#8fb2f0}
 .amb-ok{color:#9fd18a}.amb-no{color:#f08a6a}
+
+/* 좁은 창(세로 휴대폰 밖의 좁은 브라우저 등): 연의 지도의 판과 상세를 위아래로 */
+@media (max-width:700px){.ym-body{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}.ym-detail{max-height:45dvh;overflow:auto}.ym-seals{min-width:0}}

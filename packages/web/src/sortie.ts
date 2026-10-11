@@ -40,10 +40,12 @@ export const storyClassAt=(id:string,level:number)=>evolvedClass(STORY_BASE_CLAS
 export function forcedCost(stage:StageDef,levels:Readonly<Record<string,number>>){
   return stage.deployment.forced.filter(id=>STORY_BASE_CLASS[id]).reduce((n,id)=>n+unitCost(storyClassAt(id,levels[id]??1)),0);
 }
+/** 홀로 서는 장(꿈속 대결·건업 설전)이거나 사마의가 나서지 않는 장: 누구도 더 데려가지 못한다(등용 장수 포함). */
+export function soloStage(stage:StageDef){return ALONE.has(stage.id)||!stage.deployment.forced.includes('sima_yi');}
 /** 연의 장에 더 데려갈 수 있는 장수와 남은 출진 칸. */
 export function optionalOfficers(stage:StageDef,map:MapFile):{allowed:string[];capacity:number}{
   const forced=stage.deployment.forced;
-  if(ALONE.has(stage.id)||!forced.includes('sima_yi'))return {allowed:[],capacity:0};
+  if(soloStage(stage))return {allowed:[],capacity:0};
   const cells=(map.regions?.player_start as unknown[]|undefined)?.length??0;
   const granted=(stage.deployment.grantedUnits??[]).reduce((n,g)=>n+g.count,0);
   const capacity=Math.max(0,cells-forced.length-granted),at=orderOf(stage.id);

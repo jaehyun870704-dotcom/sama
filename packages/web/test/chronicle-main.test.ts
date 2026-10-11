@@ -98,6 +98,19 @@ describe('야망 분기 · 등용 장수 COST',()=>{
     expect(ambition()).toBe(35);expect(ambitionOk('yuan',ambition())).toBe(true);
     recordStageChoices('S1-02',[{nodeId:'bribe',optionId:'pay'}]);expect(ambition()).toBe(10);
   });
+  it('같은 물음에 여러 번 답하면(설전에서 틀려 다시 묻기) 마지막 답만 친다',async()=>{
+    const {recordStageChoices,ambition}=await import('../src/ambition.ts');
+    recordStageChoices('S1-11',[{nodeId:'zhang_zhao',optionId:'arrogant'},{nodeId:'zhang_zhao',optionId:'arrogant'},{nodeId:'zhang_zhao',optionId:'present'}]);
+    expect(ambition()).toBe(-5);
+  });
+  it('홀로 서는 장(꿈속 대결·건업 설전)에는 등용 장수가 서지 않는다',async()=>{
+    const {optionalOfficers,soloStage}=await import('../src/sortie.ts');
+    for(const id of ['S1-04','S1-11']){const i=campaignOrder.find(k=>chapters[k]!.stage.id===id)!;
+      expect(optionalOfficers(chapters[i]!.stage,chapters[i]!.map).capacity).toBe(0);expect(soloStage(chapters[i]!.stage)).toBe(true);
+      const rt=[{id:'rt_0',name:'하후패',unitClass:'infantry' as never,level:5,xp:0,hp:1,officer:true as const}];
+      const s=new Session(i,'normal',215,'survival',13,{levels:{sima_yi:5},equipped:{},retinue:rt});
+      expect([...s.state.units.values()].some(u=>u.name==='하후패')).toBe(false);}
+  });
   it('등용 장수는 같은 COST 안에 든다: 선택 장수 예산이 줄고, 표에 함께 잡힌다',async()=>{
     const {pickExtras,storyCostSheet,optionalOfficers,unitCost}=await import('../src/sortie.ts');
     const c=chapters[campaignOrder.find(i=>optionalOfficers(chapters[i]!.stage,chapters[i]!.map).allowed.length>0)!]!;

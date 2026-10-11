@@ -558,7 +558,7 @@ export function startNewRun(host:ScenarioHost,no?:number){
     const meta=loadMeta();if(number===1&&!loadScenario().done.length){if(meta.unlocks.includes('veteran_start'))while(host.hero().level<6)host.addHeroXp(10);
       for(let i=0;i<heroLevelBonus(meta);i++)host.addHeroXp(100+(host.hero().level-1)*20);}
     talkedIn.clear();
-    const state=newScenarioRun(number,newSeed(),meta.unlocks,host.hero().level,{...(faction?{faction}:{}),...(companions?{customs:companions}:{})});saveScenario(state);
+    const state=newScenarioRun(number,newSeed(),meta.unlocks,host.hero().level,{...(faction?{faction}:{}),...(companions?{customs:companions}:{})});joinRecruits(state,meta.recruited??[],host.hero().level,officerClass);saveScenario(state);
     const first=currentStep(state);if(first)void enter(host,first);else showScenario(host);
   },()=>host.showMenu());
 }
