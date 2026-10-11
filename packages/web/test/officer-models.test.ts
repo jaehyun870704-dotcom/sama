@@ -14,7 +14,12 @@ const priorityBattle=[
   ['yang_ang','infantry',1120,224],['lu_fan','crossbow',1120,224],['sun_shao','crossbow',1120,224],['meng_da','infantry',1120,224],['ma_su','strategist',1120,224],['wang_ping','infantry',1120,224],
   ['gao_xiang','infantry',1120,224],['meng_yan','cavalry',1120,224],['bi_yan','cavalry',1120,224],['zhu_ran','infantry',1120,224],['zhuge_ke','strategist',1120,224],['wang_ling','infantry',1120,224],
 ] as const;
-const mountedBattle=['cao_zhang','yan_liang','wen_chou','ying_bu','fan_kuai','zhongli_mo'] as const;
+const namedBattle=[
+  ['jia_xu','wheelSage'],['yu_jin','spearman'],['yue_jin','infantry'],['deng_ai','infantry'],['zhong_hui','fengshui'],['hao_zhao','crossbow'],['cao_hong','infantry'],
+  ['cao_zhang','cavalry'],['wen_ping','spearman'],['guan_ping','infantry'],['ma_dai','infantry'],['xu_sheng','spearman'],['ding_feng','infantry'],['yan_liang','cavalry'],
+  ['wen_chou','cavalry'],['ju_shou','strategist'],['tian_feng','strategist'],['shen_pei','strategist'],['han_xin','spearman'],['ying_bu','cavalry'],['peng_yue','infantry'],
+  ['fan_kuai','cavalry'],['chen_ping','strategist'],['fan_zeng','strategist'],['zhongli_mo','cavalry'],['ji_bu','infantry'],
+] as const;
 function webpSize(file:URL){
   const b=readFileSync(file),vp8x=b.indexOf(Buffer.from('VP8X'));
   expect(vp8x).toBeGreaterThanOrEqual(0);
@@ -122,12 +127,12 @@ describe('장수별 전투 SD와 대결 모델',()=>{
     }
   });
 
-  it('조창·안량·문추·영포·번쾌·종리매는 표준 기병 시트와 말 탄 원화를 쓴다',()=>{
-    for(const id of mountedBattle){
-      const model=officerBattleSheet({id,name:id,unitClass:'cavalry'})!;
-      expect(model.action.sheet,id).toBe(`officers/${id}-battle-cavalry-v1.webp`);
+  it('이름있는 장수 26명은 병종별 표준 SD 시트를 쓴다',()=>{
+    for(const [id,unitClass] of namedBattle){
+      const model=officerBattleSheet({id,name:id,unitClass})!;
+      expect(model.action.sheet,id).toBe(`officers/${id}-battle-${unitClass}-v1.webp`);
       expect(model.action.cell,id).toEqual([280,224]);
-      expect(webpSize(new URL(`../public/officers/${id}-battle-cavalry-v1.webp`,import.meta.url)),id).toEqual([1120,224]);
+      expect(webpSize(new URL(`../public/officers/${id}-battle-${unitClass}-v1.webp`,import.meta.url)),id).toEqual([1120,224]);
     }
   });
 

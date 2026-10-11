@@ -46,14 +46,14 @@ export const officerManifest:OfficerEntry[]=[
   E('gao_shou','고수',c('gao_shou','bandit'),{duel:'officers/gao_shou-duel-v1.webp'}),E('guo_huai','곽회',c('guo_huai','archer'),{duel:'officers/guo_huai-duel-v1.webp'}),
   E('dai_ling','대릉',c('dai_ling','infantry'),{duel:'officers/dai_ling-duel-v1.webp'}),E('zhang_zhao','장소',c('zhang_zhao','strategist'),{duel:'officers/zhang_zhao-duel-v1.webp'}),E('zhuge_jin','제갈근',c('zhuge_jin','strategist'),{duel:'officers/zhuge_jin-duel-v1.webp'}),
   E('zhang_ba','장패',c('zhang_ba','cavalry'),{duel:'officers/zhang_ba-duel-v1.webp'}),E('cao_xiu','조휴',c('cao_xiu','cavalry'),{duel:'officers/cao_xiu-duel-v1.webp'}),E('cao_shuang','조상',c('cao_shuang','cavalry'),{duel:'officers/cao_shuang-duel-v1.webp'}),
-  // 이름있는 장수 전용 전신 원화(Codex 2026-10-11): 한 장 원화를 대기·준비·공격·피격 네 칸으로 펼친 시트.
-  E('jia_xu','가후',{wheelSage:['jia_xu-battle-v1.webp',384,384,1]}),E('yu_jin','우금',{spearman:['yu_jin-battle-v1.webp',384,384,1]}),E('yue_jin','악진',{infantry:['yue_jin-battle-v1.webp',384,384,1]}),E('deng_ai','등애',{infantry:['deng_ai-battle-v1.webp',384,384,1]}),
-  E('zhong_hui','종회',{fengshui:['zhong_hui-battle-v1.webp',384,384,1]}),E('hao_zhao','학소',{crossbow:['hao_zhao-battle-v1.webp',384,384,1]}),E('cao_hong','조홍',{infantry:['cao_hong-battle-v1.webp',384,384,1]}),E('cao_zhang','조창',c('cao_zhang','cavalry')),
-  E('wen_ping','문빙',{spearman:['wen_ping-battle-v1.webp',384,384,1]}),E('guan_ping','관평',{infantry:['guan_ping-battle-v1.webp',384,384,1]}),E('ma_dai','마대',{infantry:['ma_dai-battle-v1.webp',384,384,1]}),E('xu_sheng','서성',{spearman:['xu_sheng-battle-v1.webp',384,384,1]}),
-  E('ding_feng','정봉',{infantry:['ding_feng-battle-v1.webp',384,384,1]}),E('yan_liang','안량',c('yan_liang','cavalry')),E('wen_chou','문추',c('wen_chou','cavalry')),E('ju_shou','저수',{strategist:['ju_shou-battle-v1.webp',384,384,1]}),
-  E('tian_feng','전풍',{strategist:['tian_feng-battle-v1.webp',384,384,1]}),E('shen_pei','심배',{strategist:['shen_pei-battle-v1.webp',384,384,1]}),E('han_xin','한신',{spearman:['han_xin-battle-v1.webp',384,384,1]}),E('zhang_liang','장량',{strategist:['zhang_liang-battle-v1.webp',384,384,1]}),
-  E('xiao_he','소하',{fengshui:['xiao_he-battle-v1.webp',384,384,1]}),E('ying_bu','영포',c('ying_bu','cavalry')),E('peng_yue','팽월',{infantry:['peng_yue-battle-v1.webp',384,384,1]}),E('fan_kuai','번쾌',c('fan_kuai','cavalry')),
-  E('chen_ping','진평',{strategist:['chen_ping-battle-v1.webp',384,384,1]}),E('fan_zeng','범증',{strategist:['fan_zeng-battle-v1.webp',384,384,1]}),E('zhongli_mo','종리매',c('zhongli_mo','cavalry')),E('ji_bu','계포',{infantry:['ji_bu-battle-v1.webp',384,384,1]}),
+  // 이름있는 장수 전용 SD(Codex 2026-10-11): 병종 실루엣과 오른쪽 기본 방향을 통일한 대기·이동·공격·피격 4칸 시트.
+  E('jia_xu','가후',c('jia_xu','wheelSage')),E('yu_jin','우금',c('yu_jin','spearman')),E('yue_jin','악진',c('yue_jin','infantry')),E('deng_ai','등애',c('deng_ai','infantry')),
+  E('zhong_hui','종회',c('zhong_hui','fengshui')),E('hao_zhao','학소',c('hao_zhao','crossbow')),E('cao_hong','조홍',c('cao_hong','infantry')),E('cao_zhang','조창',c('cao_zhang','cavalry')),
+  E('wen_ping','문빙',c('wen_ping','spearman')),E('guan_ping','관평',c('guan_ping','infantry')),E('ma_dai','마대',c('ma_dai','infantry')),E('xu_sheng','서성',c('xu_sheng','spearman')),
+  E('ding_feng','정봉',c('ding_feng','infantry')),E('yan_liang','안량',c('yan_liang','cavalry')),E('wen_chou','문추',c('wen_chou','cavalry')),E('ju_shou','저수',c('ju_shou','strategist')),
+  E('tian_feng','전풍',c('tian_feng','strategist')),E('shen_pei','심배',c('shen_pei','strategist')),E('han_xin','한신',c('han_xin','spearman')),E('zhang_liang','장량',{strategist:['zhang_liang-battle-v1.webp',384,384,1]}),
+  E('xiao_he','소하',{fengshui:['xiao_he-battle-v1.webp',384,384,1]}),E('ying_bu','영포',c('ying_bu','cavalry')),E('peng_yue','팽월',c('peng_yue','infantry')),E('fan_kuai','번쾌',c('fan_kuai','cavalry')),
+  E('chen_ping','진평',c('chen_ping','strategist')),E('fan_zeng','범증',c('fan_zeng','strategist')),E('zhongli_mo','종리매',c('zhongli_mo','cavalry')),E('ji_bu','계포',c('ji_bu','infantry')),
 ];
 
 const legacySheets=[
