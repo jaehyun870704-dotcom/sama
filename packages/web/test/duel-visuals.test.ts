@@ -41,4 +41,13 @@ describe('대결과 책략 이미지',()=>{
     }
     expect(visuals.size).toBe(allStrategies.length);
   });
+
+  it('책략 이미지는 외부 저작물 없이 프로젝트 안에서 그린 벡터만 사용한다',()=>{
+    for(const strategy of allStrategies){
+      const svg=decodeURIComponent(strategyIconUrl(strategy.id,3));
+      expect(svg).toContain('Original procedural strategy icon for Sama');
+      expect(svg).not.toMatch(/<image\b|<text\b|(?:href|src)=["']https?:\/\//i);
+      expect(svg).toContain('<filter');expect(svg).toContain('<linearGradient');
+    }
+  });
 });

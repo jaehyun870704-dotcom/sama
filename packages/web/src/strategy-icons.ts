@@ -137,6 +137,13 @@ Object.assign(MOTIF,{
 const fallback=(s:LearnedStrategy)=>{const k=paletteKey(s);return k==='fire'?flame(32,34):k==='wind'?swirl(32,32):k==='water'?wave(32,36):k==='thunder'?bolt(32,34):k==='earth'?rock(32,34,1.2):k==='curse'?spiral(32,32):k==='heal'?cross(32,34):drum(32,36);};
 
 const FRAME:Record<StrategyTier,[string,string]>={1:['#8a6a3a','#d8b070'],2:['#9aa8b8','#eef4ff'],3:['#c88a10','#ffe48a']};
+const iconHash=(id:string)=>[...id].reduce((n,c)=>(n*33+c.charCodeAt(0))>>>0,5381);
+/** 각 책략 id로 회전·절개가 달라지는 독자 문양. 외부 게임의 문양이나 이미지를 사용하지 않는다. */
+function backdropSigil(id:string,color:string,tier:StrategyTier){
+  const h=iconHash(id),rot=h%360,teeth=5+h%4,r=17+(h%3),dash=2+h%4;
+  const spokes=Array.from({length:teeth},(_,i)=>{const a=i/teeth*Math.PI*2,b=a+.22;return `<path d="M32 34 L${32+Math.cos(a)*r} ${34+Math.sin(a)*r} A${r} ${r} 0 0 1 ${32+Math.cos(b)*r} ${34+Math.sin(b)*r}Z"/>`;}).join('');
+  return `<g transform="rotate(${rot} 32 34)" fill="${color}" opacity="${tier===3?.22:.14}">${spokes}<circle cx="32" cy="34" r="${r-5}" fill="none" stroke="${color}" stroke-width="1" stroke-dasharray="${dash} ${dash+2}"/></g>`;
+}
 /** 책략 아이콘 SVG(64×64). tier가 오를수록 테두리·장식이 화려해진다. */
 export function strategyIconSvg(id:string,tier:StrategyTier=1){
   const s=findStrategy(id);const key=s?paletteKey(s):'buff',[l,m,d]=PAL[key]!;
@@ -144,9 +151,10 @@ export function strategyIconSvg(id:string,tier:StrategyTier=1){
   const rays=tier===3?`<g opacity=".38">${Array.from({length:16},(_,i)=>{const a=i*Math.PI/8;return `<path d="M32 34 L${32+Math.cos(a-.09)*44} ${34+Math.sin(a-.09)*44} L${32+Math.cos(a+.09)*44} ${34+Math.sin(a+.09)*44}Z" fill="${l}"/>`;}).join('')}</g>`:'';
   const aura=tier>=2?`<circle cx="32" cy="34" r="22" fill="none" stroke="${l}" stroke-width="${tier===3?2.4:1.6}" stroke-dasharray="${tier===3?'none':'4 3'}" opacity=".8"/>`:'';
   const stars=Array.from({length:tier},(_,i)=>{const x=32+(i-(tier-1)/2)*9;return `<path transform="translate(${x} 6.5)" d="M0 -4 L1.2 -1.2 L4 -1 L1.8 1 L2.4 4 L0 2.4 L-2.4 4 L-1.8 1 L-4 -1 L-1.2 -1.2Z" fill="${tier===3?'#ffe48a':tier===2?'#eef4ff':'#d8b070'}" stroke="#140c06" stroke-width=".8"/>`;}).join('');
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"><defs><radialGradient id="g${uid}" cx="50%" cy="58%" r="62%"><stop offset="0" stop-color="${l}"/><stop offset=".5" stop-color="${m}"/><stop offset="1" stop-color="${d}"/></radialGradient></defs>
-<rect x="2" y="2" width="60" height="60" rx="10" fill="url(#g${uid})"/>${rays}${aura}${motif}
-<rect x="2" y="2" width="60" height="60" rx="10" fill="none" stroke="${fo}" stroke-width="${tier===1?3:4}"/><rect x="${tier===1?5:6}" y="${tier===1?5:6}" width="${tier===1?54:52}" height="${tier===1?54:52}" rx="7" fill="none" stroke="${fi}" stroke-width="${tier===3?1.6:1}" opacity=".8"/>${tier>1?stars:''}</svg>`;
+  const sigil=backdropSigil(id,l,tier),corners=`<g fill="none" stroke="${fi}" stroke-width="1.4" opacity=".85"><path d="M7 16 V7 H16 M48 7 H57 V16 M57 48 V57 H48 M16 57 H7 V48"/></g>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"><metadata>Original procedural strategy icon for Sama; no external artwork embedded.</metadata><defs><radialGradient id="g${uid}" cx="44%" cy="42%" r="72%"><stop offset="0" stop-color="${m}"/><stop offset=".46" stop-color="${d}"/><stop offset="1" stop-color="#090b0c"/></radialGradient><linearGradient id="r${uid}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${fi}"/><stop offset=".45" stop-color="${fo}"/><stop offset="1" stop-color="#3b2812"/></linearGradient><filter id="b${uid}" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="${tier===3?2.6:1.8}"/></filter></defs>
+<rect x="1.5" y="1.5" width="61" height="61" rx="9" fill="#090b0c" stroke="#20160e"/><rect x="4" y="4" width="56" height="56" rx="7" fill="url(#g${uid})"/>${rays}${sigil}${aura}<g filter="url(#b${uid})" opacity="${tier===3?.62:.42}">${motif}</g>${motif}
+<rect x="2" y="2" width="60" height="60" rx="9" fill="none" stroke="url(#r${uid})" stroke-width="${tier===1?3:4}"/><rect x="${tier===1?5:6}" y="${tier===1?5:6}" width="${tier===1?54:52}" height="${tier===1?54:52}" rx="6" fill="none" stroke="${fi}" stroke-width="${tier===3?1.6:1}" opacity=".72"/>${corners}${tier>1?stars:''}</svg>`;
 }
 const urlCache=new Map<string,string>();
 /** img src로 쓰는 data URL */
