@@ -258,17 +258,15 @@ function briefing(chapter:number,expeditionId?:string,scenario?:ScenarioDeployme
   let officer=c.stage.deployment.forced[0]!,filter='weapon',inspect=campaign.treasures[0]??treasures[0]!.id,prep:Preparation='survival',difficulty:'normal'|'extreme'='normal';
   /** 출진 장수: 필수(잠김) + 선택(난이도별 인원 제한). */
   const sortieMarkup=()=>{const {allowed,capacity}=optionalOfficers(c.stage,c.map),limit=Math.min(capacity,storySortieLimit(difficulty));
-    const lv=deployment(campaign,true).levels,ext=difficulty==='extreme',sheet=ext?storyCostSheet(c.stage,pickExtras(c.stage,c.map,extras,difficulty,lv),lv):undefined;
+    const lv=deployment(campaign,true).levels,sheet=storyCostSheet(c.stage,pickExtras(c.stage,c.map,extras,difficulty,lv),lv,difficulty);
     const costOf=(id:string)=>unitCost(storyClassAt(id,lv[id]??1));
-    const tag=(id:string)=>ext?` · ${classNames[storyClassAt(id,lv[id]??1)]??''} 코스트 ${costOf(id)}`:'';
-    // 극한: 이미 고른 장수는 체크, 남은 코스트에 들지 않는 장수는 고를 수 없다.
-    const chosen=(id:string)=>ext?!!sheet?.rows.some(r=>r.id===id&&!r.forced):extras.includes(id);
-    const blocked=(id:string)=>!chosen(id)&&(limit===0||ext&&costOf(id)>sheet!.left);
-    return `<fieldset class="sortie-picker"><legend>출진 장수 · 필수 ${c.stage.deployment.forced.length}명${allowed.length?` + 선택 최대 ${limit}명`:''}${ext?` · 극한 출진 코스트 <b class="${sheet!.used>sheet!.cap?'over':''}">${sheet!.used}/${sheet!.cap}</b>`:''}</legend>
-    ${c.stage.deployment.forced.map(id=>`<span class="sortie-chip forced">🔒 ${officerNames[id]??id}${tag(id)}</span>`).join('')}
-    ${allowed.map(id=>`<label class="sortie-chip${blocked(id)?' blocked':''}"${blocked(id)?` title="${limit===0?'출진 칸이 남지 않았다':`남은 코스트 ${sheet!.left} — 코스트 ${costOf(id)}는 들어가지 않는다`}"`:''}><input type="checkbox" data-extra="${id}" ${chosen(id)?'checked':''} ${blocked(id)?'disabled':''}> ${officerNames[id]??id} · Lv.${levelInfo(campaign.xp[id]??0).level}${tag(id)}</label>`).join('')}
-    ${ext?`<small>극한은 출진 코스트 안에서 고른다: 필수 장수의 코스트가 먼저 잡히고, 남은 코스트 <b>${sheet!.left}</b> 안에 드는 장수만 데려갈 수 있다. 병종은 낮추지 않는다. 병종 코스트: 1단 2 · 2단 3 · 3단 4 · 4단 6, 기마·코끼리 +1.${sheet!.rows.filter(r=>r.forced).reduce((n,r)=>n+r.cost,0)>=sheet!.cap?' 이 장은 필수 장수만으로 상한이 찼다.':''}</small>`:''}
-    ${allowed.length?(limit===0?'<small>이 전장은 출진 칸이 남지 않아 필수 장수만 나선다.</small>':''):'<small>이 장은 이야기상 정해진 장수만 출진한다.</small>'}</fieldset>`;};
+    const chosen=(id:string)=>sheet.rows.some(r=>r.id===id&&!r.forced);
+    const blocked=(id:string)=>!chosen(id)&&(limit===0||costOf(id)>sheet.left);
+    const ratio=Math.min(100,Math.round(sheet.used/sheet.cap*100));
+    return `<section class="sortie-picker"><div class="prep-cost-board"><div class="prep-cost-title"><small>${difficulty==='extreme'?'극한 정예 편성':'일반 편성'}</small><strong>COST 중심 출진</strong></div><span><small>출진 부대</small><b>${sheet.rows.length}</b><em> / ${c.stage.deployment.forced.length+limit}</em></span><span><small>사용 COST</small><b class="${sheet.used>sheet.cap?'over':''}">${sheet.used}</b></span><span><small>남은 COST</small><b>${sheet.left}</b></span><span><small>COST 상한</small><b>${sheet.cap}</b></span><i class="prep-cost-meter" style="--used:${ratio}%"></i></div><div class="sortie-toolbar"><p>필수 장수 COST가 먼저 적용됩니다. 남은 예산 안에서 장수를 선택하세요.</p>${allowed.length?'<button id="auto-sortie" type="button">COST 자동 편성</button><button id="clear-sortie" type="button">선택 해제</button>':''}</div><div class="sortie-cards">
+    ${c.stage.deployment.forced.map(id=>`<span class="sortie-chip forced"><b class="sortie-cost">${costOf(id)}</b><span><strong>${officerNames[id]??id}</strong><small>Lv.${levelInfo(campaign.xp[id]??0).level} · ${classNames[storyClassAt(id,lv[id]??1)]??''}</small><em>필수 출진</em></span></span>`).join('')}
+    ${allowed.map(id=>`<label class="sortie-chip${blocked(id)?' blocked':''}"${blocked(id)?` title="${limit===0?'출진 칸이 남지 않았다':`남은 COST ${sheet.left} · 이 장수 COST ${costOf(id)}`}"`:''}><input type="checkbox" data-extra="${id}" ${chosen(id)?'checked':''} ${blocked(id)?'disabled':''}><b class="sortie-cost">${costOf(id)}</b><span><strong>${officerNames[id]??id}</strong><small>Lv.${levelInfo(campaign.xp[id]??0).level} · ${classNames[storyClassAt(id,lv[id]??1)]??''}</small><em>${chosen(id)?'출진 선택':'대기'}</em></span></label>`).join('')}</div>
+    <small class="cost-rule">병종 COST: 1단 2 · 2단 3 · 3단 4 · 4단 6 · 기마/코끼리 +1${sheet.rows.filter(r=>r.forced).reduce((n,r)=>n+r.cost,0)>=sheet.cap?' · 필수 장수만으로 상한 도달':''}</small></section>`;};
   const draw=()=>{
     const previousScroll=$('#modal-content .camp-screen')?$<HTMLDialogElement>('#modal').scrollTop:0;
     const preview=new Session(chapter,difficulty,215,prep,RULES,dispatch(true));
@@ -282,7 +280,9 @@ function briefing(chapter:number,expeditionId?:string,scenario?:ScenarioDeployme
     document.querySelectorAll<HTMLButtonElement>('[data-unequip]').forEach(b=>b.onclick=()=>{if(equipSlot(campaign,officer,b.dataset.unequip as GearSlot,'')){saveCampaign();draw();}});
     document.querySelectorAll<HTMLInputElement>('[name=preparation]').forEach(el=>el.onchange=()=>{prep=el.value as Preparation;draw();});
     document.querySelectorAll<HTMLInputElement>('[name=difficulty]').forEach(el=>el.onchange=()=>{difficulty=el.value as 'normal'|'extreme';extras=pickExtras(c.stage,c.map,extras,difficulty,deployment(campaign,true).levels);draw();});
-    document.querySelectorAll<HTMLInputElement>('[data-extra]').forEach(el=>el.onchange=()=>{const id=el.dataset.extra!;const next=el.checked?[...extras,id]:extras.filter(x=>x!==id);const ok=pickExtras(c.stage,c.map,next,difficulty,deployment(campaign,true).levels);if(el.checked&&!ok.includes(id)){el.checked=false;toast(difficulty==='extreme'?'극한 출진 코스트 상한을 넘어 더 데려갈 수 없습니다.':`이 장에는 ${storySortieLimit(difficulty)}명까지(남은 출진 칸 ${optionalOfficers(c.stage,c.map).capacity})만 더 데려갈 수 있습니다.`);return;}extras=ok;draw();});
+    document.querySelectorAll<HTMLInputElement>('[data-extra]').forEach(el=>el.onchange=()=>{const id=el.dataset.extra!;const next=el.checked?[...extras,id]:extras.filter(x=>x!==id);const ok=pickExtras(c.stage,c.map,next,difficulty,deployment(campaign,true).levels);if(el.checked&&!ok.includes(id)){el.checked=false;toast(`남은 COST나 출진 시작 칸이 부족합니다. 다른 장수를 해제한 뒤 선택하세요.`);return;}extras=ok;draw();});
+    $('#auto-sortie')?.addEventListener('click',()=>{const lv=deployment(campaign,true).levels,{allowed}=optionalOfficers(c.stage,c.map);extras=pickExtras(c.stage,c.map,[...allowed].sort((a,b)=>unitCost(storyClassAt(a,lv[a]??1))-unitCost(storyClassAt(b,lv[b]??1))),difficulty,lv);draw();});
+    $('#clear-sortie')?.addEventListener('click',()=>{extras=[];draw();});
     $('#brief-back').onclick=scenario?()=>showScenario(scenarioHost,scenario.chapter):expedition?()=>showExpeditions(expedition.kind):showChronicle;
     if(scenario)$('#brief-camp').onclick=()=>campOf(scenarioHost,scenario.chapter);
     document.querySelectorAll<HTMLSelectElement>('[data-support]').forEach(el=>el.onchange=()=>{const k=supportOptions.find(k=>k===el.value);if(k){supports[Number(el.dataset.support)]=k;draw();}});

@@ -4,11 +4,12 @@ import {Session} from '../src/session.ts';
 import {chapters} from '../src/session.ts';
 import {campaignStage} from '../src/campaign-rules.ts';
 
-describe('극한 출진 코스트',()=>{
+describe('출진 코스트',()=>{
  it('병종 코스트는 진화 단계가 높을수록, 기마는 +1',()=>{
   expect(unitCost('infantry')).toBe(2);expect(unitCost('shieldGuard')).toBe(3);expect(unitCost('royalGuard')).toBe(4);expect(unitCost('ironInfantry')).toBe(6);
   expect(unitCost('cavalry')).toBe(3);expect(unitCost('heavyCav')).toBe(3);expect(unitCost('mastermind')).toBe(4);
   expect(storyCostCap('S1-02')).toBe(10);expect(storyCostCap('S2-05')).toBe(13);expect(storyCostCap('S3-01')).toBe(16);
+  expect(storyCostCap('S1-02','normal')).toBe(14);expect(storyCostCap('S2-05','normal')).toBe(17);
   expect(taleCostCap(1,false)).toBe(12);expect(taleCostCap(3,true)).toBe(20);
  });
  it('병종을 낮추지 않는다: 필수 장수는 제 병종 그대로, 상한이 차면 더 데려가지 않는다',()=>{
@@ -28,12 +29,13 @@ describe('극한 출진 코스트',()=>{
   const picked=pickExtras(stage,ch.map,['sima_lang','sima_fang'],'extreme',low),sheet=storyCostSheet(stage,picked,low);
   expect(sheet.used).toBeLessThanOrEqual(sheet.cap);expect(sheet.left).toBe(sheet.cap-sheet.used);
  });
- it('극한에서는 코스트 상한을 넘는 선택 장수를 데려가지 않는다(일반은 인원만)',()=>{
+ it('일반과 극한 모두 코스트 상한을 넘는 선택 장수를 데려가지 않는다',()=>{
   const ch=chapters.find(c=>c.stage.id==='S1-05')!,stage=campaignStage(ch.stage);
   const high={sima_yi:30,sima_lang:30,sima_fang:30,cao_zhen:30};
   const normal=pickExtras(stage,ch.map,['sima_lang','sima_fang'],'normal',high);
   const ext=pickExtras(stage,ch.map,['sima_lang','sima_fang'],'extreme',high);
   expect(ext.length).toBeLessThanOrEqual(normal.length);
+  expect(storyCostSheet(stage,normal,high,'normal').used).toBeLessThanOrEqual(Math.max(storyCostCap(stage.id,'normal'),forcedCost(stage,high)));
   // 필수 장수만으로 상한을 넘을 수 있다(병종은 낮추지 않는다). 그때는 더 데려가지 않는다.
   const sheet=storyCostSheet(stage,ext,high);expect(sheet.used).toBeLessThanOrEqual(Math.max(sheet.cap,forcedCost(stage,high)));
  });

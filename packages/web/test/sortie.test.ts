@@ -12,10 +12,10 @@ describe('출진 편성',()=>{
   for(const x of withRoom)for(const id of x.allowed)expect(x.c.stage.deployment.forced).not.toContain(id);
  });
  it('caps the optional officers by difficulty and free start cells, never duplicating',()=>{
-  expect(storySortieLimit('normal')).toBe(2);expect(storySortieLimit('extreme')).toBe(2);// 극한은 인원 대신 출진 코스트로 제한(sortie-cost.test.ts)
+  expect(storySortieLimit('normal')).toBe(8);expect(storySortieLimit('extreme')).toBe(8);// 인원보다 COST와 시작 칸으로 제한(sortie-cost.test.ts)
   const x=withRoom[0]!,want=[...x.allowed,...x.allowed,'nobody'];
   const normal=pickExtras(x.c.stage,x.c.map,want,'normal'),extreme=pickExtras(x.c.stage,x.c.map,want,'extreme');
-  expect(normal.length).toBe(Math.min(2,x.capacity,x.allowed.length));expect(new Set(normal).size).toBe(normal.length);
+  expect(normal.length).toBe(Math.min(8,x.capacity,x.allowed.length));expect(new Set(normal).size).toBe(normal.length);
   expect(extreme.length).toBe(normal.length);// 레벨을 모르면 코스트를 따지지 않는다expect(normal).not.toContain('nobody');
  });
  it('fields the forced officers plus the chosen ones and reloads the same battle',()=>{
