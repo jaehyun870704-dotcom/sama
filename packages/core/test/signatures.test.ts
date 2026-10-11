@@ -93,5 +93,9 @@ describe("이름있는 장수 고유특성", () => {
     applySignature(lb, "여포", 1); applySignature(other, "장료", 1);
     expect(doubleAttackChance(lb, foe)).toBe(100);
     expect(doubleAttackChance(other, foe)).toBe(0);
+    // 대신 책략에는 약하다: 받는 책략 피해 30% 증가
+    const ctx = { ...createDamageContext(foe, lb, "strategy"), element: "fire" };
+    applyTraitHooks(ctx);
+    expect(1 - ctx.reduction).toBeCloseTo(1.3);
   });
 });

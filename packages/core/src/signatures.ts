@@ -206,9 +206,9 @@ const S: Record<string, Signature> = {
   장소: { name: "강동 내정", text: (t = 1) => `2칸 안 아군의 책략 피해 ${pct(10, sigMul(t))}% 증가.`,
     hooks: { onAllyAttack(ctx, h, p) { if (strat(ctx) && engageDistance(h.pos, ctx.attacker.pos) <= 2) ctx.attackMul *= 1 + pct(10, sigMul(p)) / 100; } } },
   // ── 군웅
-  여포: { name: "인중여포", text: (t = 1) => `매 공격(반격 포함)을 2회 연속으로 친다. 회심 확률 +${pct(10, sigMul(t))}%p. 대신 받는 책략 피해 10% 증가.`,
+  여포: { name: "인중여포", text: (t = 1) => `매 공격(반격 포함)을 2회 연속으로 친다. 회심 확률 +${pct(10, sigMul(t))}%p. 대신 책략에 약해 받는 책략 피해 30% 증가.`,
     hooks: { alwaysDouble: true, onAttack(ctx, _s, p) { if (phys(ctx)) ctx.criticalChance += pct(10, sigMul(p)); },
-      onDefend(ctx) { if (strat(ctx)) ctx.reduction = 1 - (1 - ctx.reduction) * 1.1; } } },
+      onDefend(ctx) { if (strat(ctx)) ctx.reduction = 1 - (1 - ctx.reduction) * 1.3; } } },
   진궁: { name: "냉철한 간파", text: (t = 1) => `책략 회피 +${pct(20, sigMul(t))}%p. 자기 차례마다 자신의 혼란·봉인을 푼다.`,
     hooks: { onDefend(ctx, _s, p) { if (strat(ctx)) ctx.accuracyMod -= pct(20, sigMul(p)); },
       onTurnStart(u) { cleanse(u, ["confusion", "seal"]); } } },
