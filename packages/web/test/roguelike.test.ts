@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {newRun,floorChoices,runBattle,battleRef,grantXp,finishBattle,takeReward,visitNode,recruit,survivorsOf,ga,ro,eul,RUN_FLOORS,PARTY_LIMIT,RECRUITS,RUN_MAP_W,RUN_MAP_H,type Run} from '../src/roguelike.ts';
+import {newRun,floorChoices,runBattle,battleRef,refBattle,grantXp,finishBattle,takeReward,visitNode,recruit,survivorsOf,ga,ro,eul,RUN_FLOORS,PARTY_LIMIT,RECRUITS,RUN_MAP_W,RUN_MAP_H,type Run} from '../src/roguelike.ts';
 import {artClass,troopArt,troopRoles,evolutionLines} from '../src/troops.ts';
 import {Session} from '../src/session.ts';
 import {RUN_CHAPTER} from '../src/run-ui.ts';
@@ -83,6 +83,12 @@ describe('천명의 원정 · 규칙',()=>{
 });
 
 describe('천명의 원정 · 전장',()=>{
+ it('gives each virtual scenario a fixed handcrafted battlefield instead of the expedition map',()=>{
+  const run=fresh(),ref=battleRef(run,'tale','IF1-srv-1');ref.scenario='IF1-srv-1';
+  const a=refBattle(ref),again=refBattle(ref),other=refBattle({...ref,scenario:'IF1-srv-2',tale:'IF1-srv-2'});
+  expect(a).toEqual(again);expect(a.map.id).toBe('scenario-IF1-srv-1');expect(other.map.id).toBe('scenario-IF1-srv-2');
+  expect(a.map.rows).not.toEqual(other.map.rows);expect(validateStage(a.stage)).toEqual([]);expect(validateStage(other.stage)).toEqual([]);
+ });
  it('generates valid, deterministic battlefields for every floor and node kind',()=>{
   const run=fresh();
   for(let f=1;f<=RUN_FLOORS;f++){run.floor=f;for(const kind of ['battle','elite','boss'] as const){

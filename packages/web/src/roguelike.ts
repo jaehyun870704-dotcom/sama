@@ -351,7 +351,35 @@ export function nextEvolutionText(cls:UnitClass){const n=nextEvolution(cls);retu
 export const RUN_MAP_W=34,RUN_MAP_H=24;
 const W=RUN_MAP_W,H=RUN_MAP_H;
 /** 원정 전장: 지역마다 다른 지형, 좌측 출진 칸과 우측 적진. 모든 칸에 보병이 닿도록 보장한다. */
-export function runMap(run:{seed:number;route?:Run['route']},floor:number,kind:NodeKind):MapFile{
+const scenarioHash=(id:string)=>{let h=2166136261;for(const ch of id)h=Math.imul(h^ch.charCodeAt(0),16777619);return h>>>0;};
+/**
+ * 가상 시나리오 전장은 원정용 무작위 얼룩 지형을 쓰지 않는다. 장 id로 고정되는 여섯 가지
+ * 수제 골격(강 도하·산길·습지·복병 숲·성문·협곡)에 편/루트의 지형색만 입힌다.
+ * 같은 장은 저장을 불러와도 같은 지형이고, 다른 장은 길·병목·엄폐의 위치가 달라진다.
+ */
+function scenarioMap(run:{seed:number;route?:Run['route']},floor:number,kind:NodeKind,id:string):MapFile{
+  const h=scenarioHash(id),region=regionFor(run,floor),g=Array.from({length:H},()=>Array<string>(W).fill('.'));
+  const put=(x:number,y:number,ch:string)=>{if(x>=0&&x<W&&y>=0&&y<H)g[y]![x]=ch;};
+  const line=(x0:number,y0:number,x1:number,y1:number,ch:string)=>{const n=Math.max(Math.abs(x1-x0),Math.abs(y1-y0));for(let i=0;i<=n;i++)put(Math.round(x0+(x1-x0)*i/n),Math.round(y0+(y1-y0)*i/n),ch);};
+  const roadY=6+(h%12),profile=h%6;
+  for(let x=0;x<W;x++){const y=Math.max(2,Math.min(H-3,roadY+Math.round(Math.sin((x+(h%7))*.34)*2)));put(x,y,',');put(x,y+1,',');}
+  if(profile===0){const rx=14+(h%5);for(let y=0;y<H;y++){put(rx,y,'~');put(rx+1,y,'~');}for(const y of [5,12,19]){put(rx,y,'_');put(rx+1,y,'_');}for(let y=1;y<H-1;y+=3){put(rx-2,y,'f');put(rx+3,y+1,'f');}}
+  if(profile===1){line(8,2,25,21,'^');line(10,1,27,20,'h');for(const d of [-1,0,1,2]){put(17+d,12+d,',');put(18+d,12+d,',');}}
+  if(profile===2){for(let x=9;x<27;x+=3)for(let y=2+(x%4);y<H-2;y+=5){put(x,y,'m');put(x+1,y,'m');}line(6,18,29,5,',');for(const [x,y] of [[14,7],[20,15],[25,9]] as const){put(x,y,'f');put(x+1,y,'f');put(x,y+1,'f');}}
+  if(profile===3){for(const [cx,cy] of [[10,6],[12,17],[21,7],[24,17]] as const)for(let y=cy-2;y<=cy+2;y++)for(let x=cx-2;x<=cx+2;x++)if(Math.abs(x-cx)+Math.abs(y-cy)<4)put(x,y,(x+y)%3?'f':'h');}
+  if(profile===4){const wx=24;for(let y=2;y<H-2;y++)put(wx,y,'w');for(const y of [roadY,roadY+1])put(wx,y,'g');for(let y=4;y<H-4;y+=5){put(wx-2,y,'c');put(wx+2,y,'c');}for(let x=18;x<29;x++)if(g[roadY]![x]!==',')put(x,roadY,',');}
+  if(profile===5){for(let x=6;x<W-6;x++){const top=4+Math.round(Math.sin(x*.43)*2),bottom=H-5+Math.round(Math.cos(x*.37)*2);for(let y=0;y<=top;y++)put(x,y,'^');for(let y=bottom;y<H;y++)put(x,y,'^');}line(5,Math.floor(H/2),W-5,Math.floor(H/2),'h');}
+  // 편의 고유 환경색: 평원은 숲, 산악은 구릉, 수향은 습지를 수제 골격의 빈 곳에 얹는다.
+  const accent=region.terrain===0?'f':region.terrain===1?'h':'m';for(let i=0;i<18;i++){const x=6+((h+i*11)%(W-12)),y=2+(((h>>>4)+i*7)%(H-4));if(g[y]![x]==='.')put(x,y,accent);}
+  // 양 진영은 항상 출진 가능하게 비운다.
+  for(let y=0;y<H;y++)for(const x of [0,1,2,3,4,W-6,W-5,W-4,W-3,W-2,W-1])g[y]![x]=y===roadY||y===roadY+1?',':'.';
+  const cells=(xs:number[],ys:number[])=>ys.flatMap(y=>xs.map(x=>({x,y}))),mid=Math.floor(H/2),tale=taleById(id);
+  return {id:`scenario-${id.replace(/[^a-zA-Z0-9-]/g,'-')}`,name:tale?.title??region.name,legend:{'.':'plain',',':'road',f:'forest',h:'hill','^':'mountain','~':'water','_':'ford',m:'marsh',w:'wall',g:'gate',c:'fort'},rows:g.map(row=>row.join('')),
+    regions:{player_start:cells([0,1],[mid-2,mid-1,mid,mid+1]),enemy_camp:cells([W-6,W-5,W-4,W-3,W-2],Array.from({length:H-6},(_,i)=>i+3)),objective:cells([W-1],[mid])}};
+}
+
+export function runMap(run:{seed:number;route?:Run['route']},floor:number,kind:NodeKind,scenario?:string):MapFile{
+  if(scenario&&!scenario.startsWith('march:'))return scenarioMap(run,floor,kind,scenario);
   const r=rngFor(run,floor*977+kind.length),region=regionFor(run,floor).terrain;
   const g=Array.from({length:H},()=>Array<string>(W).fill('.'));
   const blob=(ch:string,n:number,size:number,x0=3,x1=W-4)=>{for(let k=0;k<n;k++){const cx=r.int(x0,x1),cy=r.int(1,H-2);for(let i=0;i<size;i++){const x=cx+r.int(-1,1),y=cy+r.int(-1,1);if(x>=2&&x<W-2&&y>=0&&y<H)g[y]![x]=ch;}}};
@@ -414,8 +442,8 @@ export function runStage(run:Run,kind:NodeKind,map:MapFile,taleId?:string,opts:{
 /** 원정 전투에서 아군 부대가 서는 칸: 사마의 자리를 뺀 출진 칸과 그 옆 열. */
 export function partyStart(map:MapFile){return [...(map.regions!.player_start as Array<{x:number;y:number}>).slice(1),...[0,1,2,3].map(d=>({x:2,y:Math.floor(H/2)-2+d}))];}
 
-export function runBattle(run:Run,kind:NodeKind,taleId?:string,opts:{mods?:BattleMods;enemyBase?:number}={}){
-  const map=runMap(run,run.floor,kind);
+export function runBattle(run:Run,kind:NodeKind,taleId?:string,opts:{mods?:BattleMods;enemyBase?:number;scenario?:string}={}){
+  const map=runMap(run,run.floor,kind,opts.scenario);
   (map.regions as Record<string,Array<{x:number;y:number}>>).party_start=partyStart(map);
   // 지원군이 서는 칸: 출진 칸 바로 앞(세 번째·네 번째 열).
   (map.regions as Record<string,Array<{x:number;y:number}>>).aid_start=[3,4].flatMap(x=>[0,1,2,3].map(d=>({x,y:Math.floor(H/2)-2+d})));
@@ -432,7 +460,7 @@ export interface RunBattleRef {seed:number;floor:number;kind:NodeKind;party:RunU
 export const battleRef=(run:Run,kind:NodeKind,tale?:string):RunBattleRef=>({seed:run.seed,floor:run.floor,kind,party:structuredClone(run.party),relics:[...run.relics],...(run.route?{route:{...run.route}}:{}),...(tale?{tale}:{})});
 export function refBattle(ref:RunBattleRef){
   const run:Run={version:1,seed:ref.seed,floor:ref.floor,party:ref.party,relics:ref.relics,fallen:[],status:'map',nextId:0,news:[],...(ref.route?{route:ref.route}:{})};
-  return runBattle(run,ref.kind,ref.tale,{...(ref.mods?{mods:ref.mods}:{}),...(ref.enemyBase!==undefined?{enemyBase:ref.enemyBase}:{})});
+  return runBattle(run,ref.kind,ref.tale,{...(ref.mods?{mods:ref.mods}:{}),...(ref.enemyBase!==undefined?{enemyBase:ref.enemyBase}:{}),...(ref.scenario?{scenario:ref.scenario}:{})});
 }
 
 /** 전투 시작 직후: 원정 부대의 체력·병종·책략, 보물 효과를 전장에 반영한다. */
