@@ -15,7 +15,7 @@ const TAU=Math.PI*2;
 let seed=1;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
 
 export class BattleFx {
-  constructor(private app:Application,private layer:Container,private overlay:Container,private reduced:boolean){}
+  constructor(private app:Application,private layer:Container,private overlay:Container,public reduced:boolean){}
   /** ms 동안 매 틀 draw(t: 0→1)를 부르고 끝나면 지운다. */
   run(ms:number,draw:(g:Graphics,t:number)=>void,blend:'add'|'normal'='add',z=998){
     if(this.reduced)return Promise.resolve();

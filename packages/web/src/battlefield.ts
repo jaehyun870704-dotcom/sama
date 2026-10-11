@@ -121,7 +121,15 @@ export class Battlefield {
   private drag:{x:number;y:number;px:number;py:number}|undefined;
   private dragged=false;
   private hover:Coord|undefined;
-  private reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /** 운영체제의 '동작 줄이기' 설정. 숨쉬기 같은 늘 도는 움직임은 이것만 따른다. */
+  private prefersReduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  private skip=false;
+  /** 전투 연출을 건너뛴다(속도 단추의 '연출 생략'). 결과·피해 숫자·체력 막대는 그대로 보인다. */
+  set skipAnimations(on:boolean){this.skip=on;if(this.fx)this.fx.reduced=this.prefersReduced||on;}
+  get skipAnimations(){return this.skip;}
+  private get reduced(){return this.prefersReduced||this.skip;}
+  /** 머리 위 체력 막대가 마지막으로 그린 비율(맞는 순간 여기서부터 줄어든다). */
+  private hpShown=new Map<string,number>();
   /** 숨쉬기의 기준 키(그림마다 처음 크기). */
   private baseScaleY=new WeakMap<Sprite,number>();
   onCell:(c:Coord)=>void=()=>{};
@@ -194,7 +202,7 @@ export class Battlefield {
     // 이름표가 부대를 따라간다(걷기·돌격·퇴각 연출 중에도). 부대가 흐려지면 이름도 같이 흐려진다.
     this.app.ticker.add(()=>{for(const a of this.actors.values()){const n=a.name;if(!n||n.destroyed)continue;if(a.piece.destroyed){n.destroy();continue;}n.position.set(a.piece.x,a.piece.y+20);n.alpha=a.piece.alpha;n.visible=a.piece.visible;}});
     // Boats ride the swell while idle; tweens own the sprite during playback.
-    this.app.ticker.add(()=>{if(this.reduced)return;const t=performance.now()/1000;
+    this.app.ticker.add(()=>{if(this.prefersReduced)return;const t=performance.now()/1000;
       // 장수의 기운은 전투 연출 중에도 맥동한다.
       for(const [id,a] of this.actors)if(a.officer&&!a.piece.destroyed){const aura=a.piece.children.find(c=>c.label==='aura');if(aura){aura.alpha=.55+Math.sin(t*3+id.length)*.35;aura.scale.set(1+Math.sin(t*3+id.length)*.05);}}
       if(this.busy)return;
@@ -485,7 +493,7 @@ export class Battlefield {
         if(goalKind){const tag=new Text({text:goalKind==='escape'?'탈출':'도착',style:{fontFamily:'Malgun Gothic',fontSize:11,fontWeight:'800',fill:0x10180f,padding:2}});tag.anchor.set(.5,1);
           const chip=new Graphics().roundRect(-tag.width/2-5,-tag.height-2,tag.width+10,tag.height+3,6).fill({color:goalColor(goalKind),alpha:.95}).stroke({color:0x10180f,width:1.5});
           const badge=new Container();badge.addChild(chip,tag);badge.y=-60;badge.label='hud';actor.piece.addChild(badge);}
-        const ratio=Math.max(0,unit.hp/unit.stats.maxHp);bar.rect(-18,12,36,7).fill(0x0d1310).rect(-17,13,34,5).fill(0x40312a).rect(-17,13,Math.round(34*ratio),5).fill(ratio<.3?0xf06a4f:sides[unit.side]).rect(-17,13,Math.round(34*ratio),1).fill({color:0xffffff,alpha:.35});
+        const ratio=Math.max(0,unit.hp/unit.stats.maxHp);this.hpShown.set(unit.id,ratio);bar.rect(-18,12,36,7).fill(0x0d1310).rect(-17,13,34,5).fill(0x40312a).rect(-17,13,Math.round(34*ratio),5).fill(ratio<.3?0xf06a4f:sides[unit.side]).rect(-17,13,Math.round(34*ratio),1).fill({color:0xffffff,alpha:.35});
         // Evolved troops (tier 2/3) wear gold rank diamonds beside the health bar.
         for(let t=1;t<tierOf(unit.unitClass);t++){const x=-25,y=15-(t-1)*8;bar.poly([x,y-4,x+3.5,y,x,y+4,x-3.5,y]).fill(0xe8c06a).stroke({color:0x2a1d0b,width:1.2});}
         bar.label='hud';actor.piece.addChild(bar);
@@ -653,7 +661,7 @@ export class Battlefield {
     const style=hitStyle(familyOf(actor.unit.unitClass),actor.unit.unitClass,e.t==='strategy'?e.strategy:undefined,weaponFx),officer=this.isOfficer(actor.unit),tactic=e.t!=='strategy'?e.tactic:undefined;
     const landed=e.t==='strategy'?e.damage.some(d=>d>0):e.hit,critical=e.t==='attack'&&e.critical&&e.hit;
     // 병종 전법이 발동하면 그 이름을 외치고, 장수는 휘두르기 전에 기합을 모은다.
-    this.emote(actor.unit.pos,tactic?{text:tactic+'!',color:0xd9a43a,shape:'burst'}:e.t==='counter'?reactions.counter!:sfx&&sdef?{text:sdef.name+'!',color:sfx.color,shape:'burst'}:cryFor(actor.unit.unitClass,e.t==='strategy',e.t==='strategy'?e.strategy:''));
+    this.emote(actor.unit.pos,tactic?{text:tactic+'!',color:0xd9a43a,shape:'burst'}:e.t==='counter'?reactions.counter!:sfx&&sdef?{text:(e.t==='strategy'&&e.double?'연속 ':'')+sdef.name+'!',color:sfx.color,shape:'burst'}:cryFor(actor.unit.unitClass,e.t==='strategy',e.t==='strategy'?e.strategy:''));
     // 겨눔 표시와(책략은) 발밑 마법진
     void this.fx.targetMark(to,e.t==='strategy'?760:520);
     const el:Element|undefined=e.t==='strategy'?(e.strategy==='heal'||e.strategy==='calm'||e.strategy==='repair'||e.damage.some(d=>d<0)||(this.state?.strategies.get(e.strategy)?.targetSides.includes('player')&&!this.state?.strategies.get(e.strategy)?.targetSides.includes('enemy'))?'heal':((el0=>el0==='physical'?'earth':el0)(this.state?.strategies.get(e.strategy)?.element) as Element|undefined)??'support'):undefined;
@@ -693,7 +701,7 @@ export class Battlefield {
         // 피해 숫자: 맞은 자리에서 튀어 오른다(회심은 크고 금빛, 회복은 초록).
         for(const r of reactions_)if(r.victim&&r.kind==='guard')void this.fx.shield(iso(r.victim.unit.pos));
         if((e.t==='attack'||e.t==='counter')&&!e.hit)void this.fx.evade(to);
-        hit=true;if(landed){this.impact(target.pos,style,dx/len,dy/len,critical);for(const r of reactions_)if(r.victim&&r.kind==='hurt')this.flash(r.victim);}if(e.t==='attack'&&e.critical&&e.hit)this.emote(target.pos,reactions.critical!,-26);if((e.t==='attack'||e.t==='counter')&&!e.hit)this.emote(target.pos,reactions.evade!);for(const r of reactions_)if(r.victim){if(r.kind==='guard')this.emote(r.victim.unit.pos,reactions.guard!);else{const dmg=e.t==='strategy'?(e.damage[e.targets.indexOf(r.victim.unit.id)]??0):e.damage;if(isCrisis(r.victim.unit.hp,r.victim.unit.stats.maxHp,dmg))this.emote(r.victim.unit.pos,reactions.crisis!,-24);}}if(e.t==='strategy')this.onSound({kind:e.strategy==='repair'?'repair':'strategy',strategy:e.strategy,unitClass:actor.unit.unitClass,pan:this.panOf(target.pos)});else this.onSound({kind:'impact',unitClass:actor.unit.unitClass,target:{id:target.id,unitClass:target.unitClass},hit:e.hit,critical:e.t==='attack'&&e.critical,guard:reactions_.some(r=>r.kind==='guard'),heavy:e.damage>=target.stats.maxHp*.3,structure:!!structureKind(target.id),pan:this.panOf(target.pos)});if(e.t!=='strategy'&&e.hit&&(structureKind(target.id)||['ram','catapult'].includes(actor.unit.unitClass)))this.debris(target.pos,actor.unit.unitClass==='ram'?18:10);if(e.t==='strategy')e.targets.forEach((id,i)=>{const u=this.state?.find(id);if(!u)return;const d=e.damage[i]??0,healing=el==='heal'||d<0;if(d===0)return;setTimeout(()=>this.fx.number(iso(u.pos),healing?'+'+Math.abs(d):String(d),healing?'heal':'hurt',(i%2?14:-6)),180+i*90);});else if(e.hit)this.fx.number(to,String(e.damage),critical?'crit':'hurt');else this.fx.number(to,'회피','miss');}
+        hit=true;if(landed){this.impact(target.pos,style,dx/len,dy/len,critical);for(const r of reactions_)if(r.victim&&r.kind==='hurt')this.flash(r.victim);}if(e.t==='attack'&&e.critical&&e.hit)this.emote(target.pos,reactions.critical!,-26);if((e.t==='attack'||e.t==='counter')&&!e.hit)this.emote(target.pos,reactions.evade!);for(const r of reactions_)if(r.victim){if(r.kind==='guard')this.emote(r.victim.unit.pos,reactions.guard!);else{const dmg=e.t==='strategy'?(e.damage[e.targets.indexOf(r.victim.unit.id)]??0):e.damage;if(isCrisis(r.victim.unit.hp,r.victim.unit.stats.maxHp,dmg))this.emote(r.victim.unit.pos,reactions.crisis!,-24);}}if(e.t==='strategy')this.onSound({kind:e.strategy==='repair'?'repair':'strategy',strategy:e.strategy,unitClass:actor.unit.unitClass,pan:this.panOf(target.pos)});else this.onSound({kind:'impact',unitClass:actor.unit.unitClass,target:{id:target.id,unitClass:target.unitClass},hit:e.hit,critical:e.t==='attack'&&e.critical,guard:reactions_.some(r=>r.kind==='guard'),heavy:e.damage>=target.stats.maxHp*.3,structure:!!structureKind(target.id),pan:this.panOf(target.pos)});if(e.t!=='strategy'&&e.hit&&(structureKind(target.id)||['ram','catapult'].includes(actor.unit.unitClass)))this.debris(target.pos,actor.unit.unitClass==='ram'?18:10);if(e.t==='strategy')e.targets.forEach((id,i)=>{const u=this.state?.find(id);if(!u)return;const d=e.damage[i]??0,healing=el==='heal'||d<0;if(d===0)return;this.drainBar(id,d);setTimeout(()=>this.fx.number(iso(u.pos),healing?'+'+Math.abs(d):String(d),healing?'heal':'hurt',(i%2?14:-6)),180+i*90);});else if(e.hit){this.drainBar(target.id,e.damage);this.fx.number(to,String(e.damage),critical?'crit':'hurt');}else this.fx.number(to,'회피','miss');}
     };
     // 맞는 순간 화면이 잠깐 멎는다(히트스톱): 무거운 병종·회심일수록 길게.
     await this.tween(total*.6,epoch,p=>frame(p*.6));
@@ -748,6 +756,23 @@ export class Battlefield {
       if(t>=1){this.app.ticker.remove(tick);g.destroy();}};this.app.ticker.add(tick);
     const spark={slash:{count:8,color:0xfff3d0,speed:120},cleave:{count:14,color:0xffd070,speed:130},pierce:{count:8,color:0xfff3d0,speed:150},arrow:{count:6,color:0xffe0a0,speed:100},bolt:{count:9,color:0xffe0a0,speed:140},blunt:{count:14,color:0xa49b86,speed:120},fan:{count:10,color:0xb8f4ff,speed:100},fire:{count:14,color:0xff9a40,speed:90},spell:{count:10,color:0xb8f4ff,speed:90}}[style.kind];
     this.sparks(at,{...spark,count:Math.round(spark.count*(critical?1.6:1)),life:520,gravity:style.kind==='fire'||style.kind==='spell'||style.kind==='fan'?-60:220,size:style.kind==='cleave'||style.kind==='blunt'?3:2});
+  }
+  /**
+   * 맞은 부대의 머리 위 체력 막대. 깎인 몫이 흰빛 잔상으로 남았다가 0.4초에 걸쳐 새 값까지 줄어든다.
+   * 회복은 초록 잔상이 먼저 깔리고 막대가 차오른다. 다음 render()가 'hud'를 지우며 진짜 막대로 바꾼다.
+   */
+  private drainBar(id:string,delta:number){
+    const a=this.actors.get(id);if(!a||a.piece.destroyed||!delta||structureKind(id))return;const max=Math.max(1,a.unit.stats.maxHp);
+    const from=this.hpShown.get(id)??Math.max(0,a.unit.hp/max),to=Math.max(0,Math.min(1,from-delta/max)),hurt=delta>0;this.hpShown.set(id,to);
+    const g=new Graphics();g.label='hud';a.piece.addChild(g);const color=(r:number)=>r<.3?0xf06a4f:sides[a.unit.side];
+    const draw=(fill:number,ghost:number,glow:number)=>{if(g.destroyed)return;g.clear().rect(-17,13,34,5).fill(0x40312a);
+      const lo=Math.min(fill,ghost),hi=Math.max(fill,ghost);if(hi>lo)g.rect(-17+34*lo,13,34*(hi-lo),5).fill({color:hurt?0xfff1d8:0x9affb0,alpha:.55+.45*glow});
+      if(fill>0)g.rect(-17,13,34*fill,5).fill(color(fill)).rect(-17,13,34*fill,1).fill({color:0xffffff,alpha:.35});};
+    if(this.reduced){draw(to,to,0);return;}
+    const born=performance.now(),hold=120,life=400;
+    const tick=()=>{if(g.destroyed){this.app.ticker.remove(tick);return;}const age=(performance.now()-born)*this.playbackRate,q=Math.max(0,Math.min(1,(age-hold)/life)),e=1-(1-q)**2;
+      if(hurt)draw(to,from+(to-from)*e,1-q);else draw(from+(to-from)*e,to,1-q);if(q>=1)this.app.ticker.remove(tick);};
+    this.app.ticker.add(tick);
   }
   /** 작은 파편·불티를 뿌린다. */
   sparks(at:Coord,o:{count:number;color:number;speed:number;life:number;gravity:number;size:number}){

@@ -196,6 +196,8 @@ export interface Unit {
   famedReach?: boolean;
   /** 규칙판 9: 한 번의 공격(연속 공격 포함)으로 잃을 수 있는 최대 체력 비율(%). 아군·필수 생존 NPC를 한 방에서 지킨다. */
   hitCap?: number;
+  /** 규칙판 11: 공격 책략이 맞으면 정신력 비율로 한 번 더(MP 없이) 연속 시전한다. */
+  chainCast?: boolean;
   hasMoved: boolean;
   movedThisTurn?: boolean;
   /** 이번 차례에 움직인 거리(칸). 기병 돌격 같은 병종 전법이 읽는다. */

@@ -20,7 +20,7 @@ import {officerDuelModelStyle,officerDuelMounted,officerBattleSheet,officerDuelS
 import {MOUNTED_FAMILIES} from './armor.ts';
 import {coachStep,COACH_KEY} from './tutorial.ts';
 import {dueLines} from './battle-lines.ts';
-import {loadSettings,saveSettings} from './settings.ts';
+import {loadSettings,saveSettings,type Speed} from './settings.ts';
 import {SLOT_COUNT,slotKey,readSlot,slotLabel,readFull,snapshotKeys,restoreKeys,agoText,type FullSlot} from './save-slots.ts';
 import {encounterLevels,structureKind,structureFrame,raceGap} from './campaign-rules.ts';
 import {readCampaign,freshCampaign,writeCampaign,deployment,levelInfo,award,equip,equipSlot,treasureInfo,gearKey,type GearSlot,treasures,OFFICERS} from './progression.ts';
@@ -67,7 +67,7 @@ const sound=new Soundscape(), field=new Battlefield();
 /** Developer shortcuts (straight into a late battle) only appear with ?dev in the address. */
 const devMode=new URLSearchParams(location.search).has('dev');
 /** 새 전투가 쓰는 규칙판: 5 = 조조전 병과 체계(등급 성장·지형 효율·명중/2회 공격/회심 비율). 예전 저장은 저장된 규칙판 그대로. */
-const RULES=10 as const;
+const RULES=11 as const;
 let session=new Session(),selected='sima_yi',mode='move',threat=false,speed=1,menuOpen=true,aiTimer:ReturnType<typeof setTimeout>|undefined,lastLog=0,resultShown=false;
 let saveAvailable=false,hasStarted=false;
 try{saveAvailable=!!localStorage.getItem(SAVE_KEY);}catch{/* Private browsing may disable storage. */}
@@ -334,7 +334,7 @@ function describe(e:LogEntry){const name=(id:string)=>session.state.find(id)?.na
   case 'turnStart':return `${e.turn}턴 · ${sideNames[e.side]}의 차례입니다.`;
   case 'move':return `${name(e.unit)} 이동 · ${terrainNames[session.state.map.tileAt(e.to).terrain]}`;
   case 'attack':case 'counter':return `${name(e.attacker)}${e.t==='counter'?' 반격':' 공격'} → ${name(e.defender)} · ${e.hit?e.damage+' 피해':'회피'}`;
-  case 'strategy':return `${name(e.caster)} · ${e.strategy==='heal'?'치유':e.strategy==='calm'?'진정':e.strategy==='repair'?'수리':session.state.strategies.get(e.strategy)?.name??e.strategy} · ${Math.abs(e.damage.reduce((a,b)=>a+b,0))}${e.damage.some(d=>d<0)?' 회복':e.damage.every(d=>d===0)?' 지원':' 피해'}`;
+  case 'strategy':return `${e.double?'연속 책략! ':''}${name(e.caster)} · ${e.strategy==='heal'?'치유':e.strategy==='calm'?'진정':e.strategy==='repair'?'수리':session.state.strategies.get(e.strategy)?.name??e.strategy} · ${Math.abs(e.damage.reduce((a,b)=>a+b,0))}${e.damage.some(d=>d<0)?' 회복':e.damage.every(d=>d===0)?' 지원':' 피해'}`;
   case 'retreat':return structureKind(e.unit)==='gate'?`${name(e.unit)} 파괴 · 성문 돌파! 주변 아군 사기 상승`:`${name(e.unit)} ${structureKind(e.unit)?'파괴':'퇴각'}`;
   case 'spawn':return e.units.some(id=>structureKind(id)==='barricade')?'공병이 방책을 세웠습니다.':'';
   case 'outcome':return e.outcome==='victory'?'작전 성공.':`작전 실패 — ${session.failure||defeatCause(session.state)}`;
@@ -730,9 +730,9 @@ $('#left-close').onclick=()=>{document.body.classList.remove('left-open');$('#le
 {const bar=document.querySelector<HTMLElement>('.topbar');const fit=()=>{if(bar)document.documentElement.style.setProperty('--topbar-h',bar.offsetHeight+'px');};fit();addEventListener('resize',fit);if(bar)new ResizeObserver(fit).observe(bar);}
 {const head=document.querySelector<HTMLElement>('.right-panel>.section-label');if(head){head.setAttribute('role','button');head.tabIndex=0;const flip=()=>document.body.classList.toggle('unit-open');head.onclick=flip;head.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flip();}};$('#unit-detail').addEventListener('click',()=>{if(matchMedia('(max-width:700px),(orientation:landscape) and (max-height:520px)').matches)document.body.classList.remove('unit-open');});}}
 $('#threat').onclick=()=>{threat=!threat;$('#threat').setAttribute('aria-pressed',String(threat));render();};
-function applySpeed(){field.playbackRate=speed;$('#speed').innerHTML=`▷ ${speed}× 속도`;}
-$('#speed').onclick=()=>{speed=speed===1?2:speed===2?3:1;applySpeed();storeSettings();};
-function storeSettings(){saveSettings({music:sound.musicVolume,effects:sound.effectsVolume,sound:sound.enabled,speed:speed as 1|2|3});}
+function applySpeed(){const skip=speed===4;field.playbackRate=skip?3:speed;field.skipAnimations=skip;$('#speed').innerHTML=skip?'⏭ 연출 생략':`▷ ${speed}× 속도`;$('#speed').title=skip?'전투 동작을 건너뛰고 결과만 봅니다':'전투 연출 속도';}
+$('#speed').onclick=()=>{speed=speed===1?2:speed===2?3:speed===3?4:1;applySpeed();storeSettings();};
+function storeSettings(){saveSettings({music:sound.musicVolume,effects:sound.effectsVolume,sound:sound.enabled,speed:speed as Speed});}
 {const saved=loadSettings();sound.musicVolume=saved.music;sound.effectsVolume=saved.effects;sound.enabled=saved.sound;speed=saved.speed;applySpeed();updateSound();}
 $('#help').onclick=()=>modal('<div class="dialogue"><h2>전장의 길잡이</h2><p><b>천명의 원정</b> · 게임은 3편 18층 원정으로 진행됩니다. 원정은 사마의를 따르는 장수들(조진·장합·곽회·사마랑)과 함께 떠나고, 새 장수는 모병소와 전투 보상에서 영입합니다. 장수는 공격·격파·책략마다 경험치를 얻어 전투 중에도 레벨이 오릅니다. 병종마다 전법(경기병 돌격, 창병 창벽, 궁병 선제 사격 등)이 있어 조건이 맞으면 피해가 조금 더 들어갑니다. 층마다 갈림길을 고르고, 쓰러진 장수는 돌아오지 않으며, 사마의가 쓰러지면 원정이 끝납니다. 연의 전장을 이기면 영구 기록에 남고, 원정이 끝나면 천명을 얻어 본영의 천명 해금에 씁니다.</p><p>부대 선택 → 이동 → 공격·책략·대기 → 턴 종료. 본대 다음 편입 아군을 직접 조작합니다.</p><p>1 이동 · 2 공격 · 3 첫 책략 · W 대기 · Z 무르기 · E 턴 종료 · N 다음 부대 · Esc 명령 취소. 전장은 고정되어 한눈에 보입니다. 큰 전장은 +/− 버튼으로 확대하고 드래그·미니맵으로 살피세요.</p><p>일기토(무력)는 인접, 설전(지력)은 3칸 이내. 일기토는 공격·방어·기합·필살기, 설전은 논박·반론·숙고·논파를 선택합니다.</p></div>');
 $('#topbar-save').onclick=()=>{menuOpen=true;clearTimeout(aiTimer);showSlots();};

@@ -76,15 +76,15 @@ export const UNIQUE_TREASURE_SHEETS=[
   ['shanhaijing','xishuMap'],
 ] as const;
 const UNIQUE_ART=new Map<string,ExtraArt>(UNIQUE_TREASURE_SHEETS.flatMap((items,sheet)=>items.map((id,cell)=>[id,{sheet,cell}] as const)));
-/** 조조전 보물 도감에서 더한 22점의 전용 3×4 그림판. */
-export const KOEI_TREASURE_SHEETS=[
+/** 보물 사냥·사신보옥으로 더한 22점의 전용 3×4 그림판(자체 생성 그림). */
+export const LEGEND_TREASURE_SHEETS=[
   ['ironHelm','beanBag','twinWhips','plantainFan','mirrorArmor','dragonGi','silverShield','lubuBow','linkedArmor','windGodShield','noFeatherDart','goldFireCannon'],
   ['fiveFireFan','sageSword','darkRobe','phoenixRobe','windWheel','zhugeTurban','azureJewel','vermilionJewel','blackTortoiseJewel','whiteTigerJewel'],
 ] as const;
-const KOEI_ART=new Map<string,ExtraArt>(KOEI_TREASURE_SHEETS.flatMap((items,sheet)=>items.map((id,cell)=>[id,{sheet,cell}] as const)));
+const LEGEND_ART=new Map<string,ExtraArt>(LEGEND_TREASURE_SHEETS.flatMap((items,sheet)=>items.map((id,cell)=>[id,{sheet,cell}] as const)));
 export const ART_PENDING:readonly string[]=[];
 /** 실제 그림이 등록된 추가 보물·회차 보물 id. */
-export const TREASURE_ART:ReadonlySet<string>=new Set([...EXTRA_ART.keys(),...UNIQUE_ART.keys(),...KOEI_ART.keys()]);
+export const TREASURE_ART:ReadonlySet<string>=new Set([...EXTRA_ART.keys(),...UNIQUE_ART.keys(),...LEGEND_ART.keys()]);
 
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const EDGES=[0,150,306,458,610,764,919,1072,1228,1387,1619];
@@ -99,16 +99,16 @@ const uniqueSheetIcon=(key:string)=>{
   const col=art.cell%3,row=Math.floor(art.cell/3);
   return `<i class="treasure-icon sheet" style="background-image:url(treasures-unique-${String(art.sheet+1).padStart(2,'0')}-v1.webp);background-size:300% 400%;background-position:${col*50}% ${row*100/3}%;background-repeat:no-repeat"></i>`;
 };
-const koeiSheetIcon=(key:string)=>{
-  const art=KOEI_ART.get(key);if(!art)return '';
+const legendSheetIcon=(key:string)=>{
+  const art=LEGEND_ART.get(key);if(!art)return '';
   const col=art.cell%3,row=Math.floor(art.cell/3);
-  return `<i class="treasure-icon sheet" style="background-image:url(treasures-koei-${String(art.sheet+1).padStart(2,'0')}-v1.webp);background-size:300% 400%;background-position:${col*50}% ${row*100/3}%;background-repeat:no-repeat"></i>`;
+  return `<i class="treasure-icon sheet" style="background-image:url(treasures-legend-${String(art.sheet+1).padStart(2,'0')}-v1.webp);background-size:300% 400%;background-position:${col*50}% ${row*100/3}%;background-repeat:no-repeat"></i>`;
 };
 const pendingIcon=(glyph:string,grade:number,label:string)=>`<i class="treasure-icon pending g${grade}" title="${esc(label)} · 그림 준비 중">${esc(glyph)}</i>`;
 
 /** 장착 보물의 그림. */
 export function treasureIcon(id:string):string{
-  if(KOEI_ART.has(id))return koeiSheetIcon(id);
+  if(LEGEND_ART.has(id))return legendSheetIcon(id);
   if(UNIQUE_ART.has(id))return uniqueSheetIcon(id);
   if(EXTRA_ART.has(id))return sheetIcon(id);
   const info=treasureInfo(id);if(info.icon>=0)return atlasIcon(info.icon);

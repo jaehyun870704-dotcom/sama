@@ -72,6 +72,7 @@ describe('saved settings',()=>{
   expect(parseSettings(null)).toEqual(DEFAULT_SETTINGS);expect(parseSettings('{oops')).toEqual(DEFAULT_SETTINGS);
   expect(parseSettings(JSON.stringify({music:.1,effects:2,sound:false,speed:3}))).toEqual({music:.1,effects:1,sound:false,speed:3});
   expect(parseSettings(JSON.stringify({speed:7,music:'x'})).speed).toBe(1);
+  expect(parseSettings(JSON.stringify({speed:4})).speed).toBe(4);
  });
 });
 import {readSlot,slotLabel} from '../src/save-slots.ts';

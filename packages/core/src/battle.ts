@@ -4,7 +4,7 @@
 import { BattleState, PHASE_ORDER, type BattleSnapshot } from "./state.ts";
 import type { Command, CommandResult } from "./commands.ts";
 import { ok, fail } from "./commands.ts";
-import { ccRecoverChance } from "./cc-rules.ts";
+import { ccRatioChance, ccRecoverChance } from "./cc-rules.ts";
 import type { StatusKind } from "./types.ts";
 import { computePhysical, computeStrategy, createDamageContext, doubleAttackChance } from "./formulas.ts";
 import { applyTraitHooks, capHit, counterLimitOf, ignoresRough, hasTrait, guardsAdjacent, getTrait, traitParam } from "./traits.ts";
@@ -193,24 +193,27 @@ export class Battle {
     const area = global
       ? this.state.living().filter((t) => def.targetSides.includes(t.side)).map((t) => ({ ...t.pos }))
       : strategyArea(def, at, c.pos);
-    const targets: string[] = [];
-    const damages: number[] = [];
-
-    for (const coord of area) {
-      const t = this.state.unitAt(coord);
-      if (!t || !def.targetSides.includes(t.side)) continue;
-      const raw = computeStrategy(c, t, def, this.state.map, this.state.rng);
-      const capped = raw.hit ? survive(t, capHit(t, raw.damage), sparesFullHp(t)) : raw.damage;
-      const res = capped === raw.damage ? raw : { ...raw, damage: capped, lethal: capped >= t.hp };
-      targets.push(t.id);
-      damages.push(res.damage);
-      if (res.hit) {
-        this.damage(t, res.damage, c);
-        for (const s of def.inflicts ?? []) {
-          if (t.alive) this.state.applyStatus(t, { kind: s, turns: 2, magnitude: 1 });
+    const cast = (double: boolean): { targets: string[]; damages: number[] } => {
+      const targets: string[] = [];
+      const damages: number[] = [];
+      for (const coord of area) {
+        const t = this.state.unitAt(coord);
+        if (!t || (double && !t.alive) || !def.targetSides.includes(t.side)) continue;
+        const raw = computeStrategy(c, t, def, this.state.map, this.state.rng);
+        const capped = raw.hit ? survive(t, capHit(t, raw.damage), sparesFullHp(t)) : raw.damage;
+        const res = capped === raw.damage ? raw : { ...raw, damage: capped, lethal: capped >= t.hp };
+        targets.push(t.id);
+        damages.push(res.damage);
+        if (res.hit) {
+          this.damage(t, res.damage, c);
+          for (const s of def.inflicts ?? []) {
+            if (t.alive) this.state.applyStatus(t, { kind: s, turns: 2, magnitude: 1 });
+          }
         }
       }
-    }
+      return { targets, damages };
+    };
+    const first = cast(false);
 
     if (def.leavesHazard) {
       for (const coord of area) {
@@ -221,7 +224,16 @@ export class Battle {
       }
     }
 
-    this.state.push({ t: "strategy", caster: c.id, strategy: strategyId, targets, damage: damages });
+    this.state.push({ t: "strategy", caster: c.id, strategy: strategyId, targets: first.targets, damage: first.damages });
+    // 규칙판 11 연속 책략: 적을 해친 공격 책략만, 시전자 정신력 ÷ 첫 표적 정신력 비율로(2회 공격과 같은 곡선) 한 번 더 MP 없이.
+    const primary = first.damages.findIndex((d) => d > 0);
+    if (c.chainCast && c.alive && !global && primary >= 0) {
+      const lead = this.state.find(first.targets[primary]!);
+      if (lead?.alive && isHostile(c.side, lead.side) && this.state.rng.chance(ccRatioChance(c.stats.spirit, lead.stats.spirit))) {
+        const second = cast(true);
+        if (second.targets.length) this.state.push({ t: "strategy", caster: c.id, strategy: strategyId, targets: second.targets, damage: second.damages, double: true });
+      }
+    }
     c.hasActed = true;
     c.hasMoved = true;
     return ok;

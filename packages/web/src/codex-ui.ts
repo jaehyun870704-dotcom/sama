@@ -138,11 +138,11 @@ export async function paintArmor(){
   }
 }
 const CC_TERRAINS:Array<[TerrainKind,string]>=[['plain','평지'],['forest','숲'],['hill','구릉'],['mountain','산지'],['marsh','늪'],['water','물'],['fort','성채']];
-/** 조조전 병과 등급(새 전투 규칙): 다섯 능력 등급·HP/MP 성장·지형 효율. */
+/** 병과 등급(새 전투 규칙): 다섯 능력 등급·HP/MP 성장·지형 효율. */
 function ccGrades(c:UnitClass){
   const g=gradeProfileOf(c),[a,sp,d,ag,m]=g.grades;
   const terrain=CC_TERRAINS.map(([t,name])=>`${name}${efficiencyMark(terrainEfficiency(c,t))}`).join(' ');
-  return `<p class="cx-unique"><b>조조전 병과 「${esc(g.name)}」</b> 공격 ${a} · 정신 ${sp} · 방어 ${d} · 순발 ${ag} · 사기 ${m} · HP ${g.hp[0]}+${g.hp[1]}/Lv · MP ${g.mp[0]}+${g.mp[1]}/Lv<br><small>지형 효율 ${terrain} (★120% ◎110% ○100% △90% X80%)</small></p>`;
+  return `<p class="cx-unique"><b>병과 등급 「${esc(g.name)}」</b> 공격 ${a} · 정신 ${sp} · 방어 ${d} · 순발 ${ag} · 사기 ${m} · HP ${g.hp[0]}+${g.hp[1]}/Lv · MP ${g.mp[0]}+${g.mp[1]}/Lv<br><small>지형 효율 ${terrain} (★120% ◎110% ○100% △90% X80%)</small></p>`;
 }
 const PROFILE_ROWS:Array<[keyof ReturnType<typeof profileOf>,string]>=[['hp','체력'],['attack','공격'],['defense','방어'],['intellect','지력'],['spirit','정신'],['agility','순발'],['mp','책략']];
 function classesTab(pick:string){

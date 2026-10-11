@@ -10,7 +10,7 @@ export type LogEntry =
   | { t: "move"; unit: string; from: Coord; to: Coord }
   | { t: "attack"; attacker: string; defender: string; damage: number; hit: boolean; critical: boolean; tactic?: string; double?: boolean }
   | { t: "counter"; attacker: string; defender: string; damage: number; hit: boolean; tactic?: string; double?: boolean }
-  | { t: "strategy"; caster: string; strategy: string; targets: string[]; damage: number[] }
+  | { t: "strategy"; caster: string; strategy: string; targets: string[]; damage: number[]; double?: boolean }
   | { t: "retreat"; unit: string; side: Side }
   | { t: "status"; unit: string; kind: StatusKind; turns: number }
   | { t: "spawn"; units: string[]; side: Side }

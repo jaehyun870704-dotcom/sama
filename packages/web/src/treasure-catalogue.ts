@@ -113,7 +113,7 @@ const questEntries:Array<[string,string,GearSlot,number,string,Treasure['bonus']
  ['hundredPaceBow','백보 신궁','weapon',4,'C09',{attack:9,agility:3},'백 걸음 밖의 버들잎을 맞혔다는 활.'],
  ['peerlessSword','백홍검','weapon',4,'C10',{attack:11,agility:3,maxHp:6},'손권의 여섯 명검 가운데 으뜸. 칼을 뽑으면 흰 무지개가 선다 했다. 도전 10단계를 모두 넘은 증표.'],
  ['overlordArmor','패왕갑','armor',4,'C10',{defense:8,maxHp:18},'천하를 다투던 패왕의 갑옷. 마지막 수문장을 꺾은 증표.'],
- // 조조전 보물 도감에서 가져온 보물: 보물 사냥 꾸러미(R02~R05)와 도전 6~9단계(사신보옥)에 더한다.
+ // 보물 사냥 꾸러미(R02~R05)와 도전 6~9단계(사신보옥)에 더한 보물.
  ['ironHelm','철투구','armor',2,'R02',{defense:3,maxHp:5},'쇠를 두들겨 만든 병사의 투구. 머리 위로 떨어지는 칼을 받아 낸다.'],
  ['beanBag','콩주머니','accessory',2,'R02',{maxHp:8,spirit:1},'말먹이 콩을 담아 허리에 차는 주머니. 행군이 길어도 지치지 않는다.'],
  ['twinWhips','쌍편','weapon',3,'R03',{attack:6,maxHp:4},'양손에 하나씩 쥐는 쇠채찍. 마디진 쇠가 갑옷 위로 뼈를 울린다.'],
