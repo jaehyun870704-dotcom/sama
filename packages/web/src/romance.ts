@@ -8,7 +8,7 @@
  * 이름있는 장수(core signatures.ts)는 장수마다 이름도 효과도 다른 고유특성을 하나 가진다(규칙판 8). 아래 skill은 규칙판 7까지의 옛 고유능력이다.
  */
 import type {Unit} from '../../core/src/index.ts';
-import {tierOf,signatureOf,signatureSet,SIGNATURE_UNLOCK_TEXT} from '../../core/src/index.ts';
+import {tierOf,signatureOf,signatureSet,SIGNATURE_UNLOCK_TEXT,SIGNATURE_UNLOCK_TIERS} from '../../core/src/index.ts';
 import type {Temper} from './duel.ts';
 
 export interface RomanceSkill {name:string;description:string;trait:string;param?:number}
@@ -186,8 +186,8 @@ export function romanceStats(name:string){const r=byName[name];return r?`무력 
 export const romanceByName=(name:string)=>byName[name];
 /** 이름있는 장수의 고유특성(규칙판 8). 목록 밖 인물은 병종이라 없다. 소년 시절 이름도 같은 사람으로 본다. */
 export function signatureSkill(name:string,tier=1):{name:string;description:string}|undefined{const g=signatureOf(name.replace(/^소년 /,''));return g?{name:g.name,description:g.text(tier)}:undefined;}
-/** 이름있는 장수의 고유특성 셋과 해금 조건(첫째는 처음부터, 둘째는 병종 2단계, 셋째는 3단계). */
-export function signatureSkills(name:string,tier=1):Array<{name:string;description:string;unlock:string;open:boolean}>{return signatureSet(name.replace(/^소년 /,'')).map((g,i)=>({name:g.name,description:g.text(tier),unlock:SIGNATURE_UNLOCK_TEXT[i]!,open:tier>=i+1}));}
+/** 이름있는 장수의 고유특성 셋과 해금 조건(첫째는 처음부터, 둘째는 2차 병종 진화, 셋째는 3차 병종 진화). */
+export function signatureSkills(name:string,tier=1):Array<{name:string;description:string;unlock:string;open:boolean}>{return signatureSet(name.replace(/^소년 /,'')).map((g,i)=>({name:g.name,description:g.text(tier),unlock:SIGNATURE_UNLOCK_TEXT[i]!,open:tier>=SIGNATURE_UNLOCK_TIERS[i]!}));}
 /** 연의 장수록에 오른 모든 이름(신장수 포함). */
 export const allRomanceNames=()=>Object.keys(byName);
 

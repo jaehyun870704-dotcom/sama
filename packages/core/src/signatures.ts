@@ -432,9 +432,12 @@ export const SIGNATURE_NAMES: readonly string[] = Object.keys(S);
 export const signatureOf = (name: string): Signature | undefined => S[name];
 /** 고유특성 셋(첫째·둘째·셋째). */
 export const signatureSet = (name: string): Signature[] => (S[name] ? [S[name]!, ...(MORE[name] ?? [])] : []);
-/** 몇째 고유특성이 열리는 병종 단계: 첫째는 처음부터, 둘째는 2단계(1차 진화), 셋째는 3단계(2차 진화). */
-export const SIGNATURE_UNLOCK_TIERS = [1, 2, 3] as const;
-export const SIGNATURE_UNLOCK_TEXT = ["처음부터", "병종 2단계(1차 진화)에서 해금", "병종 3단계(2차 진화)에서 해금"] as const;
+/**
+ * 몇째 고유특성이 열리는 병종 단계: 첫째는 처음부터, 둘째는 2차 진화(병종 3단계), 셋째는 3차 진화(병종 4단계).
+ * 진화 레벨은 계통마다 다르다(2차 진화 Lv.16~22, 3차 진화 Lv.30, 한 계통은 Lv.40) — 그 계통의 진화와 함께 열린다.
+ */
+export const SIGNATURE_UNLOCK_TIERS = [1, 3, 4] as const;
+export const SIGNATURE_UNLOCK_TEXT = ["처음부터", "2차 병종 진화(병종 3단계)에서 해금", "3차 병종 진화(병종 4단계)에서 해금"] as const;
 /** 첫째는 `sig:이름`, 둘째·셋째는 `sig:이름:2`·`sig:이름:3` */
 export const signatureTraitId = (name: string, nth = 1) => (nth <= 1 ? `sig:${name}` : `sig:${name}:${nth}`);
 /** 특성 id → [장수 이름, 몇째] */
@@ -447,7 +450,7 @@ export function parseSignatureId(id: string): [string, number] | undefined {
 for (const who of Object.keys(S)) signatureSet(who).forEach((sig, i) => defineTrait({ id: signatureTraitId(who, i + 1), name: sig.name, description: sig.text(1), hooks: sig.hooks }));
 
 /**
- * 이름있는 장수에게 고유특성을 붙인다. 병종 단계에 따라 하나씩 열린다(1단계 1개 · 2단계 2개 · 3단계 이상 3개),
+ * 이름있는 장수에게 고유특성을 붙인다. 병종 진화에 따라 하나씩 열린다(처음 1개 · 2차 진화 2개 · 3차 진화 3개),
  * 수치도 단계를 따라 커진다. 목록 밖 인물이면 false.
  */
 export function applySignature(unit: Unit, name: string, tier: number): boolean {

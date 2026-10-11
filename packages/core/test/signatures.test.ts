@@ -31,12 +31,12 @@ describe("이름있는 장수 고유특성", () => {
     for (const k of SIGNATURE_NAMES) signatureSet(k).forEach((g, i) => expect(getTrait(signatureTraitId(k, i + 1)).name).toBe(g.name));
   });
 
-  it("병종 단계에 따라 하나씩 열린다(1단계 1개 · 2단계 2개 · 3단계 이상 3개)", () => {
+  it("병종 진화에 따라 하나씩 열린다(처음 1개 · 2차 진화 2개 · 3차 진화 3개)", () => {
     const has = (tier: number) => { const u = unit("관우", "player", 1, 1); applySignature(u, "관우", tier); return u.traits.filter((t) => t.startsWith("sig:")); };
     expect(has(1)).toEqual(["sig:관우"]);
-    expect(has(2)).toEqual(["sig:관우", "sig:관우:2"]);
-    expect(has(3)).toEqual(["sig:관우", "sig:관우:2", "sig:관우:3"]);
-    expect(has(4)).toHaveLength(3);
+    expect(has(2)).toEqual(["sig:관우"]);
+    expect(has(3)).toEqual(["sig:관우", "sig:관우:2"]);
+    expect(has(4)).toEqual(["sig:관우", "sig:관우:2", "sig:관우:3"]);
   });
 
   it("목록 밖 인물에게는 붙지 않고, 병종 단계가 오르면 수치가 커진다", () => {
