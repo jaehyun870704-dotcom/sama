@@ -10,6 +10,19 @@
 import {Container,Graphics,Text,type Application} from 'pixi.js';
 
 export type Element='fire'|'water'|'wind'|'thunder'|'earth'|'support'|'heal';
+export interface ElementImpactProfile {stop:number;knock:number;color:number;glow:number}
+/** 속성마다 접촉 순간의 무게와 색을 분리한다. 전투 로직과 무관한 순수 연출 값이다. */
+export function elementImpactProfile(el:Element):ElementImpactProfile{
+  return {
+    fire:{stop:92,knock:7,color:0xff6728,glow:0xffd36a},
+    water:{stop:72,knock:6,color:0x3f9fe8,glow:0xcaf2ff},
+    wind:{stop:68,knock:7,color:0x69c887,glow:0xe4ffd7},
+    thunder:{stop:112,knock:9,color:0x8bc8ff,glow:0xfff29a},
+    earth:{stop:104,knock:10,color:0x9b7042,glow:0xf0d59a},
+    support:{stop:46,knock:3,color:0xa46be2,glow:0xf0d8ff},
+    heal:{stop:0,knock:0,color:0x65c879,glow:0xd9ffd2},
+  }[el];
+}
 type P={x:number;y:number};
 const TAU=Math.PI*2;
 let seed=1;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
@@ -31,6 +44,18 @@ export class BattleFx {
   screenFlash(color:number,alpha=.55,ms=220){
     if(this.reduced)return;const g=new Graphics();g.rect(0,0,this.app.screen.width,this.app.screen.height).fill(color);g.alpha=alpha;g.blendMode='add';this.overlay.addChild(g);const born=performance.now();
     const tick=()=>{if(g.destroyed){this.app.ticker.remove(tick);return;}const t=(performance.now()-born)/ms;g.alpha=alpha*(1-t);if(t>=1){this.app.ticker.remove(tick);g.destroy();}};this.app.ticker.add(tick);
+  }
+  /** 접촉 0.2초에만 보이는 속성 핵·충격 고리. 큰 기둥/폭발보다 먼저 눈에 들어와 명중 시점을 고정한다. */
+  impactPulse(p:P,el:Element,big=1){
+    if(this.reduced||el==='heal')return Promise.resolve();
+    const {color,glow}=elementImpactProfile(el),cx=p.x,cy=p.y-22;
+    void this.particles({x:cx,y:cy},Math.round(8*big),{speed:el==='earth'?90:135,up:el==='earth'?25:45,gravity:el==='wind'?-90:el==='earth'?260:80,life:360,size:[1.5,3.5],colors:[color,glow,0xfff7dc],spread:8});
+    return this.run(260,(g,t)=>{const snap=Math.max(0,1-t*3.4),a=1-t,r=(9+42*t)*big;
+      g.circle(cx,cy,(7+10*t)*big).fill({color:glow,alpha:snap*.9});
+      g.ellipse(cx,cy+22,r,r*.4).stroke({color,width:(5-3*t)*big,alpha:a*.9});
+      g.ellipse(cx,cy+22,r*.68,r*.25).stroke({color:glow,width:(2.5-1.2*t)*big,alpha:a*.75});
+      for(let i=0;i<6;i++){const q=i/6*TAU+(el==='wind'?t*2:0),inner=12*big,outer=(24+30*t)*big;g.moveTo(cx+Math.cos(q)*inner,cy+Math.sin(q)*inner*.7).lineTo(cx+Math.cos(q)*outer,cy+Math.sin(q)*outer*.7).stroke({color:glow,width:3*a*big,alpha:a});}
+    });
   }
   /** 대상 위에 금빛 역삼각(겨눔 표시). */
   targetMark(p:P,ms=520){return this.run(ms,(g,t)=>{const bob=Math.sin(t*TAU*2)*3,y=p.y-78+bob,s=1+Math.sin(Math.min(1,t*3)*Math.PI)*.25,a=t<.8?1:1-(t-.8)/.2;
@@ -62,13 +87,16 @@ export class BattleFx {
   defeat(p:P){void this.particles({x:p.x,y:p.y-10},14,{speed:40,up:60,gravity:-20,life:900,size:[4,9],colors:[0x6a6058,0x8a8078,0x4a4440]},'normal');
     void this.particles({x:p.x,y:p.y-14},10,{speed:60,up:40,gravity:-40,life:700,size:[1.5,3],colors:[0xffb050,0xffe080]});
     return this.run(700,(g,t)=>{g.circle(p.x,p.y-14,10+t*36).fill({color:0xfff0c8,alpha:.3*(1-t)});});}
-  /** 회심: 큰 별빛 + 붉은 빛살. */
-  critical(p:P){const cx=p.x,cy=p.y-26;return this.run(380,(g,t)=>{const a=1-t;for(let i=0;i<10;i++){const q=i/10*TAU+t;const r1=14,r2=(40+60*t);g.moveTo(cx+Math.cos(q)*r1,cy+Math.sin(q)*r1).lineTo(cx+Math.cos(q)*r2,cy+Math.sin(q)*r2*.7).stroke({color:i%2?0xffe066:0xff5a2a,width:4*a,alpha:a});}
-    g.star(cx,cy,8,(24+20*t),10).fill({color:0xfff6c0,alpha:a});});}
+  /** 회심: 먹빛 붓 고리, 큰 별빛, 금·적색 빛살이 접촉점에서 두 겹으로 터진다. */
+  critical(p:P){const cx=p.x,cy=p.y-26;void this.particles({x:cx,y:cy},22,{speed:180,up:55,gravity:180,life:560,size:[2,5],colors:[0xffedaa,0xd95832,0x241b18],spread:12},'normal');return this.run(520,(g,t)=>{const a=1-t,burst=Math.min(1,t*5),ring=20+72*t;
+    g.circle(cx,cy,ring).stroke({color:0x201713,width:12-7*t,alpha:a*.56});g.circle(cx,cy,ring*.72).stroke({color:0xc79b48,width:5-2*t,alpha:a*.82});
+    for(let i=0;i<14;i++){const q=i/14*TAU+t*.7,r1=11+6*burst,r2=(44+86*t)*(i%3===0?1.15:1);g.moveTo(cx+Math.cos(q)*r1,cy+Math.sin(q)*r1*.68).lineTo(cx+Math.cos(q)*r2,cy+Math.sin(q)*r2*.68).stroke({color:i%2?0xffd96a:0xd84b2f,width:(i%3===0?6:3)*a,alpha:a});}
+    g.moveTo(cx-54-28*t,cy+22).lineTo(cx+58+34*t,cy-24).stroke({color:0xf6e8c8,width:10*a,alpha:a*.88});g.moveTo(cx-48-22*t,cy+27).lineTo(cx+52+30*t,cy-19).stroke({color:0xd7a84e,width:4*a,alpha:a});g.star(cx,cy,8,25+22*t,9).fill({color:0xffefbd,alpha:a});});}
 
   /** 책략(속성별). big: 큰 책략(범위·고위)일수록 크게. */
   element(p:P,el:Element,big=1){
     const cx=p.x,cy=p.y;
+    void this.impactPulse(p,el,big);
     switch(el){
       case 'fire':{
         this.screenFlash(0xff7a20,.18*big,260);

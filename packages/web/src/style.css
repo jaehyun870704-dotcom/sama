@@ -1327,3 +1327,19 @@ body.left-open .left-close{display:block;position:absolute;right:8px;top:8px;z-i
 .route-tag.history{border-color:#7d8f6f;color:#c9d8bb}.route-tag.what-if{border-color:#8a6fb0;color:#e2d0ff}
 @media(max-width:580px){.tc-grid,.fm-routes{grid-template-columns:1fr}.hub-treasure-item{width:54px}}
 .fm-group{margin:10px 0 6px;font-size:12px;font-weight:600;color:#cdbf98}
+
+/* 회심 컷인 — 전용 초상과 창작 대사를 짧은 먹빛 사선 위에 겹친다. 지도를 밀거나 입력을 막지 않는다. */
+.critical-cut-in{position:absolute;z-index:8;left:4%;right:3%;top:50%;height:clamp(150px,34%,235px);transform:translateY(-50%);pointer-events:none;overflow:hidden;filter:drop-shadow(0 14px 20px #080b0acc)}
+.critical-cut-in[hidden]{display:none}
+.critical-cut-in:before{content:"";position:absolute;inset:11% 0 7%;background:linear-gradient(94deg,#101817f2 0%,#18201ff2 48%,#6b251de8 100%);clip-path:polygon(0 17%,4% 12%,2% 5%,25% 12%,55% 0,100% 15%,97% 48%,100% 82%,72% 73%,47% 100%,18% 86%,0 93%,3% 57%);border-top:2px solid #d6bd82;border-bottom:2px solid #75412e}
+.critical-cut-in:after{content:"";position:absolute;left:2%;right:28%;top:22%;height:58%;background:repeating-linear-gradient(168deg,transparent 0 13px,#eee3c91f 14px 16px,transparent 17px 25px);clip-path:polygon(0 38%,72% 0,100% 22%,76% 51%,100% 75%,34% 57%,0 100%,12% 55%)}
+.critical-cut-in .critical-kicker{position:absolute;z-index:3;left:19%;top:20%;font:900 calc(13px*var(--fs,1)) LocalSerif,'Noto Serif KR',serif;letter-spacing:.42em;color:#e2bd6f;text-shadow:0 2px 4px #111}
+.critical-cut-in .story-caption.with-officer{position:absolute;z-index:2;inset:0;display:grid;grid-template-columns:min(32%,235px) minmax(0,1fr);align-items:center;background:none;border:0;padding:0 4% 0 2%;box-shadow:none}
+.critical-cut-in .officer-face{grid-column:2;width:min(30vw,220px);height:110%;justify-self:end;align-self:end;order:2;border:0;background-color:transparent;filter:contrast(1.08) saturate(.92);mask-image:linear-gradient(to bottom,#000 74%,transparent 100%)}
+.critical-cut-in .dialogue-copy{grid-column:1;position:absolute;left:18%;right:35%;top:40%;transform:translateY(-50%);font-family:LocalSerif,'Noto Serif KR',serif;color:#eee3c9;text-shadow:0 3px 5px #080b0a}
+.critical-cut-in .dialogue-copy small{display:none}.critical-cut-in .dialogue-copy strong{display:block;font-size:calc(18px*var(--fs,1));color:#d4ae66;letter-spacing:.18em}
+.critical-cut-in .dialogue-copy p{margin:8px 0 0;font-size:clamp(20px,2.25vw,36px);font-weight:900;line-height:1.35;word-break:keep-all;overflow-wrap:break-word}
+.critical-cut-in.play{animation:critical-in 1.65s cubic-bezier(.18,.76,.2,1) both}
+@keyframes critical-in{0%{opacity:0;transform:translate(7%,-50%) scaleX(.9)}10%{opacity:1;transform:translate(0,-50%) scaleX(1)}78%{opacity:1}100%{opacity:0;transform:translate(-2%,-50%)}}
+@media(max-width:900px){.critical-cut-in{left:1%;right:1%;height:150px}.critical-cut-in .critical-kicker{left:10%;top:20%;font-size:11px}.critical-cut-in .story-caption.with-officer{grid-template-columns:1fr 150px}.critical-cut-in .officer-face{width:150px}.critical-cut-in .dialogue-copy{left:9%;right:31%}.critical-cut-in .dialogue-copy strong{font-size:14px}.critical-cut-in .dialogue-copy p{font-size:clamp(17px,3.5vw,25px)}}
+@media(prefers-reduced-motion:reduce){.critical-cut-in.play{animation:critical-fade 1.65s ease both}@keyframes critical-fade{0%,100%{opacity:0}10%,78%{opacity:1}}}

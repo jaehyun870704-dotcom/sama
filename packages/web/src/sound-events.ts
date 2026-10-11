@@ -75,7 +75,15 @@ export function soundsFor(e:SoundEvent,r:()=>number=Math.random):SoundShot[]{
       break;
     }
     case 'strategy-start':shots.push({name:'cast',gain:.7});if(chance(r,.4))shots.push({name:'shout',gain:.4,rate:1.1,delay:.05});break;
-    case 'strategy':{const name=strategySound(e.strategy);shots.push({name,wet:.3,duck:['fire','thunder','water','earth','boulder-hit'].includes(name)});break;}
+    case 'strategy':{const name=strategySound(e.strategy);shots.push({name,wet:.3,duck:['fire','thunder','water','earth','boulder-hit'].includes(name)});
+      // 속성음 뒤에 짧은 접촉음을 겹쳐 주문이 '재생'되는 대신 실제로 명중한 듯 들리게 한다.
+      if(name==='fire')shots.push({name:'armor-hit',gain:.42,rate:1.15,delay:.035});
+      else if(name==='water')shots.push({name:'heavy-hit',gain:.34,rate:1.25,delay:.045});
+      else if(name==='wind')shots.push({name:'swing',gain:.45,rate:1.3,delay:.02});
+      else if(name==='thunder')shots.push({name:'clash',gain:.58,rate:1.2,delay:.018,priority:2});
+      else if(name==='earth'||name==='boulder-hit')shots.push({name:'heavy-hit',gain:.55,rate:.88,delay:.025,priority:2});
+      else if(name==='confuse')shots.push({name:'clash',gain:.2,rate:1.55,delay:.05});
+      break;}
     case 'repair':shots.push({name:'repair'});break;
     case 'strike':shots.push({name:'thunder',duck:true,priority:2},{name:'boulder-hit',gain:.6,delay:.08});break;
     case 'retreat':

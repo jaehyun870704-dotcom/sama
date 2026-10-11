@@ -31,6 +31,12 @@ describe('battle sound events',()=>{
   expect(strategySound('thunder')).toBe('thunder');expect(strategySound('bind')).toBe('earth');expect(strategySound('confuse')).toBe('confuse');
   expect(strategySound('mend')).toBe('heal');expect(strategySound('fortify')).toBe('buff');expect(strategySound('rockfall')).toBe('boulder-hit');expect(strategySound('heal')).toBe('heal');
  });
+ it('layers an element-specific contact transient under offensive strategy hits',()=>{
+  expect(soundsFor({kind:'strategy',strategy:'fire'}).map(s=>s.name)).toEqual(['fire','armor-hit']);
+  expect(soundsFor({kind:'strategy',strategy:'thunder'}).map(s=>s.name)).toEqual(['thunder','clash']);
+  expect(soundsFor({kind:'strategy',strategy:'bind'}).map(s=>s.name)).toEqual(['earth','heavy-hit']);
+  expect(soundsFor({kind:'strategy',strategy:'heal'}).map(s=>s.name)).toEqual(['heal']);
+ });
  it('separates misses, guards, criticals and the ceremony around a battle',()=>{
   expect(soundsFor({kind:'impact',unitClass:'infantry',hit:false})[0]!.name).toBe('evade');
   expect(soundsFor({kind:'impact',unitClass:'infantry',hit:true,guard:true}).some(s=>s.name==='guard')).toBe(true);
