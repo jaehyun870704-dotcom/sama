@@ -81,9 +81,9 @@ export function showHub(host:RunHost){
   ${runBoard(sc.state,meta)}
   ${treasurePanel()}
   <div class="hub-actions"><button id="hub-scenario" class="primary">${done?'천명의 길 이어하기':'천명의 길 시작'}${sc.state.run?` · 제${sc.state.run.no}회차`:''} · ${esc(sc.tag)} 「${esc(sc.title)}」</button>
-  <button id="hub-quests">반복 퀘스트</button>${host.resumeSaved?'<button id="hub-resume">전투 이어하기</button>':''}<button id="hub-codex">삼국지 인물열전</button><button id="hub-research">연구</button><button id="hub-custom">신장수 · 신세력</button><button id="hub-slots">저장 칸</button><button id="hub-troops">병종 진화표</button><button id="hub-fate">갈림길 지도</button></div></div></div>`,false);
+  <button id="hub-chronicle">연의 장별 진군</button><button id="hub-quests">반복 퀘스트</button>${host.resumeSaved?'<button id="hub-resume">전투 이어하기</button>':''}<button id="hub-codex">삼국지 인물열전</button><button id="hub-research">연구</button><button id="hub-custom">신장수 · 신세력</button><button id="hub-slots">저장 칸</button><button id="hub-troops">병종 진화표</button><button id="hub-fate">갈림길 지도</button></div></div></div>`,false);
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
-  on('hub-scenario',host.showScenario);on('hub-quests',()=>showQuests(host));on('hub-custom',()=>showCustomEditor(host,()=>showHub(host)));
+  on('hub-scenario',host.showScenario);on('hub-chronicle',host.showChronicle);on('hub-quests',()=>showQuests(host));on('hub-custom',()=>showCustomEditor(host,()=>showHub(host)));
   const codex=()=>showCodex({modal:host.modal,toast:host.toast,back:()=>showHub(host),research:()=>research()}),research=()=>showResearch({modal:host.modal,toast:host.toast,back:()=>showHub(host),codex});
   on('hub-codex',codex);on('hub-research',research);
   on('hub-treasures',()=>showTreasures(host));document.querySelectorAll<HTMLButtonElement>('[data-treasure]').forEach(b=>b.onclick=()=>showTreasures(host,'owned'));on('hub-fate',()=>showFateMap(host,()=>showHub(host)));
@@ -145,7 +145,7 @@ function showChronicleSummary(host:RunHost){
   ${REGIONS.map((r,i)=>{const list=STORY_ORDER[(i+1) as 1|2|3];return `<h3>${r.arc} · ${list.filter(id=>known.has(id)).length}/${list.length}</h3><div class="chronicle-list">${list.map(id=>`<span class="${known.has(id)?'done':''}">${known.has(id)?'◆':'·'} ${esc(known.has(id)?stageTitle(id):'아직 모르는 이야기')}</span>`).join('')}</div>`;}).join('')}
   <h3>가상 시나리오 · 이긴 가상 전장 ${meta.tales.length}/${ROUTES.reduce((n,r)=>n+r.tales.length,0)}</h3><div class="chronicle-list">${ROUTES.filter(r=>!r.history||r.tales.length).map(r=>r.tales.map(t=>`<span class="${meta.tales.includes(t.id)?'done':''}">${meta.tales.includes(t.id)?'◆':'·'} ${esc(meta.tales.includes(t.id)?`${t.title} (${r.choice})`:'아직 가 보지 않은 길')}</span>`).join('')).join('')}</div>
   <h3>결말 ${meta.endings.length}/${ALL_ENDINGS.length}</h3><div class="chronicle-list">${ALL_ENDINGS.map(id=>{const e=endingFor({3:id}),seen=meta.endings.includes(id);return `<span class="${seen?'done':''}">${seen?'◆ '+esc(e.title):'· 아직 보지 못한 결말'}</span>`;}).join('')}</div>
-  <div class="run-actions"><button id="chron-replay" class="primary" ${known.size?'':'disabled'}>연의 회상 (이긴 전장 다시 치르기)</button><button id="chron-back">← 반복 퀘스트</button></div></div>`,false);
+  <div class="run-actions"><button id="chron-replay" class="primary">연의 장별 진군 ${known.size?'· 회상':'· 첫 장부터'}</button><button id="chron-back">← 반복 퀘스트</button></div></div>`,false);
   document.getElementById('chron-replay')!.onclick=host.showChronicle;
   document.getElementById('chron-back')!.onclick=()=>showQuests(host);
 }
