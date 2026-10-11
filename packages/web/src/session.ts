@@ -733,6 +733,7 @@ export class Session {
       for(const x of sc?.recruits??[])statsFor(x.unitClass,1);
       if(sc&&((sc.relics!==undefined&&(!Array.isArray(sc.relics)||sc.relics.length>12||sc.relics.some(x=>typeof x!=='string')))||(sc.heroHp!==undefined&&!(sc.heroHp>0&&sc.heroHp<=1))))throw new Error('잘못된 시나리오 기록');
       if(data.deployment.run&&data.deployment.run.enemyBase!==undefined&&(!Number.isInteger(data.deployment.run.enemyBase)||data.deployment.run.enemyBase<1||data.deployment.run.enemyBase>60))throw new Error('잘못된 시나리오 기록');}
+    if(data.deployment?.branch!==undefined&&(typeof data.deployment.branch!=='string'||data.deployment.branch.length>60||!data.deployment.run))throw new Error('잘못된 분기 기록');
     {const rt=data.deployment?.retinue;if(rt!==undefined&&(!Array.isArray(rt)||rt.length>2||rt.some(x=>typeof x?.name!=='string'||typeof x.id!=='string'||!(x.level>=1&&x.level<=99)||!(x.hp>0&&x.hp<=1))))throw new Error('잘못된 등용 기록');for(const x of rt??[])statsFor(x.unitClass,1);}
     if(data.deployment?.runStory){const r=data.deployment.runStory;
       if(!Number.isInteger(r.floor)||r.floor<1||r.floor>RUN_FLOORS||typeof r.stage!=='string'||!chapters.some(c=>c.stage.id===r.stage)||chapters[data.chapter]?.stage.id!==r.stage||!Number.isSafeInteger(r.seed)
