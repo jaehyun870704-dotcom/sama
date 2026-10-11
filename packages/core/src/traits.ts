@@ -57,6 +57,8 @@ export interface TraitHooks {
   ignoresRoughTerrain?: boolean;
   /** 인접 아군이 받는 피해를 대신 받는다 (M-20 GUARD_LINK) */
   redirectsAdjacentDamage?: boolean;
+  /** 물리 타격마다 반드시 한 번 더 친다(2회 연속 공격, 반격 포함) */
+  alwaysDouble?: boolean;
   /** 이 특성 보유자와 같은 편의 다른 부대가 공격할 때(거리 판단은 훅이 한다) */
   onAllyAttack?(ctx: DamageContext, holder: Unit, param: number): void;
   /** 이 특성 보유자와 같은 편의 다른 부대가 피격당할 때 */
@@ -147,6 +149,10 @@ export function counterLimitOf(unit: Unit): number {
 
 export function ignoresRough(unit: Unit): boolean {
   return unit.traits.some((id) => getTrait(id).hooks.ignoresRoughTerrain === true);
+}
+
+export function strikesTwice(unit: Unit): boolean {
+  return unit.traits.some((id) => REGISTRY.get(id)?.hooks.alwaysDouble === true);
 }
 
 export function guardsAdjacent(unit: Unit): boolean {

@@ -7,7 +7,7 @@ import type { BattleMap } from "./grid.ts";
 import { manhattan } from "./grid.ts";
 import { engageDistance, reachMul } from "./reach.ts";
 import type { Rng } from "./rng.ts";
-import { applyTraitHooks, capHit, combine, type AttackKind, type DamageContext } from "./traits.ts";
+import { applyTraitHooks, capHit, combine, strikesTwice, type AttackKind, type DamageContext } from "./traits.ts";
 import { familyOf } from "./classes.ts";
 import { hasTrait, traitParam } from "./traits.ts";
 import { tacticMultiplier } from "./tactics.ts";
@@ -138,6 +138,8 @@ export function criticalChance(attacker: Unit, defender: Unit): number {
 }
 /** 2회 공격 확률(%): 조조전 규칙에서만, 순발력 비율로. */
 export function doubleAttackChance(attacker: Unit, defender: Unit): number {
+  // 여포 「인중여포」처럼 반드시 2회 연속으로 치는 특성
+  if (strikesTwice(attacker)) return 100;
   return attacker.ccRules ? ccRatioChance(attacker.stats.agility, defender.stats.agility) : 0;
 }
 

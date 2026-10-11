@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { makeUnit } from "../src/units.ts";
-import { createDamageContext } from "../src/formulas.ts";
+import { createDamageContext, doubleAttackChance } from "../src/formulas.ts";
 import { applyTraitHooks, bindField, getTrait, type TraitField } from "../src/traits.ts";
 import { SIGNATURE_NAMES, signatureOf, applySignature, signatureTraitId } from "../src/signatures.ts";
 import type { Unit, Status } from "../src/types.ts";
@@ -85,5 +85,13 @@ describe("이름있는 장수 고유특성", () => {
     applySignature(zy, "주유", 1);
     const at = (terrain: string) => { field([zy, foe], terrain); const ctx = { ...createDamageContext(zy, foe, "strategy"), element: "fire" }; applyTraitHooks(ctx); return ctx.attackMul; };
     expect(at("water")).toBeCloseTo(at("plain") * 1.3);
+  });
+  it("여포는 매 공격을 반드시 2회 연속으로 친다", () => {
+    const lb = unit("여포", "enemy", 1, 1), other = unit("장료", "enemy", 1, 2), foe = unit("병사", "player", 2, 1);
+    field([lb, other, foe]);
+    expect(doubleAttackChance(lb, foe)).toBe(0);
+    applySignature(lb, "여포", 1); applySignature(other, "장료", 1);
+    expect(doubleAttackChance(lb, foe)).toBe(100);
+    expect(doubleAttackChance(other, foe)).toBe(0);
   });
 });
