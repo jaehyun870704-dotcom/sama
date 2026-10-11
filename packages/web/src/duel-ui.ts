@@ -40,6 +40,15 @@ export function duelBackdrop(kind:'duel'|'debate',seed:string,indoor=false){
 }
 const face=(name:string)=>bustFace(name)??`<div class="talk-bust sprite">${officerPortrait(name)}</div>`;
 
+/**
+ * 일기토·설전 모두 같은 정사각형 프레임과 발 기준선을 사용한다.
+ * 전장 전신 그림과 이야기 흉상처럼 원본 형식이 달라도 이 함수를 거쳐야
+ * 대결 화면에서 보이는 인물 크기가 달라지지 않는다.
+ */
+export function duelModelFrame(content:string,facing:'face-right'|'face-left'){
+  return `<div class="duel-model duel-character-frame ${facing}">${content}</div>`;
+}
+
 /** 1) 대결 선포 화면. */
 export function duelSplash(d:DuelState,acceptLine?:string,historic=false){
   const title=d.kind==='duel'?'일기토':'설전',sub=d.kind==='duel'?'단기접전':'설전';
@@ -97,7 +106,7 @@ export function playContest(kind:DuelKind,me:{name:string;stat:number},foe:{name
   const el=document.createElement('div');el.className='contest-overlay';
   // 열린 dialog(최상위 층) 안에 붙여야 그 위로 보인다.
   (document.querySelector('dialog[open]')??document.body).appendChild(el);
-  const models={player:`<div class="duel-model face-right">${face(me.name)}</div>`,enemy:`<div class="duel-model face-left">${face(foe.name)}</div>`};
+  const models={player:duelModelFrame(face(me.name),'face-right'),enemy:duelModelFrame(face(foe.name),'face-left')};
   return new Promise(resolve=>{
     const arena=()=>{el.innerHTML=`<div class="contest-box">${duelArena(d,{models,backdrop:duelBackdrop(kind,o.seed??foe.name,o.indoor),...(o.acceptLine?{openingLine:o.acceptLine}:{})}).replace('전장으로 돌아가기',esc(o.done??'이야기로 돌아가기')).replace('전투 체력: 승자 15% · 패자 45% · 무승부 양쪽 25% 피해(최소 1). 패자는 2턴 혼란.',kind==='duel'?'이기면 이번 전투 아군 사기 상승 · 적의 기세가 꺾인다.':'이기면 이번 전투 아군 사기 상승 · 사마의 책략 MP +15.')}</div>`;
       el.querySelectorAll<HTMLButtonElement>('[data-duel-action]').forEach(b=>b.onclick=()=>{if(duelRound(d,b.dataset.duelAction as DuelAction))arena();});
