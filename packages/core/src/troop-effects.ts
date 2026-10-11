@@ -10,8 +10,8 @@ import type { Unit, UnitClass } from "./types.ts";
 import { FOUR_STAGE_LINES, familyOf, finalClassOf } from "./classes.ts";
 import { profileOf } from "./units.ts";
 
-type Cond = "always" | "physical" | "strategy" | "melee" | "ranged" | "healthy" | "wounded" | "moving" | "stationary" | "mounted" | "armored" | "caster";
-type Kind =
+export type EffectCondition = "always" | "physical" | "strategy" | "melee" | "ranged" | "healthy" | "wounded" | "moving" | "stationary" | "mounted" | "armored" | "caster";
+export type EffectKind =
   | "power" | "reduction" | "critical" | "accuracy" | "evade" | "pierce"
   | "regenHp" | "regenMp" | "lifesteal"
   /** 공격·반격 때 상대 정신력의 n%만큼 추가 피해(최대 SPIRIT_BONUS_CAP) */
@@ -20,8 +20,8 @@ type Kind =
 export interface TroopEffect {
   /** 부대효과 이름 */
   name: string;
-  kind: Kind;
-  when: Cond;
+  kind: EffectKind;
+  when: EffectCondition;
   /** 단계별 수치(1~4단계). 단일 병과는 하나만 둔다. */
   values: readonly number[];
 }
@@ -85,12 +85,12 @@ export function troopEffectOf(unitClass: UnitClass): { root: UnitClass; tier: nu
   return effect ? { root, tier: Math.min(tier, effect.values.length), effect } : undefined;
 }
 
-const COND_TEXT: Record<Cond, string> = {
+const COND_TEXT: Record<EffectCondition, string> = {
   always: "", physical: "물리 공격·피격 시 ", strategy: "책략 공격·피격 시 ", melee: "인접 교전 시 ", ranged: "2칸 이상 떨어진 교전 시 ",
   healthy: "HP가 50% 이상일 때 ", wounded: "HP가 50% 이하일 때 ", moving: "이번 차례 이동한 뒤 ", stationary: "이번 차례 이동하기 전 ",
   mounted: "기병 계열 상대 시 ", armored: "보병·창병·중기병 상대 시 ", caster: "책략 병종 상대 시 ",
 };
-const KIND_TEXT: Record<Kind, [string, string]> = {
+const KIND_TEXT: Record<EffectKind, [string, string]> = {
   power: ["공격 위력이 ", "% 증가한다"], reduction: ["받는 피해가 ", "% 감소한다"], critical: ["회심 확률이 ", "%p 증가한다"],
   accuracy: ["명중이 ", "%p 증가한다"], evade: ["상대 명중이 ", "%p 감소한다"], pierce: ["적 방어를 ", "% 무시한다"],
   regenHp: ["자기 차례 시작에 최대 HP의 ", "%를 회복한다"], regenMp: ["자기 차례 시작에 MP를 ", " 회복한다"],
@@ -110,7 +110,7 @@ export function troopEffectText(e: TroopEffect, tier?: number): string {
   return when + pre + n + post + ".";
 }
 
-function matches(c: Cond, ctx: DamageContext, self: Unit, attacking: boolean): boolean {
+function matches(c: EffectCondition, ctx: DamageContext, self: Unit, attacking: boolean): boolean {
   const foe = attacking ? ctx.defender : ctx.attacker;
   switch (c) {
     case "physical": return ctx.kind === "physical";
@@ -253,12 +253,13 @@ export function applyFamedReach(unit: Unit, name: string): boolean {
 }
 
 /** 화면에 보일 규칙판 7 효과(부대효과·장수 특성·이름난 장수): 이름과 지금 단계의 설명. */
-export function unitEffectNotes(unit: Unit): Array<{ kind: "troop" | "officer" | "famed" | "signature"; name: string; text: string; tier: number }> {
-  const out: Array<{ kind: "troop" | "officer" | "famed" | "signature"; name: string; text: string; tier: number }> = [];
+export interface UnitEffectNote {kind:"troop"|"officer"|"famed"|"signature";name:string;text:string;tier:number;effectKind?:EffectKind;condition?:EffectCondition}
+export function unitEffectNotes(unit: Unit): UnitEffectNote[] {
+  const out: UnitEffectNote[] = [];
   for (const t of unit.traits) {
     const tier = unit.traitParams[t] ?? 1;
-    if (t.startsWith("troop:")) { const e = TROOP_EFFECTS[t.slice(6) as UnitClass]; if (e) out.push({ kind: "troop", name: e.name, text: troopEffectText(e, tier), tier }); }
-    else if (t.startsWith("officer:")) { const e = OFFICER_EFFECTS[t.slice(8) as OfficerAbility]; if (e) out.push({ kind: "officer", name: e.name, text: troopEffectText(e, tier) + (duplicatesTroop(unit, e) ? " (부대효과와 같은 효과라 겹치지 않는다)" : ""), tier }); }
+    if (t.startsWith("troop:")) { const e = TROOP_EFFECTS[t.slice(6) as UnitClass]; if (e) out.push({ kind: "troop", name: e.name, text: troopEffectText(e, tier), tier, effectKind:e.kind, condition:e.when }); }
+    else if (t.startsWith("officer:")) { const e = OFFICER_EFFECTS[t.slice(8) as OfficerAbility]; if (e) out.push({ kind: "officer", name: e.name, text: troopEffectText(e, tier) + (duplicatesTroop(unit, e) ? " (부대효과와 같은 효과라 겹치지 않는다)" : ""), tier, effectKind:e.kind, condition:e.when }); }
     else if (t.startsWith("sig:")) { const [who, nth] = parseSignatureId(t)!; const g = signatureSet(who)[nth - 1]; if (g) out.push({ kind: "signature", name: g.name, text: g.text(tier), tier }); }
     else if (t === "famed") out.push({ kind: "famed", name: "이름난 장수", text: "공격 범위가 이 병종 계통의 마지막 진화와 같다(근접은 팔방). 그보다 넓어지지 않는다.", tier: 1 });
   }

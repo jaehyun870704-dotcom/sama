@@ -65,6 +65,8 @@ describe("장수 특성: 부대효과에 하나 더, 병종 단계를 따른다"
     const notes = unitEffectNotes(u);
     expect(notes.map((n) => n.kind)).toEqual(["officer", "troop"]);
     expect(notes[0]!.text).toContain("15%");
+    expect(notes[0]).toMatchObject({ effectKind: "spiritBonus", condition: "physical" });
+    expect(notes[1]).toMatchObject({ effectKind: "power", condition: "moving" });
   });
 });
 
