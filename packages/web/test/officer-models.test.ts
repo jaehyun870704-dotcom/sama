@@ -24,8 +24,8 @@ function webpSize(file:URL){
 describe('장수별 전투 SD와 대결 모델',()=>{
   const players=[['sima_yi','사마의'],['cao_zhen','조진'],['sima_lang','사마랑'],['sima_fang','사마방'],['sima_shi','사마사'],['sima_zhao','사마소']] as const;
 
-  it('대상 64명과 모든 공개 시트를 색인한다',()=>{
-    expect(officerManifest).toHaveLength(64);
+  it('대상 92명(전용 전신 원화 28명 포함)과 모든 공개 시트를 색인한다',()=>{
+    expect(officerManifest).toHaveLength(92);
     const sheets=new Set(officerModelSheets.map(s=>s.id));
     for(const entry of officerManifest)for(const battle of Object.values(entry.battle))expect(sheets.has(battle.sheet),battle.sheet).toBe(true);
   });
