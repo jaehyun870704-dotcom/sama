@@ -166,7 +166,7 @@ function classesTab(pick:string){
 
 // ─────────────────────────────────────────────── 책략
 
-const ELEMENT_NAMES:Record<string,string>={fire:'화',wind:'풍',water:'수',thunder:'뇌',earth:'지',support:'술'};
+const ELEMENT_NAMES:Record<string,string>={fire:'화',wind:'풍',water:'수',thunder:'뇌',earth:'지',support:'술',physical:'물리'};
 /** 책략마다 한 줄 풀이(무엇을 하는 계책인가). */
 export const STRATEGY_TEXT:Record<string,string>={
   // 계통 고유 책략
@@ -273,7 +273,7 @@ export function showCodex(host:CodexHost,view:CodexView={tab:'people'}){
   const body=people?people.html:v.tab==='classes'?classesTab(v.cls??'infantry'):strategiesTab(v.spell??'fire',v.tier??1);
   host.modal(`<div class="briefing codex-screen"><div class="eyebrow">삼국지 인물열전 · 사람과 병종과 책략</div><h2>${v.tab==='people'?'난세를 살아간 사람들':v.tab==='classes'?'병종 — 전장을 채운 부대들':'책략 목록'}</h2>
     <div class="cx-tabs">${([['people','인물 열전'],['classes','병종'],['strategies','책략']] as const).map(([id,label])=>`<button data-cx-tab="${id}" class="${v.tab===id?'active':''}">${label}</button>`).join('')}${host.research?'<button id="cx-research" class="cx-research">연구 ▸</button>':''}</div>
-    ${body}<div class="run-actions"><button id="cx-back">← 본영</button></div></div>`,false);
+    ${body}<div class="run-actions"><button id="cx-back">← 도감</button></div></div>`,false);
   const all=<T extends HTMLElement>(sel:string)=>document.querySelectorAll<T>(sel);
   all('[data-cx-tab]').forEach(b=>b.onclick=()=>showCodex(host,{...v,tab:b.dataset.cxTab as CodexTab}));
   all('[data-cx-side]').forEach(b=>b.onclick=()=>showCodex(host,{...v,side:b.dataset.cxSide as Side|'all',person:''}));
