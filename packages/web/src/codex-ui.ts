@@ -7,7 +7,7 @@
  * 책략: 아이콘 목록과 속성·소모 MP·습득 레벨·시전 범위·효과 범위 격자·설명.
  */
 import type {UnitClass,StrategyTier,TerrainKind} from '../../core/src/index.ts';
-import {VARIANTS,tierOf,familyOf,profileOf,classTactics,strategyArea,tieredStrategy,strategyTierLevel,STRATEGY_TIER_NAMES,gradeProfileOf,terrainEfficiency,efficiencyMark,reachLabel,reachOffsets} from '../../core/src/index.ts';
+import {troopEffectOf,troopEffectText,VARIANTS,tierOf,familyOf,profileOf,classTactics,strategyArea,tieredStrategy,strategyTierLevel,STRATEGY_TIER_NAMES,gradeProfileOf,terrainEfficiency,efficiencyMark,reachLabel,reachOffsets} from '../../core/src/index.ts';
 import {strategyIconUrl} from './strategy-icons.ts';
 import {allRomanceNames,romanceByName,temperOf,signatureSkill,signatureSkills} from './romance.ts';
 import {temperNames} from './duel.ts';
@@ -68,7 +68,8 @@ function peopleTab(pick:string,side:Side|'all'){
       <p class="cx-tags"><span>${esc(classNames[cls]??cls)}</span>${temper?`<span>성격 ${temperNames[temper]}</span>`:''}${best?`<span>최고 Lv.${best}</span>`:''}</p>
       <p class="cx-img-tools"><label class="cx-upload">🖼 초상 이미지 넣기<input type="file" accept="image/*" data-cx-upload hidden></label>${isUploaded(name)?'<button data-cx-unimg>넣은 그림 지우기</button>':''}</p></div></div>
     ${r?`<div class="cx-stats">${STAT_ROWS.map(([k,label])=>{const v=r[k] as number;return `<div class="cx-stat"><span>${label}</span><i><i style="width:${v}%" class="${v>=90?'hi':v<40?'lo':''}"></i></i><b>${v}</b></div>`;}).join('')}</div>`:''}
-    ${skill?signatureSkills(name,tier).map((g,k)=>`<p class="cx-unique${g.open?'':' muted'}"><b>${g.open?'◆':'◇'} 고유특성 ${k+1} 「${esc(g.name)}」</b> ${esc(g.description)}<br><span class="cx-tiers"><i>${esc(g.unlock)}${g.open?' · 열림':''}</i></span></p>`).join('')+'<p class="cx-tiers"><i>병종이 진화할수록 고유특성이 하나씩 열리고 수치도 커진다(1단계 ×1 · 2단계 ×1.15 · 3단계 ×1.3 · 4단계 ×1.5).</i></p>':'<p class="cx-unique muted">고유특성 없음 — 병종 능력으로 싸운다.</p>'}
+    ${(()=>{const te=troopEffectOf(cls);return te?`<p class="cx-unique"><b>병종 특성 「${esc(te.effect.name)}」</b> ${esc(troopEffectText(te.effect,te.tier))}<br><span class="cx-tiers"><i>${esc(classNames[cls]??cls)}의 병종 특성 · 장수도 고유특성과 함께 쓴다</i></span></p>`:'';})()}
+    ${skill?signatureSkills(name,tier).map((g,k)=>`<p class="cx-unique${g.open?'':' muted'}"><b>${g.open?'◆':'◇'} 고유특성 ${k+1} 「${esc(g.name)}」</b> ${esc(g.description)}<br><span class="cx-tiers"><i>${esc(g.unlock)}${g.open?' · 열림':''}</i></span></p>`).join('')+'<p class="cx-tiers"><i>병종이 진화할수록 고유특성이 하나씩 열리고 수치도 커진다(1단계 ×1 · 2단계 ×1.3 · 3단계 ×1.6 · 4단계 ×2).</i></p>':'<p class="cx-unique muted">고유특성 없음 — 병종 능력으로 싸운다.</p>'}
     <p class="cx-evo">진화 단계 <b>${'◆'.repeat(tier)}${'◇'.repeat(4-tier)}</b> <small>병종이 진화할수록 장수 효과와 고유특성이 Ⅰ→Ⅱ→Ⅲ→Ⅳ(전설)로 강해진다${best?` · 최고 Lv.${best} 기준`:''}</small></p>
     <div class="cx-bio"><h4>열전</h4><p>${esc(biography(name))}</p></div>
     ${isChuHan(name)?legacyBlock(meta,name):''}

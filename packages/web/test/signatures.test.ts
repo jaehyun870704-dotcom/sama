@@ -2,7 +2,8 @@ import {describe,it,expect} from 'vitest';
 import {Session,chapters} from '../src/session.ts';
 import {deployment,freshCampaign} from '../src/progression.ts';
 import {romanceOf,romanceByName,signatureSkill} from '../src/romance.ts';
-import {SIGNATURE_NAMES,tierOf} from '../../core/src/index.ts';
+import {SIGNATURE_NAMES,tierOf,signatureSet,troopEffectOf} from '../../core/src/index.ts';
+import {officerClass} from '../src/officer-perks.ts';
 
 describe('규칙판 8: 이름있는 장수는 고유특성, 목록 밖 인물은 병종', () => {
   it('고유특성이 있는 장수는 모두 게임 장수록에 있는 인물이다', () => {
@@ -39,5 +40,13 @@ describe('규칙판 8: 이름있는 장수는 고유특성, 목록 밖 인물은
     const sy=s.state.find('sima_yi')!;
     expect(sy.traits.filter(t=>t.startsWith('sig:'))[0]).toBe('sig:사마의');
     expect(sy.traits.filter(t=>OLD.includes(t)||t==='physicalPower'||t.startsWith('officer:'))).toEqual([]);
+  });
+  it('장수는 병종 특성과 고유특성을 함께 쓰고, 고유특성은 단계마다 병종 특성보다 세다', () => {
+    const s=new Session(chapters.findIndex(c=>c.stage.id==='S1-06'),'normal',215,'survival',8,deployment(freshCampaign(),true));
+    for(const u of s.state.units.values())if(u.traits.some(t=>t.startsWith('sig:')))expect(u.traits.some(t=>t.startsWith('troop:')),u.name).toBe(true);
+    for(let t=1;t<=4;t++){let sv=0,sn=0,tv=0,tn=0;
+      for(const n of SIGNATURE_NAMES){const e=troopEffectOf(officerClass(n));if(e){tv+=e.effect.values[Math.min(e.effect.values.length,t)-1]!;tn++;}
+        signatureSet(n).forEach((g,i)=>{if(t<i+1)return;const m=g.text(t).match(/(\d+)%/);if(m){sv+=+m[1]!;sn++;}});}
+      expect(sv/sn,`단계 ${t}`).toBeGreaterThan(1.2*tv/tn);}
   });
 });

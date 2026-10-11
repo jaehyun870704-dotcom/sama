@@ -61,16 +61,18 @@ const personCard=(art:string,small:string,name:string,c:UnitClass,extra='',famed
 const officerClass=(e:OfficerEntry):UnitClass=>(LORD_NAMES.includes(e.name)?'lord':Object.keys(e.battle).find(k=>k!=='cart')) as UnitClass;
 const officerSheet=(e:OfficerEntry,c:string)=>e.battle[c]??e.battle.lord??Object.entries(e.battle).find(([k])=>k!=='cart')?.[1];
 /** 이름있는 장수의 고유특성(장수마다 이름도 효과도 다르다). 목록 밖 인물은 병종이라 장수 탭에 나오지 않는다. */
-function officerNote(name:string){
+function officerNote(name:string,c?:UnitClass){
   const gs=signatureSkills(name);if(!gs.length)return '';
-  return gs.map((g,k)=>`<p class="evo-skill evo-troop" title="${esc(g.description)}"><b>고유특성 ${k+1} 「${esc(g.name)}」</b><span>${esc(g.description)} (${esc(g.unlock)})</span></p>`).join('');
+  const te=c?troopEffectOf(c):undefined;
+  const troop=te?`<p class="evo-skill evo-troop" title="${esc(troopEffectText(te.effect))}"><b>병종 특성 「${esc(te.effect.name)}」</b><span>${esc(troopEffectText(te.effect))} (병종 1~4단계 · 장수도 함께 쓴다)</span></p>`:'';
+  return troop+gs.map((g,k)=>`<p class="evo-skill evo-troop" title="${esc(g.description)}"><b>고유특성 ${k+1} 「${esc(g.name)}」</b><span>${esc(g.description)} (${esc(g.unlock)})</span></p>`).join('');
 }
 /** 장수 탭: 고유특성이 있는 이름있는 장수만(목록 밖 인물은 병종으로 처리). */
 const namedManifest=()=>officerManifest.filter(e=>!!signatureSkill(e.name));
 function officerCards(){
   return OFFICER_FACTIONS.map(f=>{
     const list=namedManifest().filter(e=>(OFFICER_FACTION[e.id]??'군웅')===f);if(!list.length)return '';
-    return `<section class="evo-line"><h3>${f} <small>${list.length}명</small></h3><div class="evo-grid">${list.map(e=>{const c=officerClass(e),b=officerSheet(e,c);return personCard(b?officerArt(e.name,b):classArt(c),'장수',e.name,c,officerNote(e.name),FAMED_OFFICERS.includes(e.name));}).join('')}</div></section>`;
+    return `<section class="evo-line"><h3>${f} <small>${list.length}명</small></h3><div class="evo-grid">${list.map(e=>{const c=officerClass(e),b=officerSheet(e,c);return personCard(b?officerArt(e.name,b):classArt(c),'장수',e.name,c,officerNote(e.name,c),FAMED_OFFICERS.includes(e.name));}).join('')}</div></section>`;
   }).join('');
 }
 /** 본편 전장의 NPC(아군 AI). 한 사람은 카드 한 장·병종 하나다.

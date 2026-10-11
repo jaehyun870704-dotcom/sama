@@ -3,7 +3,7 @@
  *
  * 『삼국지연의』에서 크게 활약했거나 역사에 이름을 남긴 장수만 갖는다(목록: 장수/이름있는_장수_목록.xlsx).
  * 목록 밖의 인물은 이름을 달고 나와도 병종 능력만 쓴다.
- * 특성 id는 `sig:장수이름`, param은 병종 단계(1~4)이고 단계가 오를수록 수치가 커진다(×1 · ×1.15 · ×1.3 · ×1.5).
+ * 특성 id는 `sig:장수이름`, param은 병종 단계(1~4)이고 단계가 오를수록 수치가 커진다(×1 · ×1.3 · ×1.6 · ×2).
  * 피해 훅은 예측에도 쓰이므로 읽기만 한다. 상태를 거는 일(회복·봉인·사기 등)은 자기 차례 시작(onTurnStart)에만 한다.
  */
 import type { Unit, UnitClass, StatusKind } from "./types.ts";
@@ -11,7 +11,7 @@ import { defineTrait, fieldOf, combine, type DamageContext, type TraitHooks } fr
 import { familyOf } from "./classes.ts";
 import { engageDistance } from "./reach.ts";
 
-const TIER_MUL = [1, 1.15, 1.3, 1.5] as const;
+const TIER_MUL = [1, 1.3, 1.6, 2] as const;
 /** 병종 단계 → 수치 배율 */
 export const sigMul = (tier: number) => TIER_MUL[Math.max(1, Math.min(4, Math.round(tier || 1))) - 1]!;
 const pct = (x: number, k: number) => Math.round(x * k);
