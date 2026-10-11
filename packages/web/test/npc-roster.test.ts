@@ -2,7 +2,7 @@ import {describe,expect,it} from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import {NPC_ROSTER} from '../src/npc-roster.ts';
-import {evolutionChart,npcList} from '../src/troop-evolution.ts';
+import {evolutionChart,evolutionSheet,npcList} from '../src/troop-evolution.ts';
 import {officerManifest} from '../src/officer-models.ts';
 import {OFFICER_FACTION} from '../src/officer-factions.ts';
 
@@ -55,6 +55,10 @@ describe('NPC 목록', ()=>{
       const html=evolutionChart(g),cards=html.match(/<article class="evo-card/g)?.length??0,fits=html.match(/class="evo-fit"/g)?.length??0,officers=html.match(/background-image:url\(officers\//g)?.length??0;
       expect(fits+officers).toBe(cards);
     }
+  });
+
+  it('진화표 장수 칸이 전용 장수 시트를 실제로 찾는다', ()=>{
+    for(const e of officerManifest)for(const b of Object.values(e.battle))expect(evolutionSheet(b.sheet),b.sheet).toBeDefined();
   });
 });
 

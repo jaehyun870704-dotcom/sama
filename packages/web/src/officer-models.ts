@@ -48,12 +48,12 @@ export const officerManifest:OfficerEntry[]=[
   E('zhang_ba','장패',c('zhang_ba','cavalry'),{duel:'officers/zhang_ba-duel-v1.webp'}),E('cao_xiu','조휴',c('cao_xiu','cavalry'),{duel:'officers/cao_xiu-duel-v1.webp'}),E('cao_shuang','조상',c('cao_shuang','cavalry'),{duel:'officers/cao_shuang-duel-v1.webp'}),
   // 이름있는 장수 전용 전신 원화(Codex 2026-10-11): 한 장 원화를 대기·준비·공격·피격 네 칸으로 펼친 시트.
   E('jia_xu','가후',{wheelSage:['jia_xu-battle-v1.webp',384,384,1]}),E('yu_jin','우금',{spearman:['yu_jin-battle-v1.webp',384,384,1]}),E('yue_jin','악진',{infantry:['yue_jin-battle-v1.webp',384,384,1]}),E('deng_ai','등애',{infantry:['deng_ai-battle-v1.webp',384,384,1]}),
-  E('zhong_hui','종회',{fengshui:['zhong_hui-battle-v1.webp',384,384,1]}),E('hao_zhao','학소',{crossbow:['hao_zhao-battle-v1.webp',384,384,1]}),E('cao_hong','조홍',{infantry:['cao_hong-battle-v1.webp',384,384,1]}),E('cao_zhang','조창',{cavalry:['cao_zhang-battle-v1.webp',384,384,1]}),
+  E('zhong_hui','종회',{fengshui:['zhong_hui-battle-v1.webp',384,384,1]}),E('hao_zhao','학소',{crossbow:['hao_zhao-battle-v1.webp',384,384,1]}),E('cao_hong','조홍',{infantry:['cao_hong-battle-v1.webp',384,384,1]}),E('cao_zhang','조창',c('cao_zhang','cavalry')),
   E('wen_ping','문빙',{spearman:['wen_ping-battle-v1.webp',384,384,1]}),E('guan_ping','관평',{infantry:['guan_ping-battle-v1.webp',384,384,1]}),E('ma_dai','마대',{infantry:['ma_dai-battle-v1.webp',384,384,1]}),E('xu_sheng','서성',{spearman:['xu_sheng-battle-v1.webp',384,384,1]}),
-  E('ding_feng','정봉',{infantry:['ding_feng-battle-v1.webp',384,384,1]}),E('yan_liang','안량',{cavalry:['yan_liang-battle-v1.webp',384,384,1]}),E('wen_chou','문추',{cavalry:['wen_chou-battle-v1.webp',384,384,1]}),E('ju_shou','저수',{strategist:['ju_shou-battle-v1.webp',384,384,1]}),
+  E('ding_feng','정봉',{infantry:['ding_feng-battle-v1.webp',384,384,1]}),E('yan_liang','안량',c('yan_liang','cavalry')),E('wen_chou','문추',c('wen_chou','cavalry')),E('ju_shou','저수',{strategist:['ju_shou-battle-v1.webp',384,384,1]}),
   E('tian_feng','전풍',{strategist:['tian_feng-battle-v1.webp',384,384,1]}),E('shen_pei','심배',{strategist:['shen_pei-battle-v1.webp',384,384,1]}),E('han_xin','한신',{spearman:['han_xin-battle-v1.webp',384,384,1]}),E('zhang_liang','장량',{strategist:['zhang_liang-battle-v1.webp',384,384,1]}),
-  E('xiao_he','소하',{fengshui:['xiao_he-battle-v1.webp',384,384,1]}),E('ying_bu','영포',{cavalry:['ying_bu-battle-v1.webp',384,384,1]}),E('peng_yue','팽월',{infantry:['peng_yue-battle-v1.webp',384,384,1]}),E('fan_kuai','번쾌',{cavalry:['fan_kuai-battle-v1.webp',384,384,1]}),
-  E('chen_ping','진평',{strategist:['chen_ping-battle-v1.webp',384,384,1]}),E('fan_zeng','범증',{strategist:['fan_zeng-battle-v1.webp',384,384,1]}),E('zhongli_mo','종리매',{cavalry:['zhongli_mo-battle-v1.webp',384,384,1]}),E('ji_bu','계포',{infantry:['ji_bu-battle-v1.webp',384,384,1]}),
+  E('xiao_he','소하',{fengshui:['xiao_he-battle-v1.webp',384,384,1]}),E('ying_bu','영포',c('ying_bu','cavalry')),E('peng_yue','팽월',{infantry:['peng_yue-battle-v1.webp',384,384,1]}),E('fan_kuai','번쾌',c('fan_kuai','cavalry')),
+  E('chen_ping','진평',{strategist:['chen_ping-battle-v1.webp',384,384,1]}),E('fan_zeng','범증',{strategist:['fan_zeng-battle-v1.webp',384,384,1]}),E('zhongli_mo','종리매',c('zhongli_mo','cavalry')),E('ji_bu','계포',{infantry:['ji_bu-battle-v1.webp',384,384,1]}),
 ];
 
 const legacySheets=[

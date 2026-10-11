@@ -9,7 +9,7 @@ import {romanceByName,signatureSkill,signatureSkills} from './romance.ts';
 import {classNames,evolutionLines,troopSheets} from './troops.ts';
 import {classSprite,paintArmor} from './codex-ui.ts';
 import {classTraitSummary} from './perks.ts';
-import {officerManifest,officerEntry,type OfficerEntry} from './officer-models.ts';
+import {officerManifest,officerEntry,officerModelSheets,type OfficerEntry} from './officer-models.ts';
 import {NPC_ROSTER} from './npc-roster.ts';
 import {singleStageCorrectionRows} from './complete-troops.ts';
 import {LORD_NAMES} from './lords.ts';
@@ -104,10 +104,14 @@ export function evolutionChart(group:EvoGroup='all'){
 }
 type SheetDef={id:string;url:string;rows:number;union?:boolean;alphaCutoff?:number;strictGrid?:boolean;fit?:AtlasFit};
 const boxes=new Map<string,Promise<{atlas:HTMLCanvasElement;x:number;y:number;w:number;h:number;ch:number}|undefined>>();
+/** 진화표는 병종 시트뿐 아니라 장수 전용 시트도 같은 방식으로 잘라 쓴다. */
+export function evolutionSheet(sheet:string):SheetDef|undefined{
+  return [...troopSheets,...officerModelSheets].find(s=>s.id===sheet);
+}
 /** 시트 한 줄의 대기 자세(첫 칸)에서 실제 그림이 차지하는 둘레. */
 function idleBox(sheet:string,row:number){
   const key=sheet+'#'+row;if(boxes.has(key))return boxes.get(key)!;
-  const def=(troopSheets as readonly SheetDef[]).find(s=>s.id===sheet);
+  const def=evolutionSheet(sheet);
   const p=!def?Promise.resolve(undefined):spriteAtlas(def.url,def.rows,4,!!def.union,def.alphaCutoff??8,!!def.strictGrid,def.fit).then(atlas=>{
     const cw=Math.floor(atlas.width/4),ch=Math.floor(atlas.height/def.rows),top=row*ch,d=atlas.getContext('2d',{willReadFrequently:true})!.getImageData(0,top,cw,ch).data;
     let l=cw,t=ch,r=-1,b=-1;
