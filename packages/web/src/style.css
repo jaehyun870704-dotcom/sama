@@ -2012,3 +2012,16 @@ dialog:has(.title-screen),dialog:has(.lobby){width:min(1240px,calc(100vw - 24px)
 
 /* 좁은 창(세로 휴대폰 밖의 좁은 브라우저 등): 연의 지도의 판과 상세를 위아래로 */
 @media (max-width:700px){.ym-body{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}.ym-detail{max-height:45dvh;overflow:auto}.ym-seals{min-width:0}}
+
+/* 장수마다 출진 COST: 동그라미 안에 'COST' 글자와 숫자 */
+.sortie-cost{display:flex!important;flex-direction:column;align-items:center;justify-content:center;line-height:1;flex:none;width:38px!important;height:38px!important}
+.sortie-cost small{font:600 calc(7.5px*var(--fs,1))/1 system-ui,sans-serif;letter-spacing:.5px;color:#c8a772;margin-bottom:1px}
+.officer-card .oc-cost{position:absolute;z-index:1;top:4px;left:4px;padding:1px 6px;border:1px solid #c8a772;border-radius:9px;background:#201a10e6;color:#f0d79c;font:700 calc(11px*var(--fs,1))/1.4 Georgia,serif;letter-spacing:.3px}
+@media (orientation:landscape) and (max-height:520px){.sortie-cost{width:32px!important;height:32px!important}.sortie-cost small{font-size:6.5px}}
+
+/* 목표: 접으면 '◇ 목표' 꼬리표만(본인이 눌러 확인한다). 처음 안내 때만 안내 줄을 단다. */
+.map-objective.collapsed .mo-short{display:none!important}
+.map-objective.collapsed{max-width:max-content}
+.map-objective .mo-guide{margin-top:4px!important;padding-top:4px;border-top:1px dashed rgba(216,184,110,.35);color:#e2c98e;font-size:calc(11.5px*var(--fs,1))}
+.map-objective.pulse{animation:mo-pulse 1.2s ease-out 3}
+@keyframes mo-pulse{0%{box-shadow:0 0 0 0 rgba(240,208,112,.75)}100%{box-shadow:0 0 0 12px rgba(240,208,112,0)}}

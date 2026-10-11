@@ -117,7 +117,7 @@ export function showTitle(host:RunHost){
 export function showHub(host:RunHost){
   const meta=loadMeta(),sc=scenarioSummary(),run=loadRun(),c=host.chronicleSummary();
   host.modal(`<div class="lobby"><div class="lobby-bg" aria-hidden="true"></div>
-  <header class="lobby-head"><div><p class="eyebrow">본영 · 사마의의 군막</p><h2>오늘은 무엇을 하는가</h2></div>
+  <header class="lobby-head"><div><p class="eyebrow">본영 · 사마의의 군막</p><h2>천하를 향한 다음 수</h2></div>
   <div class="hub-stats"><span><b>${c.won}/${c.total}</b><small>이긴 연의</small></span><span><b>${c.seals}/${c.sealMax}</b><small>인장</small></span><span><b>${(meta.recruited??[]).length}</b><small>등용</small></span><span><b>${meta.mandate}</b><small>천명</small></span></div></header>
   <div class="lobby-main">
     ${tile('hub-chronicle','演',c.won?'연의 이어하기':'연의 시작','본편 · 상편 11장 · 중편 14장 · 하편 7장 · 일반/극한과 인장',c.next?`다음 · ${esc(c.next)}`:'32장 완료 · 극한 인장과 인장 보상을 모아 보자','primary wide')}
