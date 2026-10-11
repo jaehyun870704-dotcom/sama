@@ -1,7 +1,7 @@
 /**
  * 연의·정사의 대규모 전투 — 적 장수와 병사를 늘린다(규칙판 13, 새로 시작한 넓은 전장 wide 2).
  *
- * - 장수: 그 싸움에 실제로 나섰던 적 장수를 2~3명 더 세운다(이름이 연의 장수록에 있으면 그 능력·고유특성을 그대로 쓴다).
+ * - 장수: 그 싸움에 실제로 나섰던 적 장수를 2~3명 더 세운다. 모두 연의 장수록에 있어 그 능력과 지은 초상을 쓴다(romanceOf가 hx_ id를 이름으로 찾는다).
  * - 병사: 전투 시작 때 서 있는 이름 없는 적 부대를 절반만큼 더 세운다(같은 병종·레벨, 바로 곁 빈칸에).
  * - 늘어난 부대는 본진을 지킨다(hold) — 다가오는 적과 싸우되, 호위 대상을 쫓아 맵을 가로지르지 않는다.
  * - 다리·길목이나 원본보다 앞(우리 편 쪽)에는 세우지 않는다. 늘어난 적이 아군 NPC를 덮치는 장은 우두머리 곁(후방)에 세운다(rear).
@@ -35,7 +35,8 @@ export const HISTORIC_BATTLES:Record<string,HistoricBattle>={
   'S2-12':{battle:'위수 대치(234)',officers:[['마대','cavalry'],['요화','spearman'],['장익','infantry']]},
   'S3-01':{battle:'요수 전투(238)',officers:[['양조','infantry'],['윤직','spearman']]},
   'S3-02':{battle:'양평 포위전(238)',officers:[['공손수','cavalry'],['왕건','infantry']]},
-  'S3-03':{battle:'번성 구원전(241)',officers:[['전종','spearman'],['장휴','infantry']]},
+  // 오의 장휴(장흠의 아들)는 가정의 촉 장휴와 다른 사람이다. 장수록은 이름 하나에 한 사람이라 여기서는 같은 싸움의 고승을 세운다.
+  'S3-03':{battle:'번성 구원전(241)',officers:[['전종','spearman'],['고승','infantry']]},
   'S3-05':{battle:'흥세 전투(244)',officers:[['왕평','heavyCav'],['비의','strategist'],['유민','spearman']]},
 };
 
@@ -47,7 +48,7 @@ export const SOLDIER_GROWTH=.5;
  * 값이 없으면 보정하지 않는다.
  */
 export const HISTORIC_EDGE:Record<string,{normal:number;extreme:number}>={
-  'S1-06':{normal:-32,extreme:-22},'S1-07':{normal:-22,extreme:-8},'S1-09':{normal:-38,extreme:-56},'S1-10':{normal:-4,extreme:-12},
+  'S1-06':{normal:-32,extreme:-22},'S1-07':{normal:-28,extreme:-8},'S1-09':{normal:-38,extreme:-56},'S1-10':{normal:-4,extreme:-12},'S2-02':{normal:-6,extreme:0},
   'S2-03':{normal:-34,extreme:-48},'S2-06':{normal:-24,extreme:-38},'S2-08':{normal:-40,extreme:-56},
   'S2-10':{normal:-55,extreme:-38},'S3-01':{normal:-30,extreme:-44},'S3-02':{normal:-18,extreme:-36},
   'S3-05':{normal:-50,extreme:-48},

@@ -2,6 +2,8 @@ import {describe,it,expect} from 'vitest';
 import {Session,chapters} from '../src/session.ts';
 import {freshCampaign,deployment} from '../src/progression.ts';
 import {HISTORIC_BATTLES} from '../src/historic-battles.ts';
+import {romanceOf,romanceByName} from '../src/romance.ts';
+import {codexNames} from '../src/codex-ui.ts';
 
 const at=(id:string)=>chapters.findIndex(c=>c.stage.id===id);
 const make=(id:string,rev:12|13,wide?:2)=>new Session(at(id),'normal',215,'strategy',rev,{...deployment(freshCampaign(),true),...(wide?{wide}:{})});
@@ -30,5 +32,12 @@ describe('대규모 전투 증원(규칙판 13)',()=>{
    st.updateRegionHolds();st.turn+=1;(s as unknown as {advanceScenario():void}).advanceScenario();
    return st.firedEvents.has('hanshui/bridge');};
   expect(fired(13)).toBe(true);expect(fired(12)).toBe(false);
+ });
+ it('증원 장수는 모두 연의 장수록·인물열전에 있고, 전장에서 그 능력을 쓴다',()=>{
+  for(const [id,b] of Object.entries(HISTORIC_BATTLES)){
+   for(const [n] of b.officers){expect(romanceByName(n),n).toBeDefined();expect(codexNames(),n).toContain(n);}
+   const st=make(id,13,2).state;
+   for(const u of st.living('enemy').filter(u=>u.id.startsWith('hx_')&&b.officers.some(([n])=>n===u.name)))expect(romanceOf(u)?.name,`${id} ${u.name}`).toBe(u.name);
+  }
  });
 });

@@ -504,7 +504,11 @@ export class Battlefield {
         else if(unit.id===selected||unit.side==='player'||['rescue_target','convoy_trial'].includes(unit.id)||isCommander(state,unit)){
           // Named commanders (targets, protected officers) carry their name so they stand out from the rank and file.
           const foe=unit.side==='enemy'&&unit.id!==selected;
-          const name=new Text({text:unitName(unit),style:{fontFamily:'Malgun Gothic',fontSize:11,fontWeight:'700',fill:foe?0xffc2a8:unit.side==='allyAi'?0xffe39a:0xfff4da,stroke:{color:foe?0x2a0d08:0x0d1411,width:3}}});name.anchor.set(.5,0);name.position.set(actor.piece.x,actor.piece.y+20);actor.name=name;this.labels.addChild(name);
+          const name=new Text({text:unitName(unit),style:{fontFamily:'Malgun Gothic',fontSize:11,fontWeight:'700',fill:foe?0xffc2a8:unit.side==='allyAi'?0xffe39a:0xfff4da,stroke:{color:foe?0x2a0d08:0x0d1411,width:3}}});
+          // 바로 아래 칸에 부대가 서 있으면 이름표를 머리 위로 올린다 — 발밑에 두면 아래 부대의 머리를 덮는다.
+          const below=state.unitAt({x:unit.pos.x,y:unit.pos.y+1});
+          if(below?.alive){name.anchor.set(.5,1);name.position.set(actor.piece.x,actor.piece.y-50);}else{name.anchor.set(.5,0);name.position.set(actor.piece.x,actor.piece.y+20);}
+          actor.name=name;this.labels.addChild(name);
         }
       }
       this.pieces.sortableChildren=true;
