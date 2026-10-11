@@ -128,7 +128,8 @@ function physicalRaw(attacker: Unit, defender: Unit, map: BattleMap, ctx: Damage
 /** 회심 확률(%): 조조전 규칙은 사기 비율에 특성 보정을 더한다. 이름난 장수는 무력·운에 따른 보너스가 더해진다(물리 공격만). */
 function criticalChanceOf(ctx: DamageContext): number {
   const officer = ctx.kind === "physical" ? ctx.attacker.officerCrit ?? 0 : 0;
-  return ctx.attacker.ccRules ? Math.min(100, ccRatioChance(ctx.attacker.stats.morale, ctx.defender.stats.morale) + ctx.criticalChance + officer) : Math.min(100, ctx.criticalChance + officer);
+  // 회심을 막는 특성(사마사 「눈을 잃어도」)은 큰 음수를 더하므로 0 아래로 내려가지 않게 한다.
+  return Math.max(0, ctx.attacker.ccRules ? Math.min(100, ccRatioChance(ctx.attacker.stats.morale, ctx.defender.stats.morale) + ctx.criticalChance + officer) : Math.min(100, ctx.criticalChance + officer));
 }
 /** 물리 공격의 회심 확률(%) — 공격 미리보기용. */
 export function criticalChance(attacker: Unit, defender: Unit): number {

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { makeUnit } from "../src/units.ts";
 import { createDamageContext, doubleAttackChance } from "../src/formulas.ts";
 import { applyTraitHooks, bindField, getTrait, type TraitField } from "../src/traits.ts";
-import { SIGNATURE_NAMES, signatureOf, applySignature, signatureTraitId } from "../src/signatures.ts";
+import { SIGNATURE_NAMES, signatureOf, signatureSet, applySignature, signatureTraitId } from "../src/signatures.ts";
 import type { Unit, Status } from "../src/types.ts";
 
 type Cls = Parameters<typeof makeUnit>[0]["unitClass"];
@@ -22,13 +22,21 @@ const unit = (name: string, side: "player" | "enemy", x: number, y: number, unit
 const hit = (a: Unit, d: Unit) => { const ctx = createDamageContext(a, d, "physical"); applyTraitHooks(ctx); return ctx; };
 
 describe("이름있는 장수 고유특성", () => {
-  it("게임에 나오는 이름있는 장수 70명이 저마다 다른 이름·다른 효과를 갖는다", () => {
+  it("게임에 나오는 이름있는 장수 70명이 셋씩, 210개 모두 다른 이름·다른 효과를 갖는다", () => {
     expect(SIGNATURE_NAMES).toHaveLength(70);
-    const names = SIGNATURE_NAMES.map((k) => signatureOf(k)!.name);
-    expect(new Set(names).size).toBe(70);
-    const texts = SIGNATURE_NAMES.map((k) => signatureOf(k)!.text(1));
-    expect(new Set(texts).size).toBe(70);
-    for (const k of SIGNATURE_NAMES) expect(getTrait(signatureTraitId(k)).name).toBe(signatureOf(k)!.name);
+    const all = SIGNATURE_NAMES.flatMap((k) => signatureSet(k));
+    expect(all).toHaveLength(210);
+    expect(new Set(all.map((g) => g.name)).size).toBe(210);
+    expect(new Set(all.map((g) => g.text(1))).size).toBe(210);
+    for (const k of SIGNATURE_NAMES) signatureSet(k).forEach((g, i) => expect(getTrait(signatureTraitId(k, i + 1)).name).toBe(g.name));
+  });
+
+  it("병종 단계에 따라 하나씩 열린다(1단계 1개 · 2단계 2개 · 3단계 이상 3개)", () => {
+    const has = (tier: number) => { const u = unit("관우", "player", 1, 1); applySignature(u, "관우", tier); return u.traits.filter((t) => t.startsWith("sig:")); };
+    expect(has(1)).toEqual(["sig:관우"]);
+    expect(has(2)).toEqual(["sig:관우", "sig:관우:2"]);
+    expect(has(3)).toEqual(["sig:관우", "sig:관우:2", "sig:관우:3"]);
+    expect(has(4)).toHaveLength(3);
   });
 
   it("목록 밖 인물에게는 붙지 않고, 병종 단계가 오르면 수치가 커진다", () => {

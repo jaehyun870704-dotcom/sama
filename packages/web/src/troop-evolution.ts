@@ -5,7 +5,7 @@
  */
 import type {UnitClass} from '../../core/src/index.ts';
 import {VARIANTS,tierOf,familyOf,profileOf,classTactics,reachOffsets,reachLabel,troopEffectOf,troopEffectText,OFFICER_EFFECTS,FAMED_OFFICERS,topAbility,finalClassOf,unitReachLabel} from '../../core/src/index.ts';
-import {romanceByName,signatureSkill} from './romance.ts';
+import {romanceByName,signatureSkill,signatureSkills} from './romance.ts';
 import {classNames,evolutionLines,troopSheets} from './troops.ts';
 import {classSprite,paintArmor} from './codex-ui.ts';
 import {classTraitSummary} from './perks.ts';
@@ -62,8 +62,8 @@ const officerClass=(e:OfficerEntry):UnitClass=>(LORD_NAMES.includes(e.name)?'lor
 const officerSheet=(e:OfficerEntry,c:string)=>e.battle[c]??e.battle.lord??Object.entries(e.battle).find(([k])=>k!=='cart')?.[1];
 /** 이름있는 장수의 고유특성(장수마다 이름도 효과도 다르다). 목록 밖 인물은 병종이라 장수 탭에 나오지 않는다. */
 function officerNote(name:string){
-  const g=signatureSkill(name);if(!g)return '';
-  return `<p class="evo-skill evo-troop" title="${esc(g.description)}"><b>고유특성 「${esc(g.name)}」</b><span>${esc(g.description)} (병종이 진화할수록 강해진다)</span></p>`;
+  const gs=signatureSkills(name);if(!gs.length)return '';
+  return gs.map((g,k)=>`<p class="evo-skill evo-troop" title="${esc(g.description)}"><b>고유특성 ${k+1} 「${esc(g.name)}」</b><span>${esc(g.description)} (${esc(g.unlock)})</span></p>`).join('');
 }
 /** 장수 탭: 고유특성이 있는 이름있는 장수만(목록 밖 인물은 병종으로 처리). */
 const namedManifest=()=>officerManifest.filter(e=>!!signatureSkill(e.name));

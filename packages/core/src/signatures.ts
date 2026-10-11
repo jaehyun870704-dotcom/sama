@@ -250,19 +250,214 @@ const S: Record<string, Signature> = {
     hooks: { onTurnStart(u) { for (const a of around(u, 2, "friend")) if (hpRate(a) <= .5) give(u, a, "guard", 1); } } },
 };
 
+// ─────────────────────────────────────────── 둘째·셋째 고유특성(병종 진화로 하나씩 해금)
+
+const N = (x: number, p: number) => pct(x, sigMul(p));
+const P = (x: number, p: number) => N(x, p) / 100;
+type Cond = (ctx: DamageContext, self: Unit) => boolean;
+const always: Cond = () => true;
+/** 조건이 맞으면 주는 피해 x% 증가 */
+const atk = (x: number, c: Cond = always): TraitHooks => ({ onAttack(ctx, s, p) { if (c(ctx, s)) ctx.attackMul *= 1 + P(x, p); } });
+/** 조건이 맞으면 받는 피해 x% 감소 */
+const def = (x: number, c: Cond = always): TraitHooks => ({ onDefend(ctx, s, p) { if (c(ctx, s)) ctx.reduction = combine(ctx.reduction, P(x, p)); } });
+const crit = (x: number, c: Cond = always): TraitHooks => ({ onAttack(ctx, s, p) { if (c(ctx, s)) ctx.criticalChance += N(x, p); } });
+const aim = (x: number, c: Cond = always): TraitHooks => ({ onAttack(ctx, s, p) { if (c(ctx, s)) ctx.accuracyMod += N(x, p); } });
+const dodge = (x: number, c: Cond = always): TraitHooks => ({ onDefend(ctx, s, p) { if (c(ctx, s)) ctx.accuracyMod -= N(x, p); } });
+const pierce = (x: number, c: Cond = always): TraitHooks => ({ onAttack(ctx, s, p) { if (c(ctx, s)) ctx.defenseIgnore = Math.max(ctx.defenseIgnore, P(x, p)); } });
+const turn = (f: (u: Unit, p: number) => void): TraitHooks => ({ onTurnStart: f });
+/** 훅 여러 개를 하나로 */
+function both(...hs: TraitHooks[]): TraitHooks {
+  const out: TraitHooks = {};
+  for (const k of ["onAttack", "onDefend", "onTurnStart", "onAllyAttack", "onAllyDefend"] as const) {
+    const fs = hs.map((h) => h[k]).filter(Boolean) as Array<(...a: unknown[]) => void>;
+    if (fs.length) (out as Record<string, unknown>)[k] = (...a: unknown[]) => { for (const f of fs) f(...a); };
+  }
+  for (const h of hs) { if (h.redirectsAdjacentDamage) out.redirectsAdjacentDamage = true; if (h.ignoresRoughTerrain) out.ignoresRoughTerrain = true; if (h.alwaysDouble) out.alwaysDouble = true; }
+  return out;
+}
+const fire = (ctx: DamageContext) => ctx.kind === "strategy" && ctx.element === "fire";
+const onTerrain = (u: Unit, ...t: string[]) => t.includes(terrainOf(u) ?? "");
+const fort = (u: Unit) => onTerrain(u, "fort", "gate");
+const near = (u: Unit, name: string, r = 2) => around(u, r, "friend").some((a) => a.name === name);
+const sig2 = (name: string, text: (t?: number) => string, hooks: TraitHooks): Signature => ({ name, text, hooks });
+const T = (t: number | undefined, x: number) => pct(x, sigMul(t ?? 1));
+const early = (n: number) => (u: Unit) => { if (turnOf(u) <= n) give(u, u, "haste", 1, 2); };
+
+const MORE: Record<string, [Signature, Signature]> = {
+  사마의: [sig2("은인자중", (t) => `받는 물리 피해 ${T(t, 15)}% 감소, 체력 절반 이하에서는 ${T(t, 25)}% 감소.`, { onDefend(ctx, s, p) { if (phys(ctx)) ctx.reduction = combine(ctx.reduction, P(hpRate(s) <= .5 ? 25 : 15, p)); } }),
+    sig2("고평릉의 결단", (t) => `체력이 절반 이하인 적에게 책략 피해 ${T(t, 25)}% 증가.`, atk(25, (c) => strat(c) && hpRate(c.defender) <= .5))],
+  조조: [sig2("위무지략", (t) => `2칸 안 아군이 받는 피해 ${T(t, 8)}% 감소.`, { onAllyDefend(ctx, h, p) { if (engageDistance(h.pos, ctx.defender.pos) <= 2) ctx.reduction = combine(ctx.reduction, P(8, p)); } }),
+    sig2("치세의 능신", (t) => `자기 차례마다 전장의 아군 모두 MP ${T(t, 2)} 회복.`, turn((u, p) => { for (const a of [u, ...around(u, 99, "friend")]) a.mp = Math.min(a.stats.maxMp, a.mp + N(2, p)); }))],
+  허저: [sig2("호위의 맹세", (t) => `곁에 붙은 아군의 피해를 대신 받는다(관통 공격 제외). 받는 피해 ${T(t, 5)}% 감소.`, both({ redirectsAdjacentDamage: true }, def(5))),
+    sig2("호치", (t) => `물리 공격 회심 확률 +${T(t, 15)}%p.`, crit(15, (c) => phys(c)))],
+  하후돈: [sig2("외눈의 노기", (t) => `체력 절반 이하에서 물리 피해 ${T(t, 20)}% 증가.`, atk(20, (c, s) => phys(c) && hpRate(s) <= .5)),
+    sig2("복양의 분전", (t) => `받는 물리 피해 ${T(t, 12)}% 감소.`, def(12, (c) => phys(c)))],
+  하후연: [sig2("질풍", () => `전투 첫 턴에 이동력 +3.`, turn((u) => { if (turnOf(u) === 1) give(u, u, "haste", 1, 3); })),
+    sig2("정군산의 급습", (t) => `체력이 가득한 적에게 회심 확률 +${T(t, 20)}%p.`, crit(20, (c) => c.defender.hp >= c.defender.stats.maxHp))],
+  장료: [sig2("합비의 귀신", (t) => `곁에 붙은 적이 둘 이상이면 주는 피해 ${T(t, 20)}% 증가.`, atk(20, (_c, s) => around(s, 1, "foe").length >= 2)),
+    sig2("소요진의 돌격", (t) => `이름있는 적 장수를 치면 방어 ${T(t, 25)}% 무시.`, pierce(25, (c) => isNamedOfficer(c.defender)))],
+  서황: [sig2("도끼의 위엄", (t) => `물리 공격이 방어 ${T(t, 20)}% 무시.`, pierce(20, (c) => phys(c))),
+    sig2("번성 구원", (t) => `2칸 안에서 체력이 절반 이하인 아군이 받는 피해 ${T(t, 15)}% 감소.`, { onAllyDefend(ctx, h, p) { if (engageDistance(h.pos, ctx.defender.pos) <= 2 && hpRate(ctx.defender) <= .5) ctx.reduction = combine(ctx.reduction, P(15, p)); } })],
+  장합: [sig2("가정의 승리", (t) => `산지·구릉에서 받는 피해 ${T(t, 20)}% 감소.`, def(20, (_c, s) => onTerrain(s, "mountain", "hill"))),
+    sig2("목문도의 최후", (t) => `체력 30% 이하에서 주는 피해 ${T(t, 30)}% 증가.`, atk(30, (_c, s) => hpRate(s) <= .3))],
+  조인: [sig2("대장의 위엄", (t) => `곁에 붙은 아군이 받는 물리 피해 ${T(t, 10)}% 감소.`, { onAllyDefend(ctx, h, p) { if (phys(ctx) && engageDistance(h.pos, ctx.defender.pos) <= 1) ctx.reduction = combine(ctx.reduction, P(10, p)); } }),
+    sig2("불퇴", (t) => `체력 절반 이하에서 받는 피해 ${T(t, 15)}% 감소.`, def(15, (_c, s) => hpRate(s) <= .5))],
+  순욱: [sig2("구현의 주장", () => `자기 차례마다 3칸 안 아군 하나의 혼란·봉인을 풀어 준다.`, turn((u) => { const a = around(u, 3, "friend").find((x) => x.statuses.some((st) => st.kind === "confusion" || st.kind === "seal")); if (a) cleanse(a, ["confusion", "seal"]); })),
+    sig2("왕좌의 덕", (t) => `받는 책략 피해 ${T(t, 20)}% 감소.`, def(20, (c) => strat(c)))],
+  조비: [sig2("위 문제", (t) => `2칸 안 아군이 받는 책략 피해 ${T(t, 8)}% 감소.`, { onAllyDefend(ctx, h, p) { if (strat(ctx) && engageDistance(h.pos, ctx.defender.pos) <= 2) ctx.reduction = combine(ctx.reduction, P(8, p)); } }),
+    sig2("전론", (t) => `책략 명중 +${T(t, 15)}%p.`, aim(15, (c) => strat(c)))],
+  가후: [sig2("완성의 계략", (t) => `체력이 가득한 적에게 책략 피해 ${T(t, 20)}% 증가.`, atk(20, (c) => strat(c) && c.defender.hp >= c.defender.stats.maxHp)),
+    sig2("독사", (t) => `책략이 상대의 정신력을 ${T(t, 20)}% 무시한다.`, pierce(20, (c) => strat(c)))],
+  우금: [sig2("엄정 행군", () => `자기 차례마다 이동력 +1.`, turn((u) => give(u, u, "haste", 1, 1))),
+    sig2("정예 조련", (t) => `2칸 안 아군 보병·창병이 받는 물리 피해 ${T(t, 10)}% 감소.`, { onAllyDefend(ctx, h, p) { if (phys(ctx) && foot(ctx.defender) && engageDistance(h.pos, ctx.defender.pos) <= 2) ctx.reduction = combine(ctx.reduction, P(10, p)); } })],
+  악진: [sig2("작은 거인", (t) => `자기보다 최대 체력이 큰 적에게 주는 피해 ${T(t, 15)}% 증가.`, atk(15, (c, s) => c.defender.stats.maxHp > s.stats.maxHp)),
+    sig2("합비 수비", (t) => `성채·성문 칸에서 주는 피해 ${T(t, 20)}% 증가.`, atk(20, (_c, s) => fort(s)))],
+  등애: [sig2("둔전", (t) => `자기 차례마다 최대 체력의 ${T(t, 5)}% 회복.`, turn((u, p) => heal(u, P(5, p)))),
+    sig2("면죽 돌파", (t) => `이번 차례 4칸 이상 움직였으면 방어 ${T(t, 25)}% 무시.`, pierce(25, (_c, s) => (s.movedSteps ?? 0) >= 4))],
+  종회: [sig2("촉 정벌", (t) => `이름있는 적 장수에게 받는 피해 ${T(t, 15)}% 감소.`, def(15, (c) => isNamedOfficer(c.attacker))),
+    sig2("야심", (t) => `자신의 체력이 가득할 때 책략 피해 ${T(t, 20)}% 증가.`, atk(20, (c, s) => strat(c) && s.hp >= s.stats.maxHp))],
+  곽회: [sig2("서방 수비", (t) => `궁병·노병 같은 원거리 부대에게 받는 피해 ${T(t, 20)}% 감소.`, def(20, (c) => ranged(c.attacker))),
+    sig2("강유 저지", (t) => `이름있는 적 장수에게 주는 피해 ${T(t, 15)}% 증가.`, atk(15, (c) => isNamedOfficer(c.defender)))],
+  학소: [sig2("구원 없는 수성", (t) => `곁에 붙은 아군이 없으면 받는 피해 ${T(t, 20)}% 감소.`, def(20, (_c, s) => !around(s, 1, "friend").length)),
+    sig2("진창의 불화살", (t) => `성채·성문 칸에서 두 칸 이상 떨어진 적에게 피해 ${T(t, 25)}% 증가.`, atk(25, (c, s) => fort(s) && c.distance >= 2))],
+  사마사: [sig2("대장군", (t) => `2칸 안 아군의 물리 피해 ${T(t, 8)}% 증가.`, { onAllyAttack(ctx, h, p) { if (phys(ctx) && engageDistance(h.pos, ctx.attacker.pos) <= 2) ctx.attackMul *= 1 + P(8, p); } }),
+    sig2("눈을 잃어도", () => `적의 공격이 회심으로 터지지 않는다.`, { onDefend(ctx) { ctx.criticalChance = -999; } })],
+  사마소: [sig2("진왕", (t) => `자기 차례마다 3칸 안 아군 체력 ${T(t, 4)}% 회복.`, turn((u, p) => { for (const a of around(u, 3, "friend")) heal(a, P(4, p)); })),
+    sig2("촉 평정", (t) => `물리 공격 명중 +${T(t, 15)}%p.`, aim(15, (c) => phys(c)))],
+  조진: [sig2("서방 대도독", (t) => `곁에 아군 기병이 있으면 받는 물리 피해 ${T(t, 10)}% 감소.`, def(10, (c, s) => phys(c) && around(s, 1, "friend").some(mounted))),
+    sig2("종실의 위세", () => `자기 차례마다 2칸 안 아군 기병 이동력 +1.`, turn((u) => { for (const a of around(u, 2, "friend")) if (mounted(a)) give(u, a, "haste", 1, 1); }))],
+  조홍: [sig2("헌마의 은혜", (t) => `조조가 2칸 안에 있으면 받는 피해 ${T(t, 20)}% 감소.`, def(20, (_c, s) => near(s, "조조"))),
+    sig2("종실의 장수", (t) => `자신의 체력이 가득할 때 받는 피해 ${T(t, 15)}% 감소.`, def(15, (_c, s) => s.hp >= s.stats.maxHp))],
+  조창: [sig2("오환 정벌", (t) => `움직인 뒤 공격하면 방어 ${T(t, 15)}% 무시.`, pierce(15, (_c, s) => !!s.movedThisTurn)),
+    sig2("누런 수염", (t) => `곁에 붙은 적이 셋 이상이면 물리 피해 ${T(t, 25)}% 증가.`, atk(25, (c, s) => phys(c) && around(s, 1, "foe").length >= 3))],
+  문빙: [sig2("강하의 수군", (t) => `물 위나 물가의 적에게 주는 피해 ${T(t, 20)}% 증가.`, atk(20, (c) => byWater(c.defender))),
+    sig2("충절", (t) => `체력 30% 이하에서 받는 피해 ${T(t, 25)}% 감소.`, def(25, (_c, s) => hpRate(s) <= .3))],
+  마초: [sig2("금마초의 위용", (t) => `전투 첫 두 턴 동안 적의 명중 -${T(t, 15)}%p.`, dodge(15, (_c, s) => turnOf(s) <= 2)),
+    sig2("복수의 창", (t) => `곁에 붙은 적 하나마다 회심 확률 +${T(t, 7)}%p(최대 3).`, { onAttack(ctx, s, p) { ctx.criticalChance += Math.min(3, around(s, 1, "foe").length) * N(7, p); } })],
+  유비: [sig2("삼고초려", (t) => `자기 차례마다 2칸 안 아군 책사의 MP ${T(t, 3)} 회복.`, turn((u, p) => { for (const a of around(u, 2, "friend")) if (caster(a)) a.mp = Math.min(a.stats.maxMp, a.mp + N(3, p)); })),
+    sig2("한중왕", (t) => `받는 피해 ${T(t, 8)}% 감소, 체력 절반 이하에서는 ${T(t, 18)}% 감소.`, { onDefend(ctx, s, p) { ctx.reduction = combine(ctx.reduction, P(hpRate(s) <= .5 ? 18 : 8, p)); } })],
+  관우: [sig2("오관참육장", (t) => `움직인 뒤 물리 공격하면 방어 ${T(t, 20)}% 무시.`, pierce(20, (c, s) => phys(c) && !!s.movedThisTurn)),
+    sig2("수엄칠군", (t) => `물 위나 물가의 적에게 물리 피해 ${T(t, 25)}% 증가.`, atk(25, (c) => phys(c) && byWater(c.defender)))],
+  장비: [sig2("연인 장익덕", (t) => `물리 피해 ${T(t, 12)}% 증가. 대신 받는 책략 피해 10% 증가.`, both(atk(12, (c) => phys(c)), { onDefend(ctx) { if (strat(ctx)) ctx.reduction = 1 - (1 - ctx.reduction) * 1.1; } })),
+    sig2("의석 와구", (t) => `숲·산지에서 받는 피해 ${T(t, 15)}% 감소.`, def(15, (_c, s) => onTerrain(s, "forest", "mountain")))],
+  제갈량: [sig2("팔진도", () => `자기 차례마다 2칸 안 적 모두를 둔화시킨다(이동력 감소).`, turn((u) => { for (const e of around(u, 2, "foe")) give(u, e, "slow", 2); })),
+    sig2("목우유마", (t) => `자기 차례마다 전장의 아군 모두 체력 ${T(t, 2)}%와 MP 2 회복.`, turn((u, p) => { for (const a of [u, ...around(u, 99, "friend")]) { heal(a, P(2, p)); a.mp = Math.min(a.stats.maxMp, a.mp + 2); } }))],
+  조운: [sig2("상산 조자룡", (t) => `회피 +${T(t, 15)}%p.`, dodge(15)),
+    sig2("일신시담", (t) => `물리 회심 확률 +${T(t, 12)}%p. 체력이 가득하면 방어 15% 무시.`, both(crit(12, (c) => phys(c)), pierce(15, (_c, s) => s.hp >= s.stats.maxHp)))],
+  황충: [sig2("백발백중", (t) => `명중 +${T(t, 20)}%p.`, aim(20)),
+    sig2("정군산의 일격", (t) => `이름있는 적 장수를 두 칸 이상 떨어져 치면 피해 ${T(t, 25)}% 증가.`, atk(25, (c) => c.distance >= 2 && isNamedOfficer(c.defender)))],
+  강유: [sig2("담대함", (t) => `체력 절반 이하에서 회피 +${T(t, 20)}%p.`, dodge(20, (_c, s) => hpRate(s) <= .5)),
+    sig2("일계", (t) => `물리·책략 피해 모두 ${T(t, 10)}% 증가.`, atk(10, (c) => phys(c) || strat(c)))],
+  방통: [sig2("낙봉파", (t) => `자신의 체력이 가득할 때 책략 명중 +${T(t, 20)}%p.`, aim(20, (c, s) => strat(c) && s.hp >= s.stats.maxHp)),
+    sig2("연환의 쇠사슬", (t) => `둔화·이동 불가인 적에게 불 책략 피해 ${T(t, 35)}% 증가.`, atk(35, (c) => fire(c) && c.defender.statuses.some((x) => x.kind === "slow" || x.kind === "immobile")))],
+  위연: [sig2("한중 태수", (t) => `길·다리 위에서 주는 피해 ${T(t, 15)}% 증가.`, atk(15, (_c, s) => onTerrain(s, "road", "bridge"))),
+    sig2("홀로 선 칼", (t) => `곁에 붙은 적이 하나뿐이면 물리 피해 ${T(t, 20)}% 증가.`, atk(20, (c, s) => phys(c) && around(s, 1, "foe").length === 1))],
+  마속: [sig2("남만 심공", (t) => `혼란에 빠진 적에게 책략 명중 +${T(t, 25)}%p.`, aim(25, (c) => strat(c) && c.defender.statuses.some((x) => x.kind === "confusion"))),
+    sig2("읍참마속", (t) => `체력 30% 이하에서 책략 피해 ${T(t, 30)}% 증가.`, atk(30, (c, s) => strat(c) && hpRate(s) <= .3))],
+  왕평: [sig2("가정의 수비", (t) => `산지·구릉에서 두 칸 이상 떨어진 적에게 피해 ${T(t, 20)}% 증가.`, atk(20, (c, s) => c.distance >= 2 && onTerrain(s, "mountain", "hill"))),
+    sig2("무당비군", (t) => `숲에서 주는 피해 ${T(t, 15)}% 증가.`, atk(15, (_c, s) => onTerrain(s, "forest")))],
+  관평: [sig2("청룡의 그림자", (t) => `회심 확률 +${T(t, 8)}%p, 관우가 2칸 안에 있으면 ${T(t, 8)}%p 더.`, { onAttack(ctx, s, p) { ctx.criticalChance += N(8, p) * (near(s, "관우") ? 2 : 1); } }),
+    sig2("장자의 무예", (t) => `보병·창병에게 받는 피해 ${T(t, 15)}% 감소.`, def(15, (c) => foot(c.attacker)))],
+  마대: [sig2("서량의 기병", (t) => `움직인 뒤 공격하면 명중 +${T(t, 15)}%p.`, aim(15, (_c, s) => !!s.movedThisTurn)),
+    sig2("복병", (t) => `전투 첫 턴에 주는 피해 ${T(t, 30)}% 증가.`, atk(30, (_c, s) => turnOf(s) === 1))],
+  맹획: [sig2("등갑 동맹", (t) => `받는 물리 피해 ${T(t, 20)}% 감소. 대신 불 책략에 받는 피해 20% 증가.`, both(def(20, (c) => phys(c)), { onDefend(ctx) { if (fire(ctx)) ctx.reduction = 1 - (1 - ctx.reduction) * 1.2; } })),
+    sig2("일곱 번의 귀환", (t) => `체력 30% 이하에서 주는 피해 ${T(t, 25)}% 증가.`, atk(25, (_c, s) => hpRate(s) <= .3))],
+  축융: [sig2("불의 신의 후예", (t) => `불 책략에 받는 피해 ${T(t, 30)}% 감소.`, def(30, (c) => fire(c))),
+    sig2("여장부", (t) => `회피 +${T(t, 12)}%p.`, dodge(12))],
+  주유: [sig2("수군 대도독", (t) => `물 위나 물가에서 주는 피해 ${T(t, 15)}% 증가.`, atk(15, (_c, s) => byWater(s))),
+    sig2("삼강구의 불", (t) => `체력이 절반 이하인 적에게 불 책략 피해 ${T(t, 25)}% 증가.`, atk(25, (c) => fire(c) && hpRate(c.defender) <= .5))],
+  손권: [sig2("자수의 계", (t) => `받는 책략 피해 ${T(t, 10)}% 감소.`, def(10, (c) => strat(c))),
+    sig2("강동의 인재", (t) => `자기 차례마다 3칸 안 아군 MP ${T(t, 2)} 회복.`, turn((u, p) => { for (const a of around(u, 3, "friend")) a.mp = Math.min(a.stats.maxMp, a.mp + N(2, p)); }))],
+  육손: [sig2("백면서생", (t) => `이름있는 적 장수에게 책략 피해 ${T(t, 15)}% 증가.`, atk(15, (c) => strat(c) && isNamedOfficer(c.defender))),
+    sig2("석정의 매복", (t) => `숲에서 받는 피해 ${T(t, 20)}% 감소.`, def(20, (_c, s) => onTerrain(s, "forest")))],
+  여몽: [sig2("괄목상대", (t) => `자기보다 레벨이 높은 적에게 책략 피해 ${T(t, 15)}% 증가.`, atk(15, (c, s) => strat(c) && c.defender.level > s.level)),
+    sig2("오하아몽", (t) => `책략 명중 +${T(t, 12)}%p.`, aim(12, (c) => strat(c)))],
+  감녕: [sig2("금범적", (t) => `물 위나 물가에서 회심 확률 +${T(t, 15)}%p.`, crit(15, (_c, s) => byWater(s))),
+    sig2("백 기의 야습", () => `전투 첫 두 턴 동안 이동력 +2.`, turn(early(2)))],
+  노숙: [sig2("대국의 안목", (t) => `받는 책략 피해 ${T(t, 15)}% 감소.`, def(15, (c) => strat(c))),
+    sig2("단도회", (t) => `곁에 붙은 아군이 없으면 받는 피해 ${T(t, 15)}% 감소.`, def(15, (_c, s) => !around(s, 1, "friend").length))],
+  황개: [sig2("노장의 쇠채찍", (t) => `물리 공격이 방어 ${T(t, 15)}% 무시.`, pierce(15, (c) => phys(c))),
+    sig2("화선", (t) => `물 위나 물가의 적에게 물리 피해 ${T(t, 20)}% 증가.`, atk(20, (c) => phys(c) && byWater(c.defender)))],
+  서성: [sig2("강변 수비", (t) => `물가에서 두 칸 이상 떨어진 적에게 피해 ${T(t, 15)}% 증가.`, atk(15, (c, s) => c.distance >= 2 && byWater(s))),
+    sig2("동오의 견장", (t) => `체력 절반 이하에서 받은 물리 피해의 ${T(t, 15)}%를 되돌린다.`, { onDefend(ctx, s, p) { if (phys(ctx) && hpRate(s) <= .5) ctx.reflect += P(15, p); } })],
+  정봉: [sig2("단병 돌격", (t) => `물리 피해 ${T(t, 20)}% 증가. 대신 받는 물리 피해 10% 증가.`, both(atk(20, (c) => phys(c)), { onDefend(ctx) { if (phys(ctx)) ctx.reduction = 1 - (1 - ctx.reduction) * 1.1; } })),
+    sig2("노장의 기백", (t) => `체력 절반 이하에서 회심 확률 +${T(t, 20)}%p.`, crit(20, (_c, s) => hpRate(s) <= .5))],
+  제갈근: [sig2("온후한 장자", (t) => `자기 차례마다 곁에 붙은 아군 체력 ${T(t, 5)}% 회복.`, turn((u, p) => { for (const a of around(u, 1, "friend")) heal(a, P(5, p)); })),
+    sig2("외교 사절", (t) => `책략을 쓰는 적에게 받는 피해 ${T(t, 15)}% 감소.`, def(15, (c) => caster(c.attacker)))],
+  장소: [sig2("직언", (t) => `받는 책략 피해 ${T(t, 15)}% 감소, 책략 명중 +5%p.`, both(def(15, (c) => strat(c)), aim(5, (c) => strat(c)))),
+    sig2("강동의 원로", (t) => `2칸 안 아군의 책략 명중 +${T(t, 10)}%p.`, { onAllyAttack(ctx, h, p) { if (strat(ctx) && engageDistance(h.pos, ctx.attacker.pos) <= 2) ctx.accuracyMod += N(10, p); } })],
+  여포: [sig2("적토마", () => `전투 첫 세 턴 동안 이동력 +2.`, turn(early(3))),
+    sig2("방천화극", (t) => `자신의 체력이 가득할 때 받는 물리 피해 ${T(t, 20)}% 감소.`, def(20, (c, s) => phys(c) && s.hp >= s.stats.maxHp))],
+  진궁: [sig2("하비의 계책", (t) => `2칸 안 아군이 받는 책략 피해 ${T(t, 10)}% 감소.`, { onAllyDefend(ctx, h, p) { if (strat(ctx) && engageDistance(h.pos, ctx.defender.pos) <= 2) ctx.reduction = combine(ctx.reduction, P(10, p)); } }),
+    sig2("충절의 최후", (t) => `체력 30% 이하에서 책략 피해 ${T(t, 25)}% 증가.`, atk(25, (c, s) => strat(c) && hpRate(s) <= .3))],
+  안량: [sig2("백마 포위", (t) => `곁에 붙은 아군이 있으면 물리 피해 ${T(t, 12)}% 증가.`, atk(12, (c, s) => phys(c) && around(s, 1, "friend").length > 0)),
+    sig2("백마의 선봉", (t) => `전투 첫 턴에 회심 확률 +${T(t, 25)}%p.`, crit(25, (_c, s) => turnOf(s) === 1))],
+  문추: [sig2("연진의 추격", (t) => `움직인 뒤 물리 공격하면 피해 ${T(t, 12)}% 증가.`, atk(12, (c, s) => phys(c) && !!s.movedThisTurn)),
+    sig2("안량의 원수", (t) => `체력 절반 이하에서 물리 피해 ${T(t, 20)}% 증가, 명중 +10%p.`, both(atk(20, (c, s) => phys(c) && hpRate(s) <= .5), aim(10, (c, s) => phys(c) && hpRate(s) <= .5)))],
+  저수: [sig2("감군의 진언", (t) => `받는 책략 피해 ${T(t, 12)}% 감소.`, def(12, (c) => strat(c))),
+    sig2("관도의 선견", (t) => `전투 첫 두 턴 동안 2칸 안 아군이 받는 피해 ${T(t, 10)}% 감소.`, { onAllyDefend(ctx, h, p) { if (turnOf(h) <= 2 && engageDistance(h.pos, ctx.defender.pos) <= 2) ctx.reduction = combine(ctx.reduction, P(10, p)); } })],
+  전풍: [sig2("옥중의 충언", (t) => `체력 절반 이하에서 책략 피해 ${T(t, 20)}% 증가.`, atk(20, (c, s) => strat(c) && hpRate(s) <= .5)),
+    sig2("직언의 대가", (t) => `받는 물리 피해 ${T(t, 10)}% 감소.`, def(10, (c) => phys(c)))],
+  심배: [sig2("업성의 결사", (t) => `성채·성문 칸에서 주는 피해 ${T(t, 15)}% 증가, 받는 피해 5% 감소.`, both(atk(15, (_c, s) => fort(s)), def(5, (_c, s) => fort(s)))),
+    sig2("충신의 기개", (t) => `성채·성문 칸에 있으면 자기 차례마다 체력 ${T(t, 8)}% 회복.`, turn((u, p) => { if (fort(u)) heal(u, P(8, p)); }))],
+  항우: [sig2("파부침주", (t) => `전투 첫 두 턴 동안 받는 피해 ${T(t, 20)}% 감소.`, def(20, (_c, s) => turnOf(s) <= 2)),
+    sig2("사면초가", (t) => `곁에 붙은 적 하나마다 받는 피해 ${T(t, 6)}% 감소(최대 4).`, { onDefend(ctx, s, p) { ctx.reduction = combine(ctx.reduction, Math.min(4, around(s, 1, "foe").length) * P(6, p)); } })],
+  유방: [sig2("한 고조", (t) => `이름있는 아군 장수가 2칸 안에 있으면 받는 피해 ${T(t, 15)}% 감소.`, def(15, (_c, s) => around(s, 2, "friend").some(isNamedOfficer))),
+    sig2("대풍가", (t) => `전장의 아군 하나마다 주는 피해 2% 증가(최대 ${T(t, 16)}%).`, { onAttack(ctx, s, p) { ctx.attackMul *= 1 + Math.min(N(16, p), around(s, 99, "friend").length * 2) / 100; } })],
+  한신: [sig2("다다익선", (t) => `2칸 안 아군 하나마다 주는 피해 5% 증가(최대 ${T(t, 25)}%).`, { onAttack(ctx, s, p) { ctx.attackMul *= 1 + Math.min(N(25, p), around(s, 2, "friend").length * 5) / 100; } }),
+    sig2("암도진창", () => `전투 첫 턴에 이동력 +3, 둘째 턴에 +2.`, turn((u) => { const t = turnOf(u); if (t <= 2) give(u, u, "haste", 1, t === 1 ? 3 : 2); }))],
+  장량: [sig2("황석공의 병법", (t) => `책략 명중 +${T(t, 15)}%p, 받는 책략 피해 5% 감소.`, both(aim(15, (c) => strat(c)), def(5, (c) => strat(c)))),
+    sig2("초가의 노래", () => `자기 차례마다 3칸 안에서 가장 가까운 적 하나를 쇠약하게 한다.`, turn((u) => { const e = around(u, 3, "foe").sort((a, b) => engageDistance(u.pos, a.pos) - engageDistance(u.pos, b.pos))[0]; if (e) give(u, e, "weaken", 2); }))],
+  소하: [sig2("군량 보급", (t) => `자기 차례마다 2칸 안 아군 MP ${T(t, 3)} 회복.`, turn((u, p) => { for (const a of around(u, 2, "friend")) a.mp = Math.min(a.stats.maxMp, a.mp + N(3, p)); })),
+    sig2("소규조수", (t) => `받는 피해 ${T(t, 10)}% 감소.`, def(10))],
+  범증: [sig2("홍문의 계", (t) => `체력이 가득한 적에게 책략 피해 ${T(t, 15)}% 증가, 명중 +5%p.`, both(atk(15, (c) => strat(c) && c.defender.hp >= c.defender.stats.maxHp), aim(5, (c) => strat(c)))),
+    sig2("아부", (t) => `받는 책략 피해 ${T(t, 18)}% 감소.`, def(18, (c) => strat(c)))],
+  영포: [sig2("구강왕", (t) => `곁에 붙은 적이 하나뿐이면 회심 확률 +${T(t, 15)}%p.`, crit(15, (_c, s) => around(s, 1, "foe").length === 1)),
+    sig2("반골의 맹장", (t) => `이름있는 적 장수에게 물리 피해 ${T(t, 18)}% 증가.`, atk(18, (c) => phys(c) && isNamedOfficer(c.defender)))],
+  팽월: [sig2("유격의 귀재", (t) => `이번 차례 움직였다면 받는 피해 ${T(t, 12)}% 감소.`, def(12, (_c, s) => !!s.movedThisTurn)),
+    sig2("군량 차단", (t) => `숲·갈대늪 칸에서 주는 피해 ${T(t, 20)}% 증가.`, atk(20, (_c, s) => onTerrain(s, "forest", "marsh")))],
+  번쾌: [sig2("돼지 다리", (t) => `자기 차례마다 최대 체력의 ${T(t, 6)}% 회복.`, turn((u, p) => heal(u, P(6, p)))),
+    sig2("홍문의 일갈", () => `자기 차례마다 곁에 붙은 적을 쇠약하게 한다.`, turn((u) => { for (const e of around(u, 1, "foe")) give(u, e, "weaken", 2); }))],
+  진평: [sig2("육출기계", (t) => `책략 피해 ${T(t, 10)}% 증가, 받는 책략 피해 10% 감소.`, both(atk(10, (c) => strat(c)), def(10, (c) => strat(c)))),
+    sig2("반간의 대가", (t) => `이름있는 적 장수에게 책략 명중 +${T(t, 20)}%p.`, aim(20, (c) => strat(c) && isNamedOfficer(c.defender)))],
+  종리매: [sig2("초의 골육", (t) => `항우가 2칸 안에 있으면 받는 피해 ${T(t, 15)}% 감소.`, def(15, (_c, s) => near(s, "항우"))),
+    sig2("벗에게 몸을 맡기다", (t) => `체력 30% 이하에서 회피 +${T(t, 25)}%p.`, dodge(25, (_c, s) => hpRate(s) <= .3))],
+  계포: [sig2("도망 장수의 지혜", (t) => `이번 차례 움직였다면 회피 +${T(t, 15)}%p.`, dodge(15, (_c, s) => !!s.movedThisTurn)),
+    sig2("주가의 노비", (t) => `받는 물리 피해 ${T(t, 12)}% 감소, 체력 절반 이하면 반격 받은 피해 10% 되돌림.`, both(def(12, (c) => phys(c)), { onDefend(ctx, s) { if (phys(ctx) && hpRate(s) <= .5) ctx.reflect += .1; } }))],
+};
+
 /** 고유특성이 있는 이름있는 장수 이름(게임에 나오는 장수만). */
 export const SIGNATURE_NAMES: readonly string[] = Object.keys(S);
+/** 첫째 고유특성 */
 export const signatureOf = (name: string): Signature | undefined => S[name];
-export const signatureTraitId = (name: string) => `sig:${name}`;
+/** 고유특성 셋(첫째·둘째·셋째). */
+export const signatureSet = (name: string): Signature[] => (S[name] ? [S[name]!, ...(MORE[name] ?? [])] : []);
+/** 몇째 고유특성이 열리는 병종 단계: 첫째는 처음부터, 둘째는 2단계(1차 진화), 셋째는 3단계(2차 진화). */
+export const SIGNATURE_UNLOCK_TIERS = [1, 2, 3] as const;
+export const SIGNATURE_UNLOCK_TEXT = ["처음부터", "병종 2단계(1차 진화)에서 해금", "병종 3단계(2차 진화)에서 해금"] as const;
+/** 첫째는 `sig:이름`, 둘째·셋째는 `sig:이름:2`·`sig:이름:3` */
+export const signatureTraitId = (name: string, nth = 1) => (nth <= 1 ? `sig:${name}` : `sig:${name}:${nth}`);
+/** 특성 id → [장수 이름, 몇째] */
+export function parseSignatureId(id: string): [string, number] | undefined {
+  if (!id.startsWith("sig:")) return undefined;
+  const [name, n] = id.slice(4).split(":");
+  return [name!, n ? Number(n) : 1];
+}
 
-for (const [who, sig] of Object.entries(S)) defineTrait({ id: signatureTraitId(who), name: sig.name, description: sig.text(1), hooks: sig.hooks });
+for (const who of Object.keys(S)) signatureSet(who).forEach((sig, i) => defineTrait({ id: signatureTraitId(who, i + 1), name: sig.name, description: sig.text(1), hooks: sig.hooks }));
 
-/** 이름있는 장수에게 고유특성을 붙인다(한 번만). 병종 단계가 오를수록 강해진다. 목록 밖 인물이면 false. */
+/**
+ * 이름있는 장수에게 고유특성을 붙인다. 병종 단계에 따라 하나씩 열린다(1단계 1개 · 2단계 2개 · 3단계 이상 3개),
+ * 수치도 단계를 따라 커진다. 목록 밖 인물이면 false.
+ */
 export function applySignature(unit: Unit, name: string, tier: number): boolean {
-  const sig = S[name];
-  if (!sig) return false;
-  const id = signatureTraitId(name);
-  if (!unit.traits.includes(id)) unit.traits.push(id);
-  unit.traitParams[id] = Math.max(1, Math.min(4, tier));
+  if (!S[name]) return false;
+  const t = Math.max(1, Math.min(4, tier));
+  signatureSet(name).forEach((_sig, i) => {
+    if (t < SIGNATURE_UNLOCK_TIERS[i]!) return;
+    const id = signatureTraitId(name, i + 1);
+    if (!unit.traits.includes(id)) unit.traits.push(id);
+    unit.traitParams[id] = t;
+  });
   return true;
 }

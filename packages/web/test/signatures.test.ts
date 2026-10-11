@@ -2,7 +2,7 @@ import {describe,it,expect} from 'vitest';
 import {Session,chapters} from '../src/session.ts';
 import {deployment,freshCampaign} from '../src/progression.ts';
 import {romanceOf,romanceByName,signatureSkill} from '../src/romance.ts';
-import {SIGNATURE_NAMES} from '../../core/src/index.ts';
+import {SIGNATURE_NAMES,tierOf} from '../../core/src/index.ts';
 
 describe('규칙판 8: 이름있는 장수는 고유특성, 목록 밖 인물은 병종', () => {
   it('고유특성이 있는 장수는 모두 게임 장수록에 있는 인물이다', () => {
@@ -16,7 +16,7 @@ describe('규칙판 8: 이름있는 장수는 고유특성, 목록 밖 인물은
         const r=romanceOf(u);if(!r||u.name.endsWith('환영'))continue;
         const sig=u.traits.filter(t=>t.startsWith('sig:'));
         expect(u.traits.some(t=>t.startsWith('officer:')),u.name).toBe(false);
-        if(signatureSkill(r.name)){if(sig.length){named++;expect(sig).toEqual(['sig:'+r.name]);}}
+        if(signatureSkill(r.name)){if(sig.length){named++;expect(sig[0]).toBe('sig:'+r.name);expect(sig.length).toBe(Math.min(3,tierOf(u.unitClass)));}}
         else{plain++;expect(sig,u.name).toEqual([]);}
       }
     }
@@ -37,7 +37,7 @@ describe('규칙판 8: 이름있는 장수는 고유특성, 목록 밖 인물은
       perks:{all:[],byName:{사마의:[['physicalPower',10]] as [string,number][]}}};
     const s=new Session(chapters.findIndex(c=>c.stage.id==='S1-08'),'normal',215,'survival',8,grown);
     const sy=s.state.find('sima_yi')!;
-    expect(sy.traits.filter(t=>t.startsWith('sig:'))).toEqual(['sig:사마의']);
+    expect(sy.traits.filter(t=>t.startsWith('sig:'))[0]).toBe('sig:사마의');
     expect(sy.traits.filter(t=>OLD.includes(t)||t==='physicalPower'||t.startsWith('officer:'))).toEqual([]);
   });
 });
