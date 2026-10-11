@@ -67,10 +67,25 @@ export class BattleFx {
     for(let i=0;i<8;i++){const q=rot+i/8*TAU;g.rect(p.x+Math.cos(q)*r*.86-2,p.y+6+Math.sin(q)*r*.36-2,4,4).fill({color,alpha:a});}
     for(let i=0;i<6;i++){const q=i/6*TAU+rot;const h=(t*90+i*15)%60;g.circle(p.x+Math.cos(q)*r*.6,p.y+6+Math.sin(q)*r*.25-h,2).fill({color:0xffffff,alpha:a*(1-h/60)});}
     g.ellipse(p.x,p.y+6,r*.9,r*.38).fill({color,alpha:.12*a});});}
+  /** 책략이 떨어지는 자리의 대형 지면진 + 중앙 광주. 화면을 흔들지 않고 광량과 형태로 위력을 읽힌다. */
+  strategySeal(p:P,color:number,big=1){const cx=p.x,cy=p.y+7;return this.run(820,(g,t)=>{const a=t<.12?t/.12:t>.7?1-(t-.7)/.3:1,r=(34+18*Math.min(1,t*3))*big,rot=t*2.8;
+    g.ellipse(cx,cy,r,r*.42).fill({color,alpha:.13*a}).stroke({color,width:4*big,alpha:a});
+    g.ellipse(cx,cy,r*.72,r*.3).stroke({color:0xffffff,width:2*big,alpha:.78*a});
+    g.poly(Array.from({length:12},(_,i)=>{const q=rot+i/12*TAU;return [cx+Math.cos(q)*r*.54,cy+Math.sin(q)*r*.23];}).flat()).stroke({color,width:1.5*big,alpha:.55*a});
+    for(let i=0;i<16;i++){const q=-rot+i/16*TAU,x1=cx+Math.cos(q)*r*.82,y1=cy+Math.sin(q)*r*.35,x2=cx+Math.cos(q)*r,y2=cy+Math.sin(q)*r*.42;g.moveTo(x1,y1).lineTo(x2,y2).stroke({color:i%2?0xffffff:color,width:(i%4?1.5:3)*big,alpha:.85*a});}
+    const rise=Math.min(1,t*5),h=(100+35*big)*rise;g.poly([cx-13*big,cy,cx-5*big,cy-h,cx+5*big,cy-h,cx+13*big,cy]).fill({color,alpha:.2*a});
+    g.circle(cx,cy-18,(10+26*Math.min(1,t*4))*big).fill({color:0xffffff,alpha:.7*a});
+  },'add',990);}
   /** 베기: 공격 방향으로 휘두른 초승달 칼빛(두 겹) + 흰 섬광. */
   slash(p:P,dir:number,big=1){const cx=p.x,cy=p.y-26;return this.run(300,(g,t)=>{const a=1-t,sweep=Math.min(1,t*2.2),r=34*big;
     const start=dir-1.4,end=start+2.8*sweep;g.arc(cx,cy,r,start,end).stroke({color:0xffffff,width:9*a*big,alpha:a});g.arc(cx,cy,r*.82,start+.2,end).stroke({color:0xbfe8ff,width:4*a*big,alpha:a*.8});
     if(t<.35)g.circle(cx,cy,(14+t*40)*big).fill({color:0xffffff,alpha:(.35-t)*1.6});});}
+  /** 극·언월도·도끼: 폭이 넓고 무거운 금적색 반월 궤적. */
+  cleave(p:P,dir:number,big=1){const cx=p.x,cy=p.y-24;return this.run(360,(g,t)=>{const a=1-t,sweep=Math.min(1,t*2),r=42*big,start=dir-1.55,end=start+3.1*sweep;
+    g.arc(cx,cy,r,start,end).stroke({color:0xff5a2a,width:15*a*big,alpha:.7*a});g.arc(cx,cy,r*.9,start+.08,end).stroke({color:0xfff4cf,width:7*a*big,alpha:a});
+    if(t<.3)g.star(cx,cy,8,(16+t*42)*big,7).fill({color:0xffffff,alpha:(.3-t)*2.2});});}
+  /** 부채·법구의 근접 공격: 휘두른 방향을 따라 퍼지는 바람 부채꼴. */
+  fan(p:P,dir:number,big=1){const cx=p.x,cy=p.y-24;return this.run(330,(g,t)=>{const a=1-t,r=(24+38*t)*big;for(let i=-2;i<=2;i++){const q=dir+i*.18;g.arc(cx,cy,r*(1-Math.abs(i)*.05),q-.5,q+.5).stroke({color:i?0xb8f4ff:0xffffff,width:(i?3:6)*a,alpha:a*(i?0.65:1)});} });}
   /** 찌르기: 길게 뻗는 창날 섬광. */
   thrust(p:P,ux:number,uy:number,big=1){const cx=p.x,cy=p.y-24;return this.run(260,(g,t)=>{const a=1-t,l=(40+50*t)*big;g.moveTo(cx-ux*l*.6,cy-uy*l*.6).lineTo(cx+ux*l*.5,cy+uy*l*.5).stroke({color:0xffffff,width:7*a,alpha:a});g.moveTo(cx-ux*l*.4,cy-uy*l*.4).lineTo(cx+ux*l*.6,cy+uy*l*.6).stroke({color:0xffe3a0,width:3*a,alpha:a});g.star(cx+ux*l*.5,cy+uy*l*.5,4,14*a*big,4).fill({color:0xffffff,alpha:a});});}
   /** 돌격·둔기: 땅을 치는 충격파 고리 + 흙먼지. */
@@ -150,8 +165,8 @@ export class BattleFx {
   /** 큰 피해 숫자: 붉은 글씨 흰 테(회심은 금빛, 회복은 초록). 튀어 올랐다 가라앉는다. */
   number(p:P,value:string,kind:'hurt'|'crit'|'heal'|'miss',offset=0){
     const item=new Container();item.zIndex=1000;item.position.set(p.x+offset,p.y-40);
-    const fill=kind==='crit'?0xffd040:kind==='heal'?0x8aff9a:kind==='miss'?0xd8e6f0:0xff4a3a,size=kind==='crit'?40:kind==='miss'?22:32;
-    const label=new Text({text:value,style:{fontFamily:'Georgia,"Malgun Gothic",serif',fontSize:size,fontWeight:'900',fill,stroke:{color:kind==='heal'?0x0a3010:0x2a0606,width:6},dropShadow:{color:0x000000,blur:3,distance:3,alpha:.8},letterSpacing:-1}});label.anchor.set(.5);item.addChild(label);
+    const fill=kind==='crit'?0xffd040:kind==='heal'?0x8aff9a:kind==='miss'?0xd8e6f0:0xff3b2f,size=kind==='crit'?48:kind==='miss'?22:38;
+    const label=new Text({text:value,style:{fontFamily:'Georgia,"Malgun Gothic",serif',fontSize:size,fontWeight:'900',fill,stroke:{color:kind==='heal'?0x0a3010:kind==='hurt'?0xffd7a8:0x2a0606,width:kind==='hurt'?8:7},dropShadow:{color:0x000000,blur:4,distance:4,alpha:.9},letterSpacing:-2}});label.anchor.set(.5);item.addChild(label);
     if(kind==='crit'){const tag=new Text({text:'회심!',style:{fontFamily:'Malgun Gothic',fontSize:15,fontWeight:'900',fill:0xfff6d0,stroke:{color:0x8a2a08,width:4}}});tag.anchor.set(.5);tag.y=-30;item.addChild(tag);}
     this.layer.addChild(item);
     if(this.reduced){setTimeout(()=>item.destroy({children:true}),900);return;}
