@@ -685,7 +685,7 @@ export class Battlefield {
       }
       if(p>=.6&&!hit){
         // 새 특수효과: 속성별 책략 폭발(대상마다), 베기 궤적·찌르기 섬광·충격파, 방패막, 회피 잔상, 회심 빛살
-        if(sfx&&e.t==='strategy'){const area=e.targets.length,big=Math.min(1.5,.95+area*.12);e.targets.forEach((id,i)=>{const u=this.state?.find(id);if(u)setTimeout(()=>{void this.fx.strategySeal(iso(u.pos),sfx.color,big);playImpact(this.fx,sfx,iso(u.pos),big);},i*70);});}
+        if(sfx&&e.t==='strategy'){const area=e.targets.length,big=Math.min(1.5,.95+area*.12);e.targets.forEach((id,i)=>{const u=this.state?.find(id);if(u)setTimeout(()=>{if(sdef?.element!=='physical')void this.fx.strategySeal(iso(u.pos),sfx.color,big);playImpact(this.fx,sfx,iso(u.pos),big);},i*70);});}
         else if(el){const area=e.t==='strategy'?e.targets.length:1,big=Math.min(1.5,.95+area*.12),color={fire:0xff7424,water:0x5ab8ff,wind:0x7fdf96,thunder:0xffe85a,earth:0xd0a66a,support:0xb86cff,heal:0x72ee94}[el];(e.t==='strategy'?e.targets:[]).forEach((id,i)=>{const u=this.state?.find(id);if(u)setTimeout(()=>{void this.fx.strategySeal(iso(u.pos),color,big);void this.fx.element(iso(u.pos),el,big);},i*70);});}
         else if(landed){const dir=Math.atan2(dy,dx);if(style.kind==='slash')void this.fx.slash(to,dir,critical?1.35:1);else if(style.kind==='cleave')void this.fx.cleave(to,dir,critical?1.35:1);else if(style.kind==='fan')void this.fx.fan(to,dir,critical?1.25:1);else if(style.kind==='pierce'||style.kind==='arrow'||style.kind==='bolt')void this.fx.thrust(to,dx/len,dy/len,critical?1.3:1);else if(style.kind==='blunt')void this.fx.shock(to,critical?1.35:1);if(critical){void this.fx.critical(to);this.fx.screenFlash(officer?0xffd070:0xfff0c0,officer?.42:.3,officer?300:200);
           // 장수의 회심: 집중선이 표적으로 몰려들고, 「회심의 일격」 띠가 화면을 가로지른다.

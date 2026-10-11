@@ -73,8 +73,8 @@ export class BattleFx {
     g.ellipse(cx,cy,r*.72,r*.3).stroke({color:0xffffff,width:2*big,alpha:.78*a});
     g.poly(Array.from({length:12},(_,i)=>{const q=rot+i/12*TAU;return [cx+Math.cos(q)*r*.54,cy+Math.sin(q)*r*.23];}).flat()).stroke({color,width:1.5*big,alpha:.55*a});
     for(let i=0;i<16;i++){const q=-rot+i/16*TAU,x1=cx+Math.cos(q)*r*.82,y1=cy+Math.sin(q)*r*.35,x2=cx+Math.cos(q)*r,y2=cy+Math.sin(q)*r*.42;g.moveTo(x1,y1).lineTo(x2,y2).stroke({color:i%2?0xffffff:color,width:(i%4?1.5:3)*big,alpha:.85*a});}
-    const rise=Math.min(1,t*5),h=(100+35*big)*rise;g.poly([cx-13*big,cy,cx-5*big,cy-h,cx+5*big,cy-h,cx+13*big,cy]).fill({color,alpha:.2*a});
-    g.circle(cx,cy-18,(10+26*Math.min(1,t*4))*big).fill({color:0xffffff,alpha:.7*a});
+    const rise=Math.min(1,t*5),h=(100+35*big)*rise;g.poly([cx-13*big,cy,cx-5*big,cy-h,cx+5*big,cy-h,cx+13*big,cy]).fill({color,alpha:.14*a});
+    if(t<.22)g.circle(cx,cy-18,(8+16*t/.22)*big).fill({color:0xffffff,alpha:.55*(1-t/.22)});
   },'add',990);}
   /** 베기: 공격 방향으로 휘두른 초승달 칼빛(두 겹) + 흰 섬광. */
   slash(p:P,dir:number,big=1){const cx=p.x,cy=p.y-26;return this.run(300,(g,t)=>{const a=1-t,sweep=Math.min(1,t*2.2),r=34*big;

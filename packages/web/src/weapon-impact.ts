@@ -33,12 +33,13 @@ export function equippedWeaponShape(id?:string):WeaponShape|undefined{
 }
 
 export function weaponShape(u:Pick<Unit,'id'|'name'|'unitClass'>,equippedWeapon?:string):WeaponShape{
-  const signature=SIGNATURE[u.id]??SIGNATURE[u.name];if(signature)return signature;
-  const equipped=equippedWeaponShape(equippedWeapon);if(equipped)return equipped;
   const family=familyOf(u.unitClass);
   if(family==='catapult'||family==='ram')return 'siege';
-  if(family==='archer'||family==='horseArcher')return 'bow';
-  if(family==='crossbow')return 'crossbow';
+  const signature=SIGNATURE[u.id]??SIGNATURE[u.name],equipped=equippedWeaponShape(equippedWeapon);
+  // 원거리 병종(사거리 2 이상)은 고유 무기가 칼이어도 쏘는 동작을 지킨다 — 두세 칸 밖에서 칼을 휘두르면 안 된다.
+  if(family==='archer'||family==='horseArcher'||family==='crossbow'){const pref=signature??equipped;return pref==='bow'||pref==='crossbow'?pref:family==='crossbow'?'crossbow':'bow';}
+  if(signature)return signature;
+  if(equipped)return equipped;
   if(family==='spearman'||family==='cavalry'||family==='heavyCav')return 'spear';
   if(family==='strategist'||family==='fengshui')return 'fan';
   if(family==='monk')return 'blunt';

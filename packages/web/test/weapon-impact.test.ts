@@ -28,4 +28,10 @@ describe('weapon-shaped battle impact',()=>{
     expect(weaponImpact('crossbow')).toBe('bolt');
     expect(weaponImpact('fan')).toBe('fan');
   });
+  it('keeps ranged troop classes shooting even when the signature weapon is a sword',()=>{
+    expect(weaponImpact(weaponShape(unit('zhou_yu','주유','archer')))).toBe('arrow');
+    expect(weaponImpact(weaponShape(unit('sima_zhao','사마소','crossbow')))).toBe('bolt');
+    expect(weaponImpact(weaponShape(unit('archer_1','궁병','archer'),'yitian'))).toBe('arrow');
+    expect(weaponShape(unit('huang_zhong','황충','archer'))).toBe('bow');
+  });
 });
