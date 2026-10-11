@@ -1,5 +1,5 @@
 import {describe,it,expect,beforeEach} from 'vitest';
-import {freshCampaign,readCampaign,writeCampaign,CAMPAIGN_KEYS,OFFICERS,treasures} from '../src/progression.ts';
+import {freshCampaign,readCampaign,writeCampaign,CAMPAIGN_KEYS,OFFICERS,treasures,xpAtLevel,levelInfo} from '../src/progression.ts';
 import {sealTiers,claimSealTier,sealTreasure,sealClaimed} from '../src/seal-rewards.ts';
 import {chapters,campaignOrder,sealNamesOf,Session} from '../src/session.ts';
 import {romanceOf} from '../src/romance.ts';
@@ -53,5 +53,23 @@ describe('연의에 데려가는 등용 장수',()=>{
     const data=JSON.parse(JSON.stringify(s.save()));expect(Session.load(data).state.find('rt_0')?.name).toBe('장합');
     data.deployment.retinue=[0,1,2].map(i=>({id:'rt_'+i,name:'장합',unitClass:'cavalry',level:4,xp:0,hp:1}));
     expect(()=>Session.load(data)).toThrow();
+  });
+});
+
+describe('등용 장수 개별 성장 · 이어하기',()=>{
+  it('xpAtLevel은 levelInfo의 역: 그 레벨이 막 된 경험치',()=>{
+    for(const lv of [1,2,7,20,39])expect(levelInfo(xpAtLevel(lv)).level).toBe(lv);
+  });
+  it('등용 장수 경험치는 저장했다 다시 읽어도 남고, 이상한 값은 버린다',()=>{
+    const c=freshCampaign();c.retinueXp={'장합':1234,'':5,'너무긴이름너무긴이름너무긴':9,'가충':-3};writeCampaign(c);
+    expect(readCampaign().retinueXp).toEqual({'장합':1234});
+  });
+  it('저장된 전투를 불러오면 아군 차례에서 다시 잡을 수 있다(적 차례는 화면 없이 넘긴다)',()=>{
+    const s=new Session(campaignOrder[0]!,'normal',215,'survival',13,{levels:{sima_yi:5,sima_lang:5,sima_fang:5,cao_zhen:5},equipped:{}} as never);
+    for(const u of s.state.living('player'))s.act({kind:'wait',unit:u.id});
+    s.act({kind:'endPhase'});
+    const loaded=Session.load(JSON.parse(JSON.stringify(s.save())));
+    for(let i=0;i<4000;i++){const st=loaded.state;if(st.outcome!=='ongoing'||st.activeDialogue||loaded.activeDuel)break;if(['player','ally'].includes(st.currentSide)&&st.living(st.currentSide).some(u=>!u.hasActed))break;if(!loaded.tick())break;}
+    expect(['player','ally']).toContain(loaded.state.currentSide);expect(loaded.state.turn).toBeGreaterThanOrEqual(1);
   });
 });

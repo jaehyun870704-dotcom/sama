@@ -960,7 +960,7 @@ dialog:has(.story-scene){max-height:calc(100vh - 16px);max-height:calc(100dvh - 
   .battle-toolbar button.primary{min-width:0!important;gap:8px!important}
   .battle-toolbar kbd,#save-status{display:none!important}
   .dispatch{min-height:0!important;padding:2px 8px!important;font-size:calc(12.5px*var(--fs,1))!important;gap:6px!important}.dispatch>span{display:none}.dispatch p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dispatch button{min-height:0!important;font-size:calc(12.5px*var(--fs,1))!important}
-  .unit-hud{zoom:.62;bottom:30px!important}
+  .unit-hud{zoom:.62;bottom:58px!important}
   #art-loading{top:3px;padding:3px 10px;gap:6px;font-size:calc(12px*var(--fs,1))}#art-loading>i{width:64px}
   .right-panel{grid-column:2!important;grid-row:1!important;display:flex!important;flex-direction:column;gap:0;padding:6px!important;overflow:hidden;border-left:1px solid #4c5046;border-top:0!important}
   .right-panel>.section-label:first-child{display:flex!important;margin:0 0 6px;font-size:calc(13px*var(--fs,1));cursor:pointer;color:#e8d6a8}
@@ -2003,3 +2003,4 @@ dialog:has(.title-screen),dialog:has(.lobby){width:min(1240px,calc(100vw - 24px)
 .title-menu button:not(.primary):hover{border-color:#e0bd75;background:#1d2628e6}
 .title-menu .title-sub{background:transparent;border-style:dashed;color:#cbbf9f}
 @media (orientation:landscape) and (max-height:520px){.title-menu{gap:6px;margin-top:8px;max-width:360px}.tm-group{gap:4px}.tm-group+.tm-group{padding-top:6px}.title-menu button{padding:5px 12px;font-size:calc(14px*var(--fs,1))}.title-menu button.primary{padding:7px 14px;font-size:calc(16px*var(--fs,1))}}
+#auto-battle.on{background:#22381f;border-color:#9fd18a;color:#d6f0c8;box-shadow:0 0 0 1px #9fd18a55}

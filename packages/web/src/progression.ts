@@ -4,7 +4,7 @@ import {extraTreasures,trainingTreasures,questTreasures} from './treasure-catalo
 import type {Difficulty,Unit,UnitClass} from '../../core/src/index.ts';
 
 export const OFFICERS=['sima_yi','sima_lang','sima_fang','cao_zhen'] as const;
-export interface Campaign {version:1; xp:Record<string,number>; rewards:string[]; treasures:string[]; equipped:Record<string,string>;loadouts?:Record<string,Partial<Record<GearSlot,string>>>;completedRuns?:string[];trainingWins?:number;quests?:string[];/** 넘은 도전 단계(C01~C10) */challenges?:string[];/** 반복 퀘스트(보물 사냥) 승리 수 */bountyWins?:number;/** 받은 연의 인장 보상(S1:22 꼴) */sealRewards?:string[]}
+export interface Campaign {version:1; xp:Record<string,number>; rewards:string[]; treasures:string[]; equipped:Record<string,string>;loadouts?:Record<string,Partial<Record<GearSlot,string>>>;completedRuns?:string[];trainingWins?:number;quests?:string[];/** 넘은 도전 단계(C01~C10) */challenges?:string[];/** 반복 퀘스트(보물 사냥) 승리 수 */bountyWins?:number;/** 받은 연의 인장 보상(S1:22 꼴) */sealRewards?:string[];/** 등용 장수의 누적 경험치(이름 → 경험치) */retinueXp?:Record<string,number>}
 export interface Growth {storyWins:number;trainingWins:number;questWins:number}
 /** 시나리오 모드의 장: 장 id와 대사 선택이 남긴 전투 효과. */
 export interface ScenarioDeployment {chapter:string;mods?:import('./roguelike.ts').BattleMods;/** 가상 전장을 극한으로 */difficulty?:'extreme';/** 로그라이크 회차: 연의 장에 들고 가는 보물과 사마의의 남은 체력 */relics?:string[];heroHp?:number;/** 회차에서 영입한 장수(연의 장에 함께 나선다, 최대 3) */recruits?:import('./roguelike.ts').RunUnit[]}
@@ -51,6 +51,8 @@ export function equipSlot(c:Campaign,officer:string,slot:GearSlot,id:string){
  const gear=c.loadouts[officer]??={};if(id)gear[slot]=id;else delete gear[slot];return true;
 }
 export function freshCampaign():Campaign{return {version:1,xp:{sima_yi:0,sima_lang:100,sima_fang:350,cao_zhen:250},rewards:[],treasures:[],equipped:{}};}
+/** 그 레벨이 막 된 순간의 누적 경험치. */
+export function xpAtLevel(level:number){let t=0;for(let l=1;l<Math.min(40,level);l++)t+=100+(l-1)*20;return t;}
 export function levelInfo(total:number){
   let level=1,remaining=Math.max(0,Math.floor(total));
   while(level<40&&remaining>=100+(level-1)*20){remaining-=100+(level-1)*20;level++;}
@@ -86,7 +88,7 @@ export function readCampaign(key:string=CAMPAIGN_KEYS.main):Campaign{
     if(Object.values(value.xp).some(n=>!Number.isFinite(n)||n<0)||value.rewards.some(n=>typeof n!=='string'))return freshCampaign();
     const clean=freshCampaign();for(const id of OFFICERS)clean.xp[id]=Math.min(100000,Math.floor(value.xp[id]??clean.xp[id]!));
     clean.rewards=[...new Set(value.rewards.filter(id=>/^S[123]-\d{2}:(normal|extreme)$/.test(id)))];clean.treasures=[...new Set(value.treasures.filter(id=>treasures.some(t=>t.id===id)))];
-    clean.completedRuns=Array.isArray(value.completedRuns)?[...new Set(value.completedRuns.filter(x=>typeof x==='string'&&x.length<100))]:[];clean.trainingWins=Number.isSafeInteger(value.trainingWins)?Math.max(0,value.trainingWins!):0;clean.quests=Array.isArray(value.quests)?[...new Set(value.quests.filter(x=>typeof x==='string'&&/^Q\d{2}$/.test(x)))]:[];clean.challenges=Array.isArray(value.challenges)?[...new Set(value.challenges.filter(x=>typeof x==='string'&&/^C\d{2}$/.test(x)))]:[];clean.bountyWins=Number.isSafeInteger(value.bountyWins)?Math.max(0,value.bountyWins!):0;clean.sealRewards=Array.isArray(value.sealRewards)?[...new Set(value.sealRewards.filter(x=>typeof x==='string'&&/^S[123]:\d{1,3}$/.test(x)))]:[];
+    clean.completedRuns=Array.isArray(value.completedRuns)?[...new Set(value.completedRuns.filter(x=>typeof x==='string'&&x.length<100))]:[];clean.trainingWins=Number.isSafeInteger(value.trainingWins)?Math.max(0,value.trainingWins!):0;clean.quests=Array.isArray(value.quests)?[...new Set(value.quests.filter(x=>typeof x==='string'&&/^Q\d{2}$/.test(x)))]:[];clean.challenges=Array.isArray(value.challenges)?[...new Set(value.challenges.filter(x=>typeof x==='string'&&/^C\d{2}$/.test(x)))]:[];clean.bountyWins=Number.isSafeInteger(value.bountyWins)?Math.max(0,value.bountyWins!):0;if(value.retinueXp&&typeof value.retinueXp==='object'){const r:Record<string,number>={};for(const [k,v] of Object.entries(value.retinueXp).slice(0,80))if(k.length>0&&k.length<=12&&Number.isFinite(v)&&v>=0)r[k]=Math.min(100000,Math.floor(v));if(Object.keys(r).length)clean.retinueXp=r;}clean.sealRewards=Array.isArray(value.sealRewards)?[...new Set(value.sealRewards.filter(x=>typeof x==='string'&&/^S[123]:\d{1,3}$/.test(x)))]:[];
     for(const item of treasures)if(!item.quest&&clean.rewards.some(r=>r.startsWith(item.stage+':'))&&!clean.treasures.includes(item.id))clean.treasures.push(item.id);
     for(const id of OFFICERS)if(typeof value.equipped[id]==='string')equip(clean,id,value.equipped[id]!);
     if(value.loadouts&&typeof value.loadouts==='object')for(const id of Object.keys(value.loadouts).filter(validGearKey)){const gear=value.loadouts[id];if(!gear||typeof gear!=='object')continue;for(const slot of Object.keys(gearNames) as GearSlot[])equipSlot(clean,id,slot,typeof gear[slot]==='string'?gear[slot]!:'');}

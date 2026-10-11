@@ -53,6 +53,8 @@ export interface RunHost {
   showRecruit():void;
   /** 자동 저장된 전투가 있으면 이어 하기 */
   resumeSaved?:(()=>void)|undefined;
+  /** 이어할 마지막 전투(끝나지 않은 것) */
+  lastBattle():{where:string;turn:number}|undefined;
 }
 
 const KEY='sama-run-v1';
@@ -92,12 +94,12 @@ const tile=(id:string,seal:string,title:string,line:string,meta='',cls='')=>`<bu
  * 그림·제목은 모두 이 게임이 직접 만든 것이다(다른 게임의 로고·그림을 쓰지 않는다).
  */
 export function showTitle(host:RunHost){
-  const c=host.chronicleSummary(),resume=host.resumeSaved;
+  const c=host.chronicleSummary(),resume=host.resumeSaved,last=host.lastBattle();
   const item=(id:string,label:string,sub:string,cls='')=>`<button id="${id}" class="${cls}"><span>${label}</span><small>${sub}</small></button>`;
   host.modal(`<div class="title-screen"><div class="title-bg" aria-hidden="true"></div><img class="title-hero" src="sima-portrait-v2.webp" alt="부채를 든 사마의 창작 초상">
   <div class="title-copy"><p class="title-eyebrow">삼국지 · 사마의 연대기</p><h1 class="title-logo">사마의전</h1><p class="title-tag">칼을 거두고, 때를 기다린다.</p>
   <nav class="title-menu" aria-label="첫 화면 메뉴">
-    <div class="tm-group">${item('title-start','시작',c.next?`연의 · ${esc(c.next)}`:'연의 32장 완료 · 극한 인장에 도전','primary')}${resume?item('title-resume','이어하기','저장된 전투로 돌아간다'):''}${item('title-load','불러오기','저장 칸에서 기록을 불러온다')}</div>
+    <div class="tm-group">${item('title-start','시작',c.next?`연의 · ${esc(c.next)}`:'연의 32장 완료 · 극한 인장에 도전','primary')}${resume&&last?item('title-resume','이어하기',`${esc(last.where)}${last.turn?` · ${last.turn}턴`:''} · 내 차례부터`):''}${item('title-load','불러오기','저장 칸에서 기록을 불러온다')}</div>
     <div class="tm-group">${item('title-codex','도감 보기','인물 · 병종 · 책략 · 보물 · 갈림길')}${item('title-custom','신장수 만들기','나만의 장수 · 신세력')}${item('title-lobby','본영','수련장 · 도전 · 등용 · 연구')}</div>
     <div class="tm-group sub">${item('title-roguelike','천명의 길','로그라이크 · 회차마다 갈림길과 결말','title-sub')}</div>
   </nav>
@@ -132,7 +134,7 @@ export function showHub(host:RunHost){
   on('hub-scenario',host.showScenario);on('hub-chronicle',host.showChronicleNext);on('hub-training',host.showTraining);on('hub-challenge',()=>host.showExpeditions('challenge'));on('hub-run',()=>showQuests(host));
   on('hub-archive',host.showStoryArchive);on('hub-recruit',host.showRecruit);on('hub-collections',()=>showCollections(host,()=>showHub(host)));on('hub-custom',()=>showCustomEditor(host,()=>showHub(host)));
   on('hub-research',()=>showResearch({modal:host.modal,toast:host.toast,back:()=>showHub(host),codex:()=>codexOf(host)()}));
-  on('hub-resume',()=>host.resumeSaved?.());on('hub-slots',host.showSlots);on('hub-title',()=>showTitle(host));
+  on('hub-resume',()=>host.resumeSaved?.());on('hub-slots',()=>host.showSlots());on('hub-title',()=>showTitle(host));
 }
 const codexOf=(host:RunHost,tab:'people'|'classes'|'strategies'='people')=>()=>{const back=()=>showCollections(host);const research=()=>showResearch({modal:host.modal,toast:host.toast,back,codex:()=>showCodex({modal:host.modal,toast:host.toast,back,research})});showCodex({modal:host.modal,toast:host.toast,back,research},{tab});};
 
