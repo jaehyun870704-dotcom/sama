@@ -647,7 +647,8 @@ export class Battlefield {
     const from=iso(actor.unit.pos),to=iso(target.pos),dx=to.x-from.x,dy=to.y-from.y,len=Math.max(1,Math.hypot(dx,dy));
     this.focusUnit({x:(actor.unit.pos.x+target.pos.x)/2,y:(actor.unit.pos.y+target.pos.y)/2});
     if(hasPaintedMotion(actor.unit.unitClass)||officerBattleSheet(actor.unit)){this.facing.set(actor.unit.id,0);actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*(dx<0?-1:1);}else if(!structureKind(actor.unit.id)&&dx!==0)actor.sprite.scale.x=Math.abs(actor.sprite.scale.x)*(dx<0?-1:1);
-    const sdef=e.t==='strategy'?this.state?.strategies.get(e.strategy):undefined,sfx=e.t==='strategy'?strategyFx(e.strategy,sdef?.element,e.strategy==='heal'||e.strategy==='calm'||e.damage.some(d=>d<0),!!sdef&&sdef.targetSides.includes('player')&&!sdef.targetSides.includes('enemy')):undefined;
+    // 시전자 레벨로 진화한 정의를 써야 기본→숙련→극의의 위력뿐 아니라 화면 연출 단계도 함께 오른다.
+    const sdef=e.t==='strategy'?this.state?.strategyFor(actor.unit,e.strategy):undefined,sfx=e.t==='strategy'?strategyFx(e.strategy,sdef?.element,e.strategy==='heal'||e.strategy==='calm'||e.damage.some(d=>d<0),!!sdef&&sdef.targetSides.includes('player')&&!sdef.targetSides.includes('enemy')):undefined;
     const melee=!!sfx&&(sfx.cast==='lunge'||sfx.cast==='dash');
     const weapon=weaponShape(actor.unit,this.weaponFor(actor.unit)),weaponFx=weaponImpact(weapon);
     const ranged=(e.t==='strategy'&&!melee)||weaponFx==='arrow'||weaponFx==='bolt'||familyOf(actor.unit.unitClass)==='catapult'||(familyOf(actor.unit.unitClass)==='navy'&&manhattan(actor.unit.pos,target.pos)>1),fx=new Graphics();this.effects.addChild(fx);
@@ -693,7 +694,7 @@ export class Battlefield {
       }
       if(p>=.6&&!hit){
         // 새 특수효과: 속성별 책략 폭발(대상마다), 베기 궤적·찌르기 섬광·충격파, 방패막, 회피 잔상, 회심 빛살
-        if(sfx&&e.t==='strategy'){const area=e.targets.length,big=Math.min(1.5,.95+area*.12);e.targets.forEach((id,i)=>{const u=this.state?.find(id);if(u)setTimeout(()=>{if(sdef?.element!=='physical')void this.fx.strategySeal(iso(u.pos),sfx.color,big);playImpact(this.fx,sfx,iso(u.pos),big);},i*70);});}
+        if(sfx&&e.t==='strategy'){const area=e.targets.length,tier=sdef?.physical?0:sdef?.tier??1,big=Math.min(1.5,.88+area*.1+tier*.04);e.targets.forEach((id,i)=>{const u=this.state?.find(id);if(u)setTimeout(()=>{if(sdef?.element!=='physical')void this.fx.strategySeal(iso(u.pos),sfx.color,big);playImpact(this.fx,sfx,iso(u.pos),big,tier);},i*70);});}
         else if(el){const area=e.t==='strategy'?e.targets.length:1,big=Math.min(1.5,.95+area*.12),color={fire:0xff7424,water:0x5ab8ff,wind:0x7fdf96,thunder:0xffe85a,earth:0xd0a66a,support:0xb86cff,heal:0x72ee94}[el];(e.t==='strategy'?e.targets:[]).forEach((id,i)=>{const u=this.state?.find(id);if(u)setTimeout(()=>{void this.fx.strategySeal(iso(u.pos),color,big);void this.fx.element(iso(u.pos),el,big);},i*70);});}
         else if(landed){const dir=Math.atan2(dy,dx);if(style.kind==='slash')void this.fx.slash(to,dir,critical?1.35:1);else if(style.kind==='cleave')void this.fx.cleave(to,dir,critical?1.35:1);else if(style.kind==='fan')void this.fx.fan(to,dir,critical?1.25:1);else if(style.kind==='pierce'||style.kind==='arrow'||style.kind==='bolt')void this.fx.thrust(to,dx/len,dy/len,critical?1.3:1);else if(style.kind==='blunt')void this.fx.shock(to,critical?1.35:1);if(critical){void this.fx.critical(to);this.fx.screenFlash(officer?0xffd070:0xfff0c0,officer?.42:.3,officer?300:200);
           // 장수의 회심: 집중선이 표적으로 몰려들고, 「회심의 일격」 띠가 화면을 가로지른다.

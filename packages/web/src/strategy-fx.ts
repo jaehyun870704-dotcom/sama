@@ -44,6 +44,18 @@ export type Layer=
   |{k:'flash';c:number;a?:number};
 export interface StratFx {cast:Cast;travel:Travel;color:number;layers:readonly Layer[];shake?:number}
 
+/**
+ * 책략 진화 단계가 눈에 보이는 밀도 차이. 게임 규칙의 기본→숙련→극의와 같은 3단계다.
+ * 범위는 커지되 유닛과 지형을 읽을 수 있도록 불투명도는 낮게 유지한다.
+ */
+export interface StrategyEvolutionFx {scale:number;rings:number;arcs:number;motes:number;column:boolean;flash:number}
+export const STRATEGY_EVOLUTION_FX:Readonly<Record<0|1|2|3,StrategyEvolutionFx>>={
+  0:{scale:1,rings:0,arcs:0,motes:0,column:false,flash:0},
+  1:{scale:.84,rings:1,arcs:0,motes:4,column:false,flash:0},
+  2:{scale:1.02,rings:2,arcs:2,motes:12,column:false,flash:0},
+  3:{scale:1.2,rings:3,arcs:4,motes:22,column:true,flash:.18},
+};
+
 // ───────────────────────────────────── 층 그리기
 
 const fadeIO=(t:number,a=.15,b=.75)=>t<a?t/a:t>b?1-(t-b)/(1-b):1;
@@ -108,8 +120,34 @@ function drawGlyph(g:Graphics,t:string,x:number,y:number,r:number,c:number,a:num
   }
 }
 
-/** 맞는 자리에 그 책략의 효과 층을 모두 띄운다. */
-export function playImpact(fx:BattleFx,spec:StratFx,p:P,big=1){for(const l of spec.layers)void layer(fx,l,p,big);}
+/** 기본→숙련→극의로 넓어지는 지면진·궤도광·중앙 광주. 첨부 레퍼런스의 큰 원형 에너지장을 저채도 반투명으로 재해석했다. */
+function evolutionAura(fx:BattleFx,color:number,p:P,big:number,tier:1|2|3){
+  const e=STRATEGY_EVOLUTION_FX[tier],cx=p.x,cy=p.y+5,R=(28+tier*10)*big;
+  if(e.flash)fx.screenFlash(color,e.flash,180);
+  if(e.motes)void fx.particles({x:cx,y:cy-16},e.motes,{speed:55+tier*18,up:45+tier*18,gravity:-35,life:650+tier*120,size:[1.5,3.5],colors:[color,0xffffff]},'normal');
+  return fx.run(700+tier*120,(g,t)=>{
+    const a=fadeIO(t,.12,.68),grow=.7+Math.min(1,t*3)*.3;
+    for(let i=0;i<e.rings;i++){
+      const q=Math.max(0,t-i*.08),r=R*grow*(1+i*.22+q*.12);
+      g.ellipse(cx,cy,r,r*.42).stroke({color:i?0xffffff:color,width:Math.max(1.2,(3.6-i*.7)*big),alpha:a*(i?.28:.62)});
+    }
+    for(let i=0;i<e.arcs;i++){
+      const angle=t*(tier===3?3.6:2.4)+(i/e.arcs)*TAU,r=R*(.72+(i%2)*.18),x=cx+Math.cos(angle)*r,y=cy+Math.sin(angle)*r*.42;
+      g.circle(x,y,(2.2+tier*.45)*big).fill({color:i%2?0xffffff:color,alpha:a*.8});
+      g.arc(cx,cy,r,angle-.55,angle+.12).stroke({color,width:1.5*big,alpha:a*.42});
+    }
+    if(tier>=2){for(let i=0;i<8;i++){const q=i/8*TAU,r1=R*.78,r2=R*(tier===3?1.12:.98);g.moveTo(cx+Math.cos(q)*r1,cy+Math.sin(q)*r1*.42).lineTo(cx+Math.cos(q)*r2,cy+Math.sin(q)*r2*.42).stroke({color,width:1.5*big,alpha:a*.34});}}
+    if(e.column){const h=100*big*Math.min(1,t*4),w=14*big;g.roundRect(cx-w,cy-h,w*2,h,w).fill({color,alpha:a*.16});g.roundRect(cx-w*.28,cy-h,w*.56,h,w*.3).fill({color:0xffffff,alpha:a*.28});}
+    g.circle(cx,cy-17,(4+tier*2)*big*(1+.2*Math.sin(t*18))).fill({color:0xffffff,alpha:a*(tier===3?.7:.42)});
+  },'normal',998);
+}
+
+/** 맞는 자리에 그 책략의 고유 효과와 진화 단계 효과를 함께 띄운다. */
+export function playImpact(fx:BattleFx,spec:StratFx,p:P,big=1,tier:0|1|2|3=0){
+  const e=STRATEGY_EVOLUTION_FX[tier];
+  if(tier)void evolutionAura(fx,spec.color,p,big,tier);
+  for(const l of spec.layers)void layer(fx,l,p,big*e.scale);
+}
 
 /** 시전자 → 표적 사이를 오가는 모양(매 틀 그린다). q: 0→1, g는 이번 틀에 이미 비워진 그래픽. */
 export function drawTravel(g:Graphics,spec:StratFx,from:P,to:P,q:number){
