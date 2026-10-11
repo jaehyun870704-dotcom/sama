@@ -2004,3 +2004,8 @@ dialog:has(.title-screen),dialog:has(.lobby){width:min(1240px,calc(100vw - 24px)
 .title-menu .title-sub{background:transparent;border-style:dashed;color:#cbbf9f}
 @media (orientation:landscape) and (max-height:520px){.title-menu{gap:6px;margin-top:8px;max-width:360px}.tm-group{gap:4px}.tm-group+.tm-group{padding-top:6px}.title-menu button{padding:5px 12px;font-size:calc(14px*var(--fs,1))}.title-menu button.primary{padding:7px 14px;font-size:calc(16px*var(--fs,1))}}
 #auto-battle.on{background:#22381f;border-color:#9fd18a;color:#d6f0c8;box-shadow:0 0 0 1px #9fd18a55}
+/* 야망 막대: 가운데에서 붉게(+ 야망) · 푸르게(− 충의) 기운다 */
+.ym-ambition i.ym-amb{position:relative;display:block}.ym-ambition i.ym-amb::after{content:'';position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:#f0c96a}
+.ym-ambition i.ym-amb em{position:absolute;right:50%;top:0;bottom:0}.ym-ambition i.ym-amb b{position:absolute;left:50%;top:0;bottom:0}
+.ym-ambition small b.up{color:#f08a6a}.ym-ambition small b.down{color:#8fb2f0}
+.amb-ok{color:#9fd18a}.amb-no{color:#f08a6a}

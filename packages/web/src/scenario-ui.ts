@@ -55,7 +55,6 @@ export interface ScenarioHost {
   /** 사마의의 장비(가상 전장에도 들고 간다) */
   heroLoadout():Deployment['loadouts'];
   /** 새 회차: 연의 진행(사마의 레벨·보물·장비)을 처음으로 되돌린다. veteran이면 사마의 Lv.6에서. */
-  resetCampaign(veteran:boolean):void;
 }
 
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -550,12 +549,13 @@ export function showRunOver(host:ScenarioHost){
   document.getElementById('run-research')!.onclick=()=>showResearch({modal:host.modal,toast:host.toast,back:()=>showRunOver(host)});
   document.getElementById('run-menu')!.onclick=host.showMenu;
 }
-/** 새 회차: 연의 진행을 되돌리고 연의 첫 장부터. */
+/** 새 회차: 연의 첫 장부터 다시 걷는다(레벨·보물은 누적). */
 export function startNewRun(host:ScenarioHost,no?:number){
   const number=no??(loadScenario().run?.no??0)+1;
   pickFaction(host,(faction,companions)=>{
-    const meta=loadMeta();if(number>1||loadScenario().done.length){host.resetCampaign(meta.unlocks.includes('veteran_start'));
-      // 연구 '단련': 새 회차의 사마의가 몇 레벨 높게 시작한다.
+    // 천명의 길은 레벨·보물을 회차마다 이어 쌓는다(누적). 새 회차라도 사마의의 레벨·보물·장비는 지우지 않는다.
+    // 처음 여는 회차만 해금 '노련한 출발'·연구 '단련'이 사마의를 몇 레벨 높여 준다.
+    const meta=loadMeta();if(number===1&&!loadScenario().done.length){if(meta.unlocks.includes('veteran_start'))while(host.hero().level<6)host.addHeroXp(10);
       for(let i=0;i<heroLevelBonus(meta);i++)host.addHeroXp(100+(host.hero().level-1)*20);}
     talkedIn.clear();
     const state=newScenarioRun(number,newSeed(),meta.unlocks,host.hero().level,{...(faction?{faction}:{}),...(companions?{customs:companions}:{})});saveScenario(state);

@@ -73,3 +73,29 @@ describe('등용 장수 개별 성장 · 이어하기',()=>{
     expect(['player','ally']).toContain(loaded.state.currentSide);expect(loaded.state.turn).toBeGreaterThanOrEqual(1);
   });
 });
+
+describe('야망 분기 · 등용 장수 COST',()=>{
+  it('선택지마다 야망 값이 실제 연의 장 선택지에 붙어 있다',async()=>{
+    const {CHOICE_AMBITION,ROUTE_AMBITION}=await import('../src/ambition.ts');const fs=await import('node:fs');
+    for(const k of Object.keys(CHOICE_AMBITION)){const [stage,node,opt]=k.split(':');const st=JSON.parse(fs.readFileSync(new URL(`../../data/stages/${stage}.json`,import.meta.url),'utf8'));
+      const d=(st.dialogues??[]).find((x:{id:string})=>x.id===node);expect(d,k).toBeTruthy();expect(d.options.some((o:{id:string})=>o.id===opt),k).toBe(true);}
+    const {ROUTES}=await import('../src/fate.ts');for(const id of Object.keys(ROUTE_AMBITION))expect(ROUTES.some(r=>r.id===id),id).toBe(true);
+  });
+  it('이긴 장의 선택이 쌓이고, 같은 장을 다시 이기면 그 장의 몫만 바뀐다',async()=>{
+    const {recordStageChoices,ambition,ambitionOk}=await import('../src/ambition.ts');
+    expect(ambition()).toBe(0);expect(ambitionOk('serve',0)).toBe(false);expect(ambitionOk('shu',0)).toBe(true);
+    recordStageChoices('S1-02',[{nodeId:'bribe',optionId:'fight'},{nodeId:'fight_confirm',optionId:'commit'}]);
+    recordStageChoices('S1-03',[{nodeId:'mountain_choice',optionId:'bluff'}]);
+    expect(ambition()).toBe(35);expect(ambitionOk('yuan',ambition())).toBe(true);
+    recordStageChoices('S1-02',[{nodeId:'bribe',optionId:'pay'}]);expect(ambition()).toBe(10);
+  });
+  it('등용 장수는 같은 COST 안에 든다: 선택 장수 예산이 줄고, 표에 함께 잡힌다',async()=>{
+    const {pickExtras,storyCostSheet,optionalOfficers,unitCost}=await import('../src/sortie.ts');
+    const c=chapters[campaignOrder.find(i=>optionalOfficers(chapters[i]!.stage,chapters[i]!.map).allowed.length>0)!]!;
+    const lv={sima_yi:12,sima_lang:12,sima_fang:12,cao_zhen:12},{allowed}=optionalOfficers(c.stage,c.map);
+    const free=pickExtras(c.stage,c.map,allowed,'extreme',lv),tight=pickExtras(c.stage,c.map,allowed,'extreme',lv,99);
+    expect(tight.length).toBe(0);expect(free.length).toBeGreaterThanOrEqual(tight.length);
+    const sheet=storyCostSheet(c.stage,[],lv,'extreme',[{name:'장합',unitClass:'cavalry'}]);
+    expect(sheet.rows.some(r=>r.id==='rt:장합')).toBe(true);expect(sheet.used).toBe(storyCostSheet(c.stage,[],lv,'extreme').used+unitCost('cavalry'));
+  });
+});

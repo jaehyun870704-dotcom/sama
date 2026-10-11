@@ -51,19 +51,21 @@ export function optionalOfficers(stage:StageDef,map:MapFile):{allowed:string[];c
   return {allowed,capacity};
 }
 /** 실제로 데려갈 장수: 허용 목록·시작 칸·COST 예산 안에서. */
-export function pickExtras(stage:StageDef,map:MapFile,wanted:readonly string[],difficulty:'normal'|'extreme',levels?:Readonly<Record<string,number>>){
+/** reserved: 등용 장수처럼 이 목록 밖에서 먼저 잡아 둔 COST. */
+export function pickExtras(stage:StageDef,map:MapFile,wanted:readonly string[],difficulty:'normal'|'extreme',levels?:Readonly<Record<string,number>>,reserved=0){
   const {allowed,capacity}=optionalOfficers(stage,map);
   const picked=wanted.filter((id,i)=>allowed.includes(id)&&wanted.indexOf(id)===i).slice(0,Math.min(capacity,storySortieLimit(difficulty)));
   if(!levels)return picked;
   // 필수 장수의 COST를 먼저 잡고, 남은 예산 안에 드는 장수만 더한다.
-  const cap=storyCostCap(stage.id,difficulty);let used=forcedCost(stage,levels);const out:string[]=[];
+  const cap=storyCostCap(stage.id,difficulty);let used=forcedCost(stage,levels)+reserved;const out:string[]=[];
   for(const id of picked){const c=unitCost(storyClassAt(id,levels[id]??1));if(used+c<=cap){out.push(id);used+=c;}}
   return out;
 }
 /** 화면용: 필수·선택 장수별 병종·COST, 합계와 남은 예산. */
-export function storyCostSheet(stage:StageDef,ids:readonly string[],levels:Readonly<Record<string,number>>,difficulty:'normal'|'extreme'='extreme'){
+/** retinue: 함께 나서는 등용 장수(이름·병종) — 같은 COST 안에 든다. */
+export function storyCostSheet(stage:StageDef,ids:readonly string[],levels:Readonly<Record<string,number>>,difficulty:'normal'|'extreme'='extreme',retinue:ReadonlyArray<{name:string;unitClass:UnitClass}>=[]){
   const cap=storyCostCap(stage.id,difficulty),forcedIds=stage.deployment.forced.filter(id=>STORY_BASE_CLASS[id]);
-  const rows=[...forcedIds,...ids.filter(id=>!forcedIds.includes(id))].map(id=>{const c=storyClassAt(id,levels[id]??1);return {id,unitClass:c,cost:unitCost(c),forced:forcedIds.includes(id)};});
+  const rows=[...forcedIds,...ids.filter(id=>!forcedIds.includes(id))].map(id=>{const c=storyClassAt(id,levels[id]??1);return {id,unitClass:c,cost:unitCost(c),forced:forcedIds.includes(id)};}).concat(retinue.map(r=>({id:'rt:'+r.name,unitClass:r.unitClass,cost:unitCost(r.unitClass),forced:false})));
   const used=rows.reduce((n,r)=>n+r.cost,0);
   return {cap,rows,used,left:Math.max(0,cap-used)};
 }
