@@ -40,7 +40,7 @@ export interface RunHost {
   /** 연의 진행 요약: 다음 장 · 이긴 장 · 인장 */
   chronicleSummary():{next?:string;won:number;total:number;seals:number;sealMax:number};
   showTroops():void;
-  showSlots():void;
+  showSlots(back?:()=>void):void;
   /** 시나리오 모드(본편: 연의 + 가상) */
   showScenario():void;
   /** 수련·보물 인연·도전(연무장) */
@@ -92,14 +92,20 @@ const tile=(id:string,seal:string,title:string,line:string,meta='',cls='')=>`<bu
  * 그림·제목은 모두 이 게임이 직접 만든 것이다(다른 게임의 로고·그림을 쓰지 않는다).
  */
 export function showTitle(host:RunHost){
-  const c=host.chronicleSummary(),started=c.won>0;
+  const c=host.chronicleSummary(),resume=host.resumeSaved;
+  const item=(id:string,label:string,sub:string,cls='')=>`<button id="${id}" class="${cls}"><span>${label}</span><small>${sub}</small></button>`;
   host.modal(`<div class="title-screen"><div class="title-bg" aria-hidden="true"></div><img class="title-hero" src="sima-portrait-v2.webp" alt="부채를 든 사마의 창작 초상">
   <div class="title-copy"><p class="title-eyebrow">삼국지 · 사마의 연대기</p><h1 class="title-logo">사마의전</h1><p class="title-tag">칼을 거두고, 때를 기다린다.</p>
-  <div class="title-actions"><button id="title-start" class="primary">${started?'연의 이어하기':'연의 시작'} <small>${c.next?esc(c.next):'32장을 모두 이겼다 · 극한 인장에 도전'}</small></button>
-  <button id="title-lobby">본영으로</button><button id="title-codex">도감 보기</button><button id="title-roguelike" class="title-sub">천명의 길 · 로그라이크 <small>회차마다 갈림길과 결말이 바뀐다</small></button></div>
+  <nav class="title-menu" aria-label="첫 화면 메뉴">
+    <div class="tm-group">${item('title-start','시작',c.next?`연의 · ${esc(c.next)}`:'연의 32장 완료 · 극한 인장에 도전','primary')}${resume?item('title-resume','이어하기','저장된 전투로 돌아간다'):''}${item('title-load','불러오기','저장 칸에서 기록을 불러온다')}</div>
+    <div class="tm-group">${item('title-codex','도감 보기','인물 · 병종 · 책략 · 보물 · 갈림길')}${item('title-custom','신장수 만들기','나만의 장수 · 신세력')}${item('title-lobby','본영','수련장 · 도전 · 등용 · 연구')}</div>
+    <div class="tm-group sub">${item('title-roguelike','천명의 길','로그라이크 · 회차마다 갈림길과 결말','title-sub')}</div>
+  </nav>
   <p class="title-note">비상업 팬 창작 게임 · 등장인물은 『삼국지연의』와 정사를 바탕으로 새로 그렸다</p></div></div>`,false);
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
-  on('title-start',host.showChronicleNext);on('title-roguelike',host.showScenario);on('title-lobby',()=>showHub(host));on('title-codex',()=>showCollections(host));
+  on('title-start',host.showChronicleNext);on('title-resume',()=>host.resumeSaved?.());on('title-load',()=>host.showSlots(()=>showTitle(host)));
+  on('title-codex',()=>showCollections(host,()=>showTitle(host)));on('title-custom',()=>showCustomEditor(host,()=>showTitle(host)));
+  on('title-lobby',()=>showHub(host));on('title-roguelike',host.showScenario);
 }
 
 /**
@@ -124,14 +130,17 @@ export function showHub(host:RunHost){
   <nav class="lobby-sub">${host.resumeSaved?'<button id="hub-resume" class="primary">전투 이어하기</button>':''}<button id="hub-research">연구</button><button id="hub-custom">신장수 · 신세력</button><button id="hub-slots">저장 칸</button><button id="hub-title">첫 화면</button></nav></div>`,false);
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
   on('hub-scenario',host.showScenario);on('hub-chronicle',host.showChronicleNext);on('hub-training',host.showTraining);on('hub-challenge',()=>host.showExpeditions('challenge'));on('hub-run',()=>showQuests(host));
-  on('hub-archive',host.showStoryArchive);on('hub-recruit',host.showRecruit);on('hub-collections',()=>showCollections(host));on('hub-custom',()=>showCustomEditor(host,()=>showHub(host)));
+  on('hub-archive',host.showStoryArchive);on('hub-recruit',host.showRecruit);on('hub-collections',()=>showCollections(host,()=>showHub(host)));on('hub-custom',()=>showCustomEditor(host,()=>showHub(host)));
   on('hub-research',()=>showResearch({modal:host.modal,toast:host.toast,back:()=>showHub(host),codex:()=>codexOf(host)()}));
   on('hub-resume',()=>host.resumeSaved?.());on('hub-slots',host.showSlots);on('hub-title',()=>showTitle(host));
 }
 const codexOf=(host:RunHost,tab:'people'|'classes'|'strategies'='people')=>()=>{const back=()=>showCollections(host);const research=()=>showResearch({modal:host.modal,toast:host.toast,back,codex:()=>showCodex({modal:host.modal,toast:host.toast,back,research})});showCodex({modal:host.modal,toast:host.toast,back,research},{tab});};
 
 /** 도감: 모은 것을 한곳에서 본다(인물열전 · 병종 진화표 · 책략 · 보물 · 갈림길 지도). */
-export function showCollections(host:RunHost){
+/** 도감에서 나갈 곳: 첫 화면에서 들어오면 첫 화면, 본영에서 들어오면 본영(도감 안 화면을 오가도 유지). */
+let collectionsBack:(()=>void)|undefined;
+export function showCollections(host:RunHost,back?:()=>void){
+  if(back)collectionsBack=back;const leave=collectionsBack??(()=>showHub(host));
   const t=treasureSummary(),meta=loadMeta();
   const card=(id:string,seal:string,title:string,line:string,count:string)=>`<button id="${id}" class="codex-card"><span class="lobby-seal" aria-hidden="true">${seal}</span><strong>${title}</strong><small>${line}</small><em>${count}</em></button>`;
   host.modal(`<div class="briefing collections-screen"><div class="eyebrow">도감 · 모은 것과 알게 된 것</div><h2>난세의 기록</h2>
@@ -143,10 +152,10 @@ export function showCollections(host:RunHost){
     ${card('col-treasures','寶','보물','가진 것 · 얻는 곳 · 효과 · 특기',`${t.owned}/${t.total} · 회차 ${t.relics}/${t.relicTotal}`)}
     ${card('col-fate','岐','갈림길 지도','정사와 가상이 갈라지는 곳과 결말',`결말 ${meta.endings.length}/${ALL_ENDINGS.length}`)}
   </div>
-  <div class="run-actions"><button id="col-back">← 본영</button></div></div>`,false);
+  <div class="run-actions"><button id="col-back">← 돌아가기</button></div></div>`,false);
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
   on('col-people',codexOf(host,'people'));on('col-classes',codexOf(host,'classes'));on('col-strategies',codexOf(host,'strategies'));
-  on('col-evolution',host.showTroops);on('col-treasures',()=>showTreasures(host));on('col-fate',()=>showFateMap(host,()=>showCollections(host)));on('col-back',()=>showHub(host));
+  on('col-evolution',host.showTroops);on('col-treasures',()=>showTreasures(host));on('col-fate',()=>showFateMap(host,()=>showCollections(host)));on('col-back',leave);
 }
 
 /** 보물 도감: 가진 것·얻는 곳·효과·특기·장착한 장수. */
