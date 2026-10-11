@@ -80,8 +80,29 @@ export function applyTreasure(unit:Unit,id:string|undefined,uniqueEffects=true){
   if(uniqueEffects&&treasurePowers.some(t=>t.id===id)&&!unit.traits.includes("treasure:"+id))unit.traits.push("treasure:"+id);
   unit.hp=unit.stats.maxHp;unit.mp=unit.stats.maxMp;
 }
-/** 성장 기록 칸: 연의(본편)와 천명의 길(로그라이크 회차)은 따로 저장한다 — 새 회차가 연의의 레벨·보물을 지우지 않게. */
+/**
+ * 성장 기록 칸. 연의(본편)와 천명의 길은 한 칸(main)을 같이 쓴다 — 어느 쪽에서 오른 레벨·얻은 보물이든 양쪽에 그대로 남는다.
+ * run은 잠시 따로 저장하던 시절의 칸: 처음 읽을 때 main에 합치고 지운다(mergeCampaigns).
+ */
 export const CAMPAIGN_KEYS={main:'sama-campaign-v1',run:'sama-campaign-run-v1'} as const;
+/**
+ * 두 기록 합치기: 장수 경험치·등용 장수 경험치·훈련/사냥 승리는 큰 쪽, 보물·퀘스트·도전·회차·인장 보상은 합집합.
+ * 연의 장 보상 기록(rewards)과 장비 배치는 a(연의 쪽)를 따른다 — 연의에서 아직 받지 않은 장 보상을 막지 않게.
+ */
+export function mergeCampaigns(a:Campaign,b:Campaign):Campaign{
+  const out=structuredClone(a),union=(x?:string[],y?:string[])=>[...new Set([...(x??[]),...(y??[])])];
+  for(const [id,v] of Object.entries(b.xp))out.xp[id]=Math.max(out.xp[id]??0,v);
+  out.treasures=union(a.treasures,b.treasures);out.completedRuns=union(a.completedRuns,b.completedRuns);out.quests=union(a.quests,b.quests);out.challenges=union(a.challenges,b.challenges);out.sealRewards=union(a.sealRewards,b.sealRewards);
+  out.trainingWins=Math.max(a.trainingWins??0,b.trainingWins??0);out.bountyWins=Math.max(a.bountyWins??0,b.bountyWins??0);
+  if(b.retinueXp){const r=out.retinueXp??={};for(const [k,v] of Object.entries(b.retinueXp))r[k]=Math.max(r[k]??0,v);}
+  return out;
+}
+/** 따로 저장하던 천명의 길 칸이 남아 있으면 연의 칸에 합치고 지운다. 합쳤으면 true. */
+export function mergeRunCampaign(){
+  try{if(localStorage.getItem(CAMPAIGN_KEYS.run)===null)return false;
+    writeCampaign(mergeCampaigns(readCampaign(CAMPAIGN_KEYS.main),readCampaign(CAMPAIGN_KEYS.run)));localStorage.removeItem(CAMPAIGN_KEYS.run);return true;
+  }catch{return false;}
+}
 export function readCampaign(key:string=CAMPAIGN_KEYS.main):Campaign{
   try{const value=JSON.parse(localStorage.getItem(key)??'null') as Campaign;
     if(value?.version!==1||!value.xp||!Array.isArray(value.rewards)||!Array.isArray(value.treasures)||!value.equipped)return freshCampaign();

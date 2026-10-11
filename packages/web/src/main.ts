@@ -23,7 +23,7 @@ import {dueLines} from './battle-lines.ts';
 import {loadSettings,saveSettings,type Speed} from './settings.ts';
 import {SLOT_COUNT,slotKey,readSlot,slotLabel,readFull,snapshotKeys,restoreKeys,agoText,type FullSlot} from './save-slots.ts';
 import {encounterLevels,structureKind,structureFrame,raceGap} from './campaign-rules.ts';
-import {readCampaign,freshCampaign,writeCampaign,CAMPAIGN_KEYS,xpAtLevel,deployment,levelInfo,award,equip,equipSlot,treasureInfo,gearKey,type GearSlot,treasures,OFFICERS} from './progression.ts';
+import {readCampaign,writeCampaign,mergeRunCampaign,xpAtLevel,deployment,levelInfo,award,equip,equipSlot,treasureInfo,gearKey,type GearSlot,treasures,OFFICERS} from './progression.ts';
 import {storyBeats,storyLocations,storyBackdrop,storyAftermath,acts,stories,epilogueLines} from './story.ts';
 import {showHub,showQuests,showTitle,showCollections,finishRunBattle,finishRunStory,RUN_CHAPTER,type RunHost} from './run-ui.ts';
 import {showScenario,campOf,finishIfBattle,finishStoryBattle,noteDefeatReason,type ScenarioHost} from './scenario-ui.ts';
@@ -131,23 +131,13 @@ function progress():Record<string,number[]>{try{return JSON.parse(localStorage.g
 /** 이긴 적이 있는가: 일반·극한 어느 쪽이든 승리 기록이 남았거나(인장 조건과 무관), 천명의 길·원정에서 이긴 연의 전장. */
 function cleared(chapter:number){const id=chapters[chapter]!.stage.id,p=progress();return Array.isArray(p[`${id}:normal`])||Array.isArray(p[`${id}:extreme`])||loadMeta().chronicle.includes(id);}
 function unlocked(chapter:number){const i=campaignOrder.indexOf(chapter);return cleared(chapter)||i===0||cleared(campaignOrder[i-1]!);}
+mergeRunCampaign();
 let campaign=readCampaign();
 // Old clear seals become one-time campaign rewards; old battles still replay their old rules.
 for(const chapter of campaignOrder)for(const difficulty of ['normal','extreme'] as const){const id=chapters[chapter]!.stage.id;if(progress()[id+':'+difficulty]?.includes(1))award(campaign,id,difficulty,chapters[chapter]!.stage.deployment.forced,[1]);}
 try{writeCampaign(campaign);}catch{/* Session remains playable without persistent storage. */}
 const officerNames:Record<string,string>={sima_yi:'사마의',sima_lang:'사마랑',sima_fang:'사마방',cao_zhen:'조진'};
 function growthText(){const l=levelInfo(campaign.xp.sima_yi??0);return '사마의 Lv.'+l.level+' · 경험치 '+l.xp+'/'+l.next;}
-/**
- * 지금 쓰는 성장 기록 칸. 연의(본편)·수련·도전·등용은 'main', 천명의 길(로그라이크 회차)은 'run'.
- * 예전에는 한 칸을 같이 써서 새 회차를 열면 연의에서 키운 레벨·보물이 지워졌다.
- */
-let campaignSlot:'main'|'run'='main';
-function useCampaign(slot:'main'|'run'){
-  if(slot===campaignSlot)return;saveCampaign();campaignSlot=slot;
-  let fresh=false;try{fresh=localStorage.getItem(CAMPAIGN_KEYS[slot])===null;}catch{/* storage optional */}
-  // 처음 나누는 순간: 진행 중인 회차가 있으면 지금 기록을 회차 칸으로 옮겨 이어 가고, 없으면 새로 시작한다.
-  campaign=fresh&&slot==='run'?(loadScenario().run?structuredClone(campaign):freshCampaign()):readCampaign(CAMPAIGN_KEYS[slot]);saveCampaign();
-}
 /** 등용 장수의 레벨: 처음 나설 때는 사마의 레벨−1, 그 뒤로는 자기가 싸워 번 경험치로 오른다. */
 function retinueLevel(name:string){const x=campaign.retinueXp?.[name];return x!==undefined?levelInfo(x).level:Math.max(1,levelInfo(campaign.xp.sima_yi??0).level-1);}
 /** 등용 장수 경험치 적립: 싸워 번 만큼 + 승리 몫. 오른 레벨 글을 돌려준다. */
@@ -156,7 +146,7 @@ function growRetinue(units:ReadonlyArray<{id:string;name:string}>,earned:Record<
   for(const u of units){const before=retinueLevel(u.name),base=r[u.name]??xpAtLevel(before);r[u.name]=base+Math.max(0,earned[u.id]??0)+bonus;const after=levelInfo(r[u.name]!).level;if(after>before)out.push(`${u.name} Lv.${before} → ${after}`);}
   return out;
 }
-function saveCampaign(){try{writeCampaign(campaign,CAMPAIGN_KEYS[campaignSlot]);return true;}catch{toast('성장 기록을 저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.');return false;}}
+function saveCampaign(){try{writeCampaign(campaign);return true;}catch{toast('성장 기록을 저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.');return false;}}
 /** viewOnly: 「시나리오 보기」에서 연 이야기 — 끝나면 출진 대신 목록으로 돌아간다. */
 function storyScene(chapter:number,beat=0,fromArt?:number,viewOnly=false){
   setStoryEra(chapters[chapter]?.stage.id);
@@ -194,7 +184,7 @@ const resumeSaved=()=>{try{const loaded=Session.load(JSON.parse(localStorage.get
   for(let i=0;i<4000;i++){const st=loaded.state;if(st.outcome!=='ongoing'||st.activeDialogue||loaded.activeDuel)break;if(CONTROLLABLE.has(st.currentSide)&&st.living(st.currentSide).some(u=>!u.hasActed))break;if(!loaded.tick())break;}
   session=loaded;activate();persist();toast(`마지막 전투 · ${session.state.turn}턴 · ${CONTROLLABLE.has(session.state.currentSide)?'내 차례부터 이어갑니다':'이어갑니다'}`);}
   catch{toast('현재 버전의 저장 기록을 읽지 못했습니다.');}};
-const runHost:RunHost={modal:(html,closable)=>{useCampaign('main');modal(html,closable);},showMenu:()=>showMenu(),toast:t=>toast(t),startBattle:(dep,seed)=>{session=new Session(RUN_CHAPTER,'normal',seed,'survival',RULES,dep);activate();persist();},
+const runHost:RunHost={modal:(html,closable)=>modal(html,closable),showMenu:()=>showMenu(),toast:t=>toast(t),startBattle:(dep,seed)=>{session=new Session(RUN_CHAPTER,'normal',seed,'survival',RULES,dep);activate();persist();},
   startStory:(chapter,dep,seed)=>{session=new Session(chapter,'normal',seed,'survival',RULES,dep);activate();persist();},
   showChronicle:()=>showChronicleLanding(),showChronicleNext:()=>showChronicleNext(),chronicleSummary:()=>chronicleSummary(),showScenario:()=>showScenario(scenarioHost),showTraining:()=>showTraining(),showStoryArchive:()=>showStoryArchive(),showRecruit:()=>showRecruit(),showExpeditions:(tab?:Expedition['kind'])=>showExpeditions(tab),showTroops:()=>showTroopGallery(),showSlots:(back?:()=>void)=>showSlots(back),
   get resumeSaved(){const l=lastBattle();return l?.ongoing?resumeSaved:undefined;},lastBattle:()=>{const l=lastBattle();return l?.ongoing?{where:l.where,turn:l.turn}:undefined;},
@@ -202,8 +192,8 @@ const runHost:RunHost={modal:(html,closable)=>{useCampaign('main');modal(html,cl
   backToBattle:()=>{const s=openRunSession();if(s&&s!==session){session=s;activate();return;}menuOpen=false;closeModal();}};
 
 /** 시나리오 모드(본편)가 쓰는 연결: 연의 장의 정비·전투와 가상 전장 출진, 사마의의 성장 기록. */
-const scenarioHost:ScenarioHost={modal:(html,closable)=>{useCampaign('run');menuOpen=true;clearTimeout(aiTimer);sound.scene='camp';modal(html,closable);},contestSound:(kind,critical)=>sound.event({kind:'duel',critical,debate:kind==='debate'}),unitModel:(unitClass,name,side,kind)=>portraitFor({id:'contest',name,unitClass,side} as unknown as Unit,false,kind),showSlots:()=>showSlots(()=>showScenario(scenarioHost)),showMenu:()=>showMenu(),toast:t=>toast(t),
-  storyBriefing:(chapter,sc)=>{useCampaign('run');briefing(chapter,undefined,sc);},
+const scenarioHost:ScenarioHost={modal:(html,closable)=>{menuOpen=true;clearTimeout(aiTimer);sound.scene='camp';modal(html,closable);},contestSound:(kind,critical)=>sound.event({kind:'duel',critical,debate:kind==='debate'}),unitModel:(unitClass,name,side,kind)=>portraitFor({id:'contest',name,unitClass,side} as unknown as Unit,false,kind),showSlots:()=>showSlots(()=>showScenario(scenarioHost)),showMenu:()=>showMenu(),toast:t=>toast(t),
+  storyBriefing:(chapter,sc)=>briefing(chapter,undefined,sc),
   startBattle:(dep,seed,difficulty='normal')=>{session=new Session(RUN_CHAPTER,difficulty,seed,'survival',RULES,dep);activate();persist();},
   hero:()=>{const l=levelInfo(campaign.xp.sima_yi??0);return {level:l.level,xp:l.next?Math.min(99,Math.floor(l.xp/l.next*100)):0};},
   addHeroXp:n=>{const before=levelInfo(campaign.xp.sima_yi??0).level;campaign.xp.sima_yi=(campaign.xp.sima_yi??0)+Math.max(0,n);saveCampaign();const after=levelInfo(campaign.xp.sima_yi).level;return [`사마의 경험치 +${n}`,...(after>before?[`레벨 상승 · 사마의 Lv.${after}`]:[])];},
@@ -215,7 +205,7 @@ function openRunSession(){
   try{const s=Session.load(JSON.parse(localStorage.getItem(SAVE_KEY)??'null'));return inRun(s)?s:undefined;}catch{return undefined;}
 }
 /** 첫 화면: 천명의 원정 본영. 게임의 중심은 원정이다. */
-function showMenu(){useCampaign('main');resetStoryEra();menuOpen=true;clearTimeout(aiTimer);sound.scene='title';sound.combat=false;showHub(runHost);}
+function showMenu(){resetStoryEra();menuOpen=true;clearTimeout(aiTimer);sound.scene='title';sound.combat=false;showHub(runHost);}
 /** 연의 회상: 원정에서 이긴 연의 전장(또는 예전 연의 진행에서 깬 전장)을 다시 치른다. */
 function replayable(chapter:number){return cleared(chapter)||loadMeta().chronicle.includes(chapters[chapter]!.stage.id);}
 function showChronicleLanding(){menuArc=0;menuStage='';showChronicle();}
@@ -598,8 +588,6 @@ function showExpeditionResult(){if(resultShown)return;resultShown=true;const run
 function activate(){
   // 전장 그림이 아직이면 기다렸다가 시작한다(첫 화면을 빨리 띄우느라 그림은 뒤에서 준비한다).
   if(!fieldReady){startRest();modal(waitPanel('전장 준비 중','전장 그림을 마저 받고 있습니다. 끝나면 바로 시작합니다.'),false);void fieldInit?.then(activate,error=>{console.error(error);modal(`<div class="briefing"><h2>전장 그래픽 오류</h2><p class="render-error">전장 그래픽을 준비하지 못했습니다. 브라우저를 최신으로 올리거나, 다른 탭을 닫고 다시 시도해 주세요.</p><p class="muted">원인: ${String((error as Error)?.message??error).replace(/[<>&]/g,'').slice(0,160)}</p><div class="modal-actions"><button class="primary" id="field-retry">다시 시도</button></div></div>`,false);$('#field-retry').onclick=()=>location.reload();});return;}
-  // 천명의 길 전투는 회차 칸, 나머지(연의·수련·도전·원정)는 연의 칸의 성장 기록을 쓴다(이어하기로 불러온 전투 포함).
-  useCampaign(session.deployment?.scenario?'run':'main');
   hasStarted=true;menuOpen=false;resultShown=false;duelPresented=false;mode='move';setAuto(false);
   selected=session.state.living(session.state.currentSide).find(u=>!u.hasActed)?.id??'sima_yi';
   setStoryEra(session.state.stage.id);

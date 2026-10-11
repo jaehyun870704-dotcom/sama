@@ -1,5 +1,5 @@
 import {describe,it,expect,beforeEach} from 'vitest';
-import {freshCampaign,readCampaign,writeCampaign,CAMPAIGN_KEYS,OFFICERS,treasures,xpAtLevel,levelInfo} from '../src/progression.ts';
+import {freshCampaign,readCampaign,writeCampaign,mergeCampaigns,mergeRunCampaign,CAMPAIGN_KEYS,OFFICERS,treasures,xpAtLevel,levelInfo} from '../src/progression.ts';
 import {sealTiers,claimSealTier,sealTreasure,sealClaimed} from '../src/seal-rewards.ts';
 import {chapters,campaignOrder,sealNamesOf,Session} from '../src/session.ts';
 import {romanceOf} from '../src/romance.ts';
@@ -7,13 +7,22 @@ import {romanceOf} from '../src/romance.ts';
 const store=new Map<string,string>();
 beforeEach(()=>{store.clear();(globalThis as {localStorage?:unknown}).localStorage={getItem:(k:string)=>store.get(k)??null,setItem:(k:string,v:string)=>{store.set(k,v);},removeItem:(k:string)=>{store.delete(k);}};});
 
-describe('연의가 본편: 성장 기록 칸 분리',()=>{
-  it('연의 칸과 천명의 길 칸은 서로 덮어쓰지 않는다',()=>{
-    const main=freshCampaign();main.xp.sima_yi=5000;main.treasures.push('taiping');writeCampaign(main,CAMPAIGN_KEYS.main);
-    writeCampaign(freshCampaign(),CAMPAIGN_KEYS.run);
-    expect(readCampaign(CAMPAIGN_KEYS.main).xp.sima_yi).toBe(5000);
-    expect(readCampaign().treasures).toContain('taiping');
-    expect(readCampaign(CAMPAIGN_KEYS.run).xp.sima_yi).toBe(0);
+describe('연의와 천명의 길: 성장 기록 한 칸',()=>{
+  it('따로 저장하던 천명의 길 칸은 연의 칸에 합쳐지고 지워진다(레벨은 큰 쪽, 보물은 모두)',()=>{
+    const main=freshCampaign();main.xp.sima_yi=5000;main.xp.sima_lang=900;main.treasures.push('taiping');main.rewards.push('S1-01:normal');writeCampaign(main,CAMPAIGN_KEYS.main);
+    const run=freshCampaign();run.xp.sima_yi=2000;run.xp.sima_lang=3000;run.treasures.push('sevenstar');run.rewards.push('S1-02:normal');run.retinueXp={하후패:700};run.completedRuns=['r1'];writeCampaign(run,CAMPAIGN_KEYS.run);
+    expect(mergeRunCampaign()).toBe(true);
+    const c=readCampaign();
+    expect(c.xp.sima_yi).toBe(5000);expect(c.xp.sima_lang).toBe(3000);
+    expect(c.treasures).toEqual(expect.arrayContaining(['taiping','sevenstar']));
+    expect(c.rewards).toEqual(['S1-01:normal']);
+    expect(c.retinueXp).toEqual({하후패:700});expect(c.completedRuns).toEqual(['r1']);
+    expect(localStorage.getItem(CAMPAIGN_KEYS.run)).toBeNull();
+    expect(mergeRunCampaign()).toBe(false);
+  });
+  it('합치기는 장비 배치를 연의 쪽으로 둔다',()=>{
+    const a=freshCampaign(),b=freshCampaign();a.equipped.sima_yi='taiping';b.equipped.sima_yi='sevenstar';
+    expect(mergeCampaigns(a,b).equipped.sima_yi).toBe('taiping');
   });
   it('받은 인장 보상은 저장했다 다시 읽어도 남는다',()=>{
     const c=freshCampaign();c.sealRewards=['S1:22','bad'];writeCampaign(c);expect(readCampaign().sealRewards).toEqual(['S1:22']);

@@ -126,7 +126,7 @@ export function showHub(host:RunHost){
     ${tile('hub-recruit','聘','등용','계보마다 조건을 채워 장수를 휘하로 · 연의에 데려간다',`등용 ${(meta.recruited??[]).length}/${RECRUITABLE.length}명`)}
     ${tile('hub-archive','書','시나리오 보기','지난 이야기를 다시 보고, 이긴 장을 다시 싸운다',`결말 ${meta.endings.length}/${ALL_ENDINGS.length}`)}
     ${tile('hub-collections','鑑','도감','인물 · 병종 · 책략 · 보물 · 갈림길',`보물 ${treasureSummary().owned}/${treasureSummary().total}`)}
-    ${tile('hub-scenario','命','천명의 길','서브 · 로그라이크 회차 · 갈림길의 가상 전장과 결말',sc.state.run?`제${sc.state.run.no}회차 · ${esc(sc.tag)} 「${esc(sc.title)}」`:'연의와 성장 기록을 따로 쓴다','sub')}
+    ${tile('hub-scenario','命','천명의 길','서브 · 로그라이크 회차 · 갈림길의 가상 전장과 결말',sc.state.run?`제${sc.state.run.no}회차 · ${esc(sc.tag)} 「${esc(sc.title)}」`:'연의와 레벨·보물을 함께 쓴다','sub')}
     ${tile('hub-run','征','천명의 원정','서브 · 로그라이크 · 3편 18층을 오르는 한 번뿐인 길',ongoing(run)?`원정 중 · ${run.floor}층`:`최고 ${meta.best}층 · 천명 ${meta.mandate}`,'sub')}
   </div>
   <nav class="lobby-sub">${host.resumeSaved?'<button id="hub-resume" class="primary">전투 이어하기</button>':''}<button id="hub-research">연구</button><button id="hub-custom">신장수 · 신세력</button><button id="hub-slots">저장 칸</button><button id="hub-title">첫 화면</button></nav></div>`,false);
