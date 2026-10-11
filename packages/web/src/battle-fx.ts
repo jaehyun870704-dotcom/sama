@@ -17,13 +17,13 @@ let seed=1;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967
 export class BattleFx {
   constructor(private app:Application,private layer:Container,private overlay:Container,private reduced:boolean){}
   /** ms 동안 매 틀 draw(t: 0→1)를 부르고 끝나면 지운다. */
-  private run(ms:number,draw:(g:Graphics,t:number)=>void,blend:'add'|'normal'='add',z=998){
+  run(ms:number,draw:(g:Graphics,t:number)=>void,blend:'add'|'normal'='add',z=998){
     if(this.reduced)return Promise.resolve();
     const g=new Graphics();g.zIndex=z;g.blendMode=blend;this.layer.addChild(g);const born=performance.now();
     return new Promise<void>(res=>{const tick=()=>{if(g.destroyed){this.app.ticker.remove(tick);res();return;}const t=Math.min(1,(performance.now()-born)/ms);g.clear();draw(g,t);if(t>=1){this.app.ticker.remove(tick);g.destroy();res();}};this.app.ticker.add(tick);});
   }
   /** 입자 무리: 각 입자는 (x,y,vx,vy,size,color,life). */
-  private particles(p:P,n:number,o:{speed:number;up:number;gravity:number;life:number;size:[number,number];colors:number[];spread?:number;rise?:number},blend:'add'|'normal'='add'){
+  particles(p:P,n:number,o:{speed:number;up:number;gravity:number;life:number;size:[number,number];colors:number[];spread?:number;rise?:number},blend:'add'|'normal'='add'){
     const parts=Array.from({length:n},()=>{const a=rnd()*TAU,v=o.speed*(.35+rnd()*.8);return {x:p.x+(rnd()-.5)*(o.spread??10),y:p.y+(rnd()-.5)*(o.spread??10)*.5,vx:Math.cos(a)*v,vy:Math.sin(a)*v*.55-o.up*(.5+rnd()),s:o.size[0]+rnd()*(o.size[1]-o.size[0]),c:o.colors[Math.floor(rnd()*o.colors.length)]!,l:.6+rnd()*.4};});
     return this.run(o.life,(g,t)=>{const s=t*o.life/1000;for(const q of parts){const k=Math.min(1,t/q.l);if(k>=1)continue;g.circle(q.x+q.vx*s,q.y+q.vy*s+o.gravity*s*s-(o.rise??0)*s,q.s*(1-k*.6)).fill({color:q.c,alpha:(1-k)*.95});}},blend);
   }
