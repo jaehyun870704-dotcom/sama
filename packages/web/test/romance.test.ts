@@ -12,7 +12,7 @@ describe('연의 장수록',()=>{
   for(const [id,r] of Object.entries(romance)){expect(r.epithet,id).toBeTruthy();for(const v of [r.war,r.int,r.lead,r.pol,r.cha])expect(v,id).toBeGreaterThanOrEqual(1),expect(v,id).toBeLessThanOrEqual(100);}
   // 기준점: 무력 100은 여포 한 사람, 지력 100은 제갈량 한 사람.
   expect(romance.lu_bu!.war).toBe(100);expect(romance.wooden_zhuge!.int).toBe(100);
-  for(const [id,r] of Object.entries(romance)){if(id!=='lu_bu')expect(r.war,id).toBeLessThan(100);if(id!=='wooden_zhuge')expect(r.int,id).toBeLessThan(100);}
+  for(const [id,r] of Object.entries(romance)){if(id!=='lu_bu')expect(r.war,id).toBeLessThan(100);if(id!=='wooden_zhuge'&&id!=='zhuge_liang')expect(r.int,id).toBeLessThan(100);}
   expect(romance.sima_yi!.int).toBeLessThan(romance.wooden_zhuge!.int);expect(romance.ma_chao!.war).toBeLessThan(romance.lu_bu!.war);
  });
  it('turns ratings into stats: a mighty general hits harder, a wise one thinks sharper',()=>{

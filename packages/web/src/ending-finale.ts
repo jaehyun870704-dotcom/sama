@@ -7,6 +7,7 @@
  * 어느 때든 「건너뛰기」로 끝까지 넘기고, 화면을 누르면 지금 단계를 바로 마친다.
  */
 import {playNarration,playScenes} from './story-stage.ts';
+import {GAME_FULL} from './brand.ts';
 import {isoScene} from './story-iso.ts';
 import {routeById,endingFor,type Ending} from './fate.ts';
 import {scriptOf} from './scenario.ts';
@@ -55,7 +56,7 @@ export function playFinale(root:HTMLElement,d:FinaleData):Promise<void>{
     <section class="fn-roll"><div class="fn-roll-inner">
       <h3>걸어온 길</h3>${d.path.map(p=>`<p><small>${esc(p.act)}</small>${esc(p.name)}</p>`).join('')}
       ${d.people.map(g=>`<h3>${esc(g.label)}</h3><p class="fn-names">${g.names.map(esc).join(' · ')}</p>`).join('')}
-      <h3>사마의전</h3><p>『삼국지연의』와 정사를 바탕으로 새로 그린 이야기</p>
+      <h3>${GAME_FULL} · 사마의전</h3><p>『삼국지연의』와 정사를 바탕으로 새로 그린 이야기</p>
     </div></section>
     <section class="fn-end"><div class="fn-seal" aria-label="끝">끝</div>${d.seen?`<p>본 결말 ${d.seen.count}/${d.seen.total}</p>`:''}<button type="button" class="primary fn-go">계속 ▶</button></section>
   </div>`;

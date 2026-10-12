@@ -1,0 +1,230 @@
+{
+  "id": "Z1-01",
+  "arc": "upper",
+  "order": 101,
+  "title": "피난길의 세 형제",
+  "subtitle": "서주 남쪽 피난길",
+  "synopsis": "조조의 군사가 서주를 휩쓴다. 낭야의 제갈 형제는 칼 한 자루 없이 남쪽 나루를 향해 달아난다. 싸울 수 없는 세 사람이 길목의 군사를 피해 강을 건너야 한다.",
+  "mapId": "xuzhou-flight",
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_jin",
+      "z_jun"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "reach",
+      "unit": "z_liang",
+      "target": "objective",
+      "order": 1
+    },
+    {
+      "type": "reach",
+      "unit": "z_jin",
+      "target": "objective",
+      "order": 2
+    },
+    {
+      "type": "reach",
+      "unit": "z_jun",
+      "target": "objective",
+      "order": 3
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    },
+    {
+      "type": "retreat",
+      "unit": "z_jin"
+    },
+    {
+      "type": "retreat",
+      "unit": "z_jun"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "turn_limit:14",
+      "extreme": "turn_limit:12"
+    },
+    {
+      "slot": 3,
+      "normal": "enemy_retreat_count:3",
+      "extreme": "enemy_retreat_count:4"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 3,
+      "recommendedLevel": 3,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 5,
+      "recommendedLevel": 5,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z1-01/raiders",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z1_raid_a",
+              "name": "조조군 보병",
+              "template": "infantry",
+              "level": 3,
+              "region": "north_camp",
+              "behavior": "hold"
+            },
+            {
+              "id": "z1_raid_b",
+              "name": "조조군 보병",
+              "template": "infantry",
+              "level": 3,
+              "region": "north_camp",
+              "behavior": "hold"
+            },
+            {
+              "id": "z1_ford_a",
+              "name": "여울 파수병",
+              "template": "spearman",
+              "level": 3,
+              "region": "ford_guard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z1_bow",
+              "name": "강가 궁병",
+              "template": "archer",
+              "level": 3,
+              "region": "river_hill",
+              "behavior": "hold"
+            },
+            {
+              "id": "z1_road_a",
+              "name": "길목 기병",
+              "template": "cavalry",
+              "level": 3,
+              "region": "east_road",
+              "behavior": "hold"
+            },
+            {
+              "id": "z1_road_b",
+              "name": "길목 보병",
+              "template": "infantry",
+              "level": 3,
+              "region": "east_road",
+              "behavior": "hold"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-01/liu-bei",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 2
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "allyAi",
+          "units": [
+            {
+              "id": "z_liu_bei",
+              "name": "유비",
+              "template": "lord",
+              "level": 4,
+              "region": "liu_arrive",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_guan_yu",
+              "name": "관우",
+              "template": "heavyCav",
+              "level": 4,
+              "region": "liu_arrive",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_zhang_fei",
+              "name": "장비",
+              "template": "cavalry",
+              "level": 4,
+              "region": "liu_arrive",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-01/pursuit",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 4
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_cao_ren",
+              "name": "조인",
+              "template": "cavalry",
+              "level": 4,
+              "region": "west_pursuit",
+              "behavior": "advance"
+            },
+            {
+              "id": "z1_chase_a",
+              "name": "추격 기병",
+              "template": "cavalry",
+              "level": 3,
+              "region": "west_pursuit",
+              "behavior": "advance"
+            },
+            {
+              "id": "z1_chase_b",
+              "name": "추격 기병",
+              "template": "cavalry",
+              "level": 3,
+              "region": "west_pursuit",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "A",
+    "maxSimultaneousUnits": 20
+  }
+}

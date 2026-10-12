@@ -22,12 +22,16 @@ import history3 from './scenario/history-3.ts';
 import ifA from './scenario/if-a.ts';
 import ifB from './scenario/if-b.ts';
 import ifC from './scenario/if-c.ts';
+import zhuge1 from './scenario/zhuge-1.ts';
 
 export const PACKS:ScenarioPack[]=[history1,history2,history3,ifA,ifB,ifC];
 const SCRIPTS=new Map<string,ChapterScript>(PACKS.flatMap(p=>p.chapters.map(c=>[c.id,c] as const)));
 export const EXTRA_TALES:ExtraTale[]=PACKS.flatMap(p=>p.extraTales??[]);
 export const ENDING_NOTES=PACKS.flatMap(p=>p.endingNotes??[]);
-export const scriptOf=(id:string)=>SCRIPTS.get(id)??(isNewPower(id)?newPowerScript(id):undefined);
+/** 제갈량전 대본(천명의 길 경로에는 들어가지 않는다). */
+export const ZHUGE_PACKS:ScenarioPack[]=[zhuge1];
+const ZHUGE_SCRIPTS=new Map<string,ChapterScript>(ZHUGE_PACKS.flatMap(p=>p.chapters.map(c=>[c.id,c] as const)));
+export const scriptOf=(id:string)=>SCRIPTS.get(id)??ZHUGE_SCRIPTS.get(id)??(isNewPower(id)?newPowerScript(id):undefined);
 
 export type StepKind='story'|'fate'|'tale'|'boss'|'ending';
 export interface ScenarioStep {

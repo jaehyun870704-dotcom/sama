@@ -59,6 +59,8 @@ export const romance:Record<string,RomanceOfficer>={
   // 오
   sun_quan:o('손권','벽안자염 · 강동의 주인',[66,80,82,86,95],{name:'강동 수성',description:'받는 물리 피해 10% 감소',trait:'commandDefense'}),
   zhang_zhao:o('장소','오의 원로 · 내사는 장소에게',[18,82,40,92,74]),
+  // 제갈량전의 제갈량(이름으로 찾는다 — 목상 wooden_zhuge는 id로 자기 항목을 쓴다).
+  zhuge_liang:o('제갈량','와룡 · 융중에서 천하를 셋으로 나눈 자',[38,100,98,98,98]),
   zhuge_jin:o('제갈근','제갈량의 형 · 온후한 사신',[36,80,60,84,84]),
   lu_meng:o('여몽','괄목상대 · 백의도강',[81,89,91,76,82],{name:'백의도강',description:'적 방어 20% 무시',trait:'penetrate',param:20}),
   lu_fan:o('여범','손책 이래의 수군 원로',[56,72,70,78,66]),
@@ -196,6 +198,7 @@ const byName:Record<string,RomanceOfficer>={
   왕건:o('왕건','양평에서 항복을 청한 요동의 상국',[46,60,50,56,48]),
   비의:o('비의','제갈량 뒤를 이은 촉의 대장군',[30,86,62,92,84]),
   유민:o('유민','흥세에서 위군을 막은 촉의 장수',[66,62,72,56,58]),
+  제갈균:o('제갈균','제갈량의 아우 · 형을 따라 남쪽으로 간 막내',[40,66,44,62,60]),
   // 2026-10-12 더한 이름있는 장수(능력은 이 게임이 『삼국지연의』·정사의 행적으로 직접 매김)
   장임:o('장임','낙성의 충신 · 끝내 항복하지 않은 유장의 장수',[86,72,84,50,66]),
   주창:o('주창','관우의 청룡도를 받든 장사',[84,30,58,18,60]),
@@ -222,7 +225,7 @@ const DECOYS=new Set(['decoy']);
 export function romanceOf(u:{id:string;name:string}):RomanceOfficer|undefined{
   if(DECOYS.has(u.id))return undefined;
   // 우두머리·가상 전장 적장, 원정 부대의 장수(id 'of…'), 대규모 전투 증원(id 'hx_…'), 연의에 데려간 등용 장수('rt_…')·천명의 길 동료('rc_of…')는 이름으로 찾는다.
-  return romance[u.id]??(u.id==='boss'||u.id==='target'||/^(of|hx_|rt_|rc_of)\d+$/.test(u.id)?byName[u.name]:undefined);
+  return romance[u.id]??(u.id==='boss'||u.id==='target'||/^(of|hx_|rt_|rc_of)\d+$/.test(u.id)||u.id.startsWith('z_')?byName[u.name]:undefined);
 }
 /** 영입 화면에 보이는 한 줄 능력: 무력·지력·통솔. */
 export function romanceStats(name:string){const r=byName[name];return r?`무력 ${r.war} · 지력 ${r.int} · 통솔 ${r.lead}`:'';}

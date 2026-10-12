@@ -90,6 +90,7 @@ import shouchunMap from '../../data/maps/shouchun-waterway.json';
 import legacyFortMap from './legacy/hanzhong-map-v2.json';
 import legacyFortStage from './legacy/hanzhong-stage-v2.json';
 import { makeUnit, awardedSeals } from '../../core/src/index.ts';
+import {ZHUGE_CHAPTERS,ZHUGE_ROSTER,zhugeClass,isZhugeStage} from './zhuge-data.ts';
 
 export const chapters = [
   {stage: escapeStage as StageDef, map: escapeMap as MapFile, year:'초평 원년 · 190년', label:'잠입과 선택', quote:'칼을 숨겨라. 살아남는 자만이 다음 수를 둘 수 있다.'},
@@ -124,9 +125,13 @@ export const chapters = [
   {stage:luoguStage as StageDef,map:luoguMap as MapFile,year:'정시 오년 · 244년',label:'진격과 회수',quote:'어디까지 갈지 아는 것이, 어디로 갈지 아는 것보다 어렵다.'},
   {stage:luoyangcoupStage as StageDef,map:luoyangcoupMap as MapFile,year:'정시 십년 · 249년',label:'무기고와 영녕궁',quote:'칼을 뽑는 데 쉰 해가 걸렸다.'},
   {stage:shouchunStage as StageDef,map:shouchunMap as MapFile,year:'가평 삼년 · 251년',label:'수로와 수문',quote:'마지막 출정이다. 나는 이 길로 돌아오지 않을 것이다.'},
+  // 제갈량전(Z1-xx·Z2-xx): 뒤에 덧붙여 앞 장들의 번호를 지킨다.
+  ...ZHUGE_CHAPTERS,
 ];
 // Stable indices preserve the existing v2 command saves.
 export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31];
+/** 제갈량전의 장 순서(chapters의 번호). */
+export const zhugeOrder=chapters.map((c,i)=>isZhugeStage(c.stage.id)?i:-1).filter(i=>i>=0);
 export type Preparation='survival'|'strategy'|'command';
 export const strategies: StrategyDef[] = [
   {id:'windDragon',name:'풍룡',element:'wind',shape:'spread',range:4,radius:1,mpCost:18,power:130,targetSides:['enemy']},
@@ -223,9 +228,13 @@ export class Session {
       {id:'sima_lang',name:'사마랑',unitClass:'infantry',level},
       {id:'cao_zhen',name:'조진',unitClass:'heavyCav',level},
       {id:'sima_fang',name:'사마방',unitClass:'spearman',level},
+      // 제갈량전 장수(그 장의 필수 출진에 있을 때만 전장에 선다).
+      ...ZHUGE_ROSTER.map(o=>({id:o.id,name:o.name,unitClass:zhugeClass(entry.stage.id,o.id)!,level,...(o.strategies?{strategies:o.strategies}:{})})),
     ]});
     // 균형 규칙 6: 이룬 차례 목표는 그대로 남는다(한 번 남문에 닿았으면 자리를 떠도 된다).
     if(this.revision>=6)state.stickyGoals=true;
+    // 제갈량전의 피난민 장수(싸울 수 없는 형제 등): 자동 전투는 길목을 지키는 적의 손이 닿는 칸을 피해 목적지로 간다.
+    if(isZhugeStage(entry.stage.id))for(const u of state.living('player'))if(u.unitClass==='civilian'){u.behavior='escortee';u.goalRegion='objective';}
     if(this.deployment)for(const u of state.living('player')){const l=this.deployment.levels[u.id];if(l){const adjusted=makeUnit({id:u.id,unitClass:u.unitClass,level:l,side:u.side,pos:u.pos});u.level=l;u.stats=adjusted.stats;u.hp=u.stats.maxHp;u.mp=u.stats.maxMp;
       // 장수도 레벨이 기준에 닿으면 병종이 진화한다(사마의: 책사→군사 Lv8→귀모 Lv16). 원정 부대는 원정 규칙이 따로 정한다.
       const evolved=this.revision>=4&&!this.deployment.run?evolvedClass(u.unitClass,l):u.unitClass;if(evolved!==u.unitClass){evolveUnit(u,evolved);u.hp=u.stats.maxHp;u.mp=u.stats.maxMp;}}

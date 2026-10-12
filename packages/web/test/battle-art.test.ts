@@ -112,6 +112,6 @@ import {storyAftermath} from '../src/story.ts';
 import {chapters} from '../src/session.ts';
 describe('aftermath scenes',()=>{
  it('every playable main battle has a scene after victory, in Korean',()=>{
-  for(const c of chapters){const a=storyAftermath[c.stage.id];expect(a,c.stage.id).toBeDefined();expect(a!.beats.length).toBeGreaterThanOrEqual(2);for(const b of a!.beats)expect(b.line).not.toMatch(/[一-鿿]/);}
+  for(const c of chapters.filter(c=>c.stage.id.startsWith('S'))){const a=storyAftermath[c.stage.id];expect(a,c.stage.id).toBeDefined();expect(a!.beats.length).toBeGreaterThanOrEqual(2);for(const b of a!.beats)expect(b.line).not.toMatch(/[一-鿿]/);}
  });
 });

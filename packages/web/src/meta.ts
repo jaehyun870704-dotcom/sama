@@ -63,7 +63,7 @@ export function readMeta(raw:string|null):MetaState{
     const ids=new Set(UNLOCKS.map(u=>u.id)),num=(v:unknown)=>Number.isFinite(v)&&(v as number)>=0?Math.floor(v as number):0;
     return {version:1,mandate:num(m.mandate),earned:num(m.earned),runs:num(m.runs),wins:num(m.wins),best:Math.min(RUN_FLOORS,num(m.best)),
       unlocks:Array.isArray(m.unlocks)?m.unlocks.filter(x=>typeof x==='string'&&ids.has(x)):[],
-      chronicle:Array.isArray(m.chronicle)?m.chronicle.filter(x=>typeof x==='string'&&/^S[1-3]-\d\d$/.test(x)):[],
+      chronicle:Array.isArray(m.chronicle)?m.chronicle.filter(x=>typeof x==='string'&&/^[SZ][1-3]-\d\d$/.test(x)):[],
       tales:Array.isArray(m.tales)?m.tales.filter(x=>typeof x==='string'&&TALE_IDS.has(x)):[],
       endings:Array.isArray(m.endings)?m.endings.filter(x=>typeof x==='string'&&ALL_ENDINGS.includes(x)):[],
       ...(Array.isArray(m.customOfficers)?{customOfficers:readCustoms(m.customOfficers)}:{}),
@@ -72,7 +72,7 @@ export function readMeta(raw:string|null):MetaState{
       ...cleanProgress(m)};
   }catch{return freshMeta();}
 }
-const SEAL_KEY=/^S[1-3]-\d\d:(normal|extreme):[1-3]$/;
+const SEAL_KEY=/^[SZ][1-3]-\d\d:(normal|extreme):[1-3]$/;
 const isName=(k:string)=>k.length>0&&k.length<=12;
 const strList=(v:unknown,limit:number)=>Array.isArray(v)?[...new Set(v.filter((x):x is string=>typeof x==='string'&&x.length<=40))].slice(0,limit):[];
 /** 연구·장수 효과·장수 최고 레벨을 정리한다(없는 칸·이상한 값은 버린다). */

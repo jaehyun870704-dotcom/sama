@@ -19,4 +19,6 @@ export const NPC_ROSTER:NpcEntry[]=[
   n('양동 깃발대','infantry','ally','S3-01'),n('번성 수비대','spearman','allyAi','S3-03'),
   n('공병','engineer','ally','S3-04'),n('방패 호위병','infantry','ally','S3-04'),
   n('조상','cavalry','allyAi','S3-05'),n('조상 친위','spearman','allyAi','S3-05'),
+  // 제갈량전
+  n('유비','lord','allyAi','Z1-01'),n('관우','heavyCav','allyAi','Z1-01'),n('장비','cavalry','allyAi','Z1-01'),
 ];

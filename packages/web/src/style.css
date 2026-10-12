@@ -2249,3 +2249,21 @@ dialog:has(.title-screen),dialog:has(.lobby){width:min(1240px,calc(100vw - 24px)
 .run-sortie{margin-top:4px;padding:2px 6px;font-size:calc(12px*var(--fs,1))}.run-sortie.in{border-color:#7fb38f;color:#bfe3c7}.run-sortie.out{border-color:#8a6a55;color:#d8b49a}.run-sortie-note{font-size:calc(12.5px*var(--fs,1));color:#b9b08f;margin:10px 0 -8px}
 .march-pick-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px;max-height:52vh;max-height:52dvh;overflow-y:auto;margin:10px 0}.march-pick{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;align-items:center;border:1px solid #4d5b4f;padding:7px 9px;cursor:pointer}.march-pick small{grid-column:2;color:#a9b29f}.march-pick.on{border-color:#d4b678;background:#d4b67814}
 .screen-lede{margin:4px 0 12px;color:#b9b08f;font-size:calc(14px*var(--fs,1));line-height:1.6}
+/* 이야기 고르기(시작) · 제갈량전 장 목록 */
+.story-pick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:14px 0}
+.story-pick-card{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto auto;column-gap:14px;row-gap:4px;align-items:center;text-align:left;padding:18px 20px;min-height:150px;background:#111a1cd9;border:1px solid #d7b16a;box-shadow:inset 0 0 0 1px #0007;transition:border-color .15s,transform .15s}
+.story-pick-card:hover{transform:translateY(-2px);border-color:#f0cf8a}
+.story-pick-card .lobby-seal{grid-row:1/4}
+.story-pick-card strong{font:700 calc(24px*var(--fs)) LocalSerif,'Batang',serif;color:#f4e2b8}
+.story-pick-card small{color:#cdbf9f;line-height:1.5}
+.story-pick-card em{font-style:normal;color:#d7b16a;font-size:calc(13px*var(--fs))}
+.ym-story-name{font:700 calc(17px*var(--fs)) LocalSerif,'Batang',serif;color:#f4e2b8;padding:4px 10px}
+.zg-list{list-style:none;margin:12px 0;padding:0;display:grid;gap:8px;max-height:58vh;overflow:auto}
+.zg-row{display:grid;grid-template-columns:44px 1fr auto auto;gap:12px;align-items:center;padding:10px 14px;background:#111a1cd9;border:1px solid #6c5a36}
+.zg-row.open{border-color:#d7b16a}.zg-row.done{border-color:#7d8f6a}.zg-row.locked{opacity:.6}
+.zg-no{display:grid;place-items:center;width:40px;height:40px;font:700 18px LocalSerif,'Batang',serif;color:#f6e3b6;background:radial-gradient(circle at 40% 35%,#8c2e22,#4a130e 75%);border:2px solid #c99a4a;border-radius:6px}
+.zg-text{min-width:0}.zg-text b{display:block;color:#f4e2b8;font-size:calc(17px*var(--fs))}.zg-text small{color:#b9ab8b}.zg-text p{margin:4px 0 0;color:#d8ccb0;font-size:calc(13px*var(--fs));line-height:1.5}
+.zg-seal{color:#d7b16a;font-size:calc(13px*var(--fs));white-space:nowrap}.zg-row em{font-style:normal;color:#9a8e74;font-size:calc(13px*var(--fs))}
+.zg-diff{display:flex;gap:18px;flex-wrap:wrap;margin:10px 0;border:1px solid #6c5a36;padding:8px 12px}.zg-diff small{color:#b9ab8b}
+.zg-sortie{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+@media(max-width:700px){.story-pick-grid{grid-template-columns:1fr}.zg-row{grid-template-columns:36px 1fr;}.zg-seal,.zg-row button,.zg-row em{grid-column:2}}

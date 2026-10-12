@@ -109,7 +109,7 @@ describe('하편 · 왕릉 진압전',()=>{
   expect(s.state.map.tileAt({x:12,y:8}).terrain).toBe('road');expect(s.state.victory).toEqual([{type:'retreat',unit:'wang_ling'}]);
   expect(s.phase).toContain('육상 진입');
  });
- it('is the last stage of the 32-stage campaign',()=>{expect(chapters).toHaveLength(32);expect(chapters[campaignOrder.at(-1)!]!.stage.id).toBe('S3-07');});
+ it('is the last stage of the 32-stage campaign',()=>{expect(chapters.filter(c=>c.stage.id.startsWith('S'))).toHaveLength(32);expect(chapters[campaignOrder.at(-1)!]!.stage.id).toBe('S3-07');});
 });
 import {epilogueLines} from '../src/story.ts';
 describe('에필로그',()=>{

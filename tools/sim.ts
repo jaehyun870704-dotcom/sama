@@ -25,7 +25,9 @@ const server = await createServer({
   appType: "custom",
 });
 const load = (p: string) => server.ssrLoadModule(p);
-const { Session, chapters, campaignOrder } = await load("/packages/web/src/session.ts");
+const { Session, chapters, campaignOrder, zhugeOrder } = await load("/packages/web/src/session.ts");
+const { zhugeDeployment } = await load("/packages/web/src/zhuge.ts");
+const { isZhugeStage } = await load("/packages/web/src/zhuge-data.ts");
 const { award, deployment, equip, freshCampaign, treasures, OFFICERS } =
   await load("/packages/web/src/progression.ts");
 const { martialPower } = await load("/packages/web/src/officers.ts");
@@ -245,7 +247,10 @@ function play(chapter: number, difficulty: Difficulty, seed: number) {
     SIM_REVISION,
     // 기본은 실제 새 전투와 같은 넓은 전장(wide 2: 연의 지도 1.5배·큰 전투 증원)으로 잰다.
     // SIM_WIDE=0이면 예전 좁은 전장(옛 저장 기록이 여는 전장)으로 잰다.
-    SIM_WIDE ? { ...deployment(campaignAt(chapter, difficulty), true), wide: SIM_WIDE } : deployment(campaignAt(chapter, difficulty), true),
+    // 제갈량전 장: 처음 하는 사람(기록 없음)의 장 기본 레벨로 잰다.
+    isZhugeStage(chapters[chapter].stage.id)
+      ? { ...zhugeDeployment(freshCampaign(), chapters[chapter].stage, difficulty), wide: SIM_WIDE || undefined }
+      : SIM_WIDE ? { ...deployment(campaignAt(chapter, difficulty), true), wide: SIM_WIDE } : deployment(campaignAt(chapter, difficulty), true),
   );
 
   for (let step = 0; step < 6000 && session.state.outcome === "ongoing"; step++) {
@@ -338,7 +343,7 @@ function play(chapter: number, difficulty: Difficulty, seed: number) {
 
 const [stageFilter, runsArg] = process.argv.slice(2);
 const runs = Number(runsArg ?? 100);
-const targets = campaignOrder.filter(
+const targets = [...campaignOrder, ...zhugeOrder].filter(
   (chapter: number) => !stageFilter || chapters[chapter].stage.id.startsWith(stageFilter),
 );
 

@@ -35,6 +35,6 @@ describe('동관 · 두 전선',()=>{
   for(const id of [t.id,'ma_chao','missing'])expect(s.act({kind:'item',unit:u.id,item:'heal',target:id}).ok).toBe(false);
   t.hp-=10;t.pos={x:27,y:19};expect(s.act({kind:'item',unit:u.id,item:'heal',target:t.id}).ok).toBe(false);t.pos={...u.pos};s.state.retreat(t);expect(s.act({kind:'item',unit:u.id,item:'heal',target:t.id}).ok).toBe(false);expect(u.mp).toBe(mp);expect(u.hasActed).toBe(false);
  });
- it('provides a complete story entry for every playable chapter',()=>{chapters.forEach((c,i)=>{expect(storyBeats[c.stage.id]?.length).toBeGreaterThanOrEqual(3);expect(stories[i]?.length).toBe(2);});});
+ it('provides a complete story entry for every playable chapter',()=>{chapters.forEach((c,i)=>{if(!c.stage.id.startsWith('S'))return;expect(storyBeats[c.stage.id]?.length).toBeGreaterThanOrEqual(3);expect(stories[i]?.length).toBe(2);});});
  it('has a distinct medium-size fortress and persistent campaign position',()=>{const s=create();expect([s.state.map.width,s.state.map.height]).toEqual([28,20]);expect(s.state.get('gate_21_10').hp).toBe(95);expect(s.state.get('tower_21_6').stats.movement).toBe(0);expect(campaignOrder.indexOf(6)).toBe(campaignOrder.indexOf(5)+1);});
 });

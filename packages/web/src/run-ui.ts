@@ -1,5 +1,6 @@
 /** 천명의 원정 화면: 본영(첫 화면) · 출발 · 층 갈림길 · 보상 · 원정 종료 · 천명 해금. 규칙은 roguelike.ts, 영구 진행은 meta.ts. */
 import {showCodex,codexNames} from './codex-ui.ts';
+import {GAME_NAME,GAME_SERIES,GAME_TAG} from './brand.ts';
 import {allStrategies} from './officers.ts';
 import {RECRUITABLE} from './recruit.ts';
 import {showResearch} from './research-ui.ts';
@@ -52,6 +53,10 @@ export interface RunHost {
   showStoryArchive():void;
   /** 등용: 계보마다 조건을 채워 장수를 들인다 */
   showRecruit():void;
+  /** 제갈량전: 장 목록 */
+  showZhuge():void;
+  /** 제갈량전 진행 요약 */
+  zhugeSummary():{next?:string;won:number;total:number;seals:number;sealMax:number};
   /** 자동 저장된 전투가 있으면 이어 하기 */
   resumeSaved?:(()=>void)|undefined;
   /** 이어할 마지막 전투(끝나지 않은 것) */
@@ -99,18 +104,32 @@ const tile=(id:string,seal:string,title:string,line:string,meta='',cls='')=>`<bu
 export function showTitle(host:RunHost){
   const c=host.chronicleSummary(),resume=host.resumeSaved,last=host.lastBattle();
   const item=(id:string,label:string,sub:string,cls='')=>`<button id="${id}" class="${cls}"><span>${label}</span><small>${sub}</small></button>`;
-  host.modal(`<div class="title-screen"><div class="title-bg" aria-hidden="true"></div><img class="title-hero" src="sima-portrait-v2.webp" alt="부채를 든 사마의 창작 초상">
-  <div class="title-copy"><p class="title-eyebrow">삼국지 · 사마의 연대기</p><h1 class="title-logo">사마의전</h1><p class="title-tag">칼을 거두고, 때를 기다린다.</p>
+  host.modal(`<div class="title-screen"><div class="title-bg" aria-hidden="true"></div><img class="title-hero" src="portraits/cao-cao.webp" alt="관을 쓴 조조 창작 초상">
+  <div class="title-copy"><p class="title-eyebrow">${GAME_SERIES}</p><h1 class="title-logo">${GAME_NAME}</h1><p class="title-tag">${GAME_TAG}</p>
   <nav class="title-menu" aria-label="첫 화면 메뉴">
-    <div class="tm-group">${item('title-start','시작',c.next?`연의 · ${esc(c.next)}`:'연의 32장 완료 · 극한 천명 조건에 도전','primary')}${resume&&last?item('title-resume','이어하기',`${esc(last.where)}${last.turn?` · ${last.turn}턴`:''} · 내 차례부터`):''}${item('title-load','불러오기','저장 칸에서 기록을 불러온다')}</div>
+    <div class="tm-group">${item('title-start','시작','사마의전 · 제갈량전 가운데 고른다','primary')}${resume&&last?item('title-resume','이어하기',`${esc(last.where)}${last.turn?` · ${last.turn}턴`:''} · 내 차례부터`):''}${item('title-load','불러오기','저장 칸에서 기록을 불러온다')}</div>
     <div class="tm-group">${item('title-codex','도감 보기','인물 · 병종 · 책략 · 보물 · 갈림길')}${item('title-custom','신장수 만들기','나만의 장수 · 신세력')}${item('title-lobby','본영','수련장 · 도전 · 등용 · 연구')}</div>
     <div class="tm-group sub">${item('title-roguelike','천명의 길','회차마다 갈림길을 골라 결말까지','title-sub')}</div>
   </nav>
   <p class="title-note">비상업 팬 창작 게임 · 등장인물은 『삼국지연의』와 정사를 바탕으로 새로 그렸다</p></div></div>`,false);
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
-  on('title-start',host.showChronicleNext);on('title-resume',()=>host.resumeSaved?.());on('title-load',()=>host.showSlots(()=>showTitle(host)));
+  on('title-start',()=>showStoryPick(host,()=>showTitle(host)));on('title-resume',()=>host.resumeSaved?.());on('title-load',()=>host.showSlots(()=>showTitle(host)));
   on('title-codex',()=>showCollections(host,()=>showTitle(host)));on('title-custom',()=>showCustomEditor(host,()=>showTitle(host)));
   on('title-lobby',()=>showHub(host));on('title-roguelike',host.showScenario);
+}
+
+/**
+ * 이야기 고르기: 시작을 누르면 주인공이 다른 이야기들 가운데 하나를 고른다.
+ * 어느 이야기든 처음부터 고를 수 있고, 보물·연구·장수마다 쌓은 레벨은 함께 쓴다.
+ */
+export function showStoryPick(host:RunHost,back:()=>void){
+  const sima=host.chronicleSummary(),zhuge=host.zhugeSummary();
+  const card=(id:string,seal:string,name:string,line:string,s:{next?:string;won:number;total:number;seals:number;sealMax:number})=>`<button id="${id}" class="story-pick-card"><span class="lobby-seal" aria-hidden="true">${seal}</span><strong>${name}</strong><small>${line}</small><em>${s.won}/${s.total}장 · 연의 천명 ${s.seals}/${s.sealMax}${s.next?` · 다음 ${esc(s.next)}`:' · 모두 이겼다'}</em></button>`;
+  host.modal(`<div class="briefing story-pick"><p class="eyebrow">시작 · 이야기 고르기</p><h2>누구의 이야기를 걸을까</h2><p class="screen-lede">어느 이야기든 처음부터 고를 수 있다. 보물·연구와 장수마다 쌓은 레벨은 이야기를 넘어 이어진다.</p>
+  <div class="story-pick-grid">${card('pick-sima','사','사마의전','하내의 소년이 칼을 거두고 때를 기다려 천하를 쥐기까지',sima)}${card('pick-zhuge','제','제갈량전','피난길의 소년이 와룡이 되어 오장원에 이르기까지',zhuge)}</div>
+  <div class="modal-actions"><button id="pick-back">← 돌아가기</button></div></div>`,false);
+  const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
+  on('pick-sima',host.showChronicleNext);on('pick-zhuge',host.showZhuge);on('pick-back',back);
 }
 
 /**
@@ -120,10 +139,11 @@ export function showTitle(host:RunHost){
 export function showHub(host:RunHost){
   const meta=loadMeta(),sc=scenarioSummary(),run=loadRun(),c=host.chronicleSummary();
   host.modal(`<div class="lobby"><div class="lobby-bg" aria-hidden="true"></div>
-  <header class="lobby-head"><div><p class="eyebrow">본영 · 사마의의 군막</p><h2>천하를 향한 다음 수</h2></div>
+  <header class="lobby-head"><div><p class="eyebrow">본영 · 군막</p><h2>천하를 향한 다음 수</h2></div>
   <div class="hub-stats"><span><b>${c.won}/${c.total}</b><small>이긴 연의</small></span><span><b>${c.seals}/${c.sealMax}</b><small>연의 천명</small></span><span><b>${(meta.recruited??[]).length}</b><small>등용</small></span><span><b>${meta.mandate}</b><small>천명</small></span></div></header>
   <div class="lobby-main">
-    ${tile('hub-chronicle','연',c.won?'연의 이어하기':'연의 시작','본편 · 상편 11장 · 중편 14장 · 하편 7장 · 일반/극한과 천명 조건',c.next?`다음 · ${esc(c.next)}`:'32장 완료 · 극한 천명 조건과 천명 보상을 모아 보자','primary wide')}
+    ${tile('hub-chronicle','사','사마의전',`연의 ${c.total}장 · 일반/극한과 천명 조건`,c.next?`다음 · ${esc(c.next)}`:`${c.total}장 완료 · 극한 천명 조건과 천명 보상을 모아 보자`,'primary')}
+    ${tile('hub-zhuge','제','제갈량전',`연의 ${host.zhugeSummary().total}장 · 피난길에서 오장원까지`,host.zhugeSummary().next?`다음 · ${esc(host.zhugeSummary().next!)}`:'이어지는 장을 기다린다','primary')}
     ${tile('hub-training','수','수련장','막혔을 때 레벨업 · 다음 연의 장 권장 레벨까지','승리마다 경험치 · 연의 장수 모두')}
     ${tile('hub-challenge','관','도전의 관문','10단계 · 단계마다 적이 늘고 강해진다','처음 넘는 단계마다 보물')}
     ${tile('hub-recruit','등','등용','계보마다 조건을 채워 장수를 휘하로 · 연의에 데려간다',`등용 ${(meta.recruited??[]).length}/${RECRUITABLE.length}명`)}
@@ -134,7 +154,7 @@ export function showHub(host:RunHost){
   </div>
   <nav class="lobby-sub">${host.resumeSaved?'<button id="hub-resume" class="primary">전투 이어하기</button>':''}<button id="hub-research">연구</button><button id="hub-custom">신장수 · 신세력</button><button id="hub-slots">저장 칸</button><button id="hub-title">첫 화면</button></nav></div>`,false);
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
-  on('hub-scenario',host.showScenario);on('hub-chronicle',host.showChronicleNext);on('hub-training',host.showTraining);on('hub-challenge',()=>host.showExpeditions('challenge'));on('hub-run',()=>showQuests(host));
+  on('hub-scenario',host.showScenario);on('hub-chronicle',host.showChronicleNext);on('hub-zhuge',host.showZhuge);on('hub-training',host.showTraining);on('hub-challenge',()=>host.showExpeditions('challenge'));on('hub-run',()=>showQuests(host));
   on('hub-archive',host.showStoryArchive);on('hub-recruit',host.showRecruit);on('hub-collections',()=>showCollections(host,()=>showHub(host)));on('hub-custom',()=>showCustomEditor(host,()=>showHub(host)));
   on('hub-research',()=>showResearch({modal:host.modal,toast:host.toast,back:()=>showHub(host),codex:()=>codexOf(host)()}));
   on('hub-resume',()=>host.resumeSaved?.());on('hub-slots',()=>host.showSlots());on('hub-title',()=>showTitle(host));
