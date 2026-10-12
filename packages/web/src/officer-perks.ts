@@ -30,7 +30,8 @@ const LEVELS=[5,10,15,20,28],COSTS=[3,4,6,8,12],SCALE=[1,1.1,1.2,1.35,1.5];
 /** 장수가 주로 쓰는 병종(신장수·영입 명단·이야기 동료, 없으면 능력으로 어림). */
 const COMPANION_CLASS:Record<string,UnitClass>={조진:'cavalry',장합:'cavalry',곽회:'archer',사마랑:'fengshui',사마의:'strategist',사마부:'fengshui',사마방:'spearman'};
 /** 본편 NPC·이야기·가상 전장에 같은 병종으로 나오도록 고정한 장수(능력치로 정하면 다른 병종이 나온다). */
-const FIXED_CLASS:Record<string,UnitClass>={조상:'cavalry',허저:'infantry',조휴:'cavalry',사마사:'cavalry'};
+const FIXED_CLASS:Record<string,UnitClass>={조상:'cavalry',허저:'infantry',조휴:'cavalry',사마사:'cavalry',
+  장임:'archer',초선:'dancer',견씨:'maiden',장춘화:'maiden',이각:'cavalry',곽사:'cavalry',원술:'lord'};
 export function officerClass(name:string):UnitClass{
   const c=customList().find(o=>o.name===name);if(c)return c.unitClass;
   const r=OFFICER_RECRUITS.find(o=>o.name===name);if(r)return r.unitClass;

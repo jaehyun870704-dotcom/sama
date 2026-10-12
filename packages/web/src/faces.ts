@@ -19,7 +19,7 @@ const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;
 
 export {COURTESY,displayName} from './courtesy.ts';
 
-const WOMEN=new Set(['축융','우희']);
+const WOMEN=new Set(['축융','우희','초선','견씨','장춘화']);
 /** 이름난 장수(연의 장수록)의 초상 값: 이름·병종·성격으로 짓고, 전승의 모습이 있으면 덮는다. */
 export function specFor(name:string):PortraitSpec|undefined{
   const c=customList().find(o=>o.name===name);if(c)return portraitOf(c);
