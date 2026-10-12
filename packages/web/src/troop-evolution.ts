@@ -14,7 +14,7 @@ import {officerManifest,officerEntry,officerModelSheets,type OfficerEntry} from 
 import {NPC_ROSTER} from './npc-roster.ts';
 import {singleStageCorrectionRows} from './complete-troops.ts';
 import {LORD_NAMES} from './lords.ts';
-import {OFFICER_FACTION,OFFICER_FACTIONS} from './officer-factions.ts';
+import {officerFaction,OFFICER_FACTIONS} from './officer-factions.ts';
 import {paintedTroopArt} from './painted-troops.ts';
 import {spriteAtlas,type AtlasFit} from './sprite-atlas.ts';
 
@@ -73,7 +73,7 @@ function officerNote(name:string,c?:UnitClass){
 const namedManifest=()=>officerManifest.filter(e=>!!signatureSkill(e.name));
 function officerCards(){
   return OFFICER_FACTIONS.map(f=>{
-    const list=namedManifest().filter(e=>(OFFICER_FACTION[e.id]??'군웅')===f);if(!list.length)return '';
+    const list=namedManifest().filter(e=>officerFaction(e.name)===f);if(!list.length)return '';
     return `<section class="evo-line"><h3>${f} <small>${list.length}명</small></h3><div class="evo-grid">${list.map(e=>{const c=officerClass(e),b=officerSheet(e,c);return personCard(b?officerArt(e.name,b):classArt(c),'장수',e.name,c,officerNote(e.name,c),FAMED_OFFICERS.includes(e.name));}).join('')}</div></section>`;
   }).join('');
 }

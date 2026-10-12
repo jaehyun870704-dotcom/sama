@@ -4,7 +4,7 @@ import path from 'node:path';
 import {NPC_ROSTER} from '../src/npc-roster.ts';
 import {evolutionChart,evolutionSheet,npcList} from '../src/troop-evolution.ts';
 import {officerManifest} from '../src/officer-models.ts';
-import {OFFICER_FACTION} from '../src/officer-factions.ts';
+import {officerFaction,OFFICER_FACTIONS} from '../src/officer-factions.ts';
 
 /** 스테이지 데이터의 allyAi·ally 이름 있는 유닛을 모은다. */
 function fromStages(){
@@ -48,7 +48,7 @@ describe('NPC 목록', ()=>{
     expect(npc).toMatch(/<h4>곽회<\/h4>[\s\S]*?휘하 창병 부대/);
   });
   it('장수는 모두 위·촉·오·군웅 중 하나에 속한다', ()=>{
-    for(const e of officerManifest)expect(OFFICER_FACTION[e.id],e.id).toBeDefined();
+    for(const e of officerManifest)expect(OFFICER_FACTIONS,e.id).toContain(officerFaction(e.name));
   });
   it('진화표 그림은 모두 같은 상자에 맞춰 다시 그린다', ()=>{
     for(const g of ['all','officer','npc'] as const){
