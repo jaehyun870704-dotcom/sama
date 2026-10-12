@@ -26,6 +26,7 @@ export const officerLooks=[
  {id:'hu_zun',name:'호준',title:'위의 노련한 장수',slot:20},
  {id:'deng_ai',name:'등애',title:'사재 · 험로의 명장',slot:21},
  {id:'zhong_hui',name:'종회',title:'사계 · 젊은 책사',slot:22},
+ {id:'yu_ji',name:'우희',title:'패왕의 곁 · 해하의 노래',slot:23},
 ] as const;
 const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 export function officerLook(name:string){name=artKey(name);return officerLooks.find(p=>p.id===name||p.name===name);}
