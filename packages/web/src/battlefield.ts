@@ -490,7 +490,14 @@ export class Battlefield {
         actor.unit=unit;actor.piece.position.set((unit.pos.x+.5)*W,(unit.pos.y+.5)*H);actor.piece.zIndex=unit.pos.y;
         actor.sprite.texture=this.unitTexture(unit,this.facing.get(unit.id)??0);actor.sprite.alpha=1;actor.sprite.tint=unitTint(unit);
         const gate=gateGroups.get(unit.id),hidden=!!gate&&gate.lead!==unit.id;actor.sprite.visible=!hidden;const base=actor.piece.children.find(c=>c.label==='base');if(base)base.visible=!gate;
-        if(gate&&!hidden){const k=gate.size;actor.sprite.width=gate.wide?Math.min(48*k+20,200):84;actor.sprite.height=gate.wide?92:98;actor.sprite.position.set(gate.dx,gate.dy+22);}else if(structureKind(unit.id)==='gate'){actor.sprite.width=64;actor.sprite.height=75;actor.sprite.position.set(0,8);}
+        if(gate&&!hidden){
+          // 붙은 세 칸은 각각의 문짝처럼 보이지 않게, 실제 점유 사각형 전체를 덮는
+          // 하나의 연속된 관문으로 늘린다. 가로·세로 어느 방향으로 놓여도 성벽과
+          // 같은 축으로 이어지고, 대표 칸의 중앙에 문루가 온다.
+          actor.sprite.width=Math.min(64+(gate.spanX-1)*W,220);
+          actor.sprite.height=Math.min(75+(gate.spanY-1)*H,180);
+          actor.sprite.position.set(gate.dx,gate.dy+22);
+        }else if(structureKind(unit.id)==='gate'){actor.sprite.width=64;actor.sprite.height=75;actor.sprite.position.set(0,8);}
         for(const child of actor.piece.children.filter(c=>c.label==='hud'))child.destroy();actor.name?.destroy();actor.name=undefined;
         const bar=new Graphics();if(unit.id===selected||unit.id==='rescue_target'||unit.id==='convoy_trial')bar.ellipse(0,7,22,10).stroke({color:0xffe9aa,width:2});
         const goalKind=carriers.get(unit.id);if(goalKind)bar.ellipse(0,7,26,12).stroke({color:goalColor(goalKind),width:2.5,alpha:.95});
@@ -863,7 +870,7 @@ export class Battlefield {
 }
 
 /** 서로 붙은 성문 칸(같은 편·살아 있음)을 무리로 묶는다. 무리의 대표 칸(맨 아래·오른쪽)에서 무리 가운데까지의 거리와 합친 내구도를 돌려준다. */
-interface GateGroup {lead:string;size:number;wide:boolean;dx:number;dy:number;half:number;hp:number;maxHp:number}
+interface GateGroup {lead:string;size:number;spanX:number;spanY:number;dx:number;dy:number;half:number;hp:number;maxHp:number}
 function gateGroupsOf(state:BattleState):Map<string,GateGroup>{
   const gates=state.living().filter(u=>structureKind(u.id)==='gate'),out=new Map<string,GateGroup>(),seen=new Set<string>();
   for(const start of gates){
@@ -872,8 +879,7 @@ function gateGroupsOf(state:BattleState):Map<string,GateGroup>{
     if(group.length<2)continue;
     const lead=group.reduce((a,b)=>b.pos.y>a.pos.y||(b.pos.y===a.pos.y&&b.pos.x>a.pos.x)?b:a);
     const xs=group.map(g=>g.pos.x),ys=group.map(g=>g.pos.y),cx=(Math.min(...xs)+Math.max(...xs))/2,cy=(Math.min(...ys)+Math.max(...ys))/2;
-    const wide=Math.max(...xs)-Math.min(...xs)>=Math.max(...ys)-Math.min(...ys);
-    const info:GateGroup={lead:lead.id,size:group.length,wide,dx:(cx-lead.pos.x)*W,dy:(cy-lead.pos.y)*H,half:(Math.max(...ys)-cy)*H,hp:group.reduce((a,g)=>a+g.hp,0),maxHp:group.reduce((a,g)=>a+g.stats.maxHp,0)};
+    const info:GateGroup={lead:lead.id,size:group.length,spanX:Math.max(...xs)-Math.min(...xs)+1,spanY:Math.max(...ys)-Math.min(...ys)+1,dx:(cx-lead.pos.x)*W,dy:(cy-lead.pos.y)*H,half:(Math.max(...ys)-cy)*H,hp:group.reduce((a,g)=>a+g.hp,0),maxHp:group.reduce((a,g)=>a+g.stats.maxHp,0)};
     for(const g of group)out.set(g.id,info);
   }
   return out;
