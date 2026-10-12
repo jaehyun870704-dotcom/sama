@@ -44,7 +44,7 @@ const batch:ZhugeBatch={
     'Z1-15':{foeEdge:{normal:-15,extreme:0},tough:[{unit:'z_huang_yuan_foe',hpScale:2}],sealNames:['황원 사로잡기','부대 보존','반군 격파'],weather:'흐림 · 강안개',labels:[{region:'exit',text:'남안 협구'},{region:'linqiong',text:'임공성'}],
       failure:({state})=>state.find('z_liang')?.alive===false?undefined:'황원이 남안 협구를 빠져나갔습니다.'},
     'Z2-01':{foeEdge:{normal:5,extreme:40},sealNames:['옹개·주포 격퇴','고정 회유','신속한 평정'],weather:'무더위 · 장기',labels:[{region:'yong_camp',text:'옹개 진채'},{region:'gao_camp',text:'고정 진채'},{region:'zhu_camp',text:'주포 진채'}]},
-    'Z2-02':{foeEdge:{normal:-28,extreme:-24},sealNames:['맹획 사로잡기','신속한 승리','부대 보존'],weather:'무더위 · 밀림',labels:[{region:'meng_camp',text:'맹획 진채'},{region:'west_dong',text:'금환삼결'},{region:'mid_dong',text:'동도나'},{region:'east_dong',text:'아회남'}]},
+    'Z2-02':{foeEdge:{normal:-28,extreme:-24},tough:[{unit:'z_liang',hpScale:1.3}],sealNames:['맹획 사로잡기','신속한 승리','부대 보존'],weather:'무더위 · 밀림',labels:[{region:'meng_camp',text:'맹획 진채'},{region:'west_dong',text:'금환삼결'},{region:'mid_dong',text:'동도나'},{region:'east_dong',text:'아회남'}]},
   },
   levels:{'Z1-10':11,'Z1-11':12,'Z1-12':13,'Z1-13':14,'Z1-14':15,'Z1-15':16,'Z2-01':17,'Z2-02':17},
   npcs:[
