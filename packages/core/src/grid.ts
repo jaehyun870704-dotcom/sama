@@ -181,6 +181,8 @@ export class BattleMap {
     const dist = new Map<string, number>([[key(unit.pos), 0]]);
     // 소규모 그리드이므로 단순 정렬 큐로 충분 (유닛당 최대 수백 타일)
     const queue: Array<{ c: Coord; d: number }> = [{ c: unit.pos, d: 0 }];
+    // 적토마(돌격 이동): 적이 선 칸을 지나갈 수 있다(멈추지는 못한다).
+    const passEnemies = unit.traits.includes("gear:passEnemies");
 
     while (queue.length > 0) {
       queue.sort((a, b) => a.d - b.d);
@@ -190,7 +192,7 @@ export class BattleMap {
       for (const n of adjacent(c)) {
         if (!this.inBounds(n)) continue;
         const blocker = occupancy.get(key(n));
-        if (blocker && isHostile(unit.side, blocker.side)) continue;
+        if (blocker && isHostile(unit.side, blocker.side) && !passEnemies) continue;
 
         const cost = this.moveCost(unit.unitClass, n, ignoreRough);
         if (!Number.isFinite(cost)) continue;

@@ -24,6 +24,7 @@ export type LogEntry =
   | { t: "terrain"; region: string; terrain: TerrainKind }
   | { t: "telegraph"; id: string; cells: Coord[]; turns: number; label?: string; warning?: boolean }
   | { t: "strike"; id: string; cells: Coord[]; hits: Array<{ unit: string; damage: number }> }
+  | { t: "item"; unit: string; item: string; target: string; hp?: number; mp?: number; auto?: boolean }
   | { t: "outcome"; outcome: BattleOutcome };
 
 /** 턴 순서. 우군 AI는 적 페이즈 뒤에 별도로 움직인다. */
@@ -44,6 +45,8 @@ export class BattleState {
    * 한쪽만 고치는 실수가 반드시 난다.
    */
   readonly enemyLevelShift: number;
+  /** 부대 공용 보관함의 소모품(아군이 꺼내 쓴다: 소모품 id → 개수). */
+  inventory: Record<string, number> = {};
   /** 사용 가능한 책략 정의. Battle 생성 시 주입된다. */
   strategies: Map<string, StrategyDef> = new Map();
   /** 시전자 레벨로 진화한 책략 정의 */
@@ -54,7 +57,32 @@ export class BattleState {
     const p = unit.traitParams ?? {};
     const e = evolveStrategy(d, unit.level + (p.strategyMastery ?? 0));
     const thrift = Math.min(50, p.mpThrift ?? 0);
-    return thrift > 0 ? { ...e, mpCost: Math.max(1, Math.round(e.mpCost * (1 - thrift / 100))) } : e;
+    const cut = thrift > 0 ? { ...e, mpCost: Math.max(1, Math.round(e.mpCost * (1 - thrift / 100))) } : e;
+    // 백우선: 책략 MP 소모 절반(내림)
+    return p["gear:mpHalf"] ? { ...cut, mpCost: Math.max(1, Math.floor(cut.mpCost / 2)) } : cut;
+  }
+
+  /**
+   * 둔갑천서(책략 모방): 상하좌우로 붙은 부대(아군·적군)가 아는 책략. 사신 책략은 그 보옥을 지녀야 한다.
+   * 모방이 없으면 빈 목록.
+   */
+  mimicStrategies(unit: Unit): string[] {
+    if (!unit.traits.includes("gear:mimic")) return [];
+    const out = new Set<string>();
+    for (const u of this.units.values()) {
+      if (!u.alive || u === unit || Math.abs(u.pos.x - unit.pos.x) + Math.abs(u.pos.y - unit.pos.y) !== 1) continue;
+      for (const id of u.strategies) {
+        const jewel = JEWEL_GATE[id];
+        if (jewel && !unit.traits.includes(jewel)) continue;
+        if (!unit.strategies.includes(id) && this.strategies.has(id)) out.add(id);
+      }
+    }
+    return [...out];
+  }
+  /** 이 부대가 지금 쓸 수 있는 책략 id(아는 책략 + 모방). */
+  usableStrategies(unit: Unit): string[] {
+    const m = this.mimicStrategies(unit);
+    return m.length ? [...unit.strategies, ...m] : unit.strategies;
   }
 
   units: Map<string, Unit> = new Map();
@@ -206,6 +234,7 @@ export class BattleState {
       activeDialogue: this.activeDialogue,
       regionHolds: [...this.regionHolds.entries()],
       telegraphs: structuredClone(this.telegraphs),
+      inventory: { ...this.inventory },
     };
   }
 
@@ -228,6 +257,7 @@ export class BattleState {
     this.activeDialogue = snap.activeDialogue;
     this.regionHolds = new Map(snap.regionHolds.map(([k, v]) => [k, { ...v }]));
     this.telegraphs = structuredClone(snap.telegraphs ?? []);
+    this.inventory = { ...(snap.inventory ?? {}) };
   }
 
   /**
@@ -278,7 +308,10 @@ export interface BattleSnapshot {
   activeDialogue: string | null;
   regionHolds: Array<[string, { side: Side; since: number }]>;
   telegraphs?: Telegraph[];
+  inventory?: Record<string, number>;
 }
+/** 사신 책략 → 그것을 여는 보옥 특성(모방으로는 보옥 없이 쓸 수 없다). */
+const JEWEL_GATE: Readonly<Record<string, string>> = { jewelAzure: "gear:jewelAzure", jewelVermilion: "gear:jewelVermilion", jewelTortoise: "gear:jewelTortoise", jewelTiger: "gear:jewelTiger" };
 
 export interface Telegraph {
   id: string;

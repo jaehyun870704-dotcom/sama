@@ -143,6 +143,9 @@ export function evolveUnit(unit: Unit, to: UnitClass): UnitClass | undefined {
   // 조조전 규칙 부대는 새 병과의 등급·HP 상승으로 다시 계산한다(진화 한 번마다 HP·MP 상승치 2배를 더 받는다).
   unit.stats = unit.ccRules && unit.ability ? ccStatsFor(to, unit.level, unit.ability, unit.side, profileOf(to).movement, !!unit.ratioRules) : statsFor(to, unit.level);
   unit.range = profileOf(to).range;
+  // 장비가 더한 능력치는 새 병종의 능력치 위에 다시 얹는다.
+  for (const [k, v] of Object.entries(unit.gearBonus ?? {})) unit.stats[k as keyof UnitStats] += v ?? 0;
+  if (unit.traits.includes("gear:sling")) unit.range = [unit.range[0], Math.max(unit.range[1], 2)];
   unit.hp = Math.max(1, Math.round(unit.stats.maxHp * hpRatio));
   unit.mp = Math.round(unit.stats.maxMp * mpRatio);
   return from;

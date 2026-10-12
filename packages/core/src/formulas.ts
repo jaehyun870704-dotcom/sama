@@ -141,6 +141,8 @@ function physicalRaw(attacker: Unit, defender: Unit, map: BattleMap, ctx: Damage
 }
 /** 회심 확률(%): 조조전 규칙은 사기 비율에 특성 보정을 더한다. 이름난 장수는 무력·운에 따른 보너스가 더해진다(물리 공격만). */
 function criticalChanceOf(ctx: DamageContext): number {
+  if (ctx.noCritical) return 0;
+  if (ctx.sureCritical) return 100;
   const officer = ctx.kind === "physical" ? ctx.attacker.officerCrit ?? 0 : 0;
   // 회심을 막는 특성(사마사 「눈을 잃어도」)은 큰 음수를 더하므로 0 아래로 내려가지 않게 한다.
   return Math.max(0, ctx.attacker.ccRules ? Math.min(100, ccRatioChance(effMorale(ctx.attacker), effMorale(ctx.defender)) + ctx.criticalChance + officer) : Math.min(100, ctx.criticalChance + officer));
@@ -164,12 +166,15 @@ export function computePhysical(
   defender: Unit,
   map: BattleMap,
   rng: Rng,
-  opts: { isCounter?: boolean } = {},
+  opts: { isCounter?: boolean; double?: boolean; powerMul?: number } = {},
 ): DamageResult {
   const ctx = createDamageContext(attacker, defender, "physical");
+  if (opts.double) ctx.double = true;
+  if (opts.isCounter) ctx.counter = true;
   applyTraitHooks(ctx);
 
   if (ctx.immune) return miss(attacker, defender, true);
+  if (ctx.forceMiss) return miss(attacker, defender, false);
 
   const hit = ctx.alwaysHit || rng.chance(accuracy(ctx, map));
   if (!hit) return miss(attacker, defender, false);
@@ -195,6 +200,7 @@ export function computePhysical(
   let dmg = base * matchup * (attacker.ccRules ? 1 : terrain) * elevation * morale * variance * (1 - ctx.reduction) * tactic.mul;
   if (critical) dmg *= CRITICAL_MULTIPLIER;
   if (opts.isCounter) dmg *= counterMultiplier(attacker);
+  if (opts.powerMul !== undefined) dmg *= opts.powerMul;
 
   const damage = Math.max(MIN_DAMAGE, Math.round(dmg)) + Math.round(ctx.bonusDamage ?? 0);
   return {
@@ -221,6 +227,7 @@ export function computeStrategy(
   applyTraitHooks(ctx);
 
   if (ctx.immune) return miss(caster, target, true);
+  if (ctx.forceMiss) return miss(caster, target, false);
 
   const hit = ctx.alwaysHit || rng.chance(accuracy(ctx, map));
   if (!hit) return miss(caster, target, false);
@@ -348,7 +355,7 @@ function flatBreakdown(base: number): DamageBreakdown {
 export function estimatePhysical(attacker: Unit, defender: Unit, map: BattleMap): number {
   const ctx = createDamageContext(attacker, defender, "physical");
   applyTraitHooks(ctx);
-  if (ctx.immune) return 0;
+  if (ctx.immune || ctx.forceMiss) return 0;
 
   const r = physicalRaw(attacker, defender, map, ctx, false);
   const raw =
@@ -369,7 +376,7 @@ export function estimateStrategy(
 ): number {
   const ctx = strategyContext(caster, target, strategy);
   applyTraitHooks(ctx);
-  if (ctx.immune) return 0;
+  if (ctx.immune || ctx.forceMiss) return 0;
 
   const base = strategyBase(caster, target, strategy, ctx.attackMul);
   const raw = capHit(target, base * elementalMultiplier(strategy, map, target) * (1 - ctx.reduction));
@@ -388,8 +395,9 @@ export { combine };
 export interface AttackPreview { hit: number; damage: number; lethal: boolean; counter?: { hit: number; damage: number } }
 function hitPreview(attacker: Unit, defender: Unit, map: BattleMap, counter = false): { hit: number; damage: number } {
   const ctx = createDamageContext(attacker, defender, "physical");
+  if (counter) ctx.counter = true;
   applyTraitHooks(ctx);
-  if (ctx.immune) return { hit: 0, damage: 0 };
+  if (ctx.immune || ctx.forceMiss) return { hit: 0, damage: 0 };
   const r = physicalRaw(attacker, defender, map, ctx, counter);
   const dmg = r.base * r.matchup * (attacker.ccRules ? 1 : r.terrain) * r.elevation * r.morale * (1 - ctx.reduction) * r.tactic.mul;
   return { hit: ctx.alwaysHit ? 100 : Math.round(accuracy(ctx, map)), damage: Math.max(MIN_DAMAGE, Math.round(dmg)) };
