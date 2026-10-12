@@ -6,6 +6,8 @@
  * 처음 보는 장수는 그 장의 권장 레벨로 선다. 화면은 main.ts(zhuge 화면)가 맡는다.
  */
 import type {StageDef} from '../../core/src/index.ts';
+import {evolvedClass,tierOf,VARIANTS,signatureSet,SIGNATURE_UNLOCK_TIERS} from '../../core/src/index.ts';
+import {classNames} from './troops.ts';
 import {levelInfo,xpAtLevel,type Campaign,type Deployment} from './progression.ts';
 import {encounterLevels} from './campaign-rules.ts';
 import {ZHUGE_ROSTER,zhugeName} from './zhuge-data.ts';
@@ -35,4 +37,16 @@ export function growZhuge(c:Campaign,units:ReadonlyArray<{id:string;name:string;
     const before=r[u.name]!==undefined?Math.max(levelInfo(r[u.name]!).level,u.level):u.level,base=Math.max(r[u.name]??0,xpAtLevel(before));
     r[u.name]=base+Math.max(0,earned[u.id]??0)+bonus;const after=levelInfo(r[u.name]!).level;if(after>before)out.push(`${u.name} Lv.${before} → ${after}`);}
   return out;
+}
+/**
+ * 이긴 뒤 장수마다 달라진 것(사마의전 결과 화면과 같은 소식): 레벨 · 병종 진화(개화) · 새로 열린 고유특성.
+ * before: 성장 전의 이름별 경험치(growZhuge를 부르기 전에 떠 둔 것).
+ */
+export function zhugeMilestones(c:Pick<Campaign,'retinueXp'>,before:Readonly<Record<string,number>>,units:ReadonlyArray<{id:string;name:string;level:number}>){
+  return units.filter(u=>ZHUGE_ROSTER.some(o=>o.id===u.id)).map(u=>{
+    const base=ZHUGE_ROSTER.find(o=>o.id===u.id)!.unitClass,from=before[u.name]!==undefined?Math.max(levelInfo(before[u.name]!).level,u.level):u.level,to=levelInfo(c.retinueXp?.[u.name]??0).level;
+    const a=evolvedClass(base,from),b=evolvedClass(base,Math.max(from,to)),ta=tierOf(a),tb=tierOf(b);
+    const signatures=signatureSet(u.name).filter((_g,i)=>ta<SIGNATURE_UNLOCK_TIERS[i]!&&tb>=SIGNATURE_UNLOCK_TIERS[i]!).map(g=>g.name);
+    return {name:u.name,from,to:Math.max(from,to),...(a!==b?{evolution:{from:classNames[a]??a,to:classNames[b]??b,bloom:VARIANTS[b]?.bloom}}:{}),signatures};
+  }).filter(x=>x.to>x.from||x.evolution||x.signatures.length);
 }

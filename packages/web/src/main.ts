@@ -35,7 +35,7 @@ import {showHub,showQuests,showTitle,showCollections,showStoryPick,finishRunBatt
 import {showScenario,campOf,finishIfBattle,finishStoryBattle,noteDefeatReason,type ScenarioHost} from './scenario-ui.ts';
 import {scriptOf,loadScenario,saveScenario,trainCompanions,currentStep,joinRecruits} from './scenario.ts';
 import {isZhugeStage,zhugeName} from './zhuge-data.ts';
-import {zhugeDeployment,zhugeLevel,zhugeBase,growZhuge} from './zhuge.ts';
+import {zhugeDeployment,zhugeLevel,zhugeBase,growZhuge,zhugeMilestones} from './zhuge.ts';
 import {conditionsHtml,goalMarks,winText} from './battle-conditions.ts';
 import {optionalOfficers,soloStage,pickExtras,storySortieLimit,storyCostSheet,storyRetinueCap,unitCost,storyClassAt} from './sortie.ts';
 import {isoBackdrop,isoScene,loadIsoArt,loadPaintedScenes} from './story-iso.ts';
@@ -311,17 +311,17 @@ function finishZhuge(){
   const s=session.state,win=s.outcome==='victory',seals=session.seals,id=s.stage.id,chapter=session.chapter,difficulty=s.difficulty;
   const again=session.rewarded;session.rewarded=true;persist();
   sound.sfx(win?'victory':'defeat');
-  const news:string[]=[];
+  const news:string[]=[];let growth:ReturnType<typeof zhugeMilestones>=[];
   if(win){
     try{const p=progress(),k=id+':'+difficulty;p[k]=[...new Set([...(p[k]??[]),...seals])];localStorage.setItem(PROGRESS_KEY,JSON.stringify(p));}catch{/* optional persistence */}
     const m=loadMeta();recordStory(m,id);const sealGain=paySeals(m,progress(),[id]);let winGain=0;
     if(!again){winGain=difficulty==='extreme'?2:1;m.mandate+=winGain;m.earned+=winGain;}saveMeta(m);
     if(winGain+sealGain)news.push(mandateText(winGain,sealGain));
-    if(!again){news.push(...growZhuge(campaign,s.living('player'),session.xpEarned,40+zhugeBase(s.stage,'normal')*10));saveCampaign();}
+    if(!again){const before={...campaign.retinueXp};growZhuge(campaign,s.living('player'),session.xpEarned,40+zhugeBase(s.stage,'normal')*10);growth=zhugeMilestones(campaign,before,s.living('player'));saveCampaign();}
   }
   const k=zhugeOrder.indexOf(chapter),next=zhugeOrder[k+1],sc=scriptOf(id),xp={...session.xpEarned};
   const result=()=>{menuOpen=true;
-    modal(`<div class="result"><div class="result-character">${win?'승':'패'}</div><h2>${win?'살아서 다음 길로.':'아직, 끝이 아니다.'}</h2><p>${esc(s.stage.title)} · ${s.turn}턴</p>${news.length?`<div class="run-news">${news.map(x=>`<p>${esc(x)}</p>`).join('')}</div>`:''}<div class="seals">${session.sealNames.map((name,i)=>`<div class="${seals.includes(i+1)?'earned':''}"><b>◆</b><span>${esc(name)}</span></div>`).join('')}</div><p>${win?'전투 기록과 천명이 저장되었습니다.':esc(session.failure)}</p><div class="modal-actions"><button id="zg-retry">다시 도전</button><button id="zg-list">장 목록</button>${win?(next!==undefined?'<button id="zg-next" class="primary">다음 장 →</button>':'<button disabled>제갈량전 끝</button>'):''}</div></div>`,false);
+    modal(`<div class="result"><div class="result-character">${win?'승':'패'}</div><h2>${win?'살아서 다음 길로.':'아직, 끝이 아니다.'}</h2><p>${esc(s.stage.title)} · ${s.turn}턴</p>${news.length?`<div class="run-news">${news.map(x=>`<p>${esc(x)}</p>`).join('')}</div>`:''}${growth.map(x=>`<div class="growth-summary"><b>${esc(x.name)}${x.to>x.from?` · Lv.${x.from} → ${x.to}`:''}</b>${x.evolution?`<p class="evo-news">병종 진화: ${esc(x.evolution.from)} → <b>${esc(x.evolution.to)}</b>${x.evolution.bloom?` · 개화 「${esc(x.evolution.bloom.name)}」 ${esc(x.evolution.bloom.description)}`:''}</p>`:''}${x.signatures.length?`<p>고유특성 해금: ${x.signatures.map(n=>`「${esc(n)}」`).join(' · ')}</p>`:''}</div>`).join('')}<div class="seals">${session.sealNames.map((name,i)=>`<div class="${seals.includes(i+1)?'earned':''}"><b>◆</b><span>${esc(name)}</span></div>`).join('')}</div><p>${win?'전투 기록과 천명이 저장되었습니다.':esc(session.failure)}</p><div class="modal-actions"><button id="zg-retry">다시 도전</button><button id="zg-list">장 목록</button>${win?(next!==undefined?'<button id="zg-next" class="primary">다음 장 →</button>':'<button disabled>제갈량전 끝</button>'):''}</div></div>`,false);
     $('#zg-retry').onclick=()=>zhugeBriefing(chapter);$('#zg-list').onclick=showZhuge;
     document.getElementById('zg-next')?.addEventListener('click',()=>storyScene(next!));
   };

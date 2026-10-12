@@ -145,6 +145,28 @@ export const HISTORIC_DUELS:Array<{a:string;b:string;kind:DuelKind;note:string}>
   {a:'장송',b:'양수',kind:'debate',note:'맹덕신서를 한 번 읽고 외우다'},
   {a:'제갈근',b:'제갈량',kind:'debate',note:'형제가 서로를 설득하다'},
   {a:'등지',b:'손권',kind:'debate',note:'기름 솥 앞에서'},
+  // ── 제갈량전 각 장의 전장에서 마주치는 맞수(연의·정사)
+  {a:'조운',b:'하후돈',kind:'duel',note:'박망파 — 지는 척 물러나며 골짜기로 끌어들이다'},
+  {a:'조운',b:'하후란',kind:'duel',note:'박망파에서 고향 사람 하후란을 사로잡다'},
+  {a:'관우',b:'조조',kind:'debate',note:'화용도 — 옛 은혜를 두고 마주하다'},
+  {a:'조운',b:'형도영',kind:'duel',note:'영릉에서 거짓 항복한 형도영을 찌르다'},
+  {a:'조운',b:'진응',kind:'duel',note:'계양에서 비차를 던진 진응을 사로잡다'},
+  {a:'장비',b:'금선',kind:'duel',note:'무릉 성 앞의 맞싸움'},
+  {a:'장비',b:'엄안',kind:'duel',note:'파군에서 늙은 장수를 사로잡고 예로 대하다'},
+  {a:'황충',b:'하후상',kind:'duel',note:'정군산 앞에서 하후상을 사로잡다'},
+  {a:'황충',b:'한호',kind:'duel',note:'천탕산에서 한호를 베다'},
+  {a:'제갈량',b:'육손',kind:'debate',note:'어복포의 돌무더기 진'},
+  {a:'제갈량',b:'고정',kind:'debate',note:'남중 — 이간으로 고정을 돌려세우다'},
+  {a:'위연',b:'악환',kind:'duel',note:'남중에서 악환을 사로잡다'},
+  {a:'조운',b:'금환삼결',kind:'duel',note:'남만 제일동 주인을 베다'},
+  {a:'제갈량',b:'맹획',kind:'debate',note:'일곱 번 놓아 주고 일곱 번 사로잡다'},
+  {a:'조운',b:'한덕',kind:'duel',note:'봉명산에서 한덕과 네 아들을 꺾다'},
+  {a:'조운',b:'하후무',kind:'duel',note:'첫 북벌 — 늙은 조운이 위군을 헤집다'},
+  {a:'제갈량',b:'최량',kind:'debate',note:'남안 — 거짓 항복을 거꾸로 이용하다'},
+  {a:'제갈량',b:'강유',kind:'debate',note:'천수의 기린아를 얻다'},
+  {a:'제갈량',b:'학소',kind:'debate',note:'진창 — 옛 고향 사람을 보내 항복을 권하다'},
+  {a:'위연',b:'왕쌍',kind:'duel',note:'진창에서 물러나며 왕쌍을 베다'},
+  {a:'왕평',b:'잠위',kind:'duel',note:'목우유마를 끌던 잠위를 베다'},
 ];
 /** 연의의 맞수 짝(일기토·설전 어느 쪽이든). 붙으면 자동으로 대결이 열린다. */
 export function historicPair(a:string,b:string){return HISTORIC_DUELS.find(h=>(h.a===a&&h.b===b)||(h.a===b&&h.b===a));}

@@ -1,7 +1,8 @@
 import {describe,it,expect} from 'vitest';
 import {Session,chapters,zhugeOrder,campaignOrder} from '../src/session.ts';
 import {freshCampaign,equipSlot,treasures,treasureInfo} from '../src/progression.ts';
-import {zhugeDeployment,zhugeLevel,growZhuge} from '../src/zhuge.ts';
+import {zhugeDeployment,zhugeLevel,growZhuge,zhugeMilestones} from '../src/zhuge.ts';
+import {xpAtLevel} from '../src/progression.ts';
 import {ZHUGE_PACKS,scriptOf} from '../src/scenario.ts';
 import {checkPack} from '../src/scenario-types.ts';
 import {allUnitClasses} from '../../core/src/index.ts';
@@ -47,5 +48,14 @@ describe('제갈량전',()=>{
     growZhuge(c,[{id:'z_liang',name:'제갈량',level:3},{id:'enemy_x',name:'조인',level:5}],{z_liang:120},70);
     expect(c.retinueXp?.제갈량).toBeGreaterThan(0);
     expect(c.retinueXp?.조인).toBeUndefined();
+  });
+  it('결과 화면 소식: 레벨 · 병종 진화 · 새로 열린 고유특성(사마의전과 같은 틀)',()=>{
+    const c=freshCampaign();c.retinueXp={관우:xpAtLevel(15)};const before={...c.retinueXp};
+    c.retinueXp.관우=xpAtLevel(31);
+    const [g]=zhugeMilestones(c,before,[{id:'z_guan_yu',name:'관우',level:15}]);
+    expect(g!.from).toBe(15);expect(g!.to).toBe(31);
+    expect(g!.evolution).toBeDefined();
+    expect(g!.signatures.length).toBeGreaterThan(0);
+    expect(zhugeMilestones(c,{...c.retinueXp},[{id:'z_guan_yu',name:'관우',level:31}])).toEqual([]);
   });
 });
