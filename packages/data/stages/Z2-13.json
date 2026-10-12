@@ -1,0 +1,180 @@
+{
+  "id": "Z2-13",
+  "arc": "lower",
+  "order": 128,
+  "title": "무도와 음평",
+  "subtitle": "두 고을과 건위의 길",
+  "synopsis": "세 번째 북벌. 진식이 무도와 음평을 치러 나서고, 옹주의 곽회가 구원군을 이끌고 내려온다. 무도의 진지를 먼저 점령하고 음평의 진지까지 빼앗아라.",
+  "mapId": "z2-13-wudu-yinping",
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_jiang_wei",
+      "z_wang_ping",
+      "z_liao_hua",
+      "z_gao_xiang",
+      "z_zhang_yi"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "capture",
+      "target": "wudu",
+      "order": 1
+    },
+    {
+      "type": "capture",
+      "target": "yinping",
+      "order": 2
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "unit_survives",
+      "extreme": "unit_survives"
+    },
+    {
+      "slot": 3,
+      "normal": "turn_limit:10",
+      "extreme": "turn_limit:10"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 27,
+      "recommendedLevel": 27,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 29,
+      "recommendedLevel": 29,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z2-13/start",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z2_13_wd",
+              "name": "무도 수비병",
+              "template": "spearman",
+              "level": 27,
+              "region": "wudu_guard",
+              "behavior": "hold",
+              "count": 2
+            },
+            {
+              "id": "z2_13_wdb",
+              "name": "무도 궁병",
+              "template": "archer",
+              "level": 27,
+              "region": "wudu_guard",
+              "behavior": "hold",
+              "count": 2
+            },
+            {
+              "id": "z2_13_yp",
+              "name": "음평 수비병",
+              "template": "infantry",
+              "level": 27,
+              "region": "yinping_guard",
+              "behavior": "hold",
+              "count": 2
+            },
+            {
+              "id": "z2_13_ypb",
+              "name": "음평 궁병",
+              "template": "archer",
+              "level": 27,
+              "region": "yinping_guard",
+              "behavior": "hold",
+              "count": 2
+            }
+          ]
+        },
+        {
+          "type": "spawn_units",
+          "side": "allyAi",
+          "units": [
+            {
+              "id": "z_chen_shi",
+              "name": "진식",
+              "template": "infantry",
+              "level": 27,
+              "region": "chen_start",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-13/guo-huai",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 5
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_guo_huai",
+              "name": "곽회",
+              "template": "archer",
+              "level": 28,
+              "region": "relief",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_sun_li",
+              "name": "손례",
+              "template": "cavalry",
+              "level": 28,
+              "region": "relief",
+              "behavior": "advance"
+            },
+            {
+              "id": "z2_13_rinf",
+              "name": "옹주 보병",
+              "template": "infantry",
+              "level": 27,
+              "region": "relief",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

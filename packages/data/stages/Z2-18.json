@@ -1,0 +1,262 @@
+{
+  "id": "Z2-18",
+  "focusVictoryTargets": true,
+  "arc": "lower",
+  "order": 133,
+  "title": "상방곡의 불",
+  "subtitle": "호로 모양의 골짜기",
+  "synopsis": "오장원의 대치가 길어지자 제갈량은 상방곡에 군량을 쌓아 미끼로 삼는다. 사마의가 골짜기에 들어서면 불을 놓는다. 그러나 하늘은 늘 사람의 계산대로 움직이지 않는다. 사마의를 골짜기로 끌어들여 물러나게 하라.",
+  "mapId": "z2-18-shangfang-valley",
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_wei_yan",
+      "z_ma_dai",
+      "z_gao_xiang",
+      "z_jiang_wei",
+      "z_wang_ping"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "z_sima_yi"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "unit_retreat:z_sima_shi",
+      "extreme": "unit_retreat:z_sima_shi"
+    },
+    {
+      "slot": 3,
+      "normal": "turn_limit:6",
+      "extreme": "turn_limit:7"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 32,
+      "recommendedLevel": 32,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 34,
+      "recommendedLevel": 34,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z2-18/sima",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_sima_yi",
+              "name": "사마의",
+              "template": "strategist",
+              "level": 33,
+              "region": "wei_east",
+              "behavior": "race",
+              "goalRegion": "grain"
+            },
+            {
+              "id": "z_sima_shi",
+              "name": "사마사",
+              "template": "cavalry",
+              "level": 33,
+              "region": "wei_east",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_sima_zhao",
+              "name": "사마소",
+              "template": "crossbow",
+              "level": 33,
+              "region": "wei_east",
+              "behavior": "advance"
+            },
+            {
+              "id": "z2_18_cav",
+              "name": "위군 기병",
+              "template": "cavalry",
+              "level": 32,
+              "region": "wei_east",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-18/second",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z2_18_inf",
+              "name": "위군 보병",
+              "template": "infantry",
+              "level": 32,
+              "region": "wei_south",
+              "behavior": "advance",
+              "count": 2
+            },
+            {
+              "id": "z2_18_bow",
+              "name": "위군 궁병",
+              "template": "archer",
+              "level": 32,
+              "region": "wei_south",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-18/third",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 5
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z2_18_vcav",
+              "name": "위군 기병",
+              "template": "cavalry",
+              "level": 32,
+              "region": "wei_east",
+              "behavior": "advance",
+              "count": 2
+            },
+            {
+              "id": "z2_18_spr",
+              "name": "위군 창병",
+              "template": "spearman",
+              "level": 32,
+              "region": "wei_east",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-18/fire",
+      "trigger": {
+        "type": "unit_reaches",
+        "unit": "z_sima_yi",
+        "region": "valley"
+      },
+      "actions": [
+        {
+          "type": "apply_effect",
+          "targets": [
+            "z_sima_yi"
+          ],
+          "effect": "burn",
+          "duration": 2,
+          "hpRatioDamage": 0.45
+        },
+        {
+          "type": "apply_effect",
+          "targets": [
+            "z_sima_yi"
+          ],
+          "effect": "immobile",
+          "duration": 2
+        },
+        {
+          "type": "apply_effect",
+          "targets": [
+            "z_sima_shi",
+            "z_sima_zhao"
+          ],
+          "effect": "dispirit",
+          "duration": 2
+        },
+        {
+          "type": "terrain_change",
+          "region": "valley",
+          "hazard": "fire",
+          "duration": 1
+        },
+        {
+          "type": "set_phase",
+          "phase": "상방곡에 불길"
+        }
+      ]
+    },
+    {
+      "id": "Z2-18/rain",
+      "phase": "상방곡에 불길",
+      "trigger": {
+        "type": "turn_start",
+        "side": "player"
+      },
+      "actions": [
+        {
+          "type": "terrain_change",
+          "region": "valley",
+          "hazard": "none"
+        },
+        {
+          "type": "remove_effect",
+          "side": "enemy",
+          "effect": "burn"
+        },
+        {
+          "type": "apply_effect",
+          "side": "enemy",
+          "effect": "guard",
+          "duration": 1
+        },
+        {
+          "type": "set_phase",
+          "phase": "큰비 · 불이 꺼졌다"
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

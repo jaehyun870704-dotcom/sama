@@ -1,0 +1,266 @@
+{
+  "id": "Z2-11",
+  "arc": "lower",
+  "order": 126,
+  "title": "가정 이후",
+  "subtitle": "서성에서 양평관으로",
+  "synopsis": "가정이 무너졌다. 사마의의 대군이 몰려오는데 서성에는 문관과 늙은 군사뿐이다. 성문을 열고 거문고를 타 적을 머뭇거리게 한 사이, 총대장을 양평관 길까지 물려라.",
+  "mapId": "z2-11-xicheng-retreat",
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_zhao_yun",
+      "z_guan_xing",
+      "z_zhang_bao",
+      "z_zhang_yi",
+      "z_deng_zhi"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "reach",
+      "unit": "z_liang",
+      "target": "objective",
+      "order": 1
+    },
+    {
+      "type": "reach",
+      "unit": "z_zhao_yun",
+      "target": "objective",
+      "order": 2
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "enemy_retreat_count:7",
+      "extreme": "enemy_retreat_count:7"
+    },
+    {
+      "slot": 3,
+      "normal": "player_losses_lt:3",
+      "extreme": "player_losses_lt:2"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 26,
+      "recommendedLevel": 26,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 28,
+      "recommendedLevel": 28,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z2-11/blockers",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z2_11_spear",
+              "name": "위군 척후",
+              "template": "spearman",
+              "level": 26,
+              "region": "block_mid",
+              "behavior": "advance"
+            },
+            {
+              "id": "z2_11_bow",
+              "name": "위군 궁병",
+              "template": "archer",
+              "level": 26,
+              "region": "block_mid",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-11/sima",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 2
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_sima_yi",
+              "name": "사마의",
+              "template": "strategist",
+              "level": 27,
+              "region": "wei_north",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_sima_zhao",
+              "name": "사마소",
+              "template": "crossbow",
+              "level": 27,
+              "region": "wei_north",
+              "behavior": "advance"
+            },
+            {
+              "id": "z2_11_spr",
+              "name": "위군 창병",
+              "template": "spearman",
+              "level": 26,
+              "region": "wei_north",
+              "behavior": "advance",
+              "count": 2
+            },
+            {
+              "id": "z2_11_inf",
+              "name": "위군 보병",
+              "template": "infantry",
+              "level": 26,
+              "region": "wei_north",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        },
+        {
+          "type": "apply_effect",
+          "targets": [
+            "z_sima_yi",
+            "z_sima_zhao",
+            "z2_11_spr_0",
+            "z2_11_spr_1",
+            "z2_11_inf_0",
+            "z2_11_inf_1"
+          ],
+          "effect": "immobile",
+          "duration": 2
+        },
+        {
+          "type": "set_phase",
+          "phase": "빈 성 · 사마의가 머뭇거린다"
+        }
+      ]
+    },
+    {
+      "id": "Z2-11/zhang-he",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 4
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_zhang_he",
+              "name": "장합",
+              "template": "cavalry",
+              "level": 27,
+              "region": "wei_east",
+              "behavior": "advance"
+            },
+            {
+              "id": "z2_11_vcav",
+              "name": "추격 기병",
+              "template": "cavalry",
+              "level": 26,
+              "region": "wei_east",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-11/guo-huai",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 4
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_guo_huai",
+              "name": "곽회",
+              "template": "archer",
+              "level": 27,
+              "region": "guo_west",
+              "behavior": "advance"
+            },
+            {
+              "id": "z2_11_foot",
+              "name": "위군 보병",
+              "template": "infantry",
+              "level": 26,
+              "region": "guo_west",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-11/drums",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 6
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "apply_effect",
+          "side": "enemy",
+          "effect": "dispirit",
+          "duration": 2
+        },
+        {
+          "type": "apply_effect",
+          "side": "enemy",
+          "effect": "sluggish",
+          "duration": 2
+        },
+        {
+          "type": "set_phase",
+          "phase": "산골짜기의 북소리 · 추격이 주춤한다"
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

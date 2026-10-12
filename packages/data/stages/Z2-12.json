@@ -1,0 +1,205 @@
+{
+  "id": "Z2-12",
+  "focusVictoryTargets": true,
+  "arc": "lower",
+  "order": 127,
+  "title": "진창의 학소",
+  "subtitle": "눈 덮인 진창성",
+  "synopsis": "두 번째 북벌의 길목, 진창성은 군사 천 명뿐이다. 그러나 성을 지키는 학소는 운제를 불화살로 태우고 땅굴을 해자로 막는다. 왕쌍의 구원군이 닿기 전에 학소를 성에서 물러나게 하라.",
+  "mapId": "z2-12-chencang-walls",
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_wei_yan",
+      "z_jiang_wei",
+      "z_wang_ping",
+      "z_ma_dai",
+      "z_guan_xing"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "z_hao_zhao"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "unit_retreat:z_wang_shuang",
+      "extreme": "unit_retreat:z_wang_shuang"
+    },
+    {
+      "slot": 3,
+      "normal": "turn_limit:6",
+      "extreme": "turn_limit:6"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 26,
+      "recommendedLevel": 26,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 28,
+      "recommendedLevel": 28,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z2-12/garrison",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_hao_zhao",
+              "name": "학소",
+              "template": "archer",
+              "level": 27,
+              "region": "keep",
+              "behavior": "hold"
+            },
+            {
+              "id": "z2_12_bow",
+              "name": "진창 궁병",
+              "template": "archer",
+              "level": 26,
+              "region": "wall_archers",
+              "behavior": "hold",
+              "count": 4
+            },
+            {
+              "id": "z2_12_guard",
+              "name": "성문 창병",
+              "template": "spearman",
+              "level": 26,
+              "region": "gate_guard",
+              "behavior": "hold",
+              "count": 4
+            },
+            {
+              "id": "z2_12_inner",
+              "name": "진창 보병",
+              "template": "infantry",
+              "level": 26,
+              "region": "inner",
+              "behavior": "hold",
+              "count": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-12/fire-1",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 2,
+        "side": "player"
+      },
+      "actions": [
+        {
+          "type": "telegraph_aoe",
+          "region": "fire_front",
+          "duration": 1,
+          "magnitude": 22,
+          "effect": "burn",
+          "label": "불화살"
+        }
+      ]
+    },
+    {
+      "id": "Z2-12/fire-2",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 5,
+        "side": "player"
+      },
+      "actions": [
+        {
+          "type": "telegraph_aoe",
+          "region": "fire_front",
+          "duration": 1,
+          "magnitude": 22,
+          "effect": "burn",
+          "label": "불화살"
+        }
+      ]
+    },
+    {
+      "id": "Z2-12/fire-3",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 8,
+        "side": "player"
+      },
+      "actions": [
+        {
+          "type": "telegraph_aoe",
+          "region": "fire_front",
+          "duration": 1,
+          "magnitude": 22,
+          "effect": "burn",
+          "label": "불화살"
+        }
+      ]
+    },
+    {
+      "id": "Z2-12/wang-shuang",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 4
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_wang_shuang",
+              "name": "왕쌍",
+              "template": "cavalry",
+              "level": 27,
+              "region": "relief",
+              "behavior": "advance"
+            },
+            {
+              "id": "z2_12_rcav",
+              "name": "구원 기병",
+              "template": "cavalry",
+              "level": 26,
+              "region": "relief",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

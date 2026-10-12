@@ -1,0 +1,237 @@
+{
+  "id": "Z2-14",
+  "arc": "lower",
+  "order": 129,
+  "title": "기산의 공방",
+  "subtitle": "기산 본영과 노성의 들",
+  "synopsis": "네 번째 북벌. 기산을 에워싼 촉군에게 사마의가 장합·대릉을 앞세워 세 방향에서 몰려온다. 본영을 내주지 말고 몰려오는 위군을 모두 물리쳐라.",
+  "mapId": "z2-14-qishan-camp",
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_jiang_wei",
+      "z_wei_yan",
+      "z_wang_ping",
+      "z_ma_dai",
+      "z_guan_xing",
+      "z_wu_yi"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "annihilate"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "turn_limit:9",
+      "extreme": "turn_limit:9"
+    },
+    {
+      "slot": 3,
+      "normal": "unit_survives",
+      "extreme": "unit_survives"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 28,
+      "recommendedLevel": 28,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 30,
+      "recommendedLevel": 30,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z2-14/north",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "allyAi",
+          "units": [
+            {
+              "id": "z2_14_guard",
+              "name": "기산 수비대",
+              "template": "spearman",
+              "level": 28,
+              "region": "camp_core",
+              "behavior": "hold"
+            }
+          ]
+        },
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_dai_ling",
+              "name": "대릉",
+              "template": "infantry",
+              "level": 29,
+              "region": "wei_north",
+              "behavior": "advance"
+            },
+            {
+              "id": "z2_14_n_spear",
+              "name": "위군 창병",
+              "template": "spearman",
+              "level": 28,
+              "region": "wei_north",
+              "behavior": "advance",
+              "count": 2
+            },
+            {
+              "id": "z2_14_n_bow",
+              "name": "위군 궁병",
+              "template": "archer",
+              "level": 28,
+              "region": "wei_north",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-14/east",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_zhang_he",
+              "name": "장합",
+              "template": "cavalry",
+              "level": 29,
+              "region": "wei_east",
+              "behavior": "advance"
+            },
+            {
+              "id": "z2_14_e_cav",
+              "name": "위군 기병",
+              "template": "cavalry",
+              "level": 28,
+              "region": "wei_east",
+              "behavior": "advance",
+              "count": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-14/ne",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 4
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_sun_li",
+              "name": "손례",
+              "template": "cavalry",
+              "level": 29,
+              "region": "wei_ne",
+              "behavior": "advance"
+            },
+            {
+              "id": "z2_14_ne_bow",
+              "name": "위군 궁병",
+              "template": "archer",
+              "level": 28,
+              "region": "wei_ne",
+              "behavior": "advance",
+              "count": 2
+            },
+            {
+              "id": "z2_14_ne_spear",
+              "name": "위군 창병",
+              "template": "spearman",
+              "level": 28,
+              "region": "wei_ne",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-14/west",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 5
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_sima_yi",
+              "name": "사마의",
+              "template": "strategist",
+              "level": 29,
+              "region": "wei_west",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_guo_huai",
+              "name": "곽회",
+              "template": "archer",
+              "level": 29,
+              "region": "wei_west",
+              "behavior": "advance"
+            },
+            {
+              "id": "z2_14_w_inf",
+              "name": "위군 보병",
+              "template": "infantry",
+              "level": 28,
+              "region": "wei_west",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

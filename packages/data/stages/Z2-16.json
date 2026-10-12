@@ -1,0 +1,226 @@
+{
+  "id": "Z2-16",
+  "focusVictoryTargets": true,
+  "arc": "lower",
+  "order": 131,
+  "title": "목문도",
+  "subtitle": "목문의 좁은 길",
+  "synopsis": "군량이 떨어져 네 번째 북벌의 군사를 거둔다. 사마의의 만류에도 장합이 날랜 기병을 이끌고 뒤를 쫓는다. 장합을 목문의 좁은 골짜기로 끌어들여, 언덕 위의 쇠뇌로 물러나게 하라.",
+  "mapId": "z2-16-mumen-gorge",
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_wei_yan",
+      "z_guan_xing",
+      "z_wang_ping",
+      "z_ma_dai",
+      "z_yang_yi"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "z_zhang_he"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "player_losses_lt:1",
+      "extreme": "player_losses_lt:1"
+    },
+    {
+      "slot": 3,
+      "normal": "unit_survives",
+      "extreme": "unit_survives"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 30,
+      "recommendedLevel": 30,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 32,
+      "recommendedLevel": 32,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z2-16/vanguard",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z2_16_cav",
+              "name": "추격 기병",
+              "template": "cavalry",
+              "level": 30,
+              "region": "wei_north",
+              "behavior": "advance",
+              "count": 4
+            },
+            {
+              "id": "z2_16_bow",
+              "name": "추격 궁기병",
+              "template": "horseArcher",
+              "level": 30,
+              "region": "wei_north",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-16/zhang-he",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 4
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_zhang_he",
+              "name": "장합",
+              "template": "cavalry",
+              "level": 31,
+              "region": "wei_north",
+              "behavior": "advance"
+            },
+            {
+              "id": "z2_16_guard",
+              "name": "장합 친위기병",
+              "template": "cavalry",
+              "level": 30,
+              "region": "wei_north",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-16/ambush",
+      "trigger": {
+        "type": "unit_reaches",
+        "unit": "z_zhang_he",
+        "region": "gorge"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "allyAi",
+          "units": [
+            {
+              "id": "z2_16_xbow_w",
+              "name": "목문 쇠뇌수",
+              "template": "crossbow",
+              "level": 30,
+              "region": "ridge_w",
+              "behavior": "hold",
+              "count": 3
+            },
+            {
+              "id": "z2_16_xbow_e",
+              "name": "목문 쇠뇌수",
+              "template": "crossbow",
+              "level": 30,
+              "region": "ridge_e",
+              "behavior": "hold",
+              "count": 3
+            }
+          ]
+        },
+        {
+          "type": "apply_effect",
+          "targets": [
+            "z_zhang_he"
+          ],
+          "effect": "immobile",
+          "duration": 2,
+          "hpRatioDamage": 0.6
+        },
+        {
+          "type": "apply_effect",
+          "targets": [
+            "z_zhang_he"
+          ],
+          "effect": "breach",
+          "duration": 3
+        },
+        {
+          "type": "terrain_change",
+          "region": "gorge_mouth",
+          "hazard": "fire",
+          "duration": 3
+        }
+      ]
+    },
+    {
+      "id": "Z2-16/second",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 5
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z2_16_inf",
+              "name": "위군 보병",
+              "template": "infantry",
+              "level": 30,
+              "region": "wei_north",
+              "behavior": "advance",
+              "count": 2
+            },
+            {
+              "id": "z2_16_spr",
+              "name": "위군 창병",
+              "template": "spearman",
+              "level": 30,
+              "region": "wei_north",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

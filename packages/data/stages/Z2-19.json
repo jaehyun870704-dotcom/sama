@@ -1,0 +1,218 @@
+{
+  "id": "Z2-19",
+  "focusVictoryTargets": true,
+  "arc": "lower",
+  "order": 134,
+  "title": "오장원의 가을바람",
+  "subtitle": "큰 별이 진 다음 날",
+  "synopsis": "오장원에 큰 별이 떨어졌다. 승상의 죽음을 숨긴 채 촉군이 물러나자 사마의가 기다렸다는 듯 뒤를 쫓는다. 총대장은 이제 강유다. 승상이 남긴 마지막 계책으로 사마의를 돌려세워라.",
+  "mapId": "z2-19-wuzhang-autumn",
+  "deployment": {
+    "forced": [
+      "z_jiang_wei",
+      "z_yang_yi",
+      "z_fei_yi",
+      "z_wang_ping",
+      "z_ma_dai",
+      "z_liao_hua",
+      "z_zhang_yi"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "z_sima_yi"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_jiang_wei"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "turn_limit:6",
+      "extreme": "turn_limit:6"
+    },
+    {
+      "slot": 3,
+      "normal": "unit_survives",
+      "extreme": "unit_survives"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 33,
+      "recommendedLevel": 33,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 35,
+      "recommendedLevel": 35,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z2-19/pursuit",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_sima_yi",
+              "name": "사마의",
+              "template": "strategist",
+              "level": 34,
+              "region": "wei_east",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_sima_shi",
+              "name": "사마사",
+              "template": "cavalry",
+              "level": 34,
+              "region": "wei_east",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_sima_zhao",
+              "name": "사마소",
+              "template": "crossbow",
+              "level": 34,
+              "region": "wei_east",
+              "behavior": "advance"
+            },
+            {
+              "id": "z2_19_cav",
+              "name": "위군 기병",
+              "template": "cavalry",
+              "level": 33,
+              "region": "wei_east",
+              "behavior": "advance",
+              "count": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-19/flank",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 2
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_guo_huai",
+              "name": "곽회",
+              "template": "archer",
+              "level": 34,
+              "region": "wei_ne",
+              "behavior": "advance"
+            },
+            {
+              "id": "z2_19_ne",
+              "name": "위군 보병",
+              "template": "infantry",
+              "level": 33,
+              "region": "wei_ne",
+              "behavior": "advance",
+              "count": 2
+            },
+            {
+              "id": "z_sun_li",
+              "name": "손례",
+              "template": "cavalry",
+              "level": 34,
+              "region": "wei_se",
+              "behavior": "advance"
+            },
+            {
+              "id": "z2_19_se",
+              "name": "위군 창병",
+              "template": "spearman",
+              "level": 33,
+              "region": "wei_se",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-19/statue",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3,
+        "side": "player"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "allyAi",
+          "units": [
+            {
+              "id": "wooden_zhuge",
+              "name": "제갈량의 목상",
+              "template": "strategist",
+              "level": 33,
+              "region": "statue",
+              "behavior": "passive"
+            }
+          ]
+        },
+        {
+          "type": "apply_effect",
+          "targets": [
+            "z_sima_yi"
+          ],
+          "effect": "confusion",
+          "duration": 2,
+          "hpRatioDamage": 0.3
+        },
+        {
+          "type": "apply_effect",
+          "side": "enemy",
+          "effect": "dispirit",
+          "duration": 3
+        },
+        {
+          "type": "apply_effect",
+          "side": "enemy",
+          "effect": "sluggish",
+          "duration": 2
+        },
+        {
+          "type": "set_phase",
+          "phase": "승상의 깃발 · 사마의가 놀라 말머리를 돌린다"
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

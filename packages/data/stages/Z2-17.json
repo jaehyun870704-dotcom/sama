@@ -1,0 +1,234 @@
+{
+  "id": "Z2-17",
+  "arc": "lower",
+  "order": 132,
+  "title": "위수의 다리",
+  "subtitle": "위수와 북원",
+  "synopsis": "다섯 번째 북벌. 촉군은 위수 남쪽 오장원에 진을 쳤다. 북원을 차지하면 농서로 가는 길이 끊긴다. 남쪽 기슭에 다리 터를 잡아 부교를 놓고, 강유가 북원에 오르게 하라. 곽회가 먼저 와서 기다린다.",
+  "mapId": "z2-17-weishui-bridge",
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_jiang_wei",
+      "z_wei_yan",
+      "z_ma_dai",
+      "z_wang_ping",
+      "z_gao_xiang",
+      "z_wu_ban"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "capture",
+      "target": "bridge_site",
+      "order": 1
+    },
+    {
+      "type": "reach",
+      "unit": "z_jiang_wei",
+      "target": "beiyuan",
+      "order": 2
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "unit_retreat:z_qin_lang",
+      "extreme": "unit_retreat:z_qin_lang"
+    },
+    {
+      "slot": 3,
+      "normal": "turn_limit:5",
+      "extreme": "turn_limit:5"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 31,
+      "recommendedLevel": 31,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 33,
+      "recommendedLevel": 33,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z2-17/start",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_guo_huai",
+              "name": "곽회",
+              "template": "archer",
+              "level": 32,
+              "region": "north_camp",
+              "behavior": "hold"
+            },
+            {
+              "id": "z2_17_camp",
+              "name": "북원 수비병",
+              "template": "spearman",
+              "level": 31,
+              "region": "north_camp",
+              "behavior": "hold",
+              "count": 3
+            },
+            {
+              "id": "z_sun_li",
+              "name": "손례",
+              "template": "cavalry",
+              "level": 32,
+              "region": "north_bank",
+              "behavior": "hold"
+            },
+            {
+              "id": "z2_17_bank",
+              "name": "강가 궁병",
+              "template": "archer",
+              "level": 31,
+              "region": "north_bank",
+              "behavior": "hold",
+              "count": 2
+            },
+            {
+              "id": "z2_17_bank_s",
+              "name": "강가 창병",
+              "template": "spearman",
+              "level": 31,
+              "region": "north_bank",
+              "behavior": "hold"
+            },
+            {
+              "id": "z2_17_post",
+              "name": "다리목 수비병",
+              "template": "spearman",
+              "level": 31,
+              "region": "bridge_post",
+              "behavior": "hold",
+              "count": 2
+            },
+            {
+              "id": "z2_17_postb",
+              "name": "다리목 궁병",
+              "template": "archer",
+              "level": 31,
+              "region": "bridge_post",
+              "behavior": "hold"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-17/qin-lang",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 2
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_qin_lang",
+              "name": "진랑",
+              "template": "cavalry",
+              "level": 32,
+              "region": "ford_east",
+              "behavior": "advance"
+            },
+            {
+              "id": "z2_17_qcav",
+              "name": "진랑 기병",
+              "template": "cavalry",
+              "level": 31,
+              "region": "ford_east",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-17/west",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 5
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z2_17_w",
+              "name": "위군 보병",
+              "template": "infantry",
+              "level": 31,
+              "region": "wei_west",
+              "behavior": "advance",
+              "count": 2
+            },
+            {
+              "id": "z2_17_wb",
+              "name": "위군 궁병",
+              "template": "archer",
+              "level": 31,
+              "region": "wei_west",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-17/bridge",
+      "trigger": {
+        "type": "region_captured",
+        "region": "bridge_site"
+      },
+      "actions": [
+        {
+          "type": "terrain_change",
+          "region": "bridge_span",
+          "terrain": "bridge"
+        },
+        {
+          "type": "set_phase",
+          "phase": "부교를 건너 북원으로"
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

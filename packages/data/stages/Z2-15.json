@@ -1,0 +1,231 @@
+{
+  "id": "Z2-15",
+  "arc": "lower",
+  "order": 130,
+  "title": "목우유마",
+  "subtitle": "사곡의 군량길",
+  "synopsis": "제갈량이 만든 나무 소와 나무 말이 잔도를 오간다. 사마의는 그 몇 마리를 빼앗아 위군의 군량을 싣게 했다. 위군 군량고의 목우와 유마를 되찾아, 군량을 실은 채 잔도 어귀까지 데려가라.",
+  "mapId": "z2-15-wooden-ox",
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_wang_ping",
+      "z_jiang_wei",
+      "z_wei_yan",
+      "z_ma_dai",
+      "z_zhang_yi"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "reach",
+      "unit": "z2_15_ox",
+      "target": "objective",
+      "order": 1
+    },
+    {
+      "type": "reach",
+      "unit": "z2_15_horse",
+      "target": "objective",
+      "order": 2
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    },
+    {
+      "type": "retreat",
+      "unit": "z2_15_ox"
+    },
+    {
+      "type": "retreat",
+      "unit": "z2_15_horse"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "unit_retreat:z_cen_wei",
+      "extreme": "unit_retreat:z_cen_wei"
+    },
+    {
+      "slot": 3,
+      "normal": "player_losses_lt:1",
+      "extreme": "player_losses_lt:1"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 29,
+      "recommendedLevel": 29,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 31,
+      "recommendedLevel": 31,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z2-15/depot",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_zhang_hu",
+              "name": "장호",
+              "template": "cavalry",
+              "level": 30,
+              "region": "depot_guard",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_yue_chen",
+              "name": "악침",
+              "template": "spearman",
+              "level": 30,
+              "region": "depot_guard",
+              "behavior": "advance"
+            },
+            {
+              "id": "z2_15_dg",
+              "name": "군량고 수비병",
+              "template": "infantry",
+              "level": 29,
+              "region": "depot_guard",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        },
+        {
+          "type": "spawn_units",
+          "side": "allyAi",
+          "units": [
+            {
+              "id": "z2_15_ox",
+              "name": "목우 수송대",
+              "template": "transport",
+              "level": 29,
+              "at": {
+                "x": 18,
+                "y": 3
+              },
+              "behavior": "escortee",
+              "goalRegion": "objective"
+            },
+            {
+              "id": "z2_15_horse",
+              "name": "유마 수송대",
+              "template": "transport",
+              "level": 29,
+              "at": {
+                "x": 19,
+                "y": 3
+              },
+              "behavior": "escortee",
+              "goalRegion": "objective"
+            }
+          ]
+        },
+        {
+          "type": "apply_effect",
+          "targets": [
+            "z_zhang_hu",
+            "z_yue_chen",
+            "z2_15_dg_0",
+            "z2_15_dg_1"
+          ],
+          "effect": "immobile",
+          "duration": 2
+        }
+      ]
+    },
+    {
+      "id": "Z2-15/guo-huai",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_guo_huai",
+              "name": "곽회",
+              "template": "archer",
+              "level": 30,
+              "region": "wei_north",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_cen_wei",
+              "name": "잠위",
+              "template": "cavalry",
+              "level": 30,
+              "region": "wei_north",
+              "behavior": "advance"
+            },
+            {
+              "id": "z2_15_n",
+              "name": "위군 보병",
+              "template": "infantry",
+              "level": 29,
+              "region": "wei_north",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-15/east",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 5
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z2_15_e",
+              "name": "추격 기병",
+              "template": "cavalry",
+              "level": 29,
+              "region": "wei_east",
+              "behavior": "advance",
+              "count": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}
