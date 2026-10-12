@@ -1,0 +1,202 @@
+{
+  "id": "Z2-02",
+  "arc": "lower",
+  "order": 117,
+  "title": "놓아 준 맹획",
+  "subtitle": "남만의 세 동",
+  "synopsis": "남만왕 맹획이 세 동주를 앞세워 촉군을 막는다. 제갈량은 이기는 것보다 마음을 얻는 것이 먼저라 한다. 세 동주를 치고 맹획을 진채 밖으로 끌어내 사로잡아라.",
+  "mapId": "z2-02-mansong",
+  "focusVictoryTargets": true,
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_zhao_yun",
+      "z_wei_yan",
+      "z_wang_ping",
+      "z_ma_dai"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "z_meng_huo_foe"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "turn_limit:7",
+      "extreme": "turn_limit:7"
+    },
+    {
+      "slot": 3,
+      "normal": "player_losses_lt:1",
+      "extreme": "player_losses_lt:1"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 17,
+      "recommendedLevel": 17,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 19,
+      "recommendedLevel": 19,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z2-02/dong",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_jinhuan_foe",
+              "name": "금환삼결",
+              "template": "nanmanFoot",
+              "level": 18,
+              "region": "west_dong",
+              "behavior": "hold"
+            },
+            {
+              "id": "z202_w_a",
+              "name": "남만 보병",
+              "template": "nanmanFoot",
+              "level": 17,
+              "region": "west_dong",
+              "behavior": "hold"
+            },
+            {
+              "id": "z202_w_b",
+              "name": "남만 보병",
+              "template": "nanmanFoot",
+              "level": 17,
+              "region": "west_dong",
+              "behavior": "hold"
+            },
+            {
+              "id": "z_dongtuna_foe",
+              "name": "동도나",
+              "template": "nanmanFoot",
+              "level": 18,
+              "region": "mid_dong",
+              "behavior": "hold"
+            },
+            {
+              "id": "z202_m_a",
+              "name": "남만 보병",
+              "template": "nanmanFoot",
+              "level": 17,
+              "region": "mid_dong",
+              "behavior": "hold"
+            },
+            {
+              "id": "z202_m_b",
+              "name": "남만 기병",
+              "template": "nanmanRider",
+              "level": 17,
+              "region": "mid_dong",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_ahuinan_foe",
+              "name": "아회남",
+              "template": "nanmanFoot",
+              "level": 18,
+              "region": "east_dong",
+              "behavior": "hold"
+            },
+            {
+              "id": "z202_e_a",
+              "name": "남만 보병",
+              "template": "nanmanFoot",
+              "level": 17,
+              "region": "east_dong",
+              "behavior": "hold"
+            },
+            {
+              "id": "z202_e_b",
+              "name": "남만 궁병",
+              "template": "archer",
+              "level": 17,
+              "region": "east_dong",
+              "behavior": "hold"
+            },
+            {
+              "id": "z202_s_a",
+              "name": "남만 기병",
+              "template": "nanmanRider",
+              "level": 17,
+              "region": "south_wood",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-02/meng-huo",
+      "trigger": {
+        "type": "enemy_count_below",
+        "n": 6
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_meng_huo_foe",
+              "name": "맹획",
+              "template": "nanmanRider",
+              "level": 18,
+              "region": "meng_camp",
+              "behavior": "advance"
+            },
+            {
+              "id": "z202_k_b",
+              "name": "맹획 친위",
+              "template": "nanmanRider",
+              "level": 17,
+              "region": "meng_camp",
+              "behavior": "advance"
+            },
+            {
+              "id": "z202_k_c",
+              "name": "남만 코끼리",
+              "template": "elephant",
+              "level": 17,
+              "region": "meng_camp",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

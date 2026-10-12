@@ -1,0 +1,255 @@
+{
+  "id": "Z1-13",
+  "arc": "upper",
+  "order": 113,
+  "title": "한중왕",
+  "subtitle": "한수와 양평관",
+  "synopsis": "하후연을 잃은 조조가 몸소 대군을 이끌고 한중으로 내려온다. 제갈량은 양평관에 불을 놓아 길을 열고, 북쪽의 마초에게 길을 끊게 한다. 조조를 물러서게 하면 한중은 유비의 땅이 된다.",
+  "mapId": "z1-13-hanshui",
+  "focusVictoryTargets": true,
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_liu_bei",
+      "z_zhao_yun",
+      "z_huang_zhong",
+      "z_wei_yan"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "z_cao_cao_foe"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    },
+    {
+      "type": "retreat",
+      "unit": "z_liu_bei"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "turn_limit:8",
+      "extreme": "turn_limit:9"
+    },
+    {
+      "slot": 3,
+      "normal": "player_losses_lt:1",
+      "extreme": "player_losses_lt:1"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 14,
+      "recommendedLevel": 14,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 16,
+      "recommendedLevel": 16,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z1-13/wei",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_cao_cao_foe",
+              "name": "조조",
+              "template": "lord",
+              "level": 15,
+              "region": "cao_camp",
+              "behavior": "hold"
+            },
+            {
+              "id": "z_xu_chu_foe",
+              "name": "허저",
+              "template": "heavyCav",
+              "level": 15,
+              "region": "cao_guard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z113_guard_a",
+              "name": "호위 노병",
+              "template": "crossbow",
+              "level": 14,
+              "region": "cao_guard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z113_guard_b",
+              "name": "호위 창병",
+              "template": "spearman",
+              "level": 14,
+              "region": "cao_guard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z113_yp_a",
+              "name": "양평관 수비병",
+              "template": "infantry",
+              "level": 14,
+              "region": "yangping",
+              "behavior": "hold"
+            },
+            {
+              "id": "z113_yp_b",
+              "name": "양평관 궁병",
+              "template": "archer",
+              "level": 14,
+              "region": "yangping",
+              "behavior": "hold"
+            },
+            {
+              "id": "z113_yp_c",
+              "name": "양평관 창병",
+              "template": "spearman",
+              "level": 14,
+              "region": "yangping",
+              "behavior": "hold"
+            },
+            {
+              "id": "z_xu_huang_foe",
+              "name": "서황",
+              "template": "heavyCav",
+              "level": 15,
+              "region": "south_van",
+              "behavior": "advance"
+            },
+            {
+              "id": "z113_van_a",
+              "name": "위군 보병",
+              "template": "infantry",
+              "level": 14,
+              "region": "south_van",
+              "behavior": "advance"
+            },
+            {
+              "id": "z113_van_b",
+              "name": "위군 궁병",
+              "template": "archer",
+              "level": 14,
+              "region": "south_van",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_cao_hong_foe",
+              "name": "조홍",
+              "template": "infantry",
+              "level": 15,
+              "region": "north_bank",
+              "behavior": "advance"
+            },
+            {
+              "id": "z113_nb_a",
+              "name": "위군 창병",
+              "template": "spearman",
+              "level": 14,
+              "region": "north_bank",
+              "behavior": "advance"
+            },
+            {
+              "id": "z113_nb_b",
+              "name": "위군 노병",
+              "template": "crossbow",
+              "level": 14,
+              "region": "north_bank",
+              "behavior": "advance"
+            },
+            {
+              "id": "z113_nb_c",
+              "name": "위군 기병",
+              "template": "cavalry",
+              "level": 14,
+              "region": "north_bank",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-13/fire",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3
+      },
+      "actions": [
+        {
+          "type": "terrain_change",
+          "region": "yangping",
+          "hazard": "fire",
+          "duration": 3
+        },
+        {
+          "type": "apply_effect",
+          "targets": [
+            "z113_yp_a",
+            "z113_yp_b",
+            "z113_yp_c"
+          ],
+          "effect": "confusion",
+          "duration": 1
+        }
+      ]
+    },
+    {
+      "id": "Z1-13/ma-chao",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 4
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "allyAi",
+          "units": [
+            {
+              "id": "z_ma_chao_npc",
+              "name": "마초",
+              "template": "xiliang",
+              "level": 14,
+              "region": "ma_chao_arrive",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_ma_dai_npc",
+              "name": "마대",
+              "template": "xiliang",
+              "level": 14,
+              "region": "ma_chao_arrive",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

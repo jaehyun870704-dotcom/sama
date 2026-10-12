@@ -1,0 +1,193 @@
+{
+  "id": "Z1-10",
+  "arc": "upper",
+  "order": 110,
+  "title": "파군의 노장",
+  "subtitle": "파군 강주성",
+  "synopsis": "방통이 낙성 앞에서 쓰러지자, 제갈량이 장비·조운과 함께 강을 거슬러 익주로 들어온다. 파군 강주성의 늙은 태수 엄안이 성문을 닫고 버틴다. 성채의 노장을 사로잡으면 강주의 군사는 저절로 흩어진다.",
+  "mapId": "z1-10-bajun",
+  "focusVictoryTargets": true,
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_zhang_fei",
+      "z_zhao_yun",
+      "z_liu_feng"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "z_yan_yan_foe"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "turn_limit:9",
+      "extreme": "turn_limit:10"
+    },
+    {
+      "slot": 3,
+      "normal": "player_losses_lt:1",
+      "extreme": "player_losses_lt:1"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 11,
+      "recommendedLevel": 11,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 13,
+      "recommendedLevel": 13,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z1-10/garrison",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_yan_yan_foe",
+              "name": "엄안",
+              "template": "spearman",
+              "level": 12,
+              "region": "keep",
+              "behavior": "hold"
+            },
+            {
+              "id": "z110_keep_bow",
+              "name": "강주 궁병",
+              "template": "archer",
+              "level": 11,
+              "region": "keep",
+              "behavior": "hold"
+            },
+            {
+              "id": "z110_fort_a",
+              "name": "강주 창병",
+              "template": "spearman",
+              "level": 11,
+              "region": "fort_west",
+              "behavior": "hold"
+            },
+            {
+              "id": "z110_fort_b",
+              "name": "강주 보병",
+              "template": "infantry",
+              "level": 11,
+              "region": "fort_west",
+              "behavior": "hold"
+            },
+            {
+              "id": "z110_fort_c",
+              "name": "강주 궁병",
+              "template": "archer",
+              "level": 11,
+              "region": "fort_south",
+              "behavior": "hold"
+            },
+            {
+              "id": "z110_fort_d",
+              "name": "강주 노병",
+              "template": "crossbow",
+              "level": 11,
+              "region": "fort_south",
+              "behavior": "hold"
+            },
+            {
+              "id": "z110_field_a",
+              "name": "파군 보병",
+              "template": "infantry",
+              "level": 11,
+              "region": "field",
+              "behavior": "advance"
+            },
+            {
+              "id": "z110_field_c",
+              "name": "파군 기병",
+              "template": "cavalry",
+              "level": 11,
+              "region": "field",
+              "behavior": "advance"
+            },
+            {
+              "id": "z110_hill_a",
+              "name": "파군 궁병",
+              "template": "archer",
+              "level": 11,
+              "region": "east_hill",
+              "behavior": "hold"
+            },
+            {
+              "id": "z110_hill_b",
+              "name": "파군 보병",
+              "template": "infantry",
+              "level": 11,
+              "region": "east_hill",
+              "behavior": "hold"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-10/ambush",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z110_amb_a",
+              "name": "샛길 복병",
+              "template": "infantry",
+              "level": 11,
+              "region": "side_path",
+              "behavior": "advance"
+            },
+            {
+              "id": "z110_amb_b",
+              "name": "샛길 복병",
+              "template": "cavalry",
+              "level": 11,
+              "region": "side_path",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

@@ -1,0 +1,249 @@
+{
+  "id": "Z1-14",
+  "arc": "upper",
+  "order": 114,
+  "title": "백제성으로",
+  "subtitle": "불타는 강가 길과 어복포",
+  "synopsis": "육손의 불이 칠백 리 군영을 삼켰다. 무너진 유비가 강가 길을 따라 백제성으로 달아나고, 오의 추격대가 뒤를 문다. 조운과 함께 달려온 제갈량이 길을 열어 유비를 백제성 길까지 모셔야 한다.",
+  "mapId": "z1-14-yufu",
+  "deployment": {
+    "forced": [
+      "z_liu_bei",
+      "z_guan_xing",
+      "z_zhang_bao",
+      "z_liang",
+      "z_zhao_yun"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "reach",
+      "unit": "z_liu_bei",
+      "target": "objective"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    },
+    {
+      "type": "retreat",
+      "unit": "z_liu_bei"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "player_losses_lt:1",
+      "extreme": "player_losses_lt:1"
+    },
+    {
+      "slot": 3,
+      "normal": "enemy_retreat_count:6",
+      "extreme": "enemy_retreat_count:7"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 15,
+      "recommendedLevel": 15,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 17,
+      "recommendedLevel": 17,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z1-14/wu",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "terrain_change",
+          "region": "camp_fire",
+          "hazard": "fire",
+          "duration": 3
+        },
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_zhu_ran_foe",
+              "name": "주연",
+              "template": "spearman",
+              "level": 16,
+              "region": "mid_block",
+              "behavior": "hold"
+            },
+            {
+              "id": "z114_mid_a",
+              "name": "오군 노병",
+              "template": "crossbow",
+              "level": 15,
+              "region": "mid_block",
+              "behavior": "hold"
+            },
+            {
+              "id": "z114_sb_a",
+              "name": "오군 궁병",
+              "template": "archer",
+              "level": 15,
+              "region": "south_block",
+              "behavior": "hold"
+            },
+            {
+              "id": "z114_sb_b",
+              "name": "오군 창병",
+              "template": "spearman",
+              "level": 15,
+              "region": "south_block",
+              "behavior": "hold"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-14/pursuit",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 2
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_lu_xun_foe",
+              "name": "육손",
+              "template": "strategist",
+              "level": 16,
+              "region": "west_edge",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_pan_zhang_foe",
+              "name": "반장",
+              "template": "cavalry",
+              "level": 16,
+              "region": "west_edge",
+              "behavior": "advance"
+            },
+            {
+              "id": "z114_pur_a",
+              "name": "오군 기병",
+              "template": "cavalry",
+              "level": 15,
+              "region": "west_edge",
+              "behavior": "advance"
+            },
+            {
+              "id": "z114_pur_b",
+              "name": "오군 보병",
+              "template": "infantry",
+              "level": 15,
+              "region": "west_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "z114_pur_c",
+              "name": "오군 궁병",
+              "template": "archer",
+              "level": 15,
+              "region": "west_road",
+              "behavior": "advance"
+            }
+          ]
+        },
+        {
+          "type": "telegraph_aoe",
+          "region": "wind_a",
+          "magnitude": 20,
+          "duration": 1,
+          "label": "불길"
+        }
+      ]
+    },
+    {
+      "id": "Z1-14/wind",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 4
+      },
+      "actions": [
+        {
+          "type": "telegraph_aoe",
+          "region": "wind_b",
+          "magnitude": 20,
+          "duration": 1,
+          "label": "불길"
+        },
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_han_dang_foe",
+              "name": "한당",
+              "template": "cavalry",
+              "level": 16,
+              "region": "west_edge",
+              "behavior": "advance"
+            },
+            {
+              "id": "z114_pur_d",
+              "name": "오군 기병",
+              "template": "cavalry",
+              "level": 15,
+              "region": "west_edge",
+              "behavior": "advance"
+            },
+            {
+              "id": "z114_pur_e",
+              "name": "오군 창병",
+              "template": "spearman",
+              "level": 15,
+              "region": "west_road",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-14/maze",
+      "trigger": {
+        "type": "unit_reaches",
+        "unit": "z_liu_bei",
+        "region": "fish_belly"
+      },
+      "actions": [
+        {
+          "type": "apply_effect",
+          "side": "enemy",
+          "effect": "confusion",
+          "duration": 1
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

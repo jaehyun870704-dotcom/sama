@@ -1,0 +1,327 @@
+{
+  "id": "Z2-01",
+  "arc": "lower",
+  "order": 116,
+  "title": "남중의 세 반란",
+  "subtitle": "익주군·월수·장가의 진채",
+  "synopsis": "유비가 세상을 떠나자 남중의 옹개·고정·주포가 한꺼번에 등을 돌렸다. 제갈량은 군사를 이끌고 남쪽으로 내려가, 칼보다 먼저 말로 세 사람 사이를 가른다. 고정을 돌려세우고 옹개와 주포를 물리쳐라.",
+  "mapId": "z2-01-nanzhong",
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_zhao_yun",
+      "z_wei_yan",
+      "z_wang_ping",
+      "z_zhang_yi"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "z_yong_kai_foe",
+      "order": 1
+    },
+    {
+      "type": "retreat",
+      "unit": "z_zhu_bao_foe",
+      "order": 2
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "unit_survives",
+      "extreme": "unit_survives"
+    },
+    {
+      "slot": 3,
+      "normal": "turn_limit:12",
+      "extreme": "turn_limit:14"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 17,
+      "recommendedLevel": 17,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 19,
+      "recommendedLevel": 19,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z2-01/rebels",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_yong_kai_foe",
+              "name": "옹개",
+              "template": "infantry",
+              "level": 18,
+              "region": "yong_camp",
+              "behavior": "hold"
+            },
+            {
+              "id": "z201_yong_a",
+              "name": "옹개 궁병",
+              "template": "archer",
+              "level": 17,
+              "region": "yong_camp",
+              "behavior": "hold"
+            },
+            {
+              "id": "z201_yong_b",
+              "name": "옹개 창병",
+              "template": "spearman",
+              "level": 17,
+              "region": "yong_camp",
+              "behavior": "hold"
+            },
+            {
+              "id": "z201_yong_c",
+              "name": "익주군 보병",
+              "template": "infantry",
+              "level": 17,
+              "region": "yong_front",
+              "behavior": "advance"
+            },
+            {
+              "id": "z201_yong_d",
+              "name": "익주군 기병",
+              "template": "cavalry",
+              "level": 17,
+              "region": "yong_front",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_gao_ding_foe",
+              "name": "고정",
+              "template": "spearman",
+              "level": 18,
+              "region": "gao_camp",
+              "behavior": "hold"
+            },
+            {
+              "id": "z201_gao_a",
+              "name": "월수 이족병",
+              "template": "nanmanFoot",
+              "level": 17,
+              "region": "gao_camp",
+              "behavior": "hold"
+            },
+            {
+              "id": "z201_gao_b",
+              "name": "월수 궁병",
+              "template": "archer",
+              "level": 17,
+              "region": "gao_camp",
+              "behavior": "hold"
+            },
+            {
+              "id": "z_e_huan_foe",
+              "name": "악환",
+              "template": "nanmanFoot",
+              "level": 18,
+              "region": "e_huan_front",
+              "behavior": "hold"
+            },
+            {
+              "id": "z201_ehuan_a",
+              "name": "월수 이족병",
+              "template": "nanmanFoot",
+              "level": 17,
+              "region": "e_huan_front",
+              "behavior": "advance"
+            },
+            {
+              "id": "z201_ehuan_b",
+              "name": "월수 기병",
+              "template": "cavalry",
+              "level": 17,
+              "region": "e_huan_front",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_zhu_bao_foe",
+              "name": "주포",
+              "template": "archer",
+              "level": 18,
+              "region": "zhu_camp",
+              "behavior": "hold"
+            },
+            {
+              "id": "z201_zhu_a",
+              "name": "장가 보병",
+              "template": "infantry",
+              "level": 17,
+              "region": "zhu_camp",
+              "behavior": "hold"
+            },
+            {
+              "id": "z201_zhu_b",
+              "name": "장가 창병",
+              "template": "spearman",
+              "level": 17,
+              "region": "zhu_camp",
+              "behavior": "hold"
+            },
+            {
+              "id": "z201_zhu_c",
+              "name": "장가 노병",
+              "template": "crossbow",
+              "level": 17,
+              "region": "zhu_camp",
+              "behavior": "hold"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-01/yong-aid",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 4
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z201_aid_a",
+              "name": "익주군 기병",
+              "template": "cavalry",
+              "level": 17,
+              "region": "north_edge",
+              "behavior": "advance"
+            },
+            {
+              "id": "z201_aid_b",
+              "name": "익주군 기병",
+              "template": "cavalry",
+              "level": 17,
+              "region": "north_edge",
+              "behavior": "advance"
+            },
+            {
+              "id": "z201_aid_c",
+              "name": "익주군 창병",
+              "template": "spearman",
+              "level": 17,
+              "region": "north_edge",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-01/zhu-aid",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 7
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z201_aid_d",
+              "name": "장가 이족병",
+              "template": "nanmanFoot",
+              "level": 17,
+              "region": "south_edge",
+              "behavior": "advance"
+            },
+            {
+              "id": "z201_aid_e",
+              "name": "장가 이족병",
+              "template": "nanmanFoot",
+              "level": 17,
+              "region": "south_edge",
+              "behavior": "advance"
+            },
+            {
+              "id": "z201_aid_f",
+              "name": "장가 궁병",
+              "template": "archer",
+              "level": 17,
+              "region": "south_edge",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-01/turn",
+      "trigger": {
+        "type": "unit_retreats",
+        "unit": "z_e_huan_foe"
+      },
+      "actions": [
+        {
+          "type": "convert_unit",
+          "targets": [
+            "z_gao_ding_foe"
+          ],
+          "toClass": "spearman",
+          "side": "allyAi"
+        },
+        {
+          "type": "convert_unit",
+          "targets": [
+            "z201_gao_a"
+          ],
+          "toClass": "nanmanFoot",
+          "side": "allyAi"
+        },
+        {
+          "type": "convert_unit",
+          "targets": [
+            "z201_gao_b"
+          ],
+          "toClass": "archer",
+          "side": "allyAi"
+        },
+        {
+          "type": "revoke_control",
+          "targets": [
+            "z_gao_ding_foe",
+            "z201_gao_a",
+            "z201_gao_b"
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

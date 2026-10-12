@@ -1,0 +1,209 @@
+{
+  "id": "Z1-12",
+  "arc": "upper",
+  "order": 112,
+  "title": "정군산",
+  "subtitle": "천탕산 군량고와 정군산",
+  "synopsis": "한중을 두고 유비와 조조가 맞선다. 제갈량은 늙었다는 말로 황충의 투지를 돋우고, 법정을 딸려 천탕산의 군량고부터 치게 한다. 군량을 잃은 하후연이 산을 내려오면, 그때가 황충의 칼이 닿는 때다.",
+  "mapId": "z1-12-dingjun",
+  "focusVictoryTargets": true,
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_huang_zhong",
+      "z_fa_zheng",
+      "z_yan_yan",
+      "z_chen_shi"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "capture",
+      "target": "depot",
+      "order": 1
+    },
+    {
+      "type": "retreat",
+      "unit": "z_xiahou_yuan_foe",
+      "order": 2
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "turn_limit:11",
+      "extreme": "turn_limit:11"
+    },
+    {
+      "slot": 3,
+      "normal": "unit_retreat:z_xiahou_shang_foe",
+      "extreme": "unit_retreat:z_xiahou_shang_foe"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 13,
+      "recommendedLevel": 13,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 15,
+      "recommendedLevel": 15,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z1-12/camps",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_xiahou_shang_foe",
+              "name": "하후상",
+              "template": "cavalry",
+              "level": 14,
+              "region": "depot_guard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z_han_hao_foe",
+              "name": "한호",
+              "template": "infantry",
+              "level": 14,
+              "region": "depot_guard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z112_depot_a",
+              "name": "천탕산 궁병",
+              "template": "archer",
+              "level": 13,
+              "region": "depot_guard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z_zhang_he_foe",
+              "name": "장합",
+              "template": "cavalry",
+              "level": 14,
+              "region": "dingjun",
+              "behavior": "hold"
+            },
+            {
+              "id": "z112_ding_a",
+              "name": "정군산 노병",
+              "template": "crossbow",
+              "level": 13,
+              "region": "dingjun",
+              "behavior": "hold"
+            },
+            {
+              "id": "z112_ding_b",
+              "name": "정군산 보병",
+              "template": "infantry",
+              "level": 13,
+              "region": "dingjun",
+              "behavior": "hold"
+            },
+            {
+              "id": "z112_mid_a",
+              "name": "위군 보병",
+              "template": "infantry",
+              "level": 13,
+              "region": "mid",
+              "behavior": "advance"
+            },
+            {
+              "id": "z112_mid_c",
+              "name": "위군 기병",
+              "template": "cavalry",
+              "level": 13,
+              "region": "mid",
+              "behavior": "advance"
+            },
+            {
+              "id": "z112_east_a",
+              "name": "위군 기병",
+              "template": "cavalry",
+              "level": 13,
+              "region": "east_wood",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-12/xiahou-yuan",
+      "trigger": {
+        "type": "region_captured",
+        "region": "depot",
+        "by": "player"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_xiahou_yuan_foe",
+              "name": "하후연",
+              "template": "cavalry",
+              "level": 14,
+              "region": "dingjun",
+              "behavior": "advance"
+            },
+            {
+              "id": "z112_yuan_a",
+              "name": "하후연 친위",
+              "template": "cavalry",
+              "level": 13,
+              "region": "dingjun",
+              "behavior": "advance"
+            },
+            {
+              "id": "z112_yuan_b",
+              "name": "하후연 친위",
+              "template": "spearman",
+              "level": 13,
+              "region": "dingjun",
+              "behavior": "advance"
+            },
+            {
+              "id": "z112_yuan_c",
+              "name": "녹각 수비병",
+              "template": "infantry",
+              "level": 13,
+              "region": "dingjun",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

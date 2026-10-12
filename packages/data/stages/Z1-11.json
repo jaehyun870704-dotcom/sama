@@ -1,0 +1,191 @@
+{
+  "id": "Z1-11",
+  "arc": "upper",
+  "order": 111,
+  "title": "가맹관의 서량 바람",
+  "subtitle": "가맹관 북쪽 들판",
+  "synopsis": "장로에게 몸을 맡긴 마초가 서량의 기병을 이끌고 가맹관으로 몰려온다. 장비가 관을 나서 금마초를 맞고, 제갈량은 싸움 뒤를 내다본다. 마초를 물러서게 해야 그와 말을 나눌 수 있다.",
+  "mapId": "z1-11-jiameng",
+  "focusVictoryTargets": true,
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_liu_bei",
+      "z_zhang_fei",
+      "z_wei_yan"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "z_ma_chao_foe"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "turn_limit:5",
+      "extreme": "turn_limit:6"
+    },
+    {
+      "slot": 3,
+      "normal": "enemy_retreat_count:6",
+      "extreme": "enemy_retreat_count:7"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 12,
+      "recommendedLevel": 12,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 14,
+      "recommendedLevel": 14,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z1-11/pass",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "allyAi",
+          "units": [
+            {
+              "id": "z_meng_da_npc",
+              "name": "맹달",
+              "template": "infantry",
+              "level": 12,
+              "region": "pass",
+              "behavior": "hold"
+            },
+            {
+              "id": "z111_pass_a",
+              "name": "가맹관 수비병",
+              "template": "spearman",
+              "level": 12,
+              "region": "pass",
+              "behavior": "hold"
+            }
+          ]
+        },
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_ma_dai_foe",
+              "name": "마대",
+              "template": "xiliang",
+              "level": 13,
+              "region": "mid_north",
+              "behavior": "advance"
+            },
+            {
+              "id": "z111_van_a",
+              "name": "서량 기병",
+              "template": "xiliang",
+              "level": 12,
+              "region": "mid_north",
+              "behavior": "advance"
+            },
+            {
+              "id": "z111_van_b",
+              "name": "서량 기병",
+              "template": "xiliang",
+              "level": 12,
+              "region": "mid_north",
+              "behavior": "advance"
+            },
+            {
+              "id": "z111_van_c",
+              "name": "강족 기병",
+              "template": "qiang",
+              "level": 12,
+              "region": "mid_north",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-11/ma-chao",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 4
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_ma_chao_foe",
+              "name": "마초",
+              "template": "xiliang",
+              "level": 13,
+              "region": "north_a",
+              "behavior": "advance"
+            },
+            {
+              "id": "z111_main_a",
+              "name": "서량 철기",
+              "template": "xiliang",
+              "level": 12,
+              "region": "north_a",
+              "behavior": "advance"
+            },
+            {
+              "id": "z111_main_b",
+              "name": "서량 철기",
+              "template": "xiliang",
+              "level": 12,
+              "region": "north_a",
+              "behavior": "advance"
+            },
+            {
+              "id": "z111_wing_a",
+              "name": "강족 기병",
+              "template": "qiang",
+              "level": 12,
+              "region": "north_b",
+              "behavior": "advance"
+            },
+            {
+              "id": "z111_wing_c",
+              "name": "강족 기병",
+              "template": "qiang",
+              "level": 12,
+              "region": "north_c",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

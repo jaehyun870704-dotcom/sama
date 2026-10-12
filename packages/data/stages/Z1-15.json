@@ -1,0 +1,216 @@
+{
+  "id": "Z1-15",
+  "arc": "upper",
+  "order": 115,
+  "title": "영안의 부탁",
+  "subtitle": "임공에서 남안 협구로",
+  "synopsis": "영안궁에서 병든 유비가 제갈량에게 뒷일을 맡긴다. 그 틈에 한가 태수 황원이 임공성을 불태우고 강을 따라 오나라로 달아나려 한다. 황원이 남안 협구를 빠져나가기 전에 붙잡아라.",
+  "mapId": "z1-15-nanan",
+  "focusVictoryTargets": true,
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_zhao_yun",
+      "z_li_yan",
+      "z_ma_su",
+      "z_guan_xing"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "z_huang_yuan_foe"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    },
+    {
+      "type": "reach",
+      "unit": "z_huang_yuan_foe",
+      "target": "exit"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "player_losses_lt:1",
+      "extreme": "player_losses_lt:1"
+    },
+    {
+      "slot": 3,
+      "normal": "enemy_retreat_count:7",
+      "extreme": "enemy_retreat_count:8"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 16,
+      "recommendedLevel": 16,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 18,
+      "recommendedLevel": 18,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z1-15/rebels",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z115_mid_a",
+              "name": "한가 반군",
+              "template": "infantry",
+              "level": 16,
+              "region": "rebel_mid",
+              "behavior": "hold"
+            },
+            {
+              "id": "z115_mid_b",
+              "name": "한가 반군",
+              "template": "spearman",
+              "level": 16,
+              "region": "rebel_mid",
+              "behavior": "hold"
+            },
+            {
+              "id": "z115_mid_c",
+              "name": "한가 궁병",
+              "template": "archer",
+              "level": 16,
+              "region": "rebel_mid",
+              "behavior": "hold"
+            },
+            {
+              "id": "z115_east_a",
+              "name": "한가 반군",
+              "template": "spearman",
+              "level": 16,
+              "region": "rebel_east",
+              "behavior": "hold"
+            },
+            {
+              "id": "z115_east_b",
+              "name": "한가 노병",
+              "template": "crossbow",
+              "level": 16,
+              "region": "rebel_east",
+              "behavior": "hold"
+            },
+            {
+              "id": "z115_east_c",
+              "name": "한가 반군",
+              "template": "infantry",
+              "level": 16,
+              "region": "rebel_east",
+              "behavior": "hold"
+            },
+            {
+              "id": "z115_west_a",
+              "name": "임공 방화병",
+              "template": "infantry",
+              "level": 16,
+              "region": "rebel_west",
+              "behavior": "advance"
+            },
+            {
+              "id": "z115_scr_a",
+              "name": "한가 창병",
+              "template": "spearman",
+              "level": 16,
+              "region": "screen",
+              "behavior": "hold"
+            },
+            {
+              "id": "z115_scr_b",
+              "name": "한가 보병",
+              "template": "infantry",
+              "level": 16,
+              "region": "screen",
+              "behavior": "hold"
+            },
+            {
+              "id": "z115_scr_c",
+              "name": "한가 궁병",
+              "template": "archer",
+              "level": 16,
+              "region": "screen",
+              "behavior": "hold"
+            },
+            {
+              "id": "z115_scr_d",
+              "name": "한가 노병",
+              "template": "crossbow",
+              "level": 16,
+              "region": "screen",
+              "behavior": "hold"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-15/flight",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 4
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_huang_yuan_foe",
+              "name": "황원",
+              "template": "infantry",
+              "level": 17,
+              "region": "linqiong",
+              "behavior": "flee",
+              "goalRegion": "exit"
+            },
+            {
+              "id": "z115_guard_a",
+              "name": "황원 친병",
+              "template": "spearman",
+              "level": 16,
+              "region": "linqiong",
+              "behavior": "advance"
+            },
+            {
+              "id": "z115_guard_b",
+              "name": "황원 친병",
+              "template": "infantry",
+              "level": 16,
+              "region": "linqiong",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}
