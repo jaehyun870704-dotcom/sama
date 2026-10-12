@@ -11,7 +11,7 @@ export type OfficerEntry={id:string;name:string;aliases:string[];battle:Record<s
 const E=(id:string,name:string,classes:Record<string,[string,number,number,number]>,extra:Partial<OfficerEntry>={}):OfficerEntry=>({
   id,name,aliases:[`${name}의 환영`],battle:Object.fromEntries(Object.entries(classes).map(([k,[sheet,w,h,rows]])=>[k,{sheet:`officers/${sheet}`,cell:[w,h] as const,rows}])),...extra,
 });
-const c=(id:string,cls:string,rows=1,w=280,h=224)=>({[cls]:[`${id}-battle-${cls}-v1.webp`,w,h,rows] as [string,number,number,number]});
+const c=(id:string,cls:string,rows=1,w=280,h=224)=>({[cls]:[`${id}-battle-${cls}-v1.webp`,rows===1?280:w,rows===1?224:h,rows] as [string,number,number,number]});
 
 /** public/officers/manifest.json과 같은 내장 색인. JSON을 못 읽는 테스트·오프라인 빌드도 동일하게 찾는다. */
 export const officerManifest:OfficerEntry[]=[
