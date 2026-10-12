@@ -115,7 +115,10 @@ export function decide(state: BattleState, unit: Unit): Command[] {
   // 현재 위치 또는 이동 후 취할 수 있는 최선의 공격 수단을 찾는다.
   // 책략과 평타를 같은 저울(기대 피해)에 올려 비교한다 — 책사에게 평타를
   // 치게 두면 최소 피해만 넣고 반격으로 녹는다.
-  const best = bestAction(state, unit, reach, hostiles);
+  // 승리 조건이 「이 적장을 물리쳐라」인 전장: 아군 쪽은 그 적장을 먼저 노린다
+  // (자동 전투가 잔병만 쫓다 60턴을 넘겨 지던 문제 — 관도 결전 등).
+  const marked = victoryTargets(state, unit, hostiles);
+  const best = bestAction(state, unit, reach, hostiles, marked);
   if (best) {
     const cmds: Command[] = [];
     if (!sameCoord(best.from, unit.pos)) cmds.push({ kind: "move", unit: unit.id, to: best.from });
@@ -137,7 +140,7 @@ export function decide(state: BattleState, unit: Unit): Command[] {
   }
   const goal = objective
     ? goalCoord(state, unit, objective.region)
-    : (closest(unit.pos, hostiles)?.pos ?? null);
+    : (closest(unit.pos, chaseTargets(unit, marked, hostiles))?.pos ?? null);
   if (!goal) return [{ kind: "wait", unit: unit.id }];
   const step = bestStepToward(state, unit, reach, goal);
   return step
@@ -254,12 +257,31 @@ type ActionPlan =
  * 점수 = 기대 피해 + 처치 보너스 − 예상 반격 피해.
  * 반격을 뺀 덕분에 사거리 밖에서 때리는 선택과 무반격 공격이 자연히 선호된다.
  */
+/** 아군 쪽(사람이 고를 수 있는 편·NPC 우군)이 노릴 승리 목표 적장: 승리 조건 「퇴각시켜라」의 대상 중 살아 있는 적. */
+function victoryTargets(state: BattleState, unit: Unit, hostiles: Unit[]): Unit[] {
+  if (unit.side === "enemy" || !state.stage.focusVictoryTargets) return [];
+  // 쓰러지면 지는 장수(총대장 등)는 목표를 쫓아 적진에 뛰어들지 않는다.
+  if (state.defeat.some((c) => c.type === "retreat" && c.unit === unit.id)) return [];
+  const ids = new Set(state.victory.filter((c) => c.type === "retreat" && c.unit).map((c) => c.unit as string));
+  return ids.size ? hostiles.filter((h) => h.alive && ids.has(h.id)) : [];
+}
+
+/** 다가갈 적: 가까이(한 번 움직여 닿을 거리 + 2) 싸울 적이 있으면 그 적들, 없을 때만 승리 목표 적장 쪽으로 간다(대열을 흩지 않게). */
+function chaseTargets(unit: Unit, marked: Unit[], hostiles: Unit[]): Unit[] {
+  if (!marked.length) return hostiles;
+  const near = unit.stats.movement + unit.range[1] + 2;
+  return hostiles.some((h) => !marked.includes(h) && manhattan(h.pos, unit.pos) <= near) ? hostiles : marked;
+}
+
 function bestAction(
   state: BattleState,
   unit: Unit,
   reach: Map<string, number>,
   hostiles: Unit[],
+  marked: Unit[] = [],
 ): ActionPlan | null {
+  // 승리 목표 적장을 치면 가산점, 쓰러뜨리면 크게(다른 적을 쓰러뜨리는 것보다 우선).
+  const markBonus = (target: Unit, dealt: number) => (marked.includes(target) ? 30 + (dealt >= target.hp ? 1000 : 0) : 0);
   const positions: Coord[] = [unit.pos, ...decodeAll(reach)];
   const usable = unit.strategies
     .map((id) => state.strategyFor(unit, id))
@@ -309,7 +331,7 @@ function bestAction(
           kind: "attack",
           from,
           target,
-          score: dealt + (dealt >= target.hp ? 500 : 0) - counter - exposure(from, target),
+          score: dealt + (dealt >= target.hp ? 500 : 0) + markBonus(target, dealt) - counter - exposure(from, target),
         });
       }
 
@@ -325,7 +347,7 @@ function bestAction(
           from,
           target,
           strategyId: def.id,
-          score: dealt + (dealt >= target.hp ? 500 : 0) - exposure(from, target),
+          score: dealt + (dealt >= target.hp ? 500 : 0) + markBonus(target, dealt) - exposure(from, target),
         });
       }
     }

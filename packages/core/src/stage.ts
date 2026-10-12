@@ -154,6 +154,8 @@ export interface DifficultyTier {
 
 export interface StageDef {
   id: string;
+  /** 아군 자동 전투가 승리 조건의 적장(퇴각 대상)을 먼저 노린다(원정·가상 전장처럼 적장을 물리치면 끝나는 싸움). */
+  focusVictoryTargets?: boolean;
   initialPhase?: string;
   arc: Arc;
   order: number;

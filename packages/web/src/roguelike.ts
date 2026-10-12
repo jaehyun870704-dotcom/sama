@@ -46,6 +46,8 @@ export interface Run {
   news:string[];
   /** 지금 치르는 연의 전장 */
   activeStage?:string;
+  /** 출진 편성(부대 id → 'in' 늘 출진 · 'out' 늘 대기). 없는 부대는 체력·레벨 순 자동. */
+  sortie?:Record<string,'in'|'out'>;
   /** 지금까지 이긴 연의 전장(원정 시작 때 천명 기록을 이어받는다) */
   chronicle?:string[];
   /** 이번 원정에서 이긴 연의 전장 */
@@ -436,7 +438,7 @@ export function runStage(run:Run,kind:NodeKind,map:MapFile,taleId?:string,opts:{
   // 대사 선택으로 합류한 지원군: 'ally'는 직접 지휘하는 편입 아군, 'npc'는 초록 깃발의 자동 우군.
   const hero=run.party.find(u=>u.hero)?.level??base,helpers=(mods.reinforce??[]).slice(0,4);
   const help=(side:'npc'|'ally')=>helpers.map((h,i)=>({h,i})).filter(x=>x.h.side===side).map(({h,i})=>({id:`aid_${i}`,name:h.name,template:evolvedClass(landClass(h.unitClass),Math.max(1,hero-1)),level:Math.max(1,hero-1),region:'aid_start',behavior:'advance' as const}));
-  return {id:`R-${String(f).padStart(2,'0')}`,arc:'lower',order:100+f,title:tale?`가상 전장 · ${tale.title}`:`${region.name} · ${f}층`,subtitle:kind==='boss'?`우두머리 ${region.boss.name}`:tale?`적장 ${tale.target.name}`:kind==='elite'?'정예 전투':'원정 전투',
+  return {id:`R-${String(f).padStart(2,'0')}`,...(kind==='boss'||tale?{focusVictoryTargets:true}:{}),arc:'lower',order:100+f,title:tale?`가상 전장 · ${tale.title}`:`${region.name} · ${f}층`,subtitle:kind==='boss'?`우두머리 ${region.boss.name}`:tale?`적장 ${tale.target.name}`:kind==='elite'?'정예 전투':'원정 전투',
     synopsis:kind==='boss'?`${eul(region.boss.name)} 격퇴하면 승리. 쓰러진 부대는 원정에서 사라진다.`:tale?`${eul(tale.target.name)} 물리치면 승리. ${tale.intro}`:'적을 모두 물리치면 승리. 쓰러진 부대는 원정에서 사라진다.',
     mapId:map.id,deployment:{forced:['sima_yi'],slots:0,grantedUnits:[]},
     victory:kind==='boss'?[{type:'retreat',unit:'boss'}]:tale?[{type:'retreat',unit:'target'}]:[{type:'annihilate',side:'enemy'}],
@@ -485,9 +487,18 @@ export interface RunBattleRef {seed:number;floor:number;kind:NodeKind;party:RunU
   mods?:BattleMods;enemyBase?:number;scenario?:string}
 /** 이번 싸움에 나가는 부대: 사마의 + 체력·레벨이 높은 순으로 출진 인원(sortieSize)만큼. 나머지는 본진에서 쉰다. */
 export function sortieOf(run:Run,kind:NodeKind='battle'):RunUnit[]{
-  const hero=run.party.filter(u=>u.hero),rest=run.party.filter(u=>!u.hero).map((u,i)=>({u,i}))
-    .sort((a,b)=>b.u.hp-a.u.hp||b.u.level-a.u.level||a.i-b.i).slice(0,Math.max(0,sortieSize(run.floor,kind)-hero.length)).map(x=>x.u);
+  // 플레이어가 고른 편성이 먼저: 「출진 고정」은 앞에, 「대기」는 빼고, 나머지는 체력·레벨 순.
+  const mode=(u:RunUnit)=>run.sortie?.[u.id];
+  const hero=run.party.filter(u=>u.hero),rest=run.party.filter(u=>!u.hero&&mode(u)!=='out').map((u,i)=>({u,i}))
+    .sort((a,b)=>(mode(b.u)==='in'?1:0)-(mode(a.u)==='in'?1:0)||b.u.hp-a.u.hp||b.u.level-a.u.level||a.i-b.i).slice(0,Math.max(0,sortieSize(run.floor,kind)-hero.length)).map(x=>x.u);
   return run.party.filter(u=>hero.includes(u)||rest.includes(u));
+}
+/** 출진 편성 바꾸기: 자동 → 출진 고정 → 대기 → 자동. 사마의는 늘 나간다. */
+export function cycleSortie(run:Run,id:string){
+  const u=run.party.find(x=>x.id===id);if(!u||u.hero)return;
+  const now=run.sortie?.[id],next=now===undefined?'in':now==='in'?'out':undefined;
+  const map={...(run.sortie??{})};if(next)map[id]=next;else delete map[id];
+  if(Object.keys(map).length)run.sortie=map;else delete run.sortie;
 }
 export const battleRef=(run:Run,kind:NodeKind,tale?:string):RunBattleRef=>({seed:run.seed,floor:run.floor,kind,party:structuredClone(sortieOf(run,kind)),relics:[...run.relics],...(run.route?{route:{...run.route}}:{}),...(tale?{tale}:{})});
 export function refBattle(ref:RunBattleRef){

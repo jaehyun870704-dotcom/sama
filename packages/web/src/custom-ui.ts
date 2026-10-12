@@ -29,7 +29,7 @@ export function showCustomEditor(host:CustomHost,back:()=>void,editing?:number,d
   const list=customs(),cur:CustomOfficer=draft??(editing!==undefined&&list[editing]?{...list[editing]!}:{name:'',epithet:'',unitClass:'cavalry',temper:'brave',war:70,int:70,lead:70,pol:70,cha:70});
   const face:PortraitSpec={...portraitOf({...cur,name:cur.name||'신장수'})};
   const cards=list.map((o,i)=>`<button class="prep-officer ${i===editing?'focus':''}" data-edit="${i}"><span class="prep-sprite cu-thumb" style="background-image:url(${portraitImage(o.name)??portraitURL(portraitOf(o),o.name)})"></span><span><strong>${esc(o.name)}</strong><small>${esc(classNames[o.unitClass]??o.unitClass)} · ${temperNames[o.temper]} · 합 ${statTotal(o)}</small></span></button>`).join('');
-  host.modal(`<div class="briefing run-screen custom-screen"><div class="eyebrow">신장수 · 연의 장수록에 오른다</div><h2>신장수 만들기 <small class="muted">${list.length}/${CUSTOM_LIMIT}</small></h2>
+  host.modal(`<div class="briefing run-screen custom-screen"><div class="eyebrow">신장수</div><h2>신장수 만들기 <small class="muted">${list.length}/${CUSTOM_LIMIT}</small></h2>
   <div class="custom-body"><div class="prep-list">${cards||'<p class="muted">아직 만든 신장수가 없다.</p>'}<button id="cu-new">+ 새 신장수</button></div>
   <form class="custom-form" id="cu-form">
     <div class="cu-portrait"><div class="cu-face"><img id="cu-face" alt="초상 미리보기" src="${(cur.name&&portraitImage(cur.name))||(cur.art&&presetPortraitURL(cur.art))||portraitURL(face,cur.name||undefined)}"><button type="button" id="cu-rand">🎲 무작위 초상</button>
@@ -73,7 +73,7 @@ export function showCustomEditor(host:CustomHost,back:()=>void,editing?:number,d
 /** 새 회차의 세력 고르기: 정통(연의대로) 또는 신세력(이름·문장·색·함께할 신장수). */
 export function pickFaction(host:CustomHost,onPick:(faction?:Faction,companions?:CustomOfficer[])=>void,onCancel:()=>void,draft?:{faction:Faction;picked:string[]}){
   const list=customs(),f=draft?.faction??{name:'',emblem:'',color:FACTION_COLORS[0]!},picked=new Set(draft?.picked??list.slice(0,4).map(o=>o.name));
-  host.modal(`<div class="briefing run-screen faction-screen"><div class="eyebrow">새 회차 · 어느 깃발 아래서 시작하는가</div><h2>세력 고르기</h2>
+  host.modal(`<div class="briefing run-screen faction-screen"><div class="eyebrow">새 회차 · 세력</div><h2>세력 고르기</h2><p class="screen-lede">어느 깃발 아래서 이번 회차를 시작할지 고른다.</p>
   <div class="run-choices"><button id="fa-history" class="history"><strong><span class="route-tag">정통</span>연의대로 — 위의 신하로</strong><small>사마랑·조진과 함께 연의의 길을 따른다. 상편 4장 뒤(201년)·중편 첫머리(220년)·하편 첫머리(234년) 세 갈림길에서 정사·가상을 고를 수 있다.</small></button></div>
   <p class="muted">어느 장에서 가상으로 갈라지고 그 뒤가 어떻게 이어지는지는 <button type="button" id="fa-map" class="link">갈림길 지도</button>에서 미리 볼 수 있다.</p>
   <form id="fa-form" class="custom-form faction-form"><h3>신세력 — 사마의가 새 깃발을 든다</h3>

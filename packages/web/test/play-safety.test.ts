@@ -3,7 +3,7 @@ import {describe,it,expect} from 'vitest';
 import {levelInfo,deployment,freshCampaign} from '../src/progression.ts';
 import {freshScenario,choose,undoChoice,readScenario,recruitOffer,recruitOfficer,joinCaptive,scenarioParty,chooseOmen,omenOf,type ScenarioState} from '../src/scenario.ts';
 import {contestOf} from '../src/scenario-ui.ts';
-import {grantXp,newRun,finishBattle,recruit,battleRef,sortieOf,sortieSize,RUN_FLOORS,type Run} from '../src/roguelike.ts';
+import {grantXp,newRun,finishBattle,recruit,battleRef,sortieOf,sortieSize,cycleSortie,RUN_FLOORS,type Run} from '../src/roguelike.ts';
 import type {ScenarioStep} from '../src/scenario-types.ts';
 import {Session} from '../src/session.ts';
 import {RUN_CHAPTER,storyDeployment} from '../src/run-ui.ts';
@@ -108,5 +108,15 @@ describe('천명의 원정 마지막 층',()=>{
    expect(chooseOmen(s,id,'wind')).toBe(true);expect(omenOf(s,id)?.id).toBe('wind');
    s.flags.push(`contest:${id}:duel:win`);expect(contestOf(s,{id,kind:'boss',act:2} as ScenarioStep)).toEqual({kind:'duel',result:'win'});
   }
+ });
+ it('원정 출진 편성: 출진 고정은 체력이 낮아도 나가고, 대기 고정은 빠진다',()=>{
+  const run:Run=newRun(3,['infantry']);for(let i=0;i<10;i++)recruit(run,'infantry',3);
+  const weak=run.party[5]!,strong=run.party[1]!;weak.hp=.2;
+  expect(sortieOf(run).includes(weak)).toBe(false);
+  cycleSortie(run,weak.id);expect(run.sortie?.[weak.id]).toBe('in');expect(sortieOf(run).includes(weak)).toBe(true);
+  cycleSortie(run,strong.id);cycleSortie(run,strong.id);expect(run.sortie?.[strong.id]).toBe('out');expect(sortieOf(run).includes(strong)).toBe(false);
+  expect(sortieOf(run).length).toBe(sortieSize(run.floor));expect(sortieOf(run).some(u=>u.hero)).toBe(true);
+  cycleSortie(run,strong.id);expect(run.sortie?.[strong.id]).toBeUndefined();
+  cycleSortie(run,run.party[0]!.id);expect(run.sortie?.[run.party[0]!.id]).toBeUndefined();
  });
 });

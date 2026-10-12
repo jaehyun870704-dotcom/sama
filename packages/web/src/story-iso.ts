@@ -116,9 +116,14 @@ export function kindFor(art:number,place:string):Kind{
 export function isoScene(art:number,place:string,clear:readonly At[]=[]):IsoScene{
   const kind=kindFor(art,place);OY=originFor(kind);
   const cells=[...new Set(clear.map(a=>pctCell(a).join(',')))].sort(),key=`${kind}:${art}:${place}:${cells.join(';')}:${FLAG.emblem}${FLAG.color}`;
-  const hit=cache.get(key);if(hit)return hit;
-  const scene=build(kind,hash(place)+art*7919,place,new Set(cells),art);cache.set(key,scene);return scene;
+  const hit=cache.get(key);if(hit){cache.delete(key);cache.set(key,hit);return hit;}
+  const scene=build(kind,hash(place)+art*7919,place,new Set(cells),art);cache.set(key,scene);
+  // 그려 둔 배경(큰 그림 한 장씩)은 최근 것만 남긴다: 한 회차를 끝까지 걸으면 수백 장이 쌓여 탭 메모리가 계속 불었다.
+  while(cache.size>SCENE_CACHE_MAX)cache.delete(cache.keys().next().value!);
+  return scene;
 }
+/** 배경 캐시에 남겨 둘 장면 수(한 장의 해설·장면·진영·결말이 다시 쓰는 만큼). */
+const SCENE_CACHE_MAX=12;
 /** 화면 %에 가장 가까운 칸(소품을 따지지 않고). */
 function pctCell([px,py]:At):Cell{const sx=px/100*W,sy=py/100*H,u=(sx-OX)/(TW/2),v=(sy-OY)/(TH/2);return [Math.round((u+v)/2-0.5),Math.round((v-u)/2-0.5)];}
 

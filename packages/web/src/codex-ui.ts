@@ -271,7 +271,7 @@ export function showCodex(host:CodexHost,view:CodexView={tab:'people'}){
   const v:CodexView={side:'all',...view};
   const people=v.tab==='people'?peopleTab(v.person??'사마의',v.side??'all'):undefined;
   const body=people?people.html:v.tab==='classes'?classesTab(v.cls??'infantry'):strategiesTab(v.spell??'fire',v.tier??1);
-  host.modal(`<div class="briefing codex-screen"><div class="eyebrow">삼국지 인물열전 · 사람과 병종과 책략</div><h2>${v.tab==='people'?'난세를 살아간 사람들':v.tab==='classes'?'병종 — 전장을 채운 부대들':'책략 목록'}</h2>
+  host.modal(`<div class="briefing codex-screen"><div class="eyebrow">도감 · ${v.tab==='people'?'인물':v.tab==='classes'?'병종':'책략'}</div><h2>${v.tab==='people'?'인물열전':v.tab==='classes'?'병종':'책략'}</h2><p class="screen-lede">${v.tab==='people'?'난세를 살아간 사람들의 능력과 열전을 본다.':v.tab==='classes'?'전장을 채운 부대의 병종과 진화를 본다.':'장수와 병종이 쓰는 책략을 본다.'}</p>
     <div class="cx-tabs">${([['people','인물 열전'],['classes','병종'],['strategies','책략']] as const).map(([id,label])=>`<button data-cx-tab="${id}" class="${v.tab===id?'active':''}">${label}</button>`).join('')}${host.research?'<button id="cx-research" class="cx-research">연구 ▸</button>':''}</div>
     ${body}<div class="run-actions"><button id="cx-back">← 도감</button></div></div>`,false);
   const all=<T extends HTMLElement>(sel:string)=>document.querySelectorAll<T>(sel);

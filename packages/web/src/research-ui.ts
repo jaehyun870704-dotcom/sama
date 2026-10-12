@@ -71,7 +71,7 @@ export function showResearch(host:ResearchHost,tab:ResearchTab='battle',pick?:st
       ${unlocks.length?`<div class="rs-sub">배우면 열리는 칸</div><div class="rs-reqs">${unlocks.map(x=>`<button data-rs-jump="${x.id}" data-rs-tabof="${x.tab}" class="rs-reqchip"><span>${researchIcon(x.id)}</span>${esc(x.name)}</button>`).join('')}</div>`:''}
     </div></div></div>`;
   const effects=activeEffects(meta);
-  host.modal(`<div class="briefing research-screen"><div class="eyebrow">연구 · 회차를 넘어 남는 힘</div><h2>연구</h2>
+  host.modal(`<div class="briefing research-screen"><div class="eyebrow">본영 · 연구</div><h2>연구</h2><p class="screen-lede">천명을 써서 회차를 넘어 남는 힘을 얻는다.</p>
     <div class="rs-tabs">${RESEARCH_TABS.map(x=>{const pg=researchProgress(meta,x.id);return `<button data-rs-tab="${x.id}" class="rs-tab-${x.id} ${x.id===tab?'active':''}"><span class="rs-tabicon">${TAB_ICONS[x.id]}</span>${x.name}<small>${pg.done}/${pg.total}</small></button>`;}).join('')}
       <span class="rs-mandate"><span class="rs-tabicon">${researchIcon('unify')}</span>천명 <b>${meta.mandate}</b></span></div>
     <div class="rs-body${cols>5?' wide':''}"><aside class="rs-banner rs-tab-${tab}"><div class="rs-bhead"><div class="rs-emblem">${TAB_ICONS[tab]}</div><div><h3>${t.name}</h3><div class="rs-ring" style="--p:${prog.total?prog.done/prog.total*100:0}"><b>${prog.done}</b><small>/${prog.total}</small></div></div></div><p>${esc(t.blurb)}</p><small>전체 연구 ${all.done}/${all.total}</small>

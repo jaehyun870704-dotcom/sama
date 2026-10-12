@@ -317,7 +317,7 @@ function showStoryArchive(focus?:number){
   const row=(i:number)=>{const c=chapters[i]!,open=unlocked(i)||replayable(i),won=cleared(i);
     return `<li class="sa-row ${won?'won':open?'open':'locked'}${focus===i?' focus':''}"><span class="sa-no">${c.stage.id.slice(-2)}</span><span class="sa-title"><strong>${open?esc(catalogue.find(x=>x.id===c.stage.id)?.name??stories[i]?.[0]??c.stage.id):'??? · 아직 닿지 않은 장'}</strong><small>${esc(c.year)}${open?` · 「${esc(stories[i]?.[0]??'')}」 · ${esc(c.label)}`:''}</small></span><span class="sa-state">${won?'◆ 이김':open?'열림':'잠김'}</span><span class="sa-acts"><button data-sa-read="${i}" ${open?'':'disabled'}>이야기 보기</button><button data-sa-fight="${i}" ${won?'':'disabled'} title="${won?'이 장을 다시 싸운다':'이긴 장만 다시 싸울 수 있다'}">다시 싸우기</button></span></li>`;};
   const seenEnd=ALL_ENDINGS.filter(id=>meta.endings.includes(id));
-  modal(`<div class="briefing story-archive"><div class="eyebrow">시나리오 보기 · 연의 32장</div><h2>지난 이야기를 다시 펼친다</h2>
+  modal(`<div class="briefing story-archive"><div class="eyebrow">본영 · 연의 32장</div><h2>시나리오 보기</h2><p class="screen-lede">지난 이야기를 다시 보고, 이긴 장은 다시 싸운다.</p>
   <p class="muted">닿은 장은 싸우지 않고 이야기만 다시 볼 수 있다. 이긴 장은 「다시 싸우기」로 일반·극한을 다시 치른다. 아직 닿지 않은 장은 제목도 가려 둔다.</p>
   ${arcs.map(([pre,arc,sub])=>{const list=campaignOrder.filter(i=>chapters[i]!.stage.id.startsWith(pre));const won=list.filter(cleared).length;
     return `<section class="sa-arc"><h3>${arc} <small>${sub} · 이김 ${won}/${list.length}</small></h3><ol class="sa-list">${list.map(row).join('')}</ol></section>`;}).join('')}
@@ -431,7 +431,7 @@ function branchParty(arc:1|2|3=1){
 }
 function branchBriefing(n:MapNode){
   const route=routeById(n.route)!,foe=n.kind==='tale'?n.tale!.target:route.region.boss,party=branchParty(n.arc),lvl=branchLevel(n,anchorLevel(n.arc));
-  modal(`<div class="briefing branch-brief"><div class="eyebrow">선택분기 · ${esc(route.name)}</div><h2>${esc(n.title)}</h2>
+  modal(`<div class="briefing branch-brief"><div class="eyebrow">가상 전장 · ${esc(route.name)}</div><h2>${esc(n.title)}</h2>
   <div class="bb-foe"><span class="rc-face big">${cardFace(foe.name)}</span><div><b>적장 ${esc(foe.name)}</b><small>${esc(classNames[foe.unitClass]??foe.unitClass)} · 권장 Lv.${lvl}</small><p>${esc(n.kind==='tale'?n.tale!.intro:route.detail)}</p></div></div>
   <h3>함께 가는 장수 <small>연의에서 키운 레벨 그대로 · 등용 장수 최대 2명</small></h3><div class="bb-party">${party.map(u=>`<span class="rp-chip on"><span class="rc-face">${cardFace(u.name)}</span><span><strong>${esc(u.name)}</strong><small>Lv.${u.level} · ${esc(classNames[u.unitClass]??u.unitClass)}</small></span></span>`).join('')}</div>
   <div class="run-actions"><button id="bb-go" class="primary">출진 ▶</button><button id="bb-back">← 연의 지도</button></div></div>`,false);
@@ -468,7 +468,7 @@ function showChronicle(){
     const subtitles=['소년과 피난 · 출사와 시험 · 한중과 외교','위의 방패 · 군략의 대결 · 위수와 오장원','원정과 구원 · 권력과 후계'];
     const gateArt=['chronicle/arc-1-ink-v1.webp','chronicle/arc-2-ink-v1.webp','chronicle/arc-3-ink-v1.webp'];
     const gates=[1,2,3].map((arc,index)=>{const stages=catalogue.filter(c=>c.id.startsWith(`S${arc}-`)),won=stages.filter(c=>{const i=chapters.findIndex(x=>x.stage.id===c.id);return i>=0&&cleared(i);}),last=won.at(-1),rate=Math.round(won.length/stages.length*100);return `<article class="chronicle-gate"><div class="chronicle-gate-art" style="background-image:url('${gateArt[index]}');background-size:cover;background-position:36% 50%"><span>제 ${['일','이','삼'][index]}편</span><strong>${names[index]}</strong></div><div class="chronicle-gate-copy"><div><small>${subtitles[index]}</small><h3>${['상편','중편','하편'][index]}</h3><p>달성률 <b>${rate}%</b><i style="--rate:${rate}%"></i></p><em>${last?`최근 기록 · ${esc(last.name)}`:'아직 기록 없음 · 첫 장부터 시작'}</em></div><button data-chronicle-arc="${arc}" class="${arc===1?'primary':''}">입장 <span>→</span></button></div></article>`;}).join('');
-    modal(`<div class="chronicle-landing"><header><div><div class="eyebrow">삼국지 · 사마의전</div><h2>연의</h2><p>한 편을 고르면 장별 진군 경로가 열립니다.</p></div><div class="growth-summary">${growthText()}<br>보물 ${campaign.treasures.length}점</div></header><section class="chronicle-gates">${gates}</section><footer><button id="chronicle-run-home">← 본영</button>${lastBattle()?.ongoing?'<button id="resume" class="primary">전투 이어하기 →</button>':''}<small>각 편의 전장은 앞 장을 마치면 차례로 열립니다.</small></footer></div>`,false);
+    modal(`<div class="chronicle-landing"><header><div><div class="eyebrow">연의 · 32장</div><h2>연의 지도</h2><p class="screen-lede">한 편을 고르면 장별 진군 경로가 열린다.</p></div><div class="growth-summary">${growthText()}<br>보물 ${campaign.treasures.length}점</div></header><section class="chronicle-gates">${gates}</section><footer><button id="chronicle-run-home">← 본영</button>${lastBattle()?.ongoing?'<button id="resume" class="primary">전투 이어하기 →</button>':''}<small>각 편의 전장은 앞 장을 마치면 차례로 열립니다.</small></footer></div>`,false);
     document.querySelectorAll<HTMLButtonElement>('[data-chronicle-arc]').forEach(b=>b.onclick=()=>{menuArc=Number(b.dataset.chronicleArc);menuStage='';showChronicle();});
     $('#chronicle-run-home').onclick=showMenu;
     $('#resume')?.addEventListener('click',resumeSaved);
@@ -484,7 +484,7 @@ function showSlots(back:()=>void=showMenu){
   const rows=Array.from({length:SLOT_COUNT},(_,i)=>{const raw=readStore(slotKey(i+1)),full=readFull(raw),old=full?undefined:readSlot(raw);
     const label=full?`<b>${full.meta.where}</b><small>${agoText(full.meta.at)}${full.meta.hero?` · 사마의 Lv.${full.meta.hero}`:''}${full.meta.mandate!==undefined?` · 천명 ${full.meta.mandate}`:''} · 진행 전체</small>`:old?`<b>${old.meta.title}</b><small>${slotLabel(old)} · 전투만</small>`:'<small>비어 있음</small>';
     return `<div class="slot-row"><div><strong>${i+1}번 칸</strong>${label}</div><div class="slot-actions"><button data-slot-save="${i+1}" class="${full||old?'':'primary'}">여기에 저장</button>${full||old?`<button data-slot-load="${i+1}" class="primary">불러오기</button><button data-slot-clear="${i+1}" aria-label="${i+1}번 칸 지우기">지우기</button>`:''}</div></div>`;}).join('');
-  modal(`<div class="briefing save-screen"><div class="eyebrow">기록 · 저장과 불러오기</div><h2>저장 칸</h2>
+  modal(`<div class="briefing save-screen"><div class="eyebrow">기록</div><h2>저장·불러오기</h2><p class="screen-lede">지금 진행을 칸에 저장하고, 저장한 칸에서 다시 시작한다.</p>
     <ul class="save-help"><li><b>자동 저장</b> 전투는 행동마다, 천명의 길은 장을 마칠 때마다 저절로 저장된다. 본영의 「이어하기」가 그것을 연다.</li>
     <li><b>저장 칸</b> 지금 이 순간의 <em>전체</em>(천명의 길 진행·연구·천명·보물·장수 성장·진행 중 전투)를 통째로 담는다. 갈림길 앞에서 저장해 두고, 일이 틀어지면 불러온다.</li>
     <li>지금: <b>${where()}</b></li></ul>${rows}<div class="modal-actions"><button id="slots-back">← 돌아가기</button></div></div>`,false);
@@ -573,7 +573,7 @@ let duelPresented=false;
 /** 장수 열전: 얼굴을 고르면 그 장수의 무력·능력과 고유특성만 보인다(전체 표는 두지 않는다). */
 function showTroopGallery(group:EvoGroup='all'){
  menuOpen=true;clearTimeout(aiTimer);
- modal(`<div class="briefing troop-evolution"><div class="eyebrow">병종 · 진화표</div><h2>병종은 이렇게 강해진다</h2><p class="muted">레벨이 오르면 진화하고, 공격 범위가 넓어진다.</p>${evolutionChart(group)}<div class="modal-actions"><button id="troop-back">← 도감</button></div></div>`,false);
+ modal(`<div class="briefing troop-evolution"><div class="eyebrow">도감 · 병종</div><h2>병종 진화표</h2><p class="muted">레벨이 오르면 진화하고, 공격 범위가 넓어진다.</p>${evolutionChart(group)}<div class="modal-actions"><button id="troop-back">← 도감</button></div></div>`,false);
  document.querySelectorAll<HTMLButtonElement>('[data-evo-group]').forEach(b=>b.onclick=()=>showTroopGallery(b.dataset.evoGroup as EvoGroup));
  void paintArmor();void fitEvoSprites();$('#troop-back').onclick=()=>showCollections(runHost);
 }
@@ -594,7 +594,7 @@ function showTraining(){
   const gap=target!==undefined?target-hero:0;
   const verdict=target===undefined?(step?'':'연의를 모두 마쳤다. 수련은 극한 인장이나 도전의 관문을 위해 언제든 할 수 있다.'):gap>0?`권장 레벨까지 ${gap}레벨 모자란다 · ${growthAdvice(campaign,target)}`:'권장 레벨을 넘었다 — 막혔다면 지형·병종 상성과 보물을 다시 살펴보자.';
   const card=(m:Expedition)=>{const open=canExpedition(campaign,m.id);return `<button class="tg-card ${m.id===pick.id?'pick':''}" data-train="${m.id}" ${open?'':'disabled'}><span class="tg-lv">Lv.${m.level}</span><strong>${esc(m.name)}</strong><small>${open?`승리마다 경험치 +${trainingXp(campaign,m)} · 출진한 장수 모두`:`본편 ${m.requires}승 필요 (${storyWins(campaign)}/${m.requires})`}</small>${m.id===pick.id?'<em>지금 추천</em>':''}</button>`;};
-  modal(`<div class="briefing training-screen"><div class="eyebrow">수련장 · 막혔을 때 레벨업</div><h2>힘이 모자라면, 길러서 다시 간다</h2>
+  modal(`<div class="briefing training-screen"><div class="eyebrow">본영 · 수련장</div><h2>수련장</h2><p class="screen-lede">막힌 장이 있으면 여기서 레벨을 올리고 다시 간다.</p>
   <section class="tg-target"><div><small>지금 갈 곳</small><strong>${esc(stepName)}</strong>${target!==undefined?`<span>권장 Lv.${target}</span>`:''}</div>
     <div><small>사마의</small><strong>Lv.${hero}</strong>${target!==undefined?`<i class="tg-meter"><i style="width:${Math.min(100,Math.round(hero/target*100))}%"></i></i>`:''}</div>
     <div><small>연의 장수</small><strong>${mates.map(o=>`${esc(o.name)} ${o.level}`).join(' · ')}</strong></div></section>
@@ -630,7 +630,7 @@ function showRecruit(focus?:string,joined?:string){
   const st=recruitStatus(sel.name,x),r=romanceByName(sel.name),prev=previousOf(sel.name);
   const conds=[...(prev?[`<li class="${x.recruited.has(prev)?'ok':''}">${x.recruited.has(prev)?'✓':'·'} 계보 앞 단계 ${esc(prev)} 등용</li>`]:[]),...LINEAGES.flatMap(l=>l.officers).find(o=>o.name===sel.name)!.conds.map(c=>`<li class="${condMet(c,x)?'ok':''}">${condMet(c,x)?'✓':'·'} ${esc(condText(c,x))}</li>`)].join('');
   const lineage=LINEAGES.find(l=>l.officers.some(o=>o.name===sel.name))!;
-  modal(`<div class="briefing recruit-screen"><div class="eyebrow">등용 · 계보 · ${got}/${all.length}명</div><h2>천하의 인재를 휘하로</h2>
+  modal(`<div class="briefing recruit-screen"><div class="eyebrow">본영 · 등용 · ${got}/${all.length}명</div><h2>등용</h2><p class="screen-lede">계보마다 조건을 채워 장수를 휘하로 들인다.</p>
   <p class="muted">계보마다 위에서부터 차례로 들인다. 돈으로 사지 않는다 — 그 장수와 얽힌 싸움을 이기고, 그릇을 보여 주면 스스로 찾아온다. 조건에 연의 장이 들어 있는 장수는 그 장을 이겨 조건을 다 채우는 순간 이야기 속에서 저절로 합류한다. 들인 장수는 연의 출진 준비의 「등용 장수」 칸에서 데려가고(일반 2명 · 극한 1명), 천명의 길에도 동료로 합류한다.</p>
   ${joined?`<div class="rc-joined"><span class="rc-face big">${cardFace(joined)}</span><div><b>${esc(joined)}</b> — 사마의 휘하에 들었다.<p>「${esc(all.find(o=>o.name===joined)!.line)}」</p></div></div>`:''}
   <div class="rc-body"><div class="rc-tree">${LINEAGES.map(l=>`<section class="rc-line"><h3><span class="lobby-seal" aria-hidden="true">${l.seal}</span>${esc(l.name)}<small>${esc(l.blurb)}</small></h3><div class="rc-steps">${l.officers.map(o=>node(o.name)).join('<i class="rc-arrow" aria-hidden="true">▼</i>')}</div></section>`).join('')}</div>
@@ -658,7 +658,7 @@ function showExpeditions(tab:Expedition['kind']='challenge'){
   ['training','반복 수련','승리마다 경험치를 얻고, 수련장마다 첫 승리에 보물 2종을 줍니다.'],
  ];
  const [,title,note]=sections.find(x=>x[0]===tab)!;
- modal(`<div class="briefing expedition-hub"><div class="eyebrow">연무장 · 반복·도전 퀘스트</div><h2>다음 승리를 준비하다</h2><p>${growthText()} · 도전 ${cleared}/10 · 보물 사냥 ${campaign.bountyWins??0}승 · 보물 외전 ${campaign.quests?.length??0}/11 · 수련 ${campaign.trainingWins??0}승</p><div class="expedition-tabs" role="tablist">${sections.map(([kind,label])=>`<button role="tab" data-exp-tab="${kind}" class="${kind===tab?'on':''}" aria-selected="${kind===tab}">${label.split(' · ')[0]}</button>`).join('')}</div><h3>${title}</h3>${note?`<p class="muted">${note}</p>`:''}<div class="expedition-grid${tab==='challenge'?' challenge-ladder':''}">${expeditions.filter(m=>m.kind===tab).map(card).join('')}</div><p class="muted">권장 레벨보다 4레벨 이상 높으면 수련 경험치가 단계적으로 줄어듭니다. 보물 외전과 도전의 경험치·보물은 첫 승리 보상입니다.</p><button id="expedition-back">← 반복 퀘스트</button></div>`,false);
+ modal(`<div class="briefing expedition-hub"><div class="eyebrow">본영 · 연무장</div><h2>연무장</h2><p>${growthText()} · 도전 ${cleared}/10 · 보물 사냥 ${campaign.bountyWins??0}승 · 보물 외전 ${campaign.quests?.length??0}/11 · 수련 ${campaign.trainingWins??0}승</p><div class="expedition-tabs" role="tablist">${sections.map(([kind,label])=>`<button role="tab" data-exp-tab="${kind}" class="${kind===tab?'on':''}" aria-selected="${kind===tab}">${label.split(' · ')[0]}</button>`).join('')}</div><h3>${title}</h3>${note?`<p class="muted">${note}</p>`:''}<div class="expedition-grid${tab==='challenge'?' challenge-ladder':''}">${expeditions.filter(m=>m.kind===tab).map(card).join('')}</div><p class="muted">권장 레벨보다 4레벨 이상 높으면 수련 경험치가 단계적으로 줄어듭니다. 보물 외전과 도전의 경험치·보물은 첫 승리 보상입니다.</p><button id="expedition-back">← 반복 퀘스트</button></div>`,false);
  document.querySelectorAll<HTMLButtonElement>('[data-exp-tab]').forEach(el=>el.onclick=()=>showExpeditions(el.dataset.expTab as Expedition['kind']));
  document.querySelectorAll<HTMLButtonElement>('[data-expedition]').forEach(el=>el.onclick=()=>expeditionStory(el.dataset.expedition!));$('#expedition-back').onclick=tab==='challenge'?showMenu:showTraining;
 }

@@ -153,7 +153,7 @@ export function showScenario(host:ScenarioHost,selected?:string){
     return `<button class="sc-card ${st} kind-${s.kind}" data-step="${esc(s.id)}" aria-pressed="${s===sel}"><span class="sc-thumb" style="${isoBackdrop(firstArt(s))}"></span><span class="sc-card-text"><small>${String(i+1).padStart(2,'0')} · ${kindTag[s.kind]} · ${esc(stepYear(s,state))}</small><strong>${esc(stepTitle(s,state))}</strong></span><b>${st==='done'?'◆':st==='now'?'▶':'·'}</b></button>`;};
   const groups=[1,2,3].map(a=>{const items=path.map((s,i)=>({s,i})).filter(x=>x.s.act===a);return items.length?`<h3 class="sc-act">${ACT_NAMES[a-1]}</h3>${items.map(x=>card(x.s,x.i)).join('')}`:'';}).join('');
   const isCur=sel===cur,isDone=done.has(sel.id);
-  host.modal(`<div class="scenario-screen"><div class="sc-top"><div><div class="eyebrow">삼국지 · 사마의전 · 시나리오</div><h2>천명의 길</h2></div>
+  host.modal(`<div class="scenario-screen"><div class="sc-top"><div><div class="eyebrow">본영 · 시나리오</div><h2>천명의 길</h2></div>
     <div class="sc-route">${track}</div><p class="muted">사마의 Lv.${hero.level} · 함께하는 장수 ${Object.keys(state.officers).length}명 · 마친 장 ${state.done.length}</p>${runBar(state)}</div>
     <div class="sc-body"><nav class="sc-list" aria-label="장 목록">${groups}</nav>
     <section class="sc-detail"><div class="sc-banner" style="${isoBackdrop(firstArt(sel))}"><span class="sc-kind kind-${sel.kind}">${kindTag[sel.kind]}</span><div class="sc-banner-title"><small>${esc(stepYear(sel,state))}</small><h3>${esc(stepTitle(sel,state))}</h3></div></div>
@@ -246,7 +246,7 @@ export function prepare(host:ScenarioHost,step:ScenarioStep){
   const state=loadScenario();
   if(state.run&&['story','tale','boss'].includes(step.kind)&&!omenOf(state,step.id)){
     const offer=omenOffer(state,step.id);
-    return choiceScreen(host,`전황 · ${stepTitle(step,state)} — 싸우기 전에 하늘을 읽는다`,offer.map(o=>({title:(o.goal?'⚑ 도전 · ':'')+o.name,detail:o.text})),i=>{const st=loadScenario();chooseOmen(st,step.id,offer[i]!.id);saveScenario(st);prepare(host,step);},'천명의 길 · 전황 카드');
+    return choiceScreen(host,'전황 카드',offer.map(o=>({title:(o.goal?'⚑ 도전 · ':'')+o.name,detail:o.text})),i=>{const st=loadScenario();chooseOmen(st,step.id,offer[i]!.id);saveScenario(st);prepare(host,step);},`천명의 길 · ${stepTitle(step,state)}`,'싸우기 전에 하늘을 읽는다. 셋 중 하나를 고른다.');
   }
   if(step.kind==='story'){const run=state.run,hp=run?.hp['사마의'],h=host.hero(),taken=stageOfficerNames(chapters[chapterIndex(step.stage!)]!.stage),recruits=soloStage(chapters[chapterIndex(step.stage!)]!.stage)?[]:scenarioParty(state,h.level,h.xp,Object.keys(state.officers)).filter(u=>!u.hero&&!taken.has(u.name)).sort((a,b)=>b.level-a.level).slice(0,storyRetinueCap(step.stage!,'normal')+1).map(u=>({...u,id:'rc_'+u.id}));host.storyBriefing(chapterIndex(step.stage!),{chapter:step.id,mods:modsOf(state,step),...(run?.relics.length?{relics:[...run.relics]}:{}),...(hp!==undefined?{heroHp:hp}:{}),...(recruits.length?{recruits}:{})});return;}
   showIfPrep(host,state,step);
@@ -289,23 +289,33 @@ async function showEnding(host:ScenarioHost,state:ScenarioState,step:ScenarioSte
 const LOOK_OF:Partial<Record<string,Look>>={infantry:'infantry',spearman:'spear',archer:'archer',cavalry:'cavalry',heavyCav:'heavy',crossbow:'crossbow',strategist:'strategist',fengshui:'sage',monk:'monk',bandit:'bandit',horseArcher:'horseArcher',shaman:'shaman',maiden:'lady',taoist:'taoist',engineer:'engineer',assassin:'assassin',rattan:'infantry',elephant:'elephant'};
 const lookOf=(c:UnitClass):Look=>LOOK_OF[c]??LOOK_OF[familyOf(c)]??'infantry';
 
+/** 출진 화면의 장수 목록 정렬·병종 거르기(화면을 다시 그려도 유지). 장수가 많아져도 고르기 쉽게. */
+type PrepSort='basic'|'level'|'hp'|'class';
+let prepSort:PrepSort='basic',prepFamily='';
+const PREP_SORTS:Array<[PrepSort,string]>=[['basic','기본'],['level','레벨 높은 순'],['hp','체력 많은 순'],['class','병종 순']];
 export function showIfPrep(host:ScenarioHost,state:ScenarioState,step:ScenarioStep,picked?:string[],focus?:string,difficulty:'normal'|'extreme'='normal'){
   const hero=host.hero(),names=Object.keys(state.officers);
   // 필수 장수: 대본이 정한 사람 중 지금 부대에 있는 사람. 선택 장수: 난이도에 맞춘 인원 안에서.
   const required=(scriptOf(step.id)?.required??[]).filter(n=>state.officers[n]).slice(0,3);
-  const optional=names.filter(n=>!required.includes(n)),limit=taleSortieLimit(step.act,step.kind==='boss',difficulty);
+  const optional0=names.filter(n=>!required.includes(n)),limit=taleSortieLimit(step.act,step.kind==='boss',difficulty);
   const unitAt=(name:string)=>name==='사마의'?{unitClass:evolvedClass('strategist',hero.level),level:hero.level}:state.officers[name]!;
   // 극한: 인원 대신 출진 코스트(필수 장수 + 고른 장수의 병종 코스트 합)가 상한을 넘지 않게 고른다.
   const ext=difficulty==='extreme',cap=taleCostCap(step.act,step.kind==='boss'),costOf=(name:string)=>{const u=unitAt(name);return unitCost(evolvedClass(u.unitClass,u.level));};
   const fitCost=(list:string[])=>{let used=['사마의',...required].reduce((n,x)=>n+costOf(x),0);return list.filter(n=>{if(!ext)return true;const c=costOf(n);if(used+c>cap)return false;used+=c;return true;});};
-  const sel=fitCost((picked??optional.slice(0,limit)).filter(n=>optional.includes(n)).slice(0,limit)),route=routeById(step.route)!,foe=step.kind==='boss'?route.region.boss:step.tale!.target;
+  const optional=optional0,sel=fitCost((picked??optional.slice(0,limit)).filter(n=>optional.includes(n)).slice(0,limit)),route=routeById(step.route)!,foe=step.kind==='boss'?route.region.boss:step.tale!.target;
   const costUsed=['사마의',...required,...sel].reduce((n,x)=>n+costOf(x),0);
   const f=focus??'사마의',mods=modsOf(state,step),base=enemyBase(state,hero.level,step)+(difficulty==='extreme'?2:0);
   const unitOf=(name:string)=>name==='사마의'?{name,unitClass:evolvedClass('strategist',hero.level),level:hero.level,xp:hero.xp}:state.officers[name]!;
   const card=(name:string)=>{const u=unitOf(name),c=evolvedClass(u.unitClass,u.level),must=name==='사마의'||required.includes(name),on=must||sel.includes(name);
     return `<button class="prep-officer ${on?'on':''} ${must?'must':''} ${f===name?'focus':''}" data-officer="${esc(name)}">${portraitImage(name)?`<span class="prep-sprite prep-face">${cardFace(name)}</span>`:`<span class="prep-sprite prep-troop">${classSprite(c)}</span>`}<span><strong>${esc(name)}</strong><small>${esc(classNames[c]??c)} · Lv.${u.level} ${'◆'.repeat(tierOf(c))}${ext?` · 코스트 ${unitCost(c)}`:''}</small><i class="prep-xp"><i style="width:${Math.round(u.xp/XP_PER_LEVEL*100)}%"></i></i></span>${name==='사마의'?'<em>총대장</em>':must?'<em>🔒 필수</em>':`<label class="prep-toggle"><input type="checkbox" data-sortie="${esc(name)}" ${on?'checked':''}> 출진</label>`}</button>`;};
+  // 정렬·거르기: 고른 장수는 거르기와 상관없이 늘 보인다.
+  const hpOf=(n:string)=>state.run?.hp[n]??1,famOf=(n:string)=>{const o=unitOf(n);return familyOf(evolvedClass(o.unitClass,o.level));};
+  const families=[...new Set(optional.map(famOf))];if(prepFamily&&!(families as string[]).includes(prepFamily))prepFamily='';
+  const order=optional.map((n,i)=>({n,i})).sort((a,b)=>prepSort==='level'?unitOf(b.n).level-unitOf(a.n).level||a.i-b.i:prepSort==='hp'?hpOf(b.n)-hpOf(a.n)||a.i-b.i:prepSort==='class'?famOf(a.n).localeCompare(famOf(b.n))||a.i-b.i:a.i-b.i).map(x=>x.n);
+  const shown=order.filter(n=>!prepFamily||famOf(n)===prepFamily||sel.includes(n));
+  const prepTools=optional.length>3?`<div class="prep-tools"><label>정렬 <select id="prep-sort">${PREP_SORTS.map(([k,l])=>`<option value="${k}" ${k===prepSort?'selected':''}>${l}</option>`).join('')}</select></label><span class="prep-fams"><button type="button" data-fam="" class="${prepFamily?'':'on'}">전체 ${optional.length}</button>${families.map(fm=>`<button type="button" data-fam="${esc(fm)}" class="${fm===prepFamily?'on':''}">${esc(classNames[fm as UnitClass]??fm)} ${optional.filter(n=>famOf(n)===fm).length}</button>`).join('')}</span></div>`:'';
   const u=unitOf(f),c=evolvedClass(u.unitClass,u.level),r=romanceByName(f),temper=temperOf(f),t=classTactics(c);
-  host.modal(`<div class="briefing prep-screen" style="--prep-art:url('story-backgrounds-2.webp')"><div class="prep-backdrop" style="${isoBackdrop(14)}"></div><div class="eyebrow">출진 전 정비 · ${esc(kindTag[step.kind])} · ${esc(stepTitle(step,state))}</div><h2>누구를 데리고 갈 것인가</h2>
+  host.modal(`<div class="briefing prep-screen" style="--prep-art:url('story-backgrounds-2.webp')"><div class="prep-backdrop" style="${isoBackdrop(14)}"></div><div class="eyebrow">출진 전 정비 · ${esc(kindTag[step.kind])} · ${esc(stepTitle(step,state))}</div><h2>출진 편성</h2>
   <p class="camp-mission">승리: ${esc(foe.name)} 격퇴 · 패배: 사마의 퇴각. 지역 ${esc(route.region.name)} · 적 수준 Lv.${base} 안팎.</p>
   <div class="prep-rules"><span>필수 ${1+required.length}명(사마의${required.length?' · '+esc(required.join(' · ')):''})</span><span>선택 ${sel.length}/${limit}명</span>${ext?`<span class="prep-cost${costUsed>cap?' over':''}">출진 코스트 ${costUsed}/${cap}</span>`:''}
   <span class="prep-diff"><label><input type="radio" name="if-diff" value="normal" ${difficulty==='normal'?'checked':''}> 일반</label><label><input type="radio" name="if-diff" value="extreme" ${difficulty==='extreme'?'checked':''}> 극한 · 적 +2레벨 · 출진 코스트 제한 · 경험치 ×1.3</label></span></div>
@@ -313,7 +323,7 @@ export function showIfPrep(host:ScenarioHost,state:ScenarioState,step:ScenarioSt
   ${romanceByName(foe.name)?(()=>{const c=contestOf(state,step),team=['사마의',...required,...sel],best=(k:'war'|'int')=>team.slice().sort((a,b)=>(romanceByName(b)?.[k]??0)-(romanceByName(a)?.[k]??0))[0]!;
     return `<div class="prep-contest"><span class="prep-contest-face">${cardFace(foe.name)}</span><div><b>적장 ${과와(esc(foe.name))} 마주했다</b><small>${c?`${c.kind==='duel'?'일기토':'설전'} ${c.result==='win'?'승리 — 이번 전투 사기 상승'+(c.kind==='duel'?' · 적 기세 꺾임(체력 80%)':' · 책략 MP +15'):c.result==='lose'?'패배':'무승부'}`:'싸우기 전에 겨뤄 볼 수 있다. 이기면 이번 전투가 유리해진다(한 장에 한 번).'}</small></div>${c?'':`<button data-contest="duel" data-by="${esc(best('war'))}">⚔ 일기토 · ${esc(best('war'))}</button><button data-contest="debate" data-by="${esc(best('int'))}">✒ 설전 · ${esc(best('int'))}</button>`}</div>`;})():''}
   ${modsText(mods).length?`<p class="prep-mods"><b>대사 선택의 효과</b> ${esc(modsText(mods).join(' · '))}</p>`:''}
-  <div class="prep-body"><div class="prep-list">${card('사마의')}${required.map(card).join('')}${optional.map(card).join('')}</div>
+  <div class="prep-body"><div class="prep-list">${card('사마의')}${required.map(card).join('')}${prepTools}${shown.map(card).join('')}</div>
   <div class="prep-detail"><div class="prep-portrait">${portraitImage(f)?`<span class="prep-sprite big prep-face">${cardFace(f)}</span>`:`<span class="prep-sprite big prep-troop">${classSprite(c)}</span>`}<div><h3>${esc(f)}</h3><p>${esc(classNames[c]??c)} · Lv.${u.level} · 경험치 ${u.xp}/${XP_PER_LEVEL}</p>${r?`<p class="muted">${esc(r.epithet)}</p>`:''}</div></div>
     ${r?`<div class="romance-stats prep-stats">${([['무력',r.war],['지력',r.int],['통솔',r.lead],['정치',r.pol],['매력',r.cha]] as const).map(([k,v])=>`<span><small>${k}</small><b>${v}</b><i style="width:${v}%"></i></span>`).join('')}</div>`:''}
     ${temper?`<p>성격 <b>${temperNames[temper]}</b> — 일기토·설전에 응하는 방식</p>`:''}${r&&signatureSkills(r.name).length?(()=>{const te=troopEffectOf(c);return te?`<p><b>병종 특성 「${esc(te.effect.name)}」</b> ${esc(troopEffectText(te.effect,te.tier))} <small>(${esc(classNames[c]??c)} · 장수도 함께 쓴다)</small></p>`:'';})():''}${r?signatureSkills(r.name).map((g,k)=>`<p><b>고유특성 ${k+1} 「${esc(g.name)}」</b> ${esc(g.description)} <small>(${esc(g.unlock)})</small></p>`).join(''):''}
@@ -323,6 +333,8 @@ export function showIfPrep(host:ScenarioHost,state:ScenarioState,step:ScenarioSt
   document.querySelectorAll<HTMLButtonElement>('[data-officer]').forEach(b=>b.onclick=e=>{if((e.target as HTMLElement).closest('.prep-toggle'))return;showIfPrep(host,state,step,get(),b.dataset.officer!,difficulty);});
   document.querySelectorAll<HTMLInputElement>('[data-sortie]').forEach(x=>x.onchange=()=>{const now=get();if(now.length>limit){x.checked=false;host.toast(`이 장에는 필수 장수 밖으로 ${limit}명까지 데려갈 수 있습니다.`);return;}if(fitCost(now).length<now.length){x.checked=false;host.toast(`극한 출진 코스트 상한(${cap})을 넘어 더 데려갈 수 없습니다.`);return;}showIfPrep(host,state,step,now,f,difficulty);});
   document.querySelectorAll<HTMLInputElement>('[name=if-diff]').forEach(x=>x.onchange=()=>showIfPrep(host,state,step,get(),f,x.value==='extreme'?'extreme':'normal'));
+  document.getElementById('prep-sort')?.addEventListener('change',e=>{prepSort=(e.target as HTMLSelectElement).value as PrepSort;showIfPrep(host,state,step,get(),f,difficulty);});
+  document.querySelectorAll<HTMLButtonElement>('[data-fam]').forEach(b=>b.onclick=()=>{prepFamily=b.dataset.fam??'';showIfPrep(host,state,step,get(),f,difficulty);});
   document.querySelectorAll<HTMLButtonElement>('[data-contest]').forEach(b=>b.onclick=async()=>{const kind=b.dataset.contest as 'duel'|'debate';await runContest(host,state,step,kind,foe.name,b.dataset.by);showIfPrep(host,loadScenario(),step,get(),f,difficulty);});
   document.getElementById('prep-back')!.onclick=()=>showScenario(host,step.id);
   document.getElementById('prep-save')?.addEventListener('click',()=>host.showSlots!());
@@ -389,7 +401,7 @@ export async function finishStoryBattle(host:ScenarioHost,chapterId:string,victo
 /** 붙잡은 적장을 설득할지 묻는다. */
 function captiveChoice(host:ScenarioHost,name:string,unitClass:UnitClass){
   const r=romanceByName(name),t=temperOf(name);
-  return new Promise<boolean>(done=>{host.modal(`<div class="briefing run-screen"><div class="eyebrow">가상 시나리오 · 붙잡은 적장</div><h2>${이가(esc(name))} 붙잡혔다</h2>
+  return new Promise<boolean>(done=>{host.modal(`<div class="briefing run-screen"><div class="eyebrow">가상 전장 · 붙잡은 적장</div><h2>${이가(esc(name))} 붙잡혔다</h2>
     <p>${r?esc(r.epithet)+' · ':''}${esc(classNames[unitClass]??unitClass)}${r?` · ${esc(romanceStats(name))}`:''}${t?` · 성격 ${temperNames[t]}`:''}</p>
     <p class="muted">설득하면 사마의의 부대에 들어온다. 마음이 움직이지 않으면 놓아 보낸다.</p>
     <div class="run-actions"><button class="primary" id="cap-talk">설득한다 ▶</button><button id="cap-free">놓아 보낸다</button></div></div>`,false);
@@ -434,9 +446,9 @@ function goNext(host:ScenarioHost):void{const st=loadScenario();if(pendingMarch(
 export function showMarch(host:ScenarioHost):void{
   const state=loadScenario(),after=pendingMarch(state);if(!after)return goNext(host);
   const run=state.run!,meta=loadMeta(),nodes=marchNodes(state,after,meta.unlocks.includes('scout_map')?4:3),next=currentStep(state)!;
-  if(run.march)return launchMarch(host,state,after,run.march);
-  host.modal(`<div class="briefing run-screen march-screen"><div class="eyebrow">천명의 길 제${run.no}회차 · 행군로</div><h2>다음 장 ${esc(으로(`「${stepTitle(next,state)}」`))} 가는 길</h2>
-  <p class="muted">세 갈래 중 하나를 고른다. 같은 회차에서는 같은 길이 나온다.</p>${runBar(state)}
+  if(run.march)return marchPrep(host,state,after,run.march);
+  host.modal(`<div class="briefing run-screen march-screen"><div class="eyebrow">천명의 길 제${run.no}회차 · 행군로</div><h2>행군로</h2>
+  <p class="screen-lede">다음 장 ${esc(으로(`「${stepTitle(next,state)}」`))} 가는 길. 세 갈래 중 하나를 고른다(같은 회차에서는 같은 길이 나온다).</p>${runBar(state)}
   <div class="run-choices">${nodes.map((n,i)=>`<button data-march="${i}" class="march-${n.kind}"><strong>${esc(n.label)}</strong><small>${esc(n.detail)}</small></button>`).join('')}</div>
   <div class="run-actions"><button id="march-list">장 목록</button></div></div>`,false);
   document.querySelectorAll<HTMLButtonElement>('[data-march]').forEach(b=>b.onclick=()=>pickMarch(host,after,nodes[Number(b.dataset.march)]!));
@@ -448,12 +460,12 @@ function pickMarch(host:ScenarioHost,after:string,node:MarchNode){
   if(node.kind==='rest'){healAll(state,Math.min(1,(meta.unlocks.includes('field_medic')?1:.6)*restMult(meta)));return done(['의원에서 사마의와 장수들이 기운을 되찾았다.']);}
   if(node.kind==='training'){const party=scenarioParty(state,hero.level,hero.xp,Object.keys(state.officers)),news=rewardOfficers(state,party,{},100);news.push(...host.addHeroXp(80));return done(news);}
   if(node.kind==='recruit'){const offer=recruitOffer(state,after);if(!offer.length)return done(['맞아들일 사람이 없었다.']);
-    return choiceScreen(host,inWhatIf(state)?'모병소 · 누구를 설득할까 (가상 시나리오 — 설득해야 합류)':'모병소 · 누구를 맞아들일까',offer.map(o=>({title:`${o.name} (${classNames[o.unitClass]??o.unitClass})`,detail:`${romanceStats(o.name)??''}${temperOf(o.name)?` · 성격 ${temperNames[temperOf(o.name)!]}`:''}`})),i=>{const o=offer[i]!;
+    return choiceScreen(host,'모병소',offer.map(o=>({title:`${o.name} (${classNames[o.unitClass]??o.unitClass})`,detail:`${romanceStats(o.name)??''}${temperOf(o.name)?` · 성격 ${temperNames[temperOf(o.name)!]}`:''}`})),i=>{const o=offer[i]!;
       if(!inWhatIf(state)){recruitOfficer(state,o.name,hero.level+recruitBonus(meta),meta.unlocks.includes('elite_recruits'));return done([`${이가(o.name)} 사마의의 부대에 들어왔다.`]);}
-      void persuadeOfficer(host,o.name,o.unitClass,run.seed^hashSeed(after)).then(ok=>{if(ok){recruitOfficer(state,o.name,hero.level+recruitBonus(meta),meta.unlocks.includes('elite_recruits'));done([`${이가(o.name)} 설득에 응해 사마의의 부대에 들어왔다.`]);}else done([`${은는(o.name)} 이번엔 거절하고 떠났다. 다른 길목에서 다시 만날 수 있다.`]);});});}
+      void persuadeOfficer(host,o.name,o.unitClass,run.seed^hashSeed(after)).then(ok=>{if(ok){recruitOfficer(state,o.name,hero.level+recruitBonus(meta),meta.unlocks.includes('elite_recruits'));done([`${이가(o.name)} 설득에 응해 사마의의 부대에 들어왔다.`]);}else done([`${은는(o.name)} 이번엔 거절하고 떠났다. 다른 길목에서 다시 만날 수 있다.`]);});},undefined,inWhatIf(state)?'누구를 설득할지 고른다. 가상 전장에서는 설득해야 합류한다.':'누구를 맞아들일지 고른다.');}
   if(node.kind==='treasure'){const offer=relicOffer(state,after);if(!offer.length)return done(['보물고는 비어 있었다.']);
-    return choiceScreen(host,'보물고 · 무엇을 들고 갈까',offer.map(r=>({title:r.name,detail:r.effect})),i=>{run.relics.push(offer[i]!.id);done([`보물 ${을를(`「${offer[i]!.name}」`)} 얻었다.`]);});}
-  run.march=node.kind;saveScenario(state);launchMarch(host,state,after,node.kind);
+    return choiceScreen(host,'보물고',offer.map(r=>({title:r.name,detail:r.effect})),i=>{run.relics.push(offer[i]!.id);done([`보물 ${을를(`「${offer[i]!.name}」`)} 얻었다.`]);},undefined,'이번 회차 내내 들고 갈 보물 하나를 고른다.');}
+  run.march=node.kind;saveScenario(state);marchPrep(host,state,after,node.kind);
 }
 /** 이긴 뒤: 전황 도전의 결과를 정산하고, 전공 보상 셋 중 하나를 고른다(천명·보물·치료/수련). */
 function battleSpoils(host:ScenarioHost,step:ScenarioStep,battle:BattleState):Promise<string[]>{
@@ -468,10 +480,11 @@ function battleSpoils(host:ScenarioHost,step:ScenarioStep,battle:BattleState):Pr
     wounded?{title:'군의 치료',detail:'다친 장수 모두 체력을 회복한다',take:st=>{healAll(st,1);return '전공 보상 — 모든 장수가 회복했다';}}
       :{title:'장수 수련',detail:'부대의 모든 장수 경험치 +60',take:st=>{const lines=rewardOfficers(st,scenarioParty(st,h.level,h.xp,Object.keys(st.officers)).filter(u=>!u.hero),{},60);return ['전공 보상 — 장수 수련',...lines].join(' · ');}},
   ];
-  return new Promise(done=>choiceScreen(host,'전공 보상 · 무엇을 받을까',items,i=>{const st=loadScenario();out.push(items[i]!.take(st));saveScenario(st);done(out);},'전공 보상'));
+  return new Promise(done=>choiceScreen(host,'전공 보상',items,i=>{const st=loadScenario();out.push(items[i]!.take(st));saveScenario(st);done(out);},'천명의 길 · 승리','셋 중 하나를 받는다.'));
 }
-function choiceScreen(host:ScenarioHost,title:string,items:Array<{title:string;detail:string}>,pick:(i:number)=>void,eyebrow='행군로'){
-  host.modal(`<div class="briefing run-screen"><div class="eyebrow">${esc(eyebrow)}</div><h2>${esc(title)}</h2><div class="run-choices">${items.map((it,i)=>`<button data-pick="${i}"><strong>${esc(it.title)}</strong><small>${esc(it.detail)}</small></button>`).join('')}</div></div>`,false);
+/** 고르는 화면: 제목은 화면 이름, lede는 무엇을 고르는지 한 문장(화면 글 기준 · docs/design/화면-글-기준.md). */
+function choiceScreen(host:ScenarioHost,title:string,items:Array<{title:string;detail:string}>,pick:(i:number)=>void,eyebrow='천명의 길 · 행군로',lede=''){
+  host.modal(`<div class="briefing run-screen"><div class="eyebrow">${esc(eyebrow)}</div><h2>${esc(title)}</h2>${lede?`<p class="screen-lede">${esc(lede)}</p>`:''}<div class="run-choices">${items.map((it,i)=>`<button data-pick="${i}"><strong>${esc(it.title)}</strong><small>${esc(it.detail)}</small></button>`).join('')}</div></div>`,false);
   document.querySelectorAll<HTMLButtonElement>('[data-pick]').forEach(b=>b.onclick=()=>pick(Number(b.dataset.pick)));
 }
 function marchResult(host:ScenarioHost,label:string,news:string[]){
@@ -481,8 +494,27 @@ function marchResult(host:ScenarioHost,label:string,news:string[]){
   <div class="modal-actions"><button id="mr-list">장 목록</button><button class="primary" id="mr-next">다음 장 ▶</button></div></div>`,false);
   document.getElementById('mr-list')!.onclick=()=>showScenario(host);document.getElementById('mr-next')!.onclick=()=>goNext(host);
 }
-function launchMarch(host:ScenarioHost,state:ScenarioState,after:string,kind:'battle'|'elite'|string){
-  const hero=host.hero(),next=currentStep(state)!,party=scenarioParty(state,hero.level,hero.xp,undefined,marchSortieLimit(next.act));
+/** 행군 전투 출진 편성: 정해진 인원 안에서 데려갈 장수를 고른다(기본은 체력·레벨 순 자동 편성). */
+function marchPrep(host:ScenarioHost,state:ScenarioState,after:string,kind:'battle'|'elite'|string,picked?:string[]){
+  const hero=host.hero(),next=currentStep(state)!,limit=marchSortieLimit(next.act),hpOf=(n:string)=>state.run?.hp[n]??1;
+  const auto=scenarioParty(state,hero.level,hero.xp,undefined,limit).filter(u=>!u.hero).map(u=>u.name);
+  const sel=(picked??auto).filter(n=>state.officers[n]).slice(0,limit);
+  const names=Object.keys(state.officers).sort((a,b)=>Number(sel.includes(b))-Number(sel.includes(a))||state.officers[b]!.level-state.officers[a]!.level);
+  if(!names.length)return launchMarch(host,state,after,kind,[]);
+  const row=(n:string)=>{const o=state.officers[n]!,c=evolvedClass(o.unitClass,o.level),hp=Math.round(hpOf(n)*100);
+    return `<label class="march-pick ${sel.includes(n)?'on':''}"><input type="checkbox" data-mp="${esc(n)}" ${sel.includes(n)?'checked':''}><strong>${esc(n)}</strong><small>${esc(classNames[c]??c)} · Lv.${o.level} · 체력 ${hp}%${hp<50?' · 다침':''}</small></label>`;};
+  host.modal(`<div class="briefing run-screen march-prep"><div class="eyebrow">천명의 길 · 행군로 · ${kind==='elite'?'정예 전투':'전투'}</div><h2>출진 편성</h2>
+  <p class="screen-lede">총대장과 함께 ${limit}명까지 나간다. 고르지 않으면 체력·레벨이 높은 순으로 채운다.</p><p class="run-sortie-note">고른 장수 ${sel.length}/${limit}명</p>
+  <div class="march-pick-list">${names.map(row).join('')}</div>
+  <div class="run-actions"><button class="primary" id="mp-go">출진 ▶</button><button id="mp-auto">자동 편성</button><button id="mp-list">장 목록</button></div></div>`,false);
+  const get=()=>[...document.querySelectorAll<HTMLInputElement>('[data-mp]')].filter(x=>x.checked).map(x=>x.dataset.mp!);
+  document.querySelectorAll<HTMLInputElement>('[data-mp]').forEach(x=>x.onchange=()=>{const now=get();if(now.length>limit){x.checked=false;host.toast(`행군 전투에는 ${limit}명까지 데려갈 수 있습니다.`);return;}marchPrep(host,state,after,kind,now);});
+  document.getElementById('mp-go')!.onclick=()=>launchMarch(host,state,after,kind,get());
+  document.getElementById('mp-auto')!.onclick=()=>marchPrep(host,state,after,kind);
+  document.getElementById('mp-list')!.onclick=()=>showScenario(host);
+}
+function launchMarch(host:ScenarioHost,state:ScenarioState,after:string,kind:'battle'|'elite'|string,picked?:string[]){
+  const hero=host.hero(),next=currentStep(state)!,party=scenarioParty(state,hero.level,hero.xp,picked,marchSortieLimit(next.act));
   const levels=party.map(u=>u.level),base=Math.max(1,Math.round(levels.reduce((a,b)=>a+b,0)/levels.length)+(kind==='elite'?1:0));
   const ref:RunBattleRef={seed:runSeed(state,'march:'+after),floor:marchFloor(state,next.act),kind:kind==='elite'?'elite':'battle',party,relics:[...state.run!.relics],route:{...state.route},enemyBase:base,scenario:'march:'+after};
   const loadouts=host.heroLoadout();
@@ -503,7 +535,7 @@ async function finishMarchBattle(host:ScenarioHost,battle:BattleState,deployment
     ...recruits.map(o=>({title:`${inWhatIf(state)?'장수 설득':'장수 영입'} · ${o.name} (${classNames[o.unitClass]??o.unitClass})`,detail:`${romanceStats(o.name)??''}${inWhatIf(state)?' · 설득에 성공하면 합류':''}`,take:async()=>{const ok=!inWhatIf(state)||await persuadeOfficer(host,o.name,o.unitClass,state.run!.seed^hashSeed(after+'#win'));if(!ok)return `${은는(o.name)} 이번엔 거절하고 떠났다.`;recruitOfficer(state,o.name,host.hero().level+recruitBonus(loadMeta()),loadMeta().unlocks.includes('elite_recruits'));return `${이가(o.name)} 부대에 들어왔다.`;}})),
     ...(kind==='elite'?[]:[{title:'휴식',detail:'사마의와 장수들의 체력 40% 회복',take:()=>{healAll(state,.4*restMult(loadMeta()));return '잠시 쉬며 숨을 골랐다.';}}])];
   if(!items.length){finishMarch(state,after);saveScenario(state);return marchResult(host,'행군 전투 승리',news);}
-  choiceScreen(host,`행군 전투 승리 · 보상 하나`,items,i=>{void Promise.resolve(items[i]!.take()).then(line=>{news.push(line);finishMarch(state,after);saveScenario(state);marchResult(host,'행군 전투 승리',news);});});
+  choiceScreen(host,'전투 보상',items,i=>{void Promise.resolve(items[i]!.take()).then(line=>{news.push(line);finishMarch(state,after);saveScenario(state);marchResult(host,'행군 전투 승리',news);});},'천명의 길 · 행군로','셋 중 하나를 받는다.');
 }
 /**
  * 장수 설득: 군막에 마주 서서 사마의가 세 번 말을 건넨다. 상대의 마음이 70에 닿으면 합류(true), 아니면 거절(false).
