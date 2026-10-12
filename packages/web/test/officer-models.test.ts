@@ -1,5 +1,7 @@
 import {describe,expect,it} from 'vitest';
-import {readFileSync} from 'node:fs';
+import {existsSync,readFileSync} from 'node:fs';
+// 장수 그림 한 벌(디자인 지시서: {id}-sd-v1.webp 1400×280)이 들어온 장수는 병종과 무관하게 그 시트를 쓴다.
+const hasSd=(id:string)=>existsSync(new URL(`../public/officers/${id}-sd-v1.webp`,import.meta.url));
 import {officerBattleSheet,officerDuelModel,officerDuelModelStyle,officerDuelMounted,officerEntry,officerManifest,officerModelSheets} from '../src/officer-models.ts';
 
 const lordIds=['cao_cao','cao_pi','cao_rui','liu_bei','sun_quan','gongsun_yuan','yuan_tan','yuan_shang','liu_bang','xiang_yu'] as const;
@@ -60,13 +62,13 @@ describe('장수별 전투 SD와 대결 모델',()=>{
   it('군주 10명은 군주 전 계통에서 전용 기마 시트를 찾는다',()=>{
     for(const id of lordIds)for(const unitClass of ['lord','hegemon','sovereign','sonOfHeaven'] as const){
       const model=officerBattleSheet({id,name:id,unitClass})!;
-      expect(model.action.sheet,`${id}/${unitClass}`).toBe(`officers/${id}-battle-lord-v1.webp`);
-      expect(model.action.cell,`${id}/${unitClass}`).toEqual([280,224]);
+      expect(model.action.sheet,`${id}/${unitClass}`).toBe(hasSd(id)?`officers/${id}-sd-v1.webp`:`officers/${id}-battle-lord-v1.webp`);
+      expect(model.action.cell,`${id}/${unitClass}`).toEqual(hasSd(id)?[350,280]:[280,224]);
     }
   });
 
-  it('군주 10명의 전투 시트는 1120×224(280×224 × 4칸)이다',()=>{
-    for(const id of lordIds)expect(webpSize(new URL(`../public/officers/${id}-battle-lord-v1.webp`,import.meta.url)),id).toEqual([1120,224]);
+  it('군주 10명의 전투 시트는 1120×224(280×224 × 4칸), 새 SD 한 벌은 1400×280이다',()=>{
+    for(const id of lordIds)if(hasSd(id))expect(webpSize(new URL(`../public/officers/${id}-sd-v1.webp`,import.meta.url)),id).toEqual([1400,280]);else expect(webpSize(new URL(`../public/officers/${id}-battle-lord-v1.webp`,import.meta.url)),id).toEqual([1120,224]);
   });
 
   it('id, 환영, wooden_zhuge, boss의 연의 이름 순서로 찾는다',()=>{
