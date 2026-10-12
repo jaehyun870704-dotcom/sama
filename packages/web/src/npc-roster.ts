@@ -4,6 +4,7 @@
  */
 import type {UnitClass} from '../../core/src/index.ts';
 import {ZHUGE_BATCHES} from './zhuge/index.ts';
+import type {ZhugeNpc} from './zhuge/types.ts';
 
 export interface NpcEntry {name:string;unitClass:UnitClass;side:'allyAi'|'ally';stages:string[]}
 const n=(name:string,unitClass:UnitClass,side:NpcEntry['side'],...stages:string[]):NpcEntry=>({name,unitClass,side,stages});
@@ -22,5 +23,6 @@ export const NPC_ROSTER:NpcEntry[]=[
   n('조상','cavalry','allyAi','S3-05'),n('조상 친위','spearman','allyAi','S3-05'),
   // 제갈량전
   n('유비','lord','allyAi','Z1-01'),n('관우','heavyCav','allyAi','Z1-01'),n('장비','cavalry','allyAi','Z1-01'),
-  ...ZHUGE_BATCHES.flatMap(b=>b.npcs??[]).map(x=>n(x.name,x.unitClass,x.side,...x.stages)),
+  // 제갈량전 묶음마다 적은 NPC: 이름·병종·편이 같으면 한 항목으로 합친다(예: 맹달은 가맹관과 신성 두 장).
+  ...[...ZHUGE_BATCHES.flatMap(b=>b.npcs??[]).reduce((m,x)=>{const k=x.name+'|'+x.unitClass+'|'+x.side,o=m.get(k);m.set(k,o?{...o,stages:[...new Set([...o.stages,...x.stages])]}:x);return m;},new Map<string,ZhugeNpc>()).values()].map(x=>n(x.name,x.unitClass,x.side,...x.stages)),
 ];
