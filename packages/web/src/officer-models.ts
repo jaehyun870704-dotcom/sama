@@ -75,6 +75,11 @@ export const officerManifest:OfficerEntry[]=[
   E('guan_xing','관흥',{cavalry:['guan_xing-battle-cavalry-v1.webp',280,224,1]}),
   E('zhang_bao','장포',{cavalry:['zhang_bao-battle-cavalry-v1.webp',280,224,1]}),
   E('yan_yan','엄안',{infantry:['yan_yan-battle-infantry-v1.webp',280,224,1]}),
+  // 동오·군웅·촉한 보강 장수 39명: 표준 4칸 SD 전투 시트
+  E('sun_jian','손견',c('sun_jian','cavalry')),E('sun_ce','손책',c('sun_ce','cavalry')),E('taishi_ci','태사자',c('taishi_ci','cavalry')),E('cheng_pu','정보',c('cheng_pu','spearman')),E('zhou_tai','주태',c('zhou_tai','infantry')),E('ling_tong','능통',c('ling_tong','cavalry')),
+  E('yuan_shao','원소',c('yuan_shao','lord')),E('dong_zhuo','동탁',c('dong_zhuo','lord')),E('hua_xiong','화웅',c('hua_xiong','heavyCav')),E('gongsun_zan','공손찬',c('gongsun_zan','cavalry')),E('zhang_jiao','장각',c('zhang_jiao','strategist')),E('gao_shun','고순',c('gao_shun','infantry')),E('ma_teng','마등',c('ma_teng','cavalry')),E('liu_biao','유표',c('liu_biao','lord')),E('xu_shu','서서',c('xu_shu','strategist')),
+  E('zhang_ren','장임',c('zhang_ren','spearman')),E('zhou_cang','주창',c('zhou_cang','infantry')),E('jian_yong','간옹',c('jian_yong','strategist')),E('mi_zhu','미축',c('mi_zhu','lord')),E('sun_qian','손건',c('sun_qian','strategist')),E('liao_hua','요화',c('liao_hua','infantry')),E('zhang_yi','장익',c('zhang_yi','spearman')),E('li_yan','이엄',c('li_yan','strategist')),E('chen_shi','진식',c('chen_shi','spearman')),E('deng_zhi','등지',c('deng_zhi','strategist')),
+  E('wen_yang','문앙',c('wen_yang','cavalry')),E('zhang_chunhua','장춘화',c('zhang_chunhua','strategist')),E('zhen_shi','견씨',c('zhen_shi','dancer')),E('wang_shuang','왕쌍',c('wang_shuang','heavyCav')),E('wen_qin','문흠',c('wen_qin','cavalry')),E('han_dang','한당',c('han_dang','archer')),E('zhang_qin','장흠',c('zhang_qin','infantry')),E('pan_zhang','반장',c('pan_zhang','cavalry')),E('lu_kang','육항',c('lu_kang','strategist')),E('diaochan','초선',c('diaochan','dancer')),E('li_jue','이각',c('li_jue','cavalry')),E('guo_si','곽사',c('guo_si','cavalry')),E('yuan_shu','원술',c('yuan_shu','lord')),
 ];
 
 const legacySheets=[
