@@ -2287,3 +2287,5 @@ dialog:has(.title-screen),dialog:has(.lobby){width:min(1240px,calc(100vw - 24px)
 .sh-have{color:#c5ae7a;font-size:calc(13px*var(--fs,1))}
 .tt-unfit{color:#e09a7f;font-style:normal;font-size:calc(12.5px*var(--fs,1))}.treasure-tile.unfit .tt-pick{opacity:.45}.treasure-tile.unfit .tt-act{opacity:.6}
 @media(max-width:700px){.sh-body{grid-template-columns:1fr}.sh-roster{max-height:none;flex-direction:row;overflow-x:auto}.sh-unit{min-width:180px}}
+/* 이야기 무대의 겹(장소 이름·눈발·대화창)은 무대 안에서만 겹친다 — 그 위에 뜨는 일기토·설전 화면을 뚫고 나오지 않게. */
+.ss-stage{isolation:isolate}

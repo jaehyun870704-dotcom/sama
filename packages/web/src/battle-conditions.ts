@@ -36,9 +36,14 @@ function regionName(stage:StageDef,id:string|undefined){
   if(!id)return '목표 지점';
   return STAGE_REGION_NAMES[stage.id]?.[id]??stageRules[stage.id]?.labels?.find(l=>l.region===id)?.text??REGION_NAMES[id]??'목표 지점';
 }
+/** 아직 맵에 없는 장수(뒤에 나타나는 증원)의 이름: 스테이지 사건의 spawn_units에서 찾는다. */
+function spawnName(stage:StageDef,id:string){
+  for(const e of stage.events??[])for(const a of e.actions??[])if(a.type==='spawn_units')for(const u of a.units??[])if(u.id===id&&u.name)return u.name;
+  return undefined;
+}
 function line(state:BattleState,c:VictoryCondition,lose:boolean){
   // 병종 id로 적힌 조건(예: navy)은 그 병종의 아무 부대나.
-  const name=(id?:string)=>{if(!id)return '';const u=state.find(id);if(u)return classNames[u.name]?`${classNames[u.name]} 부대`:u.name;return LATE_NAMES[id]??(classNames[id]?`${classNames[id]} 아무 부대`:id);};
+  const name=(id?:string)=>{if(!id)return '';const u=state.find(id);if(u)return classNames[u.name]?`${classNames[u.name]} 부대`:u.name;return LATE_NAMES[id]??(classNames[id]?`${classNames[id]} 아무 부대`:spawnName(state.stage,id)??id);};
   switch(c.type){
     case 'annihilate':return lose?`${SIDE_NAMES[c.side??'player']} 전멸`:`${SIDE_NAMES[c.side??'enemy']} 전멸`;
     case 'reach':return isEscapeRegion(c.target??'')?`${subject(name(c.unit))} ${regionName(state.stage,c.target)}까지 탈출`:`${subject(name(c.unit))} ${regionName(state.stage,c.target)}에 도달`;

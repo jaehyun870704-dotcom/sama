@@ -406,6 +406,7 @@ const pack:ScenarioPack={
             {choice:'제갈량',options:[
               {id:'debate',text:'강유와 설전을 벌인다',
                 reply:'그대가 지키려는 것이 위인지, 그대가 배운 도리인지 묻고 싶소. 들어 보겠소?',
+                note:'설전(제갈량 대 강유) · 이기면 사기 상승·책략 MP +15',
                 effects:[{kind:'debate',foe:'강유',by:'제갈량'},{kind:'flag',flag:'z209_debate'}]},
               {id:'wait',text:'말없이 길을 비켜 그가 스스로 보게 한다',
                 reply:'가시오. 성으로 돌아가 보면, 그대를 믿는 사람이 누구인지 알게 될 것이오.',
@@ -460,6 +461,7 @@ const pack:ScenarioPack={
             {choice:'제갈량',options:[
               {id:'debate',text:'왕랑과 설전을 벌인다',
                 reply:'한의 녹을 먹고 자란 사람이 한을 무너뜨린 손을 하늘이라 부르는구려. 그 하늘이 무엇인지 들어 봅시다.',
+                note:'설전(제갈량 대 왕랑) · 이기면 사기 상승·책략 MP +15',
                 effects:[{kind:'debate',foe:'왕랑',by:'제갈량'},{kind:'flag',flag:'z210_debate'}]},
               {id:'silent',text:'대꾸하지 않고 진을 물린다',
                 reply:'말싸움은 싸움터에서 끝내겠소. 오늘 밤 어느 쪽이 하늘의 뜻을 얻었는지 알게 될 것이오.',
@@ -474,8 +476,10 @@ const pack:ScenarioPack={
             {name:'강유',look:'cavalry',at:[70,64],face:'left'},
           ],
           steps:[
-            {narrate:'왕랑의 상여가 위의 진으로 돌아갔다. 그날 밤, 바람이 잦아들고 달이 구름 뒤로 숨었다.'},
-            {say:'강유',line:'조진은 오늘의 수모를 그냥 넘기지 않을 것입니다. 장례를 핑계로 군을 쉬게 하는 척하고 밤에 우리를 칠 겁니다.',to:'제갈량'},
+            {narrate:'왕랑의 상여가 위의 진으로 돌아갔다. 그날 밤, 바람이 잦아들고 달이 구름 뒤로 숨었다.',when:'contest:Z2-10:debate:win'},
+            {narrate:'왕랑의 수레가 위의 진으로 돌아갔다. 그날 밤, 바람이 잦아들고 달이 구름 뒤로 숨었다.',unless:'contest:Z2-10:debate:win'},
+            {say:'강유',line:'조진은 오늘의 수모를 그냥 넘기지 않을 것입니다. 장례를 핑계로 군을 쉬게 하는 척하고 밤에 우리를 칠 겁니다.',to:'제갈량',when:'contest:Z2-10:debate:win'},
+            {say:'강유',line:'조진은 오늘 기세를 얻었다고 여길 것입니다. 그 기세를 몰아 오늘 밤 우리 영채를 칠 겁니다.',to:'제갈량',unless:'contest:Z2-10:debate:win'},
             {emote:'제갈량',text:'♪'},
             {say:'제갈량',line:'그래서 이 영채는 비워 둔다. 장막 아래에는 마른 풀과 염초를 묻고, 군사들은 양쪽 숲에 숨긴다.',to:'강유'},
             {say:'제갈량',line:'저들이 영채에 뛰어드는 순간 불이 오를 것이다. 그때 숲에서 나가 저들을 치고, 그 길로 조진의 본진까지 밀고 가라.',to:'강유'},
