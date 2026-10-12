@@ -1,4 +1,5 @@
 import type {BattleState,Difficulty} from '../../core/src/index.ts';
+import {ZHUGE_BATCHES} from './zhuge/index.ts';
 import {fireScripted,familyOf} from '../../core/src/index.ts';
 
 /** Per-stage rules that live in the client layer (protected units, phase readouts,
@@ -372,6 +373,8 @@ export const stageRules:Record<string,StageRules>={
     failure:({state})=>state.captured.get('citadel')==='enemy'?'반란군이 무위 성채를 점령했습니다.':undefined,
   },
 };
+// 제갈량전 장 묶음의 규칙.
+for(const b of ZHUGE_BATCHES)Object.assign(stageRules,b.rules);
 
 /** 천명의 원정 전장(R-01..R-18): 편별 날씨와 남은 목표만 보여 준다. 스토리 장의 기본값(중앙 성채 등)이 섞이지 않게 한다. */
 const RUN_WEATHER=['상편 · 바람 강함','중편 · 흐림','하편 · 가랑비'];

@@ -3,6 +3,7 @@
  * packages/data/stages의 side가 allyAi(초록 NPC)·ally(우군)인 이름 있는 유닛이다(test/npc-roster.test.ts가 맞춰 본다).
  */
 import type {UnitClass} from '../../core/src/index.ts';
+import {ZHUGE_BATCHES} from './zhuge/index.ts';
 
 export interface NpcEntry {name:string;unitClass:UnitClass;side:'allyAi'|'ally';stages:string[]}
 const n=(name:string,unitClass:UnitClass,side:NpcEntry['side'],...stages:string[]):NpcEntry=>({name,unitClass,side,stages});
@@ -21,4 +22,5 @@ export const NPC_ROSTER:NpcEntry[]=[
   n('조상','cavalry','allyAi','S3-05'),n('조상 친위','spearman','allyAi','S3-05'),
   // 제갈량전
   n('유비','lord','allyAi','Z1-01'),n('관우','heavyCav','allyAi','Z1-01'),n('장비','cavalry','allyAi','Z1-01'),
+  ...ZHUGE_BATCHES.flatMap(b=>b.npcs??[]).map(x=>n(x.name,x.unitClass,x.side,...x.stages)),
 ];

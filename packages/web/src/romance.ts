@@ -8,6 +8,7 @@
  * 이름있는 장수(core signatures.ts)는 장수마다 이름도 효과도 다른 고유특성을 하나 가진다(규칙판 8). 아래 skill은 규칙판 7까지의 옛 고유능력이다.
  */
 import type {Unit} from '../../core/src/index.ts';
+import {ZHUGE_PEOPLE_ALL} from './zhuge/index.ts';
 import {tierOf,signatureOf,signatureSet,SIGNATURE_UNLOCK_TEXT,SIGNATURE_UNLOCK_TIERS} from '../../core/src/index.ts';
 import type {Temper} from './duel.ts';
 
@@ -220,6 +221,8 @@ const byName:Record<string,RomanceOfficer>={
   곽사:o('곽사','이각과 다투다 함께 무너진 장수',[80,34,70,18,28]),
   원술:o('원술','옥새를 쥐고 황제를 칭한 명문가의 아들',[60,64,70,54,72]),
 };
+// 제갈량전에서 새로 오르는 인물(능력은 이 게임이 매김).
+for(const p of ZHUGE_PEOPLE_ALL)if(!byName[p.name])byName[p.name]=o(p.name,p.epithet,p.stats);
 /** 가짜(미끼)는 진짜의 이름을 달고 있어도 능력이 없다. */
 const DECOYS=new Set(['decoy']);
 export function romanceOf(u:{id:string;name:string}):RomanceOfficer|undefined{
@@ -283,6 +286,7 @@ const TEMPERS:Record<string,Temper>={
   요화:'brave',장익:'cautious',고상:'calm',맹달:'cautious',진식:'calm',
   항우:'proud',유방:'calm',장량:'wise',한신:'proud',소하:'cautious',범증:'wise',우희:'calm',영포:'reckless',팽월:'brave',번쾌:'reckless',진평:'wise',종리매:'brave',계포:'calm',용저:'reckless',조참:'calm',관영:'brave',
 };
+for(const p of ZHUGE_PEOPLE_ALL)if(!TEMPERS[p.name])TEMPERS[p.name]=p.temper;
 /** 신장수: 플레이어가 만든 장수를 장수록에 올린다(능력·성격이 전투·설득·무대에 그대로 쓰인다). */
 export function registerOfficer(r:RomanceOfficer,temper?:Temper){byName[r.name]=r;if(temper)TEMPERS[r.name]=temper;else delete TEMPERS[r.name];}
 export function unregisterOfficer(name:string){delete byName[name];delete TEMPERS[name];}

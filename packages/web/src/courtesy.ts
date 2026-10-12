@@ -1,3 +1,4 @@
+import {ZHUGE_PEOPLE_ALL} from './zhuge/index.ts';
 /** 장수의 자 — 대화창·인물열전에서 「유비 현덕」처럼 이름 옆에 붙인다. */
 /** 자: 사서에 전하는 것만. */
 export const COURTESY:Record<string,string>={
@@ -14,6 +15,7 @@ export const COURTESY:Record<string,string>={
   유방:'계',장량:'자방',
   간옹:'헌화',미축:'자중',손건:'공우',이엄:'정방',등지:'백묘',문앙:'차건',한당:'의공',장흠:'공혁',반장:'문규',육항:'유절',이각:'치연',원술:'공로',
 };
+for(const p of ZHUGE_PEOPLE_ALL)if(p.courtesy&&!COURTESY[p.name])COURTESY[p.name]=p.courtesy;
 /** 대화창·인물열전에 쓰는 이름: 자가 전하면 「이름 자」. */
 export function displayName(name:string){const c=COURTESY[name];return c?`${name} ${c}`:name;}
 

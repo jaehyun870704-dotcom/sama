@@ -7,6 +7,7 @@
  * 이름 옆의 자도 여기서 붙인다 — 「유비 현덕」, 「조조 맹덕」.
  */
 import {officerLook,officerPortrait} from './officer-art.ts';
+import {ZHUGE_PEOPLE_ALL} from './zhuge/index.ts';
 import {portraitImage} from './portrait-images.ts';
 import {suggestPortrait,portraitURL,type PortraitSpec} from './portrait.ts';
 import {romanceByName,temperOf} from './romance.ts';
@@ -19,7 +20,7 @@ const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;
 
 export {COURTESY,displayName} from './courtesy.ts';
 
-const WOMEN=new Set(['축융','우희','초선','견씨','장춘화']);
+const WOMEN=new Set(['축융','우희','초선','견씨','장춘화',...ZHUGE_PEOPLE_ALL.filter(p=>p.woman).map(p=>p.name)]);
 /** 이름난 장수(연의 장수록)의 초상 값: 이름·병종·성격으로 짓고, 전승의 모습이 있으면 덮는다. */
 export function specFor(name:string):PortraitSpec|undefined{
   const c=customList().find(o=>o.name===name);if(c)return portraitOf(c);
