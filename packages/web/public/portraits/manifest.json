@@ -202,5 +202,17 @@
   "하제": "he-qi.webp",
   "한수": "han-sui.webp",
   "황습": "huang-xi-shu.webp",
-  "장비": "zhang-fei.webp"
+  "장비": "zhang-fei.webp",
+  "공병": "role-artillery.webp",
+  "대신": "role-official.webp",
+  "마을 어른": "role-civilian.webp",
+  "산골 노인": "role-civilian.webp",
+  "산민": "role-civilian.webp",
+  "맹달의 밀사": "role-messenger.webp",
+  "밀사": "role-messenger.webp",
+  "사자": "role-messenger.webp",
+  "사병": "role-soldier.webp",
+  "성채 수비장": "role-soldier.webp",
+  "옥졸": "role-soldier.webp",
+  "파양 어부": "role-boatman.webp"
 }
