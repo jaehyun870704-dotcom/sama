@@ -28,6 +28,8 @@ describe('이야기 무대의 걸음',()=>{
 describe('장소 이름에 맞는 배경',()=>{
  it('reads the place, not the rough backdrop number',()=>{
   expect(kindFor(5,'업성 · 궁정 바깥뜰')).toBe('court');
+  // 불을 '기다리는' 골짜기는 아직 타지 않은 골짜기다.
+  expect(kindFor(4,'호로곡 · 불길을 기다리는 골짜기')).toBe('valley');expect(kindFor(4,'호로곡 · 불길에 휩싸인 골짜기')).toBe('fire');
   expect(kindFor(14,'기산 · 촉군 진영')).toBe('camp');
   expect(kindFor(7,'오림 · 장강 위의 누선')).toBe('deck');
   expect(kindFor(11,'요수 · 서쪽 강변')).toBe('bank');
