@@ -2088,3 +2088,17 @@ dialog:has(.title-screen),dialog:has(.lobby){width:min(1240px,calc(100vw - 24px)
 .duel-stage.choreo .duel-fighter.hit .duel-model{animation-delay:.04s!important}
 @media (prefers-reduced-motion:reduce){.vs-unit,.vs-unit .duel-model{animation:none!important}}
 @media (max-height:520px){.vs-unit{display:none}}
+/* 대화창 흉상: 원화 칸 위·왼쪽 끝에서 관모·부채가 칼로 자른 듯 끊겨 보이지 않게, 그 두 가장자리를 부드럽게 흐린다.
+   아래(상자에 걸치는 쪽)는 예전처럼 서서히 사라진다. */
+.ss-talk .talk-bust.officer-bust,.duel-talk .talk-bust.officer-bust,.story-caption-bust .talk-bust.officer-bust{
+  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 13%,#000 80%,transparent 100%),linear-gradient(90deg,transparent 0,#000 15%);
+  -webkit-mask-composite:source-in;mask-image:linear-gradient(180deg,transparent 0,#000 13%,#000 80%,transparent 100%),linear-gradient(90deg,transparent 0,#000 15%);mask-composite:intersect}
+/* 흉상이 무대 위쪽 끝에 닿아 잘리지 않게: 무대가 낮으면 흉상을 줄인다 */
+@media (max-height:520px){.ss-talk{--bust:clamp(96px,20%,150px)}}
+
+/* 말하는 동안 무대를 올린다(대화창이 아래 3분의 1을 덮는 화면). 휴대폰 가로처럼 대화창이 무대 밖에 붙는 화면은 그대로. */
+.ss-stage.iso .ss-cam{transition:translate .4s cubic-bezier(.3,.7,.3,1)}
+@media (min-width:581px){.ss-stage.iso.talking .ss-cam{translate:0 -11%}}
+/* 계보가 일곱으로 늘었다: 한 줄로 늘어놓고 옆으로 넘겨 본다(상세 칸은 오른쪽에 그대로) */
+.rc-tree{grid-template-columns:none!important;grid-auto-flow:column;grid-auto-columns:minmax(140px,1fr);overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}
+@media (orientation:landscape) and (max-height:520px){.rc-tree{grid-auto-columns:112px}}

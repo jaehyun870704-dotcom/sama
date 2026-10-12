@@ -25,6 +25,9 @@ import {SLOT_COUNT,slotKey,readSlot,slotLabel,readFull,snapshotKeys,restoreKeys,
 import {encounterLevels,structureKind,structureFrame,raceGap} from './campaign-rules.ts';
 import {readCampaign,writeCampaign,mergeRunCampaign,xpAtLevel,deployment,levelInfo,award,equip,equipSlot,treasureInfo,gearKey,type GearSlot,treasures,OFFICERS} from './progression.ts';
 import {actorMarkup,playBeat} from './story-motion.ts';
+import {playScenes,playNarration} from './story-stage.ts';
+import type {ChoiceEffect,Scene,Look} from './scenario-types.ts';
+import type {BattleMods} from './roguelike.ts';
 import {storyBeats,storyLocations,storyBackdrop,storyAftermath,acts,stories,epilogueLines} from './story.ts';
 import {showHub,showQuests,showTitle,showCollections,finishRunBattle,finishRunStory,RUN_CHAPTER,type RunHost} from './run-ui.ts';
 import {showScenario,campOf,finishIfBattle,finishStoryBattle,noteDefeatReason,type ScenarioHost} from './scenario-ui.ts';
@@ -48,7 +51,7 @@ const scenarioYear=(id:string)=>scriptOf(id)?.year??'';
 import type {ScenarioDeployment,Deployment} from './progression.ts';
 import {loadMeta,saveMeta,recordStory} from './meta.ts';
 import {ALL_ENDINGS,endingFor} from './fate.ts';
-import {LINEAGES,condMet,condText,recruitStatus,previousOf,type RecruitContext} from './recruit.ts';
+import {LINEAGES,condMet,condText,recruitStatus,previousOf,storyRecruits,type RecruitContext} from './recruit.ts';
 import {officerClass} from './officer-perks.ts';
 import {RUN_FLOORS,RELICS,newRun,startingOfficers,battleRef,stageOfficerNames,type RunBattleRef} from './roguelike.ts';
 import {romance,romanceOf,romanceByName,temperOf,signatureSkills} from './romance.ts';
@@ -155,9 +158,43 @@ function growRetinue(units:ReadonlyArray<{id:string;name:string;level?:number}>,
 function saveCampaign(){try{writeCampaign(campaign);return true;}catch{toast('성장 기록을 저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.');return false;}}
 /** viewOnly: 「시나리오 보기」에서 연 이야기 — 끝나면 출진 대신 목록으로 돌아간다. */
 let stopStoryMotion:()=>void=()=>{};
+/** 연의 이야기에서 세운 표식(뒤 장의 when/unless가 읽는다). 천명의 길 회차와 따로 둔다. */
+const YEON_FLAGS='sama-yeon-flags-v1';
+function yeonFlags():string[]{try{const v=JSON.parse(localStorage.getItem(YEON_FLAGS)??'[]') as unknown;return Array.isArray(v)?v.filter((x):x is string=>typeof x==='string'&&x.length<80).slice(-200):[];}catch{return [];}}
+function saveYeonFlags(f:readonly string[]){try{localStorage.setItem(YEON_FLAGS,JSON.stringify([...new Set(f)].slice(-200)));}catch{/* storage optional */}}
+/**
+ * 연의 이야기: 천명의 길과 같은 이야기 무대(작은 인물이 걷고 말풍선·감정을 띄우는 조조전식 장면)로 그 장의 대본을 연다.
+ * 장을 여는 해설 → 장면들 → (보기만 하면 목록으로 / 아니면 출진 정비). 대사 선택의 효과(사기·방어 태세·책략 MP)와
+ * 이야기 속 일기토·설전의 결과는 이번 전투에 실린다. 대본이 없는 장만 예전 두 사람 장면을 쓴다.
+ */
 function storyScene(chapter:number,beat=0,fromArt?:number,viewOnly=false){
-  setStoryEra(chapters[chapter]?.stage.id);
+  const c=chapters[chapter],script=c?scriptOf(c.stage.id):undefined;
+  if(!script||!c)return legacyStoryScene(chapter,beat,fromArt,viewOnly);
+  setStoryEra(c.stage.id);
   if(!storyReady){menuOpen=true;modal(waitPanel('이야기 준비 중','인물과 배경 그림을 마저 받고 있습니다. 끝나면 바로 시작합니다.'),false);void storyArt.then(()=>storyScene(chapter,beat,fromArt,viewOnly));return;}
+  menuOpen=true;clearTimeout(aiTimer);sound.scene=chapter===4?'dream':'camp';void sound.start().then(updateSound);
+  modal('<div class="ss-host yeon-host"></div>',false);
+  const root=$('.ss-host'),heading=`연의 · ${script.title}`,flags=yeonFlags(),picked:ChoiceEffect[]=[];let contest:{kind:'duel'|'debate';result:string}|undefined;
+  const hero=levelInfo(campaign.xp.sima_yi??0).level;
+  void (async()=>{
+    if(script.history?.length&&script.scenes[0])await playNarration(root,{heading,year:script.year,title:script.title,lines:script.history,art:script.scenes[0].art,place:script.scenes[0].place});
+    await playScenes(root,script.scenes,{heading,flags:()=>flags,
+      onChoice:o=>{for(const e of o.effects??[]){picked.push(e);if(e.kind==='flag'&&!flags.includes(e.flag))flags.push(e.flag);}},
+      onContest:async e=>{const by=e.by??'사마의',stat=(n:string)=>{const r=romanceByName(n);return (e.kind==='duel'?(r?.war??55):(r?.int??55))+hero;};
+        const mine=by==='사마의'?portraitFor({id:'contest',name:by,unitClass:storyClassAt('sima_yi',hero),side:'player'} as unknown as Unit,false,e.kind):undefined;
+        const r=await playContest(e.kind,{name:by,stat:stat(by)},{name:e.foe,stat:stat(e.foe)},{...(e.line?{acceptLine:e.line}:{}),seed:c.stage.id+e.foe,done:'돌아가기',sound:k=>sound.event({kind:'duel',critical:k,debate:e.kind==='debate'}),...(mine?{models:{player:mine}}:{})});
+        contest={kind:e.kind,result:r};return r;}});
+    if(!viewOnly)saveYeonFlags(flags);
+    // 이번 전투에 실을 효과: 고른 대사(사기·방어·책략 MP) + 이야기 속 대결의 승리.
+    const mods:BattleMods={};for(const e of picked)if(e.kind==='rally'||e.kind==='guard'||e.kind==='insight')mods[e.kind]=true;
+    if(contest?.result==='win'){mods.rally=true;if(contest.kind==='debate')mods.insight=true;else mods.guard=true;}
+    if(!document.contains(root))return;
+    if(viewOnly)showStoryArchive(chapter);else briefing(chapter,undefined,undefined,Object.keys(mods).length?mods:undefined);
+  })();
+}
+function legacyStoryScene(chapter:number,beat=0,fromArt?:number,viewOnly=false){
+  setStoryEra(chapters[chapter]?.stage.id);
+  if(!storyReady){menuOpen=true;modal(waitPanel('이야기 준비 중','인물과 배경 그림을 마저 받고 있습니다. 끝나면 바로 시작합니다.'),false);void storyArt.then(()=>legacyStoryScene(chapter,beat,fromArt,viewOnly));return;}
   menuOpen=true;clearTimeout(aiTimer);sound.scene=chapter===4?'dream':'camp';void sound.start().then(updateSound);
   const c=chapters[chapter]!,beats=storyBeats[c.stage.id]!,b=beats[beat]!;
   const location=storyLocations[c.stage.id]![beat]!;
@@ -176,9 +213,9 @@ function storyScene(chapter:number,beat=0,fromArt?:number,viewOnly=false){
   // 인물 연기: 걸어 들어오기 → 몸짓(읍·놀람·무릎) → 말하기 → 마무리 자세.
   stopStoryMotion();const speaker=b.speaker==='해설'?'none':b.actor===4?'hero':'companion';
   stopStoryMotion=playBeat($('.story-stage'),{speaker,line:b.line,pose:b.pose,walkIn,deferent:speaker!=='none'&&/주공|폐하|승상|전하|아버님|형님|장군님|대왕/.test(b.line)});
-  $('#story-back').onclick=()=>{if(beat>0)storyScene(chapter,beat-1,location.art,viewOnly);};
+  $('#story-back').onclick=()=>{if(beat>0)legacyStoryScene(chapter,beat-1,location.art,viewOnly);};
   const end=()=>viewOnly?showStoryArchive(chapter):briefing(chapter);
-  $('#story-skip').onclick=end;$('#story-next').onclick=()=>beat+1<beats.length?storyScene(chapter,beat+1,location.art,viewOnly):end();
+  $('#story-skip').onclick=end;$('#story-next').onclick=()=>beat+1<beats.length?legacyStoryScene(chapter,beat+1,location.art,viewOnly):end();
 }
 let menuArc=0,menuStage='';
 /** 마지막 전투의 요약(첫 화면 '이어하기'에 쓴다): 어디서 · 몇 턴 · 아직 끝나지 않았는가. */
@@ -424,7 +461,7 @@ function showSlots(back:()=>void=showMenu){
   $('#slots-back').onclick=()=>{if(battle){$<HTMLDialogElement>('#modal').close();menuOpen=false;render();pump();}else back();};
 }
 
-function briefing(chapter:number,expeditionId?:string,scenario?:ScenarioDeployment){
+function briefing(chapter:number,expeditionId?:string,scenario?:ScenarioDeployment,storyMods?:BattleMods){
   const expedition=expeditions.find(m=>m.id===expeditionId);
   // 시나리오 모드의 연의 장은 이야기 다음에 반드시 이 정비를 거친다(회상 잠금과 무관).
   if(!scenario&&(expedition?!canExpedition(campaign,expedition.id):!(replayable(chapter)||unlocked(chapter))))return;
@@ -438,7 +475,7 @@ function briefing(chapter:number,expeditionId?:string,scenario?:ScenarioDeployme
   const retinueCap=()=>difficulty==='extreme'?1:2,retinueOk=!scenario&&!expedition&&!soloStage(c.stage);
   const retinueCost=()=>retinueOk?retinueUnits().reduce((n,u)=>n+unitCost(u.unitClass),0):0;
   const retinueUnits=()=>retinue.slice(0,retinueCap()).map((name,i)=>({id:'rt_'+i,name,unitClass:evolvedClass(officerClass(name),retinueLevel(name)),level:retinueLevel(name),xp:0,hp:1,officer:true as const}));
-  const dispatch=(preview=false)=>{const d=deployment(campaign,true);if(!expedition)d.wide=2;if(scenario)d.trial=1;if(scenario)d.scenario=structuredClone(scenario);if(retinueOk&&retinue.length)d.retinue=retinueUnits();
+  const dispatch=(preview=false)=>{const d=deployment(campaign,true);if(!expedition)d.wide=2;if(scenario)d.trial=1;if(scenario)d.scenario=structuredClone(scenario);if(retinueOk&&retinue.length)d.retinue=retinueUnits();if(storyMods&&!scenario&&!expedition)d.storyMods={...storyMods};
     // 연구(로그라이크의 영구 강화)는 연의·회상·수련 어디서든 함께 간다.
     if(!preview){const m=loadMeta(),p=deploymentPerks(m,['사마의',...Object.keys(m.officerPerks??{})]);if(p)d.perks=p;}if(!expedition&&extras.length)d.extraOfficers=pickExtras(c.stage,c.map,extras,difficulty,d.levels,retinueCost());if(expedition)d.mission={id:expedition.id,runId:preview?'preview':crypto.randomUUID(),version:4,balance:1,supportClasses:[...supports]};return d;};
   const mission=chapter===7?'사마의와 조진을 생존시키고 양앙을 포함한 전초 수비대 7부대를 모두 격퇴하십시오. 수비대장만 쓰러뜨려서는 끝나지 않습니다.':chapter===6?'조조를 보호하며 마초를 격퇴한 뒤, 사마의 또는 조진으로 관문 안 금빛 구역을 점령하십시오. 조조·사마의·조진 퇴각 시 패배합니다.':chapter===5?'수송대 두 부대 중 최소 한 부대를 선택한 동쪽 출구로 호위하십시오. 두 수송대가 모두 소실되거나 사마의·조진이 퇴각하면 실패합니다.':chapter===4?'진궁·여포·주유를 차례로 격파한 다음, 전차의 방해를 뚫고 황제 옆 금빛 칸에 도달하십시오.':chapter===3?'길잡이와 대화해 탈출로를 정하고, 추격 압박이 한계에 닿기 전에 형제 모두 선택한 출구에 도착하십시오.':intro?'사마의로 창고에 도달한 뒤 민중에게 인접해 무장시키고 습격대를 격퇴하십시오.':escape?'두 형제 모두 남문에 도착하고 통행료 1,000전을 지불하십시오.':'수비대장을 격퇴한 뒤 본대로 중앙 성채를 점령하십시오. 경쟁 우군 선점 시 패배합니다.';
@@ -553,7 +590,7 @@ function showRecruit(focus?:string,joined?:string){
   const conds=[...(prev?[`<li class="${x.recruited.has(prev)?'ok':''}">${x.recruited.has(prev)?'✓':'·'} 계보 앞 단계 ${esc(prev)} 등용</li>`]:[]),...LINEAGES.flatMap(l=>l.officers).find(o=>o.name===sel.name)!.conds.map(c=>`<li class="${condMet(c,x)?'ok':''}">${condMet(c,x)?'✓':'·'} ${esc(condText(c,x))}</li>`)].join('');
   const lineage=LINEAGES.find(l=>l.officers.some(o=>o.name===sel.name))!;
   modal(`<div class="briefing recruit-screen"><div class="eyebrow">등용 · 계보 · ${got}/${all.length}명</div><h2>천하의 인재를 휘하로</h2>
-  <p class="muted">계보마다 위에서부터 차례로 들인다. 돈으로 사지 않는다 — 그 장수와 얽힌 싸움을 이기고, 그릇을 보여 주면 스스로 찾아온다. 들인 장수는 연의 출진 준비의 「등용 장수」 칸에서 데려가고(일반 2명 · 극한 1명), 천명의 길에도 동료로 합류한다.</p>
+  <p class="muted">계보마다 위에서부터 차례로 들인다. 돈으로 사지 않는다 — 그 장수와 얽힌 싸움을 이기고, 그릇을 보여 주면 스스로 찾아온다. 조건에 연의 장이 들어 있는 장수는 그 장을 이겨 조건을 다 채우는 순간 이야기 속에서 저절로 합류한다. 들인 장수는 연의 출진 준비의 「등용 장수」 칸에서 데려가고(일반 2명 · 극한 1명), 천명의 길에도 동료로 합류한다.</p>
   ${joined?`<div class="rc-joined"><span class="rc-face big">${cardFace(joined)}</span><div><b>${esc(joined)}</b> — 사마의 휘하에 들었다.<p>「${esc(all.find(o=>o.name===joined)!.line)}」</p></div></div>`:''}
   <div class="rc-body"><div class="rc-tree">${LINEAGES.map(l=>`<section class="rc-line"><h3><span class="lobby-seal" aria-hidden="true">${l.seal}</span>${esc(l.name)}<small>${esc(l.blurb)}</small></h3><div class="rc-steps">${l.officers.map(o=>node(o.name)).join('<i class="rc-arrow" aria-hidden="true">▼</i>')}</div></section>`).join('')}</div>
   <aside class="rc-detail"><div class="rc-head"><span class="rc-face big">${cardFace(sel.name)}</span><div><small>${esc(lineage.name)}</small><h3>${esc(sel.name)}</h3><p>${esc(r?.epithet??'')}</p><p class="rc-stats">${r?`무력 ${r.war} · 지력 ${r.int} · 통솔 ${r.lead}`:''} · ${esc(classNames[officerClass(sel.name)]??'')}</p></div></div>
@@ -584,10 +621,22 @@ function showExpeditions(tab:Expedition['kind']='challenge'){
  document.querySelectorAll<HTMLButtonElement>('[data-exp-tab]').forEach(el=>el.onclick=()=>showExpeditions(el.dataset.expTab as Expedition['kind']));
  document.querySelectorAll<HTMLButtonElement>('[data-expedition]').forEach(el=>el.onclick=()=>expeditionStory(el.dataset.expedition!));$('#expedition-back').onclick=tab==='challenge'?showMenu:showTraining;
 }
-function expeditionStory(id:string,beat=0){const m=expeditions.find(x=>x.id===id);if(!m||!canExpedition(campaign,id))return;const scenes=trialStory(m.id,m.name,m.art,m.lines),scene=scenes[beat]!,spoken=splitSpokenLine(scene.line),heroSpeaking=spoken.speaker==='사마의',other=heroSpeaking?'조진':spoken.speaker;
- modal(`<div class="story-scene"><div class="eyebrow">${KIND_LABEL[m.kind]} · ${beat+1}/${scenes.length} · ${scene.place}</div><h2>${m.name}</h2><p class="trial-objective">${trialGoalText(id)}</p><div class="story-stage"><div class="story-backdrop incoming" style="${storyBackdrop(scene.art)}"></div>${actorMarkup('사마의','hero',beat===0?'offstage':'')}${actorMarkup(other,'companion',beat===0?'offstage':'')}</div>${dialogueCaption(spoken.speaker,spoken.line)}<div class="modal-actions"><button id="expedition-cancel">의뢰 목록</button><button id="expedition-next" class="primary">${beat<scenes.length-1?'다음 이야기':'출진 정비'} →</button></div></div>`,false);
- stopStoryMotion();stopStoryMotion=playBeat($('.story-stage'),{speaker:spoken.speaker==='해설'?'none':heroSpeaking?'hero':'companion',line:spoken.line,pose:beat===scenes.length-1?'resolve':'speak',walkIn:beat===0,deferent:/주공|폐하|승상|전하|장군님/.test(spoken.line)});
- $('#expedition-cancel').onclick=()=>m.kind==='training'?showTraining():showExpeditions(m.kind);$('#expedition-next').onclick=()=>beat<scenes.length-1?expeditionStory(id,beat+1):briefing(7,id);
+/**
+ * 수련·도전 이야기: 연의·천명의 길과 같은 이야기 무대로. 의뢰 → 정찰 → 출진의 결의 세 장면을
+ * 사마의와 조진(또는 말하는 사람)이 걸어 들어와 주고받는다. 끝나면 출진 정비.
+ */
+function expeditionStory(id:string,_beat=0){const m=expeditions.find(x=>x.id===id);if(!m||!canExpedition(campaign,id))return;
+  if(!storyReady){menuOpen=true;modal(waitPanel('이야기 준비 중','인물과 배경 그림을 마저 받고 있습니다. 끝나면 바로 시작합니다.'),false);void storyArt.then(()=>expeditionStory(id));return;}
+  menuOpen=true;clearTimeout(aiTimer);sound.scene='camp';void sound.start().then(updateSound);
+  const look=(n:string):Look=>n==='사마의'?'strategist':n==='조진'?'heavy':/책사|학자|의원|상인/.test(n)?'civil':'infantry';
+  const scenes:Scene[]=trialStory(m.id,m.name,m.art,m.lines).map((sc,i)=>{const sp=splitSpokenLine(sc.line),other=sp.speaker==='사마의'||sp.speaker==='해설'?'조진':sp.speaker;
+    return {place:sc.place,art:sc.art,cast:[{name:'사마의',look:'strategist',...(i?{at:[40,66] as [number,number]}:{}),face:'right'},{name:other,look:look(other),...(i?{at:[60,64] as [number,number]}:{}),face:'left'}],
+      steps:[...(i?[]:[{enter:'사마의',at:[40,66] as [number,number],from:'left' as const},{enter:other,at:[60,64] as [number,number],from:'right' as const}]),
+        ...(i===0?[{narrate:`${KIND_LABEL[m.kind]} · ${m.name} — ${trialGoalText(id)}`}]:[]),
+        sp.speaker==='해설'?{narrate:sp.line}:{say:sp.speaker,line:sp.line,to:sp.speaker==='사마의'?other:'사마의'}]};});
+  modal('<div class="ss-host trial-host"></div>',false);
+  const root=$('.ss-host');
+  void playScenes(root,scenes,{heading:`${KIND_LABEL[m.kind]} · ${m.name}`,flags:()=>[]}).then(()=>{if(document.contains(root))briefing(7,id);});
 }
 /** 연의 장수록: 별호 · 다섯 능력 · 고유능력. 연의에 없는 졸병은 표시하지 않는다. */
 function romanceCard(u:Unit){
@@ -1002,6 +1051,10 @@ function checkModal(){
     if(win&&chapters.some(c=>c.stage.id===s.stage.id)){const m=loadMeta();if(!m.chronicle.includes(s.stage.id))recordStory(m,s.stage.id);
       // 연의 회상·수련 전투(천명의 길 밖)도 천명을 조금 준다: 연구가 로그라이크의 성장이다.
       if(!again&&!session.deployment?.scenario&&!session.deployment?.mission){mandateGain=s.difficulty==='extreme'?2:1;m.mandate+=mandateGain;m.earned+=mandateGain;}saveMeta(m);}
+    // 이야기를 하면서 들이는 장수: 이 장을 이겨 조건을 다 채운 장수는 등용 화면에 가지 않아도 합류한다.
+    if(win&&!again&&!session.deployment?.mission&&chapters.some(c=>c.stage.id===s.stage.id)){const joined=storyRecruits(recruitContext());
+      if(joined.length){const m=loadMeta();m.recruited=[...new Set([...(m.recruited??[]),...joined])];saveMeta(m);const sc=loadScenario();joinRecruits(sc,joined,levelInfo(campaign.xp.sima_yi??0).level,officerClass);saveScenario(sc);
+        setTimeout(()=>toast(`등용 · ${joined.join(' · ')} 합류 — 연의에서 맺은 인연으로 사마의 휘하에 들었다`),1900);}}
     sound.sfx(win?(session.somber?'somber':'victory'):'defeat');
     if(session.deployment?.scenario){
       // 시나리오 모드의 연의 장: 보상은 같고, 전투 뒤 장면과 다음 장은 시나리오 흐름이 맡는다.
@@ -1128,5 +1181,5 @@ async function boot(){
   if(menuOpen&&document.getElementById('hub-training'))showMenu();
 }
 // ?dev only: a handle for QA scripts to inspect or nudge the running battle.
-if(devMode)Object.assign(window,{__sama:{get session(){return session;},get field(){return field;},render,start(chapter:number){session=new Session(chapter,'normal',215,'survival',RULES,{...deployment(campaign,true),wide:2});activate();},story(chapter:number){storyScene(chapter);},contest(kind:'duel'|'debate',foe=kind==='duel'?'여포':'제갈량'){menuOpen=true;modal('<div class="story-scene"><p>개발용 대결</p></div>',false);void playContest(kind,{name:'사마의',stat:90},{name:foe,stat:88},{acceptLine:kind==='duel'?'덤벼라!':'그 말, 내가 받아 주겠소.'});},run(floor:number,kind:'battle'|'elite'|'boss'|'tale',seed=7,route?:Record<number,string>,tale?:string){const r=newRun(seed,startingOfficers());r.floor=floor;if(route)r.route=route as {1?:string;2?:string;3?:string};runHost.startBattle({levels:{sima_yi:2+floor,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},run:battleRef(r,kind,tale),trial:1},seed);},brief(chapter:number){briefing(chapter);},get campaign(){return campaign;},act(cmd:Command){act(cmd);}}});
+if(devMode)Object.assign(window,{__sama:{get session(){return session;},get field(){return field;},render,start(chapter:number){session=new Session(chapter,'normal',215,'survival',RULES,{...deployment(campaign,true),wide:2});activate();},story(chapter:number){storyScene(chapter);},trial(id?:string){expeditionStory(id??expeditions.find(m=>canExpedition(campaign,m.id))!.id);},contest(kind:'duel'|'debate',foe=kind==='duel'?'여포':'제갈량'){menuOpen=true;modal('<div class="story-scene"><p>개발용 대결</p></div>',false);void playContest(kind,{name:'사마의',stat:90},{name:foe,stat:88},{acceptLine:kind==='duel'?'덤벼라!':'그 말, 내가 받아 주겠소.'});},run(floor:number,kind:'battle'|'elite'|'boss'|'tale',seed=7,route?:Record<number,string>,tale?:string){const r=newRun(seed,startingOfficers());r.floor=floor;if(route)r.route=route as {1?:string;2?:string;3?:string};runHost.startBattle({levels:{sima_yi:2+floor,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},run:battleRef(r,kind,tale),trial:1},seed);},brief(chapter:number){briefing(chapter);},get campaign(){return campaign;},act(cmd:Command){act(cmd);}}});
 void boot();

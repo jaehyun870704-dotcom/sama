@@ -290,6 +290,8 @@ export class Session {
     if(this.deployment?.run)prepareRunBattle(state,this.deployment.run,this.revision);
     // 시나리오 모드의 연의 장: 대사 선택의 효과(사기·방어 태세·책략 MP).
     if(this.deployment?.scenario?.mods&&!this.deployment.run)applyBattleMods(state,this.deployment.scenario.mods);
+    // 연의 장: 이야기에서 고른 대사·대결 승리의 효과.
+    if(this.deployment?.storyMods&&!this.deployment.scenario&&!this.deployment.run&&!this.deployment.mission)applyBattleMods(state,this.deployment.storyMods);
     // 로그라이크 회차의 연의 장: 회차 보물이 본대에 실리고, 사마의는 남은 체력으로 나선다.
     if(this.deployment?.scenario&&!this.deployment.run){const sc=this.deployment.scenario;if(sc.recruits?.length)addRecruits(state,sc.recruits,this.revision);if(sc.relics?.length)applyRelics(state,sc.relics);const h=state.find('sima_yi');if(h&&sc.heroHp!==undefined)h.hp=Math.max(1,Math.round(h.stats.maxHp*sc.heroHp));}
     // 연의(본편) 장: 등용한 장수를 사마의 곁에 세운다(이미 그 장에 나오는 이름은 건너뛴다).
@@ -734,6 +736,7 @@ export class Session {
       if(sc&&((sc.relics!==undefined&&(!Array.isArray(sc.relics)||sc.relics.length>12||sc.relics.some(x=>typeof x!=='string')))||(sc.heroHp!==undefined&&!(sc.heroHp>0&&sc.heroHp<=1))))throw new Error('잘못된 시나리오 기록');
       if(data.deployment.run&&data.deployment.run.enemyBase!==undefined&&(!Number.isInteger(data.deployment.run.enemyBase)||data.deployment.run.enemyBase<1||data.deployment.run.enemyBase>60))throw new Error('잘못된 시나리오 기록');}
     if(data.deployment?.branch!==undefined&&(typeof data.deployment.branch!=='string'||data.deployment.branch.length>60||!data.deployment.run))throw new Error('잘못된 분기 기록');
+    {const m=data.deployment?.storyMods;if(m!==undefined&&(typeof m!=='object'||m===null||Object.entries(m).some(([k,v])=>!['rally','guard','insight'].includes(k)||v!==true)))throw new Error('잘못된 이야기 효과');}
     {const rt=data.deployment?.retinue;if(rt!==undefined&&(!Array.isArray(rt)||rt.length>2||rt.some(x=>typeof x?.name!=='string'||typeof x.id!=='string'||!(x.level>=1&&x.level<=99)||!(x.hp>0&&x.hp<=1))))throw new Error('잘못된 등용 기록');for(const x of rt??[])statsFor(x.unitClass,1);}
     if(data.deployment?.runStory){const r=data.deployment.runStory;
       if(!Number.isInteger(r.floor)||r.floor<1||r.floor>RUN_FLOORS||typeof r.stage!=='string'||!chapters.some(c=>c.stage.id===r.stage)||chapters[data.chapter]?.stage.id!==r.stage||!Number.isSafeInteger(r.seed)

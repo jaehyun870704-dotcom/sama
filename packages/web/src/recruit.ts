@@ -53,8 +53,36 @@ export const LINEAGES:readonly Lineage[]=[
     {name:'왕평',conds:[{kind:'extreme',stage:'S2-06'},{kind:'officer',name:'장합'}],line:'산 위에 진을 치지 말라 했건만. 이제 그대의 군을 따르겠소.'},
     {name:'강유',conds:[{kind:'stage',stage:'S2-12'},{kind:'ending',count:1},{kind:'officer',name:'왕평'}],line:'승상의 뜻을 이을 곳이 여기라면.'},
   ]},
+  // ── 연의 밖에서 이름을 얻은 장수들: 연의의 해당 시기를 지나고, 그 장수와 어울리는 '해낸 일'을 채우면 들인다.
+  {id:'cao_veterans',name:'조조의 옛 장수',seal:'魏',blurb:'창업기의 맹장·책사 — 조조 곁에서 사마의를 지켜본 사람들',officers:[
+    {name:'하후돈',conds:[{kind:'stage',stage:'S1-07'},{kind:'level',level:8}],line:'눈 하나로도 전장은 다 보이네.'},
+    {name:'하후연',conds:[{kind:'stage',stage:'S1-08'},{kind:'officer',name:'하후돈'}],line:'사흘에 오백 리, 천 리라도 달려가지.'},
+    {name:'조인',conds:[{kind:'stage',stage:'S1-10'},{kind:'seals',count:20}],line:'성 하나를 맡기면 끝까지 지켜 내겠소.'},
+    {name:'방덕',conds:[{kind:'extreme',stage:'S1-06'},{kind:'officer',name:'조인'}],line:'관을 짊어지고 왔소. 물러설 생각은 없소.'},
+    {name:'가후',conds:[{kind:'stage',stage:'S1-11'},{kind:'treasures',count:15}],line:'살아남는 계책이라면 내가 조금 아오.'},
+  ]},
+  {id:'late_pillars',name:'후대의 기둥',seal:'晉',blurb:'사마의가 길러 낸 장수들 — 촉을 막고 진의 터를 닦다',officers:[
+    {name:'호준',conds:[{kind:'stage',stage:'S2-09'},{kind:'level',level:16}],line:'태위의 군령이라면 어디든 가겠습니다.'},
+    {name:'진태',conds:[{kind:'stage',stage:'S3-02'},{kind:'officer',name:'호준'}],line:'옹주는 제가 지키겠습니다.'},
+    {name:'왕기',conds:[{kind:'stage',stage:'S3-04'},{kind:'training',wins:5}],line:'군량과 길을 먼저 살피는 것이 제 버릇입니다.'},
+    {name:'등애',conds:[{kind:'stage',stage:'S3-03'},{kind:'challenge',step:5}],line:'사, 사마 태부… 저, 저를 써 주십시오.'},
+    {name:'종회',conds:[{kind:'stage',stage:'S3-06'},{kind:'officer',name:'등애'},{kind:'seals',count:90}],line:'제 꾀가 태부의 그릇에 닿을지 보시지요.'},
+  ]},
 ];
 export const RECRUITABLE=LINEAGES.flatMap(l=>l.officers.map(o=>o.name));
+/**
+ * 이야기를 하면서 저절로 들어오는 장수: 연의 장(또는 극한)이 조건에 들어 있는 장수는, 그 장을 이겨
+ * 조건을 모두 채운 순간 등용 화면에 가지 않아도 합류한다(계보 순서는 지킨다). 새로 들어온 이름을 돌려준다.
+ */
+export function storyRecruits(x:RecruitContext):string[]{
+  const rec=new Set(x.recruited),got:string[]=[];let changed=true;
+  while(changed){changed=false;
+    for(const o of LINEAGES.flatMap(l=>l.officers)){
+      if(rec.has(o.name)||!o.conds.some(c=>c.kind==='stage'||c.kind==='extreme'))continue;
+      if(recruitStatus(o.name,{...x,recruited:rec})==='ready'){rec.add(o.name);got.push(o.name);changed=true;}
+    }}
+  return got;
+}
 
 export interface RecruitContext {
   /** 연의 장을 이겼나(일반 이상) */

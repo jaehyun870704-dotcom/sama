@@ -140,10 +140,14 @@ export class Stage {
   /** 이 칸에 다른 사람이 서 있는가. */
   private taken(cell:Cell,except?:string){for(const [n,a] of this.actors)if(n!==except&&a.on&&same(a.cell,cell))return true;return false;}
   /** 원하는 칸이 차 있으면 가장 가까운 빈 칸. */
+  /** 바로 옆(앞뒤좌우·대각) 칸에 다른 사람이 있는가 — 그림이 겹치고 이름표가 포개진다. */
+  private crowded(cell:Cell,except?:string){for(const [n,a] of this.actors)if(n!==except&&a.on&&Math.abs(a.cell[0]-cell[0])<=1&&Math.abs(a.cell[1]-cell[1])<=1)return true;return false;}
+  /** 원하는 칸이 차 있으면 가장 가까운 빈 칸(되도록 다른 사람과 한 칸 떨어진 곳). */
   private free(cell:Cell,except?:string):Cell{
-    if(this.scene.standable(cell)&&!this.taken(cell,except))return cell;
-    for(let d=1;d<12;d++)for(let i=-d;i<=d;i++)for(const c of [[cell[0]+i,cell[1]+d-Math.abs(i)],[cell[0]+i,cell[1]-d+Math.abs(i)]] as Cell[])if(this.scene.standable(c)&&!this.taken(c,except))return c;
-    return cell;
+    const ring=(ok:(c:Cell)=>boolean):Cell|undefined=>{if(ok(cell))return cell;
+      for(let d=1;d<12;d++)for(let i=-d;i<=d;i++)for(const c of [[cell[0]+i,cell[1]+d-Math.abs(i)],[cell[0]+i,cell[1]-d+Math.abs(i)]] as Cell[])if(ok(c))return c;return undefined;};
+    return ring(c=>this.scene.standable(c)&&!this.crowded(c,except)&&Math.abs(c[0]-cell[0])+Math.abs(c[1]-cell[1])<=3)
+      ??ring(c=>this.scene.standable(c)&&!this.taken(c,except))??cell;
   }
   addActor(m:CastMember,seat?:Cell){
     const art=artFor(m.name,m.look),look=art.kind==='sheet'?art.look:m.look;
@@ -188,9 +192,12 @@ export class Stage {
       if(!to){const near=[...this.actors.entries()].filter(([n,o])=>n!==speaker&&o.on).sort((p,q)=>Math.abs(p[1].cell[0]-a.cell[0])+Math.abs(p[1].cell[1]-a.cell[1])-Math.abs(q[1].cell[0]-a.cell[0])-Math.abs(q[1].cell[1]-a.cell[1]))[0];if(near)this.faceTo(speaker,near[0]);}
       this.gesture(speaker,/[!！]{1}$|이놈|닥쳐|물러서/.test(line)?ANGER_FRAME(a.look):TALK_FRAME(a.look),1000);
     }
+    // 대화창이 무대 아래를 덮으므로, 말하는 동안 무대를 조금 올려 인물이 대화창에 가리지 않게 한다.
+    this.el.classList.add('talking');
     this.talk.innerHTML=talkBox(speaker,'',a&&this.scene.toPct(a.cell)[1]>58?'top':'bottom',a?.look,this.skin);
     await this.typeLine(this.talk.querySelector<HTMLElement>('.ss-talk-body p')!,line,a);
     await this.waitClick();if(a)a.el.classList.remove('speaking');this.talk.innerHTML='';
+    setTimeout(()=>{if(!this.talk.innerHTML)this.el.classList.remove('talking');},160);
   }
   /** 한 글자씩 써 내려간다. 도중에 누르면 문장을 한꺼번에 보인다. 말하는 동안 몸짓을 한두 번 더 한다. */
   private typeLine(el:HTMLElement,line:string,a?:Actor){

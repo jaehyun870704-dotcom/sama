@@ -46,3 +46,16 @@ describe('companions grow and join',()=>{
     expect(joinRecruits(s,['사마부'],8,officerClass)).toEqual([]);
   });
 });
+
+describe('이야기를 하면서 들이는 장수',()=>{
+  it('연의 장을 이겨 조건을 다 채운 장수만 저절로 합류하고, 계보 순서를 지킨다',async()=>{
+    const {storyRecruits}=await import('../src/recruit.ts');
+    const won=new Set(['S1-03','S1-04','S1-05']);
+    const got=storyRecruits(ctx({won:s=>won.has(s),heroLevel:3}));
+    expect(got).toEqual(expect.arrayContaining(['사마부','조홍','장제']));
+    expect(got).not.toContain('사마방');// Lv.6 조건이 남았다
+    expect(got).not.toContain('순욱');// 연의 장 조건이 없는 장수는 등용 화면에서만
+    const later=storyRecruits(ctx({won:s=>won.has(s)||s==='S1-07',heroLevel:8}));
+    expect(later).toEqual(expect.arrayContaining(['하후돈','사마방']));
+  });
+});
