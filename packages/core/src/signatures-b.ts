@@ -61,7 +61,7 @@ const SET: Record<string, [Signature, Signature, Signature]> = {
   석포: [
     sig2("짝이 없는 석중용", (t) => `자신의 체력이 가득할 때 회피 +${T(t, 12)}%p.`, dodge(12, (_c, s) => s.hp >= s.stats.maxHp)),
     sig2("수춘의 원군 격파", (t) => `3칸 안에 적이 셋 이상이면 주는 피해 ${T(t, 15)}% 증가.`, atk(15, (_c, s) => around(s, 3, "foe").length >= 3)),
-    sig2("개국의 대사마", (t) => `2칸 안 아군 기병이 받는 피해 ${T(t, 10)}% 감소.`, { onAllyDefend(ctx, h, p) { if (mounted(ctx.defender) && engageDistance(h.pos, ctx.defender.pos) <= 2) ctx.reduction = combine(ctx.reduction, P(10, p)); } }),
+    sig2("개국의 대사마", (t) => `2칸 안 아군 기병이 받는 피해 ${T(t, 12)}% 감소.`, { onAllyDefend(ctx, h, p) { if (mounted(ctx.defender) && engageDistance(h.pos, ctx.defender.pos) <= 2) ctx.reduction = combine(ctx.reduction, P(12, p)); } }),
   ],
   // ── 촉
   유봉: [
@@ -93,13 +93,13 @@ const SET: Record<string, [Signature, Signature, Signature]> = {
   왕창: [
     sig2("강릉 공략", (t) => `물 위나 물가의 적에게 회심 확률 +${T(t, 12)}%p.`, crit(12, (c) => byWater(c.defender))),
     sig2("정남장군", (t) => `2칸 안 아군 수군이 받는 피해 ${T(t, 12)}% 감소.`, { onAllyDefend(ctx, h, p) { if (fam(ctx.defender.unitClass) === "navy" && engageDistance(h.pos, ctx.defender.pos) <= 2) ctx.reduction = combine(ctx.reduction, P(12, p)); } }),
-    sig2("아들에게 남긴 가훈", (t) => `자기보다 레벨이 높은 적에게 받는 피해 ${T(t, 15)}% 감소.`, def(15, (c, s) => c.attacker.level > s.level)),
+    sig2("아들에게 남긴 가훈", (t) => `자기보다 레벨이 높은 적에게 받는 피해 ${T(t, 12)}% 감소.`, def(12, (c, s) => c.attacker.level > s.level)),
   ],
   // ── 촉·위
   황권: [
     sig2("강북의 고군", (t) => `3칸 안에 아군이 없으면 주는 피해 ${T(t, 15)}% 증가, 받는 피해 ${T(t, 10)}% 감소.`, both(atk(15, (_c, s) => !around(s, 3, "friend").length), def(10, (_c, s) => !around(s, 3, "friend").length))),
     sig2("한중을 먼저 취하소서", (t) => `산지·구릉 칸의 적에게 주는 피해 ${T(t, 18)}% 증가.`, atk(18, (c) => onTerrain(c.defender, "mountain", "hill"))),
-    sig2("유비가 저버린 신하", (t) => `받는 책략 피해 ${T(t, 15)}% 감소, 회피 +${T(t, 5)}%p.`, both(def(15, (c) => strat(c)), dodge(5))),
+    sig2("유비가 저버린 신하", (t) => `받는 책략 피해 ${T(t, 12)}% 감소, 회피 +${T(t, 5)}%p.`, both(def(12, (c) => strat(c)), dodge(5))),
   ],
   하후패: [
     sig2("정군산의 원한", (t) => `이름있는 적 장수를 치면 회심 확률 +${T(t, 12)}%p.`, crit(12, (c) => isNamedOfficer(c.defender))),

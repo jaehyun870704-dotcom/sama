@@ -166,8 +166,8 @@ const SET: Record<string, [Signature, Signature, Signature]> = {
   정보: [
     sig2("적벽의 좌도독", (t) => `2칸 안에 주유가 있으면 주는 물리 피해 ${T(t, 15)}% 증가, 명중 +5%p.`,
       { onAttack(ctx, s, p) { if (phys(ctx) && near(s, "주유")) { ctx.attackMul *= 1 + P(15, p); ctx.accuracyMod += 5; } } }),
-    sig2("좋은 술 같은 사귐", (t) => `2칸 안 이름있는 아군 장수가 받는 피해 ${T(t, 10)}% 감소.`,
-      { onAllyDefend(ctx, h, p) { if (isNamedOfficer(ctx.defender) && engageDistance(h.pos, ctx.defender.pos) <= 2) ctx.reduction = combine(ctx.reduction, P(10, p)); } }),
+    sig2("좋은 술 같은 사귐", (t) => `2칸 안 이름있는 아군 장수가 받는 피해 ${T(t, 8)}% 감소.`,
+      { onAllyDefend(ctx, h, p) { if (isNamedOfficer(ctx.defender) && engageDistance(h.pos, ctx.defender.pos) <= 2) ctx.reduction = combine(ctx.reduction, P(8, p)); } }),
     sig2("정공이라 불린 노장", (t) => `받는 물리 피해 ${T(t, 12)}% 감소, 이번 차례 움직이지 않았다면 ${T(t, 20)}% 감소.`,
       { onDefend(ctx, s, p) { if (phys(ctx)) ctx.reduction = combine(ctx.reduction, P(s.movedThisTurn ? 12 : 20, p)); } }),
   ],

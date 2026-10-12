@@ -9,7 +9,7 @@ describe('규칙판 8: 이름있는 장수는 고유특성, 목록 밖 인물은
   it('고유특성이 있는 장수는 모두 게임 장수록에 있는 인물이다', () => {
     for(const n of SIGNATURE_NAMES)expect(romanceByName(n),n).toBeDefined();
   });
-  it('본편 전장 전체: 이름있는 장수는 고유특성 하나, 목록 밖 인물은 장수 특성·고유능력이 없다', () => {
+  it('본편 전장 전체: 장수록의 이름있는 장수는 모두 고유특성을 갖는다(목록 밖 인물 없음)', () => {
     let named=0,plain=0;
     for(let c=1;c<chapters.length;c++){
       const s=new Session(c,'normal',215,'survival',8,deployment(freshCampaign(),true));
@@ -22,7 +22,7 @@ describe('규칙판 8: 이름있는 장수는 고유특성, 목록 밖 인물은
       }
     }
     expect(named).toBeGreaterThan(20);
-    expect(plain).toBeGreaterThan(5);
+    expect(plain).toBe(0);
   });
   it('규칙판 8 저장은 다시 불러올 수 있다(이어하기)', () => {
     const s=new Session(chapters.findIndex(c=>c.stage.id==='S1-06'),'normal',215,'survival',8,deployment(freshCampaign(),true));

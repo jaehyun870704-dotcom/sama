@@ -1,8 +1,8 @@
 /**
  * 이름있는 장수의 고유특성 — 장수마다 이름도 효과도 다른 특성 하나.
  *
- * 『삼국지연의』에서 크게 활약했거나 역사에 이름을 남긴 장수만 갖는다(목록: 장수/이름있는_장수_목록.xlsx).
- * 목록 밖의 인물은 이름을 달고 나와도 병종 능력만 쓴다.
+ * 장수록(romance.ts)과 제갈량전 인물에 오른 이름있는 장수는 모두 셋씩 갖는다(사용자 결정 2026-10-12: 238명 714개).
+ * 처음 96명(+우희)은 이 파일, 나머지는 장수 묶음 파일 signatures-a~d.ts. 장수록에 없는 이름(병사·백성)은 병종 능력만 쓴다.
  * 특성 id는 `sig:장수이름`, param은 병종 단계(1~4)이고 단계가 오를수록 수치가 커진다(×1 · ×1.3 · ×1.6 · ×2).
  * 피해 훅은 예측에도 쓰이므로 읽기만 한다. 상태를 거는 일(회복·봉인·사기 등)은 자기 차례 시작(onTurnStart)에만 한다.
  */
@@ -444,8 +444,10 @@ const MORE: Record<string, [Signature, Signature]> = {
 
 // 장수 묶음 파일(signatures-a~d.ts): 제갈량전과 사마의전 편입 장수 등 나중에 더한 이름있는 장수의 고유특성 셋.
 for (const extra of [extraA, extraB, extraC, extraD]) for (const [who, [first, second, third]] of Object.entries(extra)) {
-  if (S[who]) throw new Error(`고유특성 중복: ${who}`);
-  S[who] = first; MORE[who] = [second, third];
+  if (MORE[who]) throw new Error(`고유특성 중복: ${who}`);
+  // 첫째만 있던 장수(우희)는 첫째를 그대로 두고 둘째·셋째를 채운다.
+  if (!S[who]) S[who] = first;
+  MORE[who] = [second, third];
 }
 
 /** 고유특성이 있는 이름있는 장수 이름(게임에 나오는 장수만). */

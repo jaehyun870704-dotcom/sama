@@ -3,6 +3,7 @@
  * 계통마다 1단(기본) → 2단(정예) → 3단(최정예) → 4단(전설) 카드.
  * 그림은 도감과 같은 완성 병종 원화다.
  */
+import {officerClass as classByName} from './officer-perks.ts';
 import type {UnitClass} from '../../core/src/index.ts';
 import {VARIANTS,tierOf,familyOf,profileOf,classTactics,reachOffsets,reachLabel,troopEffectOf,troopEffectText,OFFICER_EFFECTS,FAMED_OFFICERS,topAbility,finalClassOf,unitReachLabel} from '../../core/src/index.ts';
 import {romanceByName,signatureSkill,signatureSkills} from './romance.ts';
@@ -58,7 +59,8 @@ const officerArt=(name:string,b:OfficerEntry["battle"][string])=>`<div class="cx
 const rangeLine=(c:UnitClass,famed=false)=>{const p=profileOf(c),rg=famed?famedRange(c):p.range;return `<div class="evo-range">${reachMini(c,famed)}<p><b>${esc(classNames[c]??c)} · ${esc(famed?unitReachLabel({unitClass:c,range:rg,famedReach:true}):reachLabel(c))}</b><span>사거리 ${rg[0]===rg[1]?rg[0]:rg[0]+'~'+rg[1]} · 이동 ${p.movement}</span></p></div>`;};
 const personCard=(art:string,small:string,name:string,c:UnitClass,extra='',famed=false)=>`<article class="evo-card evo-person-card"><div class="evo-top">${art}<div><small>${small}</small><h4>${esc(name)}</h4></div></div>${rangeLine(c,famed)}${extra}</article>`;
 /** 장수의 병종: 군주 9명과 서초패왕 항우는 군주, 나머지는 전용 전투 그림의 첫 병종(제갈량 수레 제외). */
-const officerClass=(e:OfficerEntry):UnitClass=>(LORD_NAMES.includes(e.name)?'lord':Object.keys(e.battle).find(k=>k!=='cart')) as UnitClass;
+// 전투 그림이 없는 장수(제갈량전에서 새로 나온 인물 등)는 이름으로 정한 병종을 쓴다.
+const officerClass=(e:OfficerEntry):UnitClass=>(LORD_NAMES.includes(e.name)?'lord':Object.keys(e.battle).find(k=>k!=='cart')??classByName(e.name)) as UnitClass;
 const officerSheet=(e:OfficerEntry,c:string)=>e.battle[c]??e.battle.lord??Object.entries(e.battle).find(([k])=>k!=='cart')?.[1];
 /** 이름있는 장수의 고유특성(장수마다 이름도 효과도 다르다). 목록 밖 인물은 병종이라 장수 탭에 나오지 않는다. */
 function officerNote(name:string,c?:UnitClass){
