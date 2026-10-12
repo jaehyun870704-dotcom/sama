@@ -22,7 +22,7 @@ import {MOUNTED_FAMILIES} from './armor.ts';
 import {coachStep,COACH_KEY} from './tutorial.ts';
 import {dueLines} from './battle-lines.ts';
 import {loadSettings,saveSettings,type Speed} from './settings.ts';
-import {SLOT_COUNT,slotKey,readSlot,slotLabel,readFull,snapshotKeys,restoreKeys,agoText,type FullSlot} from './save-slots.ts';
+import {SLOT_COUNT,slotKey,readSlot,slotLabel,readFull,snapshotKeys,restoreKeys,agoText,purgeRetired,storageUse,type FullSlot} from './save-slots.ts';
 import {encounterLevels,structureKind,structureFrame,raceGap} from './campaign-rules.ts';
 import {readCampaign,writeCampaign,mergeRunCampaign,xpAtLevel,deployment,levelInfo,award,equip,equipSlot,treasureInfo,gearKey,gearNames,type GearSlot,treasures,OFFICERS} from './progression.ts';
 import {actorMarkup,playBeat} from './story-motion.ts';
@@ -41,14 +41,16 @@ import {optionalOfficers,soloStage,pickExtras,storySortieLimit,storyCostSheet,st
 import {isoBackdrop,isoScene,loadIsoArt,loadPaintedScenes} from './story-iso.ts';
 import {loadFigures} from './story-figure.ts';
 import {registerCustoms} from './custom.ts';
-import {loadMeta as loadMetaForCustoms} from './meta.ts';
+import {loadMeta as loadMetaForCustoms,saveMeta as saveMetaForCustoms} from './meta.ts';
 import {loadPortraitImages,portraitImage} from './portrait-images.ts';
 import {cardFace} from './faces.ts';
 import {renderHud,type CardOpts} from './unit-hud.ts';
 import {inkChoice} from './ink-choice.ts';
 import {duelSplash,duelArena,duelBackdrop,duelModel,preloadDuelArt,playContest,animateDuel} from './duel-ui.ts';
-// 플레이어가 만든 신장수를 장수록에 올린다(전투 능력·성격·무대 그림).
-registerCustoms(loadMetaForCustoms().customOfficers??[]);
+// 없앤 모드(천명의 길·천명의 원정·신장수 만들기)의 기록을 지운다 — 그만큼 저장 칸에 여유가 생긴다(사용자 결정 2026-10-12).
+purgeRetired();
+{const m=loadMetaForCustoms();if(m.customOfficers?.length){m.customOfficers=[];saveMetaForCustoms(m);}}
+registerCustoms([]);
 // 직접 넣은 초상 그림(저장소 public/portraits와 이 브라우저에 올린 것)을 먼저 읽어 둔다.
 void loadPortraitImages('');
 const scenarioYear=(id:string)=>scriptOf(id)?.year??'';
@@ -563,13 +565,14 @@ function readStore(key:string){try{return localStorage.getItem(key);}catch{retur
 function showSlots(back:()=>void=showMenu){
   const battle=hasStarted&&session.state.outcome==='ongoing';
   const where=()=>{if(battle){const c=chapters[session.chapter]!;return `전투 중 · ${session.deployment?.run?`원정 ${session.deployment.run.floor}층`:c.stage.subtitle??c.stage.title} · ${session.state.turn}턴`;}
-    try{const sc=JSON.parse(localStorage.getItem('sama-scenario-v1')??'null') as {run?:{no:number};done?:string[]}|null;if(sc?.done?.length)return `천명의 길${sc.run?` 제${sc.run.no}회차`:''} · 마친 장 ${sc.done.length}`;}catch{/* 없음 */}return '본영';};
+    return '본영';};
   const rows=Array.from({length:SLOT_COUNT},(_,i)=>{const raw=readStore(slotKey(i+1)),full=readFull(raw),old=full?undefined:readSlot(raw);
     const label=full?`<b>${full.meta.where}</b><small>${agoText(full.meta.at)}${full.meta.hero?` · 사마의 Lv.${full.meta.hero}`:''}${full.meta.mandate!==undefined?` · 천명 ${full.meta.mandate}`:''} · 진행 전체</small>`:old?`<b>${old.meta.title}</b><small>${slotLabel(old)} · 전투만</small>`:'<small>비어 있음</small>';
     return `<div class="slot-row"><div><strong>${i+1}번 칸</strong>${label}</div><div class="slot-actions"><button data-slot-save="${i+1}" class="${full||old?'':'primary'}">여기에 저장</button>${full||old?`<button data-slot-load="${i+1}" class="primary">불러오기</button><button data-slot-clear="${i+1}" aria-label="${i+1}번 칸 지우기">지우기</button>`:''}</div></div>`;}).join('');
   modal(`<div class="briefing save-screen"><div class="eyebrow">기록</div><h2>저장·불러오기</h2><p class="screen-lede">지금 진행을 칸에 저장하고, 저장한 칸에서 다시 시작한다.</p>
-    <ul class="save-help"><li><b>자동 저장</b> 전투는 행동마다, 천명의 길은 장을 마칠 때마다 저절로 저장된다. 본영의 「이어하기」가 그것을 연다.</li>
-    <li><b>저장 칸</b> 지금 이 순간의 <em>전체</em>(천명의 길 진행·연구·천명·보물·장수 성장·진행 중 전투)를 통째로 담는다. 갈림길 앞에서 저장해 두고, 일이 틀어지면 불러온다.</li>
+    <ul class="save-help"><li><b>자동 저장</b> 전투는 행동마다 저절로 저장된다. 첫 화면의 「이어하기」가 그것을 연다.</li>
+    <li><b>저장 칸 ${SLOT_COUNT}개</b> 지금 이 순간의 <em>전체</em>(사마의전·제갈량전 진행·연구·천명·보물·장수 성장·진행 중 전투)를 통째로 담는다. 갈림길 앞에서 저장해 두고, 일이 틀어지면 불러온다.</li>
+    <li>쓰는 저장 공간: <b>${(storageUse().total/1048576).toFixed(1)}MB</b> · 브라우저마다 다르지만 보통 5MB 안팎까지 쓸 수 있다.</li>
     <li>지금: <b>${where()}</b></li></ul>${rows}<div class="modal-actions"><button id="slots-back">← 돌아가기</button></div></div>`,false);
   document.querySelectorAll<HTMLButtonElement>('[data-slot-save]').forEach(b=>b.onclick=()=>{
     if(battle)persist();

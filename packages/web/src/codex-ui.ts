@@ -61,7 +61,7 @@ function peopleTab(pick:string,side:Side|'all'){
   const meta=loadMeta(),names=codexNames().filter(n=>side==='all'||sideOf(n)===side),name=names.includes(pick)?pick:names[0]??'';
   const r=romanceByName(name),cls=officerClass(name),temper=temperOf(name),skill=signatureSkill(name);
   const st=perkState(meta,name),best=bestLevel(meta,name),tier=officerTier(meta,name),slots=perkSlots(meta),perks=perksFor(name);
-  const list=`<div class="cx-filter"><label class="cx-upload" title="파일 이름을 장수 이름으로 봅니다(조조.png → 조조)">🖼 여러 장 넣기<input type="file" accept="image/*" multiple data-cx-bulk hidden></label>${(['all','wei','shu','wu','other','chu','han','custom'] as const).map(s=>`<button data-cx-side="${s}" class="${side===s?'active':''}">${s==='all'?'전체':SIDE_NAMES[s]}</button>`).join('')}</div>
+  const list=`<div class="cx-filter"><label class="cx-upload" title="파일 이름을 장수 이름으로 봅니다(조조.png → 조조)">🖼 여러 장 넣기<input type="file" accept="image/*" multiple data-cx-bulk hidden></label>${(['all','wei','shu','wu','other','chu','han'] as const).map(s=>`<button data-cx-side="${s}" class="${side===s?'active':''}">${s==='all'?'전체':SIDE_NAMES[s]}</button>`).join('')}</div>
     <div class="cx-people">${names.map(n=>`<button data-cx-person="${esc(n)}" class="cx-person side-${sideOf(n)} ${n===name?'chosen':''}" aria-label="${esc(n)}"><span class="cx-face">${codexFace(n)}</span><b>${esc(n)}</b></button>`).join('')||'<p class="muted">이 세력에는 아직 장수가 없다.</p>'}</div>`;
   const detail=!name?'':`<div class="cx-detail cx-person-detail">
     <div class="cx-head"><span class="cx-big-face">${codexFace(name)}</span><div><small class="cx-side side-${sideOf(name)}">${SIDE_NAMES[sideOf(name)]}</small><h3>${esc(displayName(name))}</h3><p class="cx-epithet">${esc(r?.epithet??'')}</p>
