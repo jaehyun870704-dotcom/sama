@@ -28,7 +28,7 @@ export const officerManifest:OfficerEntry[]=[
   E('cao_pi','조비',c('cao_pi','lord',1,350,280),{story:'cao_pi-story-v1.webp',bust:'cao_pi-bust-v1.webp',duel:'officers/cao_pi-duel-v1.webp'}),
   E('cao_rui','조예',c('cao_rui','lord',1,350,280),{duel:'officers/cao_rui-duel-v1.webp'}),
   E('xu_chu','허저',c('xu_chu','infantry'),{story:'xu_chu-story-v1.webp',bust:'xu_chu-bust-v1.webp',duel:'officer-battle-wei-v2.webp'}),
-  E('ma_chao','마초',{heavyCav:['ma_chao-battle-heavyCav-style-v2.webp',350,280,1],cavalry:['ma_chao-battle-cavalry-style-v2.webp',280,224,1]},{story:'ma_chao-story-v1.webp',bust:'ma_chao-bust-v1.webp',duel:'officer-battle-rivals-v2.webp'}),
+  E('ma_chao','마초',{sd:['ma_chao-sd-v1.webp',350,280,1]},{story:'ma_chao-story-v1.webp',bust:'ma_chao-bust-v1.webp',duel:'ma_chao-duel-v2.webp'}),
   E('lu_bu','여포',{...c('lu_bu','cavalry'),...c('lu_bu','heavyCav',1,350,280)},{story:'lu_bu-story-v1.webp',bust:'lu_bu-bust-v1.webp',duel:'officers/lu_bu-duel-v2.webp'}),
   E('xiang_yu','항우',c('xiang_yu','lord',1,350,280),{duel:'officers/xiang_yu-duel-v1.webp'}),
   E('chen_gong','진궁',c('chen_gong','strategist'),{story:'chen_gong-story-v1.webp',bust:'chen_gong-bust-v1.webp',duel:'officer-battle-rivals-v2.webp'}),
@@ -127,7 +127,7 @@ export const officerBattleModel=officerBattleSheet;
 const duelRows:Record<string,{sheet:string;row:number;rows:number}>={
   sima_yi:{sheet:'officer-battle-sima',row:0,rows:4},sima_yi_young:{sheet:'officer-battle-sima',row:1,rows:4},sima_lang:{sheet:'officer-battle-sima',row:2,rows:4},sima_fang:{sheet:'officer-battle-sima',row:3,rows:4},
   cao_zhen:{sheet:'officer-battle-wei',row:0,rows:4},cao_cao:{sheet:'officers/cao_cao-duel-v1.webp',row:0,rows:1},cao_pi:{sheet:'officers/cao_pi-duel-v1.webp',row:0,rows:1},xu_chu:{sheet:'officer-battle-wei',row:3,rows:4},
-  ma_chao:{sheet:'officer-battle-rivals',row:0,rows:4},lu_bu:{sheet:'officers/lu_bu-duel-v2.webp',row:0,rows:1},chen_gong:{sheet:'officer-battle-rivals',row:2,rows:4},zhou_yu:{sheet:'officer-battle-rivals',row:3,rows:4},
+  ma_chao:{sheet:'officers/ma_chao-duel-v2.webp',row:0,rows:1},lu_bu:{sheet:'officers/lu_bu-duel-v2.webp',row:0,rows:1},chen_gong:{sheet:'officer-battle-rivals',row:2,rows:4},zhou_yu:{sheet:'officer-battle-rivals',row:3,rows:4},
   xiang_yu:{sheet:'officers/xiang_yu-duel-v1.webp',row:0,rows:1},yu_ji:{sheet:'officers/yu_ji-duel-v1.webp',row:0,rows:1},
   sima_shi:{sheet:'officers/sima_shi-duel-v1.webp',row:0,rows:1},sima_zhao:{sheet:'officers/sima_zhao-duel-v1.webp',row:0,rows:1},
   huang_zhong:{sheet:'officers/huang_zhong-duel-v1.webp',row:0,rows:1},zhao_yun:{sheet:'officers/zhao_yun-duel-v1.webp',row:0,rows:1},sun_quan:{sheet:'officers/sun_quan-duel-v1.webp',row:0,rows:1},lu_meng:{sheet:'officers/lu_meng-duel-v1.webp',row:0,rows:1},wei_yan:{sheet:'officers/wei_yan-duel-v1.webp',row:0,rows:1},lu_xun:{sheet:'officers/lu_xun-duel-v1.webp',row:0,rows:1},gongsun_yuan:{sheet:'officers/gongsun_yuan-duel-v1.webp',row:0,rows:1},
