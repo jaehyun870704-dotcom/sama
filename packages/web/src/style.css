@@ -2267,3 +2267,4 @@ dialog:has(.title-screen),dialog:has(.lobby){width:min(1240px,calc(100vw - 24px)
 .zg-diff{display:flex;gap:18px;flex-wrap:wrap;margin:10px 0;border:1px solid #6c5a36;padding:8px 12px}.zg-diff small{color:#b9ab8b}
 .zg-sortie{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
 @media(max-width:700px){.story-pick-grid{grid-template-columns:1fr}.zg-row{grid-template-columns:36px 1fr;}.zg-seal,.zg-row button,.zg-row em{grid-column:2}}
+.zg-gear{display:flex;flex-direction:column;gap:6px;margin:10px 0}.zg-gear-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;font-size:calc(13.5px*var(--fs,1))}.zg-gear-row strong{min-width:4.5em;color:#f0d79c}.zg-gear-row label{display:inline-flex;align-items:center;gap:6px}.zg-gear-row select{max-width:16em}

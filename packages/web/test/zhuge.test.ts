@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {Session,chapters,zhugeOrder,campaignOrder} from '../src/session.ts';
-import {freshCampaign} from '../src/progression.ts';
+import {freshCampaign,equipSlot,treasures,treasureInfo} from '../src/progression.ts';
 import {zhugeDeployment,zhugeLevel,growZhuge} from '../src/zhuge.ts';
 import {ZHUGE_PACKS,scriptOf} from '../src/scenario.ts';
 import {checkPack} from '../src/scenario-types.ts';
@@ -24,6 +24,16 @@ describe('제갈량전',()=>{
     // 저장했다 불러와도 같은 전장이다.
     const back=Session.load(JSON.parse(JSON.stringify(s.save())));
     expect(back.state.stage.id).toBe('Z1-01');
+  });
+  it('보물은 두 이야기가 함께 쓴다: 장수 이름에 단 보물을 입고 나선다',()=>{
+    const st=chapters[zhugeOrder[0]!]!.stage,c=freshCampaign();
+    const armor=treasures.find(t=>treasureInfo(t.id).slot==='armor')!;c.treasures.push(armor.id);
+    expect(equipSlot(c,'제갈량','armor',armor.id)).toBe(true);
+    const plain=new Session(zhugeOrder[0]!,'normal',215,'survival',13,zhugeDeployment(freshCampaign(),st,'normal')).state.find('z_liang')!;
+    const geared=new Session(zhugeOrder[0]!,'normal',215,'survival',13,zhugeDeployment(c,st,'normal')).state.find('z_liang')!;
+    expect(JSON.stringify(geared.stats)).not.toBe(JSON.stringify(plain.stats));
+    // 사마의에게 옮기면 제갈량은 벗는다(한 보물은 한 사람만).
+    equipSlot(c,'sima_yi','armor',armor.id);expect(c.loadouts?.['제갈량']?.armor).toBeUndefined();
   });
   it('레벨은 인물마다 기억된다: 기록이 높으면 그 레벨, 없으면 장의 기본 레벨',()=>{
     const st=chapters[zhugeOrder[0]!]!.stage,c=freshCampaign();
