@@ -31,10 +31,21 @@ export function legacyTrialMap(id:string,name:string):MapFile{
 }
 export function trialTactics(id:string){return trialLayout(id).tactics;}
 export function legacyTrialTactics(id:string){return ({field:'넓은 길에서 보병과 기병을 함께 전진시키십시오.',forest:'숲을 엄폐물로 삼아 궁병의 사격에 접근하십시오.',river:'두 칸의 다리를 확보하고 후열 책사를 보호하십시오.',pass:'중앙 협로에 방패를 세우고 구릉에서 측면을 지원하십시오.',court:'사당 앞뜰의 수비대를 교란하고 회복 책략으로 전열을 유지하십시오.',fort:'충차로 성문과 감시탑을 파괴한 뒤 군수고 수비대를 격퇴하십시오.',naval:'수군 두 척으로 강 위의 적선을 묶고, 육군은 남쪽 부교를 건너 강안 궁병을 치십시오.'} as const)[expeditionLandscape(id)];}
-export function trialStory(id:string,name:string,art:number,lines:string[]){const kind=expeditionLandscape(id);return [
- {place:'군의 · 의뢰를 받다',art,line:lines[0]!},
+/**
+ * 수련·도전 이야기 세 장면의 장소. 수련은 연무장에서 시작해 활터나 마장에서 출진하고, 도전은 관문 앞에서,
+ * 보물 사냥은 마장에서 말을 고르며 떠난다(장소 이름의 앞부분이 그 마당을 정한다).
+ */
+function trialPlaces(id:string,name:string){const n=Number(id.slice(1))||0;
+  switch(id[0]){
+    case 'T':return {open:'연무장 · 교관의 부름',go:(n%2?'활터':'마장')+' · '+name+' 출진의 결의'};
+    case 'C':return {open:'도전의 관문 · 관문 앞',go:'연무장 · '+name+' 출진의 결의'};
+    case 'R':return {open:'군의 · 의뢰를 받다',go:'마장 · '+name+' 출진의 결의'};
+    default:return {open:'군의 · 의뢰를 받다',go:name+' · 출진의 결의'};
+  }}
+export function trialStory(id:string,name:string,art:number,lines:string[]){const kind=expeditionLandscape(id),pl=trialPlaces(id,name);return [
+ {place:pl.open,art,line:lines[0]!},
  {place:layoutName(id)+' · 정찰',art:kind==='river'||kind==='naval'?3:kind==='forest'||kind==='pass'?11:kind==='fort'?2:6,line:'조진: '+trialTactics(id)},
- {place:name+' · 출진의 결의',art:17,line:lines[1]!},
+ {place:pl.go,art:17,line:lines[1]!},
  ];}
 /** River-fortress battle: two water lanes split by islands, a pontoon bridge in the
  * south for the land army, and the enemy shore camp on the east bank. */

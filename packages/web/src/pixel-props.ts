@@ -354,3 +354,99 @@ export function stoneBridge(f:Field,cellPx:number,isBridge:(cx:number,cy:number)
       for(let x=x0-2;x<x1+3;x++){if(x>=x1){dots.set(x,y+2,'#0e2630',160);continue;}const lx=x-x0;
         let c=ly===9?S[0]!:ly===0?S[5]!:lx===0?S[4]!:lx===x1-x0-1?S[1]!:ly>=7?S[2]!:S[(slab+lx/7|0)%2?3:4]!;if(x<x0)c=S[1]!;dots.set(x,y,c);}}}
 }
+
+// ─────────────────────────────────────────────── 연무장·활터·마장·능묘 소품
+const IRON=['#1c1e22','#33373e','#525861','#767d87','#a2a9b2'];
+const CLOTH_RED=['#3a0e0a','#6a1a12','#94281c','#b8402a'];
+/** 무기 걸이: 가로대 두 개에 창·극·도를 세워 건 나무 틀. */
+export function weaponRack(g:Ctx,x:number,y:number,s:number,R:R){
+  // 가로대 하나에 창·극·도를 비스듬히 기대 세운 무기 걸이(창살처럼 보이지 않게 기울여 놓는다).
+  const W=Math.round(60*s),H=Math.round(50*s),p=pix(W,H),dots=new Dots(p),barY=Math.round(H*.42);
+  const line=(x0:number,y0:number,x1:number,y1:number,c:string,c2?:string)=>{const n=Math.ceil(Math.hypot(x1-x0,y1-y0));for(let i=0;i<=n;i++){const xx=x0+(x1-x0)*i/n,yy=y0+(y1-y0)*i/n;dots.set(xx,yy,c);if(c2)dots.set(xx+1,yy,c2);}};
+  for(const x0 of [3,W-6]){for(let yy=barY-2;yy<H;yy++){dots.set(x0,yy,WOOD[1]!);dots.set(x0+1,yy,WOOD[4]!);dots.set(x0+2,yy,WOOD[3]!);dots.set(x0+3,yy,WOOD[1]!);}}
+  for(let xx=2;xx<W-2;xx++){dots.set(xx,barY-1,WOOD[1]!);dots.set(xx,barY,WOOD[5]!);dots.set(xx,barY+1,WOOD[3]!);dots.set(xx,barY+2,WOOD[1]!);}
+  const n=5;for(let i=0;i<n;i++){const bx=Math.round(W*.14+i*(W*.7)/(n-1)),lean=5+Math.floor(R()*3),tx=bx+lean,ty=2+Math.floor(R()*3),kind=i%3;
+    line(bx,H-1,tx,ty+7,WOOD[3]!,WOOD[1]!);
+    if(kind===0){for(const [dx,dy,c] of [[0,0,4],[0,1,4],[-1,2,3],[0,2,4],[1,2,2],[-1,3,3],[0,3,4],[1,3,2],[-1,4,2],[0,4,3],[1,4,1],[0,5,2],[0,6,1]] as const)dots.set(tx+dx,ty+dy,IRON[c]!);}
+    else if(kind===1){for(let k=0;k<7;k++)dots.set(tx,ty+k,IRON[k<2?4:3]!);for(const [dx,dy,c] of [[1,3,4],[2,3,4],[3,3,3],[1,4,2],[2,4,2],[3,4,1],[3,2,3]] as const)dots.set(tx+dx,ty+dy,IRON[c]!);}
+    else{for(let k=0;k<7;k++){dots.set(tx,ty+k,IRON[4]!);dots.set(tx+1,ty+k+1,IRON[2]!);}dots.set(tx-1,ty+7,'#c9a24a');dots.set(tx,ty+7,'#c9a24a');dots.set(tx+1,ty+7,'#c9a24a');}
+    for(const [dx,dy,c] of [[-1,7,2],[0,7,3],[1,7,2],[-1,8,1],[0,8,2],[1,8,1],[0,9,1]] as const)dots.set(tx+dx,ty+dy,CLOTH_RED[c]!);}
+  dots.done();groundShadow(g,x+10,y,W*PX*.55,H*PX*.12,.45);blit(g,p,x,y,W/2,H-1);
+}
+/** 허수아비 표적: 짚을 감은 몸통과 팔 가로대, 나무 기둥. */
+export function dummy(g:Ctx,x:number,y:number,s:number,R:R){
+  const W=Math.round(26*s),H=Math.round(46*s),p=pix(W,H),dots=new Dots(p),cx=Math.round(W/2);
+  for(let yy=10;yy<H;yy++){dots.set(cx-1,yy,WOOD[4]!);dots.set(cx,yy,WOOD[3]!);dots.set(cx+1,yy,WOOD[1]!);}
+  for(let xx=1;xx<W-1;xx++){dots.set(xx,15,WOOD[4]!);dots.set(xx,16,WOOD[2]!);}
+  const k=mask(W,H);blob(k,cx,H*.42,W*.27,H*.17,R,.06);blob(k,cx,H*.16,W*.17,H*.1,R,.04);
+  shadeBlob(dots,k,STRAW,R,{grain:.06,top:4});
+  for(const yy of [Math.round(H*.33),Math.round(H*.5)])for(let xx=0;xx<W;xx++)if(inM(k,xx,yy)){dots.set(xx,yy,'#5a3a14');}
+  // 꽂힌 화살 한두 개
+  for(let i=0;i<2;i++)if(R()<.7){const ax=Math.round(cx-3+R()*6),ay=Math.round(H*.36+R()*H*.12);for(let t=0;t<6;t++)dots.set(ax+t,ay-t*.4,WOOD[4]!);dots.set(ax+6,ay-2.4,'#e8e0d0');dots.set(ax+7,ay-2.8,'#e8e0d0');}
+  dots.outline();dots.done();groundShadow(g,x+5,y,W*PX*.45,W*PX*.12,.42);blit(g,p,x,y,W/2,H-1);
+}
+/** 과녁: 짚 과녁판(붉은·흰 동심원)과 비스듬히 받친 나무 다리. */
+export function archeryTarget(g:Ctx,x:number,y:number,s:number,R:R){
+  const W=Math.round(34*s),H=Math.round(40*s),p=pix(W,H),dots=new Dots(p),cx=W/2,cy=H*.4,rx=W*.42,ry=H*.36;
+  for(const [x0,x1] of [[W*.22,W*.12],[W*.78,W*.88]] as const)for(let yy=Math.round(cy);yy<H;yy++){const t=(yy-cy)/(H-cy),xx=Math.round(x0+(x1-x0)*t);dots.set(xx,yy,WOOD[4]!);dots.set(xx+1,yy,WOOD[2]!);}
+  const rings=['#efe6d2','#b8281c','#efe6d2','#b8281c','#e9c64a'];
+  for(let yy=0;yy<H;yy++)for(let xx=0;xx<W;xx++){const dx=(xx+.5-cx)/rx,dy=(yy+.5-cy)/ry,r=Math.sqrt(dx*dx+dy*dy);if(r>1)continue;
+    const band=Math.min(rings.length-1,Math.floor((1-r)*rings.length*1.05));let c=rings[band]!;
+    const lit=dx*-.55+dy*-.7;if(lit<-.35)c=band%2?'#8a1c14':'#cbbfa6';if(r>.93)c=STRAW[1]!;dots.set(xx,yy,c);
+    if(R()<.08)dots.set(xx,yy,STRAW[3]!,120);}
+  dots.outline();dots.done();groundShadow(g,x+6,y,W*PX*.5,W*PX*.14,.42);blit(g,p,x,y,W/2,H-1);
+}
+/** 비석: 거북 받침 위에 선 돌비, 머리에 구름 무늬 테. */
+export function stele(g:Ctx,x:number,y:number,s:number,R:R){
+  const W=Math.round(28*s),H=Math.round(50*s),p=pix(W,H),dots=new Dots(p),bx0=Math.round(W*.22),bx1=Math.round(W*.78),top=4;
+  const k=mask(W,H);blob(k,W/2,H-6,W*.48,7,R,.05,.98);shadeBlob(dots,k,STONE,R,{grain:.05,top:3});
+  for(let yy=top;yy<H-9;yy++)for(let xx=bx0;xx<bx1;xx++){const edgeL=xx===bx0,edgeR=xx===bx1-1;let c=STONE[edgeL?6:edgeR?2:(xx<W/2?5:4)]!;if(yy<top+5)c=STONE[yy===top?6:4]!;dots.set(xx,yy,c);}
+  for(let xx=bx0+1;xx<bx1-1;xx++){dots.set(xx,top+5,STONE[1]!);}
+  // 새긴 글씨 자리(가는 세로 홈)
+  for(let col=0;col<3;col++){const xx=Math.round(bx0+3+col*(bx1-bx0-6)/2);for(let yy=top+8;yy<H-13;yy+=2)if(R()<.8)dots.set(xx,yy,STONE[2]!);}
+  for(let i=0;i<6;i++)dots.set(bx0+Math.floor(R()*(bx1-bx0)),top+6+Math.floor(R()*(H-20)),MOSS[Math.floor(R()*3)]!);
+  dots.outline();dots.done();groundShadow(g,x+6,y,W*PX*.5,W*PX*.16,.45);blit(g,p,x,y,W/2,H-1);
+}
+/** 석상: 신도 양옆에 선 문관·무관 돌 사람(받침·몸·머리·관). */
+export function statue(g:Ctx,x:number,y:number,s:number,R:R,flip=false,armed=false){
+  const W=Math.round(24*s),H=Math.round(52*s),p=pix(W,H),dots=new Dots(p),cx=W/2;
+  const k=mask(W,H);
+  for(let yy=H-7;yy<H;yy++)for(let xx=2;xx<W-2;xx++)k.m[yy*W+xx]=1;
+  for(let yy=Math.round(H*.3);yy<H-7;yy++){const w=W*(.28+(yy-H*.3)/(H*.7)*.14);for(let xx=Math.round(cx-w);xx<cx+w;xx++)k.m[yy*W+xx]=1;}
+  blob(k,cx,H*.2,W*.2,H*.11,R,.03);
+  for(let yy=Math.round(H*.04);yy<H*.11;yy++)for(let xx=Math.round(cx-W*.16);xx<cx+W*.16;xx++)k.m[yy*W+xx]=1;
+  shadeBlob(dots,k,STONE.slice(1),R,{grain:.06,top:4,outline:STONE[0]!});
+  // 소매·홀(문관) 또는 칼(무관)
+  const hy=Math.round(H*.48);for(let xx=Math.round(cx-W*.22);xx<cx+W*.22;xx++)dots.set(xx,hy,STONE[2]!);
+  if(armed)for(let yy=Math.round(H*.36);yy<H-8;yy++)dots.set(Math.round(cx+(flip?-1:1)*W*.12),yy,STONE[1]!);
+  else for(let yy=Math.round(H*.34);yy<hy;yy++){dots.set(Math.round(cx),yy,STONE[6]!);}
+  for(let i=0;i<5;i++)dots.set(Math.floor(R()*W),Math.floor(H*.3+R()*H*.6),MOSS[Math.floor(R()*3)]!,180);
+  dots.done();groundShadow(g,x+6,y,W*PX*.5,W*PX*.16,.45);blit(g,p,x,y,W/2,H-1);
+}
+/** 봉분: 풀 덮인 둥근 무덤과 아래 둘레돌. */
+export function mound(g:Ctx,x:number,y:number,s:number,R:R){
+  const W=Math.round(130*s),H=Math.round(48*s),p=pix(W,H),dots=new Dots(p),k=mask(W,H);blob(k,W/2,H*.9,W*.48,H*.82,R,.025,.97);
+  const GRASS=['#1a2a12','#24391a','#2e4720','#3a5626','#486630','#58763a'];
+  shadeBlob(dots,k,GRASS,R,{grain:.12,top:12,lift:.1});
+  for(let i=0;i<W*3;i++){const xx=Math.floor(R()*W),yy=Math.floor(R()*H);if(inM(k,xx,yy)&&inM(k,xx,yy-1)&&inM(k,xx,yy+1))dots.set(xx,yy,R()<.5?GRASS[5]!:GRASS[1]!,R()<.5?120:200);}
+  for(let i=0;i<W*.25;i++){const xx=Math.floor(R()*W),yy=Math.floor(H*.3+R()*H*.6);if(inM(k,xx,yy))dots.set(xx,yy,STRAW[2]!,150);}
+  // 둘레돌(아랫단)
+  for(let xx=0;xx<W;xx++){let by=-1;for(let yy=H-1;yy>=0;yy--)if(inM(k,xx,yy)){by=yy;break;}if(by<0)continue;
+    for(let t=0;t<4;t++)dots.set(xx,by-t,t===0?STONE[1]!:(xx>>2)%2?STONE[4]!:STONE[5]!);if(xx%5===0)for(let t=0;t<4;t++)dots.set(xx,by-t,STONE[2]!);}
+  dots.done();groundShadow(g,x+14,y,W*PX*.52,H*PX*.3,.45);blit(g,p,x,y,W/2,H-1);
+}
+/** 여물통: 긴 나무 구유와 물. */
+export function trough(g:Ctx,x:number,y:number,s:number,R:R){
+  const W=Math.round(40*s),H=Math.round(14*s),p=pix(W,H),dots=new Dots(p);
+  for(let yy=0;yy<H;yy++)for(let xx=0;xx<W;xx++){const rim=yy<2||xx<2||xx>=W-2;dots.set(xx,yy,rim?WOOD[5]!:yy<5?(R()<.15?'#5f8a96':'#33525c'):WOOD[(xx>>3)%2?3:2]!);}
+  for(const x0 of [3,W-6])for(let yy=H-3;yy<H;yy++){dots.set(x0,yy,WOOD[1]!);dots.set(x0+1,yy,WOOD[1]!);}
+  void R;dots.outline();dots.done();groundShadow(g,x+5,y,W*PX*.55,H*PX*.3,.4);blit(g,p,x,y,W/2,H-1);
+}
+
+/** 세로 울타리 한 칸(위에서 비스듬히 본 옆줄): 위·아래 기둥과 세로로 이어진 가로대 두 줄. */
+export function fenceV(g:Ctx,x:number,y:number,cell:number){
+  const H=Math.round(cell/PX)+14,W=8,p=pix(W,H),dots=new Dots(p);
+  for(const rx of [2,5])for(let yy=4;yy<H-6;yy++){dots.set(rx,yy,WOOD[4]!);dots.set(rx+1,yy,WOOD[2]!);}
+  for(const y0 of [0,H-14])for(let yy=y0;yy<y0+14;yy++){dots.set(2,yy,WOOD[4]!);dots.set(3,yy,WOOD[3]!);dots.set(4,yy,WOOD[3]!);dots.set(5,yy,WOOD[1]!);}
+  dots.outline();dots.done();blit(g,p,x,y,W/2,H);
+}

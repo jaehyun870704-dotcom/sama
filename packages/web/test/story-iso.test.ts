@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {stepsBetween,offscreenCell,kindFor,specialBackdropCell,W,type Cell,type IsoScene} from '../src/story-iso.ts';
+import {stepsBetween,offscreenCell,kindFor,groundVariant,specialBackdropCell,W,type Cell,type IsoScene} from '../src/story-iso.ts';
 
 const blocked=new Set(['3,0','3,1','3,2','3,3']);
 const scene={passable:([c,r]:Cell)=>!blocked.has(`${c},${r}`)&&c>=0&&r>=0} as unknown as IsoScene;
@@ -56,4 +56,19 @@ describe('장소 이름에 맞는 배경',()=>{
   expect(specialBackdropCell(16,'허창 · 성 밖 진영 · 야간')).toBe(7);
   expect(specialBackdropCell(16,'허창 · 성 밖 진영 · 비')).toBe(8);
  });
+});
+
+describe('연무장·활터·마장·황야·능묘 배경',()=>{
+  const ground=(art:number,place:string)=>groundVariant(kindFor(art,place),place)[0];
+  it('장소 이름으로 새 야외 배경을 고른다',()=>{
+    expect(ground(6,'연무장 · 교관의 부름')).toBe('drill');
+    expect(ground(17,'활터 · 초진 연무 출진의 결의')).toBe('archery');
+    expect(ground(17,'마장 · 산길 토벌 출진의 결의')).toBe('paddock');
+    expect(ground(4,'서량 · 끝없는 황야')).toBe('desert');
+    expect(ground(0,'업성 · 원소의 묘 앞')).toBe('tomb');
+    expect(ground(0,'업성 북쪽 · 원소의 무덤 앞')).toBe('tomb');
+  });
+  it('종묘(사당 건물)는 능묘로 보지 않는다',()=>{
+    expect(ground(0,'업성 · 종묘 앞 광장')).not.toBe('tomb');
+  });
 });

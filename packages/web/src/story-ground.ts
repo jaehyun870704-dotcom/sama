@@ -12,13 +12,13 @@ import {noiseField,sample} from './terrain-paint.ts';
 
 export const GW=20,GH=10,C=128,PW=GW*C,PH=GH*C;
 export type GroundKind='field'|'hill'|'valley'|'forest'|'river'|'bank'|'deck'|'camp'|'battlefield'|'town'|'fire'|'gatehouse'|'wall'|'fort'|'court'
-  |'garden'|'pass'|'marsh'|'farm'|'ruins'|'clearing'|'market'|'ferry';
+  |'garden'|'pass'|'marsh'|'farm'|'ruins'|'clearing'|'market'|'ferry'|'drill'|'archery'|'paddock'|'desert'|'tomb';
 /** snow: 눈 덮인 땅, camp: 숲속·나루 같은 곳에 군막을 함께 세운다. */
 export interface GroundOpts {snow?:boolean;camp?:boolean}
 type Cell='grass'|'dirt'|'water'|'stone'|'wall'|'gate'|'bridge'|'block'|'pool'|'crop'|'scree';
 type Ctx=CanvasRenderingContext2D;
 type Light='day'|'night'|'dawn'|'dusk';
-interface Prop {kind:'tree'|'pine'|'autumn'|'willow'|'house'|'hall'|'tent'|'tower'|'rock'|'bush'|'jar'|'bench'|'fence'|'lantern'|'well'|'fire'|'banner'|'flowers'|'reeds'|'boat'|'crate'|'rockery'|'pavilion'|'stall'|'stump'|'ruin'|'deadtree'|'haystack'|'ruintower'|'stepstone';x:number;y:number;s:number;flip?:boolean;color?:string}
+interface Prop {armed?:boolean;kind:'tree'|'pine'|'autumn'|'willow'|'house'|'hall'|'tent'|'tower'|'rock'|'bush'|'jar'|'bench'|'fence'|'lantern'|'well'|'fire'|'banner'|'flowers'|'reeds'|'boat'|'crate'|'fenceV'|'rack'|'dummy'|'target'|'stele'|'statue'|'mound'|'trough'|'rockery'|'pavilion'|'stall'|'stump'|'ruin'|'deadtree'|'haystack'|'ruintower'|'stepstone';x:number;y:number;s:number;flip?:boolean;color?:string}
 
 let meadow:HTMLCanvasElement|undefined,atlas:Texture|undefined,noiseA:Float32Array|undefined;
 export async function loadGroundArt(){
@@ -164,6 +164,49 @@ function layout(kind:GroundKind,R:()=>number,opts:GroundOpts={}){
       if(opts.camp){for(const [x,y] of [[3.4,6.6],[5.8,GH-.6],[GW-3,GH-.4]] as const)place({kind:'tent',x,y,s:.95,flip:R()<.5},2,2);props.push({kind:'banner',x:GW/2+1.8,y:4.2,s:1,color:'#1f3f8a'},{kind:'fire',x:GW/2-2.8,y:7.4,s:.9});}
       for(let i=0;i<10;i++)props.push({kind:'reeds',x:R()*GW,y:3.3+R()*.7,s:.8+R()*.4});
       clump(1.2,7.2,3,1.1);bushes(4);flowers(4);break;}
+    case 'drill':{
+      // 연무장: 다져진 넓은 흙마당, 뒤로 사열대(전각)와 무기 걸이, 줄지은 허수아비, 깃발, 둘레 울타리
+      road([[-.5,GH-1.4],[GW/2,GH-1.8],[GW+.5,GH-1.3]]);
+      place({kind:'hall',x:GW/2,y:2.5,s:.82},5,3);
+      for(const [x,y] of [[4,3.3],[6.6,3.1],[GW-6.6,3.1],[GW-4,3.3]] as const)place({kind:'rack',x,y,s:1.25,flip:R()<.5},2,1);
+      for(const [x,y] of [[13.2,5.4],[14.8,5.4],[16.4,5.4],[13.6,7.3],[15.2,7.3],[16.8,7.3]] as const)place({kind:'dummy',x,y,s:1.3,flip:R()<.5});
+      props.push({kind:'banner',x:GW/2-3.6,y:3.4,s:1,color:'#1f3f8a'},{kind:'banner',x:GW/2+3.6,y:3.4,s:1,color:'#1f3f8a'},{kind:'banner',x:2.2,y:5.8,s:.85,color:'#8a1f1a'},{kind:'banner',x:GW-2.2,y:5.8,s:.85,color:'#8a1f1a'});
+      props.push({kind:'crate',x:3.4,y:7.6,s:1},{kind:'crate',x:3.9,y:7.9,s:.8},{kind:'jar',x:4.6,y:7.4,s:.9},{kind:'bench',x:6.6,y:8.2,s:1});
+      for(let x=0;x<GW;x++)if(Math.abs(x+.5-GW/2)>1.5)props.push({kind:'fence',x:x+.5,y:GH-.15,s:1});
+      clump(.8,1.2,2,.7,true);clump(GW-.8,1.2,2,.7);clump(.7,GH-2.6,1,.4);clump(GW-.7,GH-2.6,1,.4);break;}
+    case 'archery':{
+      // 활터: 가로로 긴 사대(射臺)와 표적 줄, 왼쪽 정자(사정), 화살 상자, 소나무
+      road([[1.5,GH/2+.6],[GW-1.5,GH/2+.6]]);road([[-.5,GH-1.6],[GW/2,GH-1.9],[GW+.5,GH-1.5]]);
+      place({kind:'pavilion',x:3.2,y:4.6,s:1.05},2,2);
+      for(const [x,y] of [[16.6,2.9],[16.8,4.7],[17,6.5],[17.2,8.3]] as const)place({kind:'target',x,y,s:1,flip:R()<.5});
+      props.push({kind:'crate',x:6.2,y:3.4,s:.9},{kind:'crate',x:6.5,y:7.6,s:.9},{kind:'jar',x:6.9,y:3.6,s:.8},{kind:'bench',x:7.4,y:8.4,s:1},{kind:'banner',x:4.6,y:2.4,s:.9,color:'#1f3f8a'},{kind:'banner',x:15,y:1.6,s:.8,color:'#8a1f1a'});
+      for(const [x,y] of [[19.2,1.6],[19.4,4.4],[19.3,7.4],[1,1.4],[1.2,8.6]] as const)place({kind:'pine',x,y,s:.95,flip:R()<.5});
+      bushes(4);flowers(4);break;}
+    case 'paddock':{
+      // 마장: 울타리로 두른 넓은 풀밭, 마구간(집)과 건초더미·여물통, 바깥 길
+      const fx0=4,fx1=GW-3,fy0=3,fy1=GH-1;
+      for(let x=fx0;x<fx1;x++){props.push({kind:'fence',x:x+.5,y:fy0+.1,s:1});if(Math.abs(x+.5-(fx0+fx1)/2)>1.2)props.push({kind:'fence',x:x+.5,y:fy1+.1,s:1});}
+      for(let y=fy0+1;y<=fy1;y++){props.push({kind:'fenceV',x:fx0,y:y+.1,s:1},{kind:'fenceV',x:fx1,y:y+.1,s:1});}
+      road([[-.5,1.6],[GW/2,1.4],[GW+.5,1.7]]);road([[(fx0+fx1)/2,fy1+.1],[(fx0+fx1)/2,GH+.5]]);
+      place({kind:'house',x:2,y:3.2,s:.85,flip:false},3,2);
+      for(const [x,y] of [[6.2,5],[13.6,7.4],[GW-4.4,4.6]] as const)place({kind:'haystack',x,y,s:.95});
+      for(const [x,y] of [[9.4,5.6],[11.6,7.8]] as const)place({kind:'trough',x,y,s:1});
+      props.push({kind:'crate',x:2.6,y:5.2,s:.9},{kind:'jar',x:3.2,y:5.4,s:.8},{kind:'banner',x:fx0+.6,y:fy0-.2,s:.8,color:'#1f3f8a'});
+      clump(GW-1,6.6,2,.8,true);clump(.8,GH-1.6,2,.7);bushes(3);flowers(10);break;}
+    case 'desert':{
+      // 황야(서량): 메마른 모래땅, 바람에 깎인 바위, 마른 나무, 드문 덤불, 멀리 이어진 길
+      road([[-.5,GH-2.6],[5,GH-4],[10,GH-4.4],[15,GH-5.4],[GW+.5,GH-6]]);
+      for(const [x,y,sz] of [[3,2.4,1.5],[8.4,1.6,1.25],[15.6,2.2,1.6],[18.4,7.4,1.3],[2.2,7.8,1.25]] as const)place({kind:'rock',x,y,s:sz,flip:R()<.5},2,1);
+      for(const [x,y] of [[6,7.6],[12.4,2.6],[17,4.4]] as const)place({kind:'deadtree',x,y,s:.9,flip:R()<.5});
+      rocks(6);for(let i=0;i<5;i++)props.push({kind:'bush',x:R()*GW,y:1+R()*(GH-1.5),s:.45+R()*.25});break;}
+    case 'tomb':{
+      // 능묘: 위쪽 봉분과 비석, 그 앞으로 곧게 난 돌 신도(神道), 양옆에 마주 선 석상·석등, 둘레 소나무
+      rect(GW/2-1,3,GW/2+1,GH,'stone');
+      place({kind:'mound',x:GW/2,y:2.5,s:1.25},6,2);place({kind:'stele',x:GW/2,y:4.3,s:1.05},1,1);
+      for(const [y,armed] of [[5.2,false],[7.2,true]] as const){place({kind:'statue',x:GW/2-2.1,y,s:1,armed},1,1);place({kind:'statue',x:GW/2+2.1,y,s:1,flip:true,armed},1,1);}
+      props.push({kind:'lantern',x:GW/2-1.6,y:4.2,s:1},{kind:'lantern',x:GW/2+1.6,y:4.2,s:1},{kind:'lantern',x:GW/2-1.6,y:GH-.6,s:.9},{kind:'lantern',x:GW/2+1.6,y:GH-.6,s:.9});
+      for(const [x,y] of [[3,1.6],[5.4,2.2],[GW-3,1.6],[GW-5.4,2.2],[2,5.4],[GW-2,5.4],[3.6,8.6],[GW-3.6,8.6]] as const)place({kind:'pine',x,y,s:1,flip:R()<.5});
+      bushes(5);flowers(3);break;}
   }
   // 연못가: 원화 바위와 떨기나무를 물가에 드문드문(물과 땅의 경계가 그림처럼 보이게)
   for(let y=0;y<GH;y++)for(let x=0;x<GW;x++)if(g[y]![x]==='pool'){
@@ -349,6 +392,14 @@ function drawProp(g:Ctx,p:Prop,R:()=>number){
       for(let i=0;i<10;i++){const rx=x+(R()-.5)*w*.9,ry=y+R()*16,r=8+R()*12;g.fillStyle='#8a8272';g.beginPath();g.ellipse(rx,ry,r,r*.6,R()*3,0,7);g.fill();}break;}
     case 'deadtree':{const w=270*s,h=350*s;shadow(g,x+16,y-6,w*.45,w*.15,.4);sprite(g,0,x,y,w,h,p.flip,'sepia(.75) saturate(.55) hue-rotate(-18deg) brightness(.82) contrast(1.05)');break;}
     case 'crate':PP.crate(g,x,y,s,R);break;
+    case 'fenceV':PP.fenceV(g,x,y,C*s);break;
+    case 'rack':PP.weaponRack(g,x,y,s,R);break;
+    case 'dummy':PP.dummy(g,x,y,s,R);break;
+    case 'target':PP.archeryTarget(g,x,y,s,R);break;
+    case 'stele':PP.stele(g,x,y,s,R);break;
+    case 'statue':PP.statue(g,x,y,s,R,!!p.flip,!!p.armed);break;
+    case 'mound':PP.mound(g,x,y,s,R);break;
+    case 'trough':PP.trough(g,x,y,s,R);break;
   }
 }
 
@@ -379,10 +430,14 @@ export function paintGround(kind:GroundKind,seed:number,light:Light,clearCells:R
   const keep=props.filter(p=>(!wet(p)||['reeds','boat'].includes(p.kind))&&!clearCells.some(([cx,cy])=>Math.abs(p.x-cx-.5)<1.6&&Math.abs(p.y-cy-.8)<1.4)||['flowers','reeds'].includes(p.kind));
   for(const [cx,cy] of clearCells)for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const x=cx+dx,y=cy+dy;if(x>=0&&y>=0&&x<GW&&y<GH&&(cells[y]![x]==='block'||cells[y]![x]==='crop'||cells[y]![x]==='scree'))cells[y]![x]='grass';}
   const canvas=document.createElement('canvas');canvas.width=PW;canvas.height=PH;const g=canvas.getContext('2d')!;g.imageSmoothingQuality='high';
-  const dry=kind==='hill'||kind==='battlefield'||kind==='valley'||kind==='pass'||kind==='ruins';
+  const dry=kind==='hill'||kind==='battlefield'||kind==='valley'||kind==='pass'||kind==='ruins'||kind==='desert'||kind==='drill';
   paintGrass(g,R,dry);
+  // 황야: 풀빛을 모래빛으로 눌러 메마른 땅으로(질감은 그대로 살린다)
+  if(kind==='desert'){g.save();g.globalCompositeOperation='color';g.fillStyle='rgba(196,162,104,.78)';g.fillRect(0,0,PW,PH);g.globalCompositeOperation='soft-light';g.fillStyle='rgba(255,226,170,.35)';g.fillRect(0,0,PW,PH);g.restore();}
   // 진영 마당: 밟혀 다져진 넓은 흙
-  const yardMask=kind==='camp'||kind==='battlefield'?layer(m=>{m.fillStyle='#000';m.beginPath();m.ellipse(PW/2,PH/2+40,PW*.34,PH*.3,0,0,7);m.fill();}):undefined;
+  const yardMask=kind==='camp'||kind==='battlefield'?layer(m=>{m.fillStyle='#000';m.beginPath();m.ellipse(PW/2,PH/2+40,PW*.34,PH*.3,0,0,7);m.fill();})
+    :kind==='drill'?layer(m=>{m.fillStyle='#000';m.beginPath();m.ellipse(PW/2,PH*.6,PW*.44,PH*.36,0,0,7);m.fill();})
+    :kind==='archery'?layer(m=>{m.fillStyle='#000';m.beginPath();m.roundRect(PW*.24,PH*.14,PW*.66,PH*.76,90);m.fill();}):undefined;
   paintRoads(g,roads,R,yardMask);
   {const F=PP.fieldLayer(PW,PH);PP.paving(F,C,(cx,cy)=>cy>=0&&cx>=0&&cy<GH&&cx<GW&&cells[cy]![cx]==='stone',R);PP.fieldBlit(g,F);}
   paintWater(g,cells,R);
@@ -399,6 +454,6 @@ export function paintGround(kind:GroundKind,seed:number,light:Light,clearCells:R
   lighting(g,R,light,kind==='fire');
   if(opts.snow){g.save();g.globalCompositeOperation='soft-light';g.fillStyle='rgba(200,215,240,.5)';g.fillRect(0,0,PW,PH);g.restore();}
   const WALK=new Set<Cell>(['grass','dirt','stone','bridge']);
-  const standable=(x:number,y:number)=>x>=0&&y>=1&&x<GW&&y<GH&&WALK.has(cells[y]![x]!)&&!keep.some(p=>!['flowers','reeds','fence','stump','stepstone'].includes(p.kind)&&Math.abs(p.x-x-.5)<(p.kind==='hall'?2.6:p.kind==='house'||p.kind==='tower'||p.kind==='ruintower'?1.6:p.kind==='tent'||p.kind==='pavilion'?1.2:p.kind==='ruin'?1:.7)&&y+.8>p.y-(p.kind==='hall'?2.2:p.kind==='house'||p.kind==='tower'||p.kind==='ruintower'?1.8:p.kind==='tent'||p.kind==='pavilion'?1.3:.8)&&y+.8<=p.y+.35);
+  const standable=(x:number,y:number)=>x>=0&&y>=1&&x<GW&&y<GH&&WALK.has(cells[y]![x]!)&&!keep.some(p=>!['flowers','reeds','fence','fenceV','stump','stepstone'].includes(p.kind)&&Math.abs(p.x-x-.5)<(p.kind==='hall'?2.6:p.kind==='house'||p.kind==='tower'||p.kind==='ruintower'?1.6:p.kind==='tent'||p.kind==='pavilion'?1.2:p.kind==='ruin'||p.kind==='rack'?1:p.kind==='mound'?1.7:.7)&&y+.8>p.y-(p.kind==='hall'?2.2:p.kind==='house'||p.kind==='tower'||p.kind==='ruintower'?1.8:p.kind==='tent'||p.kind==='pavilion'?1.3:p.kind==='mound'?1.2:.8)&&y+.8<=p.y+.35);
   return {canvas,cells,standable};
 }

@@ -74,6 +74,8 @@ export function setPlayerFlag(emblem:string,color:string){FLAG={emblem,color};}
  * '지역 · 자세한 곳'의 자세한 곳을 본다(지역 이름의 '진'·'문' 같은 글자에 속지 않게). 말이 없으면 배경 번호.
  */
 const PLACE_RULES:Array<[RegExp,Kind]>=[
+  [/(?<!종)묘 앞|무덤|능묘|왕릉|묘소|묘역|봉분/,'field'],
+  [/황야|사막|모래 벌판|서량 벌판/,'field'],
   [/알현|어전|옥좌|용상|천자|황제|폐하|즉위|선양|조회/,'throne'],
   [/전장|싸움터|격전|결전|진 앞|진두|양군|대치|전투|맞선|적진|포위망/,'battlefield'],
   [/군막|막사|장막|군의|천막/,'tent'],
@@ -103,6 +105,8 @@ const PLACE_RULES:Array<[RegExp,Kind]>=[
 export function kindFor(art:number,place:string):Kind{
   const parts=place.split('·').map(p=>p.trim()),detail=parts.at(-1)??'';
   for(const [re,k] of PLACE_RULES)if(re.test(detail))return k;
+  // 장소 앞부분이 연무장·활터·마장이면 그 마당(뒷부분이 '출진의 결의'처럼 장소를 말하지 않을 때).
+  if(/연무장|연병장|교장|활터|사장|마장|목장/.test(parts[0]??''))return 'field';
   return KIND[art]??'field';
 }
 /**
@@ -1185,7 +1189,11 @@ const OUTDOOR=new Set<Kind>(['field','hill','valley','forest','river','bank','de
 /** 장소 이름이 더 자세히 말하면 같은 종류 안에서도 다른 땅을 그린다(정원·고갯길·늪·논밭·옛터·숲속 빈터·저자·나루). */
 export function groundVariant(kind:Kind,place:string):[GroundKind,GroundOpts]{
   const d=place.split('·').map(p=>p.trim()).at(-1)??'',snow=moodOf(place,kind).weather==='snow',camp=/진영|군영|야영|진채|진$|본진|군막|영채|진지/.test(d),o:GroundOpts={...(snow?{snow}:{}),...(camp?{camp}:{})};
+  const yard=/연무장|연병장|교장|수련장/.test(place)?'drill':/활터|사장|궁술/.test(place)?'archery':/마장|목장|마구간/.test(place)?'paddock':undefined;
   const v:GroundKind|undefined=
+    /(?<!종)묘 앞|무덤|능묘|왕릉|묘소|묘역|봉분/.test(d)?'tomb':
+    /황야|사막|모래 벌판|서량 벌판/.test(d)?'desert':
+    yard?yard:
     /나루|포구|선착/.test(d)&&kind!=='deck'?'ferry':
     /갈대|늪|습지|소택|모래톱|여울목/.test(d)?'marsh':
     /무너진|폐허|옛터|허물어진|잿더미/.test(d)&&kind!=='camp'&&kind!=='tent'?'ruins':
