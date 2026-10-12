@@ -88,6 +88,6 @@ export function playBeat(stage:HTMLElement,plan:BeatPlan):()=>void{
     };
     walk(hero,40,1150);walk(comp,320,1250);
     later(1650,speak);
-  } else speak();
+  } else {hero?.classList.remove('offstage');comp?.classList.remove('offstage');speak();}
   return ()=>{stopped=true;for(const id of timers){window.clearTimeout(id);window.clearInterval(id);}};
 }

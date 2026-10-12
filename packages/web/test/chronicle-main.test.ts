@@ -3,6 +3,8 @@ import {freshCampaign,readCampaign,writeCampaign,mergeCampaigns,mergeRunCampaign
 import {sealTiers,claimSealTier,sealTreasure,sealClaimed} from '../src/seal-rewards.ts';
 import {chapters,campaignOrder,sealNamesOf,Session} from '../src/session.ts';
 import {romanceOf} from '../src/romance.ts';
+import {choiceFlags} from '../src/story-stage.ts';
+import {scriptOf} from '../src/scenario.ts';
 
 const store=new Map<string,string>();
 beforeEach(()=>{store.clear();(globalThis as {localStorage?:unknown}).localStorage={getItem:(k:string)=>store.get(k)??null,setItem:(k:string,v:string)=>{store.set(k,v);},removeItem:(k:string)=>{store.delete(k);}};});
@@ -55,6 +57,10 @@ describe('연의에 데려가는 등용 장수',()=>{
     const s=new Session(campaignOrder[0]!,'normal',215,'survival',13,{levels:{sima_yi:5,sima_lang:5,sima_fang:5,cao_zhen:5},equipped:{},retinue:[{id:'rt_0',name:'장합',unitClass:'cavalry',level:4,xp:0,hp:1},{id:'rt_1',name:'사마랑',unitClass:'infantry',level:4,xp:0,hp:1}]} as never);
     const u=s.state.find('rt_0');expect(u?.name).toBe('장합');expect(u?.side).toBe('player');expect(romanceOf(u!)?.name).toBe('장합');
     expect([...s.state.units.values()].filter(x=>x.name==='사마랑')).toHaveLength(1);
+  });
+  it('이야기 선택의 사기·방어 효과를 등용 장수도 받는다',()=>{
+    const s=new Session(campaignOrder[0]!,'normal',215,'survival',13,{levels:{sima_yi:5,sima_lang:5,sima_fang:5,cao_zhen:5},equipped:{},storyMods:{rally:true,guard:true},retinue:[{id:'rt_0',name:'장합',unitClass:'cavalry',level:4,xp:0,hp:1}]} as never);
+    const u=s.state.find('rt_0')!;expect(u.statuses.some(x=>x.kind==='rally')).toBe(true);expect(u.statuses.some(x=>x.kind==='guard')).toBe(true);
   });
   it('저장·불러오기를 거쳐도 남고, 세 명 이상이면 기록을 거부한다',()=>{
     const base={levels:{sima_yi:5,sima_lang:5,sima_fang:5,cao_zhen:5},equipped:{},retinue:[{id:'rt_0',name:'장합',unitClass:'cavalry',level:4,xp:0,hp:1}]};
@@ -119,5 +125,13 @@ describe('야망 분기 · 등용 장수 COST',()=>{
     expect(tight.length).toBe(0);expect(free.length).toBeGreaterThanOrEqual(tight.length);
     const sheet=storyCostSheet(c.stage,[],lv,'extreme',[{name:'장합',unitClass:'cavalry'}]);
     expect(sheet.rows.some(r=>r.id==='rt:장합')).toBe(true);expect(sheet.used).toBe(storyCostSheet(c.stage,[],lv,'extreme').used+unitCost('cavalry'));
+  });
+});
+
+describe('연의 이야기 표식',()=>{
+  it('다시 볼 때 지울 수 있게, 그 장의 선택지가 세우는 표식을 모두 모은다',()=>{
+    const f=choiceFlags(scriptOf('S1-02')!.scenes);
+    expect(f.has('h1_coin_split')).toBe(true);expect(f.has('h1_led_refugees')).toBe(true);
+    expect(choiceFlags(scriptOf('S1-01')!.scenes).has('h1_armed')).toBe(true);
   });
 });

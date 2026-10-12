@@ -394,6 +394,12 @@ export async function playNarration(root:HTMLElement,o:{heading:string;year:stri
  * 장면들을 차례로 연출한다. root 안을 통째로 그린다. 끝나면(또는 건너뛰면) resolve.
  * 선택이 있는 장면은 건너뛰기를 눌러도 선택에서 멈춘다.
  */
+/** 이 장면들의 선택지가 세울 수 있는 표식 전부(다시 볼 때 지난번 선택의 표식을 지우는 데 쓴다). */
+export function choiceFlags(scenes:readonly Scene[]):Set<string>{
+  const out=new Set<string>();
+  for(const sc of scenes)for(const st of sc.steps)if('choice' in st)for(const o of st.options)for(const e of o.effects??[])if(e.kind==='flag')out.add(e.flag);
+  return out;
+}
 export async function playScenes(root:HTMLElement,scenes:Scene[],hooks:StageHooks&{heading:string}){
   let skipping=false;
   for(let si=0;si<scenes.length;si++){

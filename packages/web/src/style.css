@@ -2118,3 +2118,25 @@ dialog:has(.title-screen),dialog:has(.lobby){width:min(1240px,calc(100vw - 24px)
 .duel-sweat{position:absolute;right:18%;top:12%;font-style:normal;font-size:clamp(16px,2.2vw,26px);animation:duel-sweat 1s ease-in both;pointer-events:none;z-index:5}
 @keyframes duel-sweat{0%{opacity:0;translate:0 -6px}20%{opacity:1}100%{opacity:0;translate:4px 18px}}
 @media (prefers-reduced-motion:reduce){.duel-glyph,.duel-sweat{display:none}}
+/* 휴대폰 가로(낮은 화면)의 대결 선포: 깃발·문양이 화면을 넘쳐 이름과 대사가 가려지던 것을 한 화면에 맞춘다 */
+@media (orientation:landscape) and (max-height:520px){
+  .duel-splash{height:100%!important;grid-template-columns:1fr 1fr 1fr}
+  .vs-title{height:36px;font-size:20px;letter-spacing:4px}
+  .vs-banner{margin:42px 14% 0!important;padding:8px 6px 22px!important}
+  .vs-face{aspect-ratio:1/1;max-height:42vh;max-height:42dvh}
+  .vs-banner b{font-size:15px;margin-top:4px;padding:3px 0}
+  .vs-emblem{margin-top:46px!important;height:150px!important}
+  .vs-hex{width:104px!important;height:118px!important}
+  .vs-glyph{font-size:44px!important;letter-spacing:-2px}
+  .vs-accept{bottom:12px;width:min(420px,58%);font-size:12px;padding:5px 10px}
+  .vs-go{right:12px;bottom:10px;padding:6px 12px}
+}
+/* 휴대폰 가로: 출진 정비 아래 줄(돌아가기·출진)이 화면 4분의 1을 덮던 것을 얇게 */
+@media (orientation:landscape) and (max-height:520px){
+  .camp-screen .modal-actions{padding:6px 10px!important;gap:8px;min-height:0}
+  .camp-screen .modal-actions>span{display:none}
+  .camp-screen .modal-actions button{padding:6px 12px;font-size:13px}
+}
+
+/* 칼끝 궤적은 휘두르는 동안(충돌 전) 보여야 한다. */
+.duel-stage.pre-impact .fx.fx-arc{display:block!important}

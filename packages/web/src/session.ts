@@ -290,12 +290,12 @@ export class Session {
     if(this.deployment?.run)prepareRunBattle(state,this.deployment.run,this.revision);
     // 시나리오 모드의 연의 장: 대사 선택의 효과(사기·방어 태세·책략 MP).
     if(this.deployment?.scenario?.mods&&!this.deployment.run)applyBattleMods(state,this.deployment.scenario.mods);
-    // 연의 장: 이야기에서 고른 대사·대결 승리의 효과.
-    if(this.deployment?.storyMods&&!this.deployment.scenario&&!this.deployment.run&&!this.deployment.mission)applyBattleMods(state,this.deployment.storyMods);
     // 로그라이크 회차의 연의 장: 회차 보물이 본대에 실리고, 사마의는 남은 체력으로 나선다.
     if(this.deployment?.scenario&&!this.deployment.run){const sc=this.deployment.scenario;if(sc.recruits?.length)addRecruits(state,sc.recruits,this.revision);if(sc.relics?.length)applyRelics(state,sc.relics);const h=state.find('sima_yi');if(h&&sc.heroHp!==undefined)h.hp=Math.max(1,Math.round(h.stats.maxHp*sc.heroHp));}
     // 연의(본편) 장: 등용한 장수를 사마의 곁에 세운다(이미 그 장에 나오는 이름은 건너뛴다).
     if(this.deployment?.retinue?.length&&!this.deployment.scenario&&!this.deployment.run&&!this.deployment.runStory&&!this.deployment.mission&&!soloStage(entry.stage))addRecruits(state,this.deployment.retinue,this.revision);
+    // 연의 장: 이야기에서 고른 대사·대결 승리의 효과(등용 장수까지 받게 그 뒤에).
+    if(this.deployment?.storyMods&&!this.deployment.scenario&&!this.deployment.run&&!this.deployment.mission)applyBattleMods(state,this.deployment.storyMods);
     // 원정의 연의 전장: 사마의는 원정에서 남은 체력으로 나서고, 원정 보물이 본대에 실린다.
     if(this.deployment?.runStory){const r=this.deployment.runStory,h=state.find('sima_yi');if(h)h.hp=Math.max(1,Math.round(h.stats.maxHp*r.heroHp));applyRelics(state,r.relics);}
     // 연구·장수 효과: 출진할 때 적어 둔 값 그대로(저장 재생도 같게).

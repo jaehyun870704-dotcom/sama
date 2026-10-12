@@ -25,7 +25,7 @@ import {SLOT_COUNT,slotKey,readSlot,slotLabel,readFull,snapshotKeys,restoreKeys,
 import {encounterLevels,structureKind,structureFrame,raceGap} from './campaign-rules.ts';
 import {readCampaign,writeCampaign,mergeRunCampaign,xpAtLevel,deployment,levelInfo,award,equip,equipSlot,treasureInfo,gearKey,type GearSlot,treasures,OFFICERS} from './progression.ts';
 import {actorMarkup,playBeat} from './story-motion.ts';
-import {playScenes,playNarration} from './story-stage.ts';
+import {playScenes,playNarration,choiceFlags} from './story-stage.ts';
 import type {ChoiceEffect,Scene,Look} from './scenario-types.ts';
 import type {BattleMods} from './roguelike.ts';
 import {storyBeats,storyLocations,storyBackdrop,storyAftermath,acts,stories,epilogueLines} from './story.ts';
@@ -174,7 +174,7 @@ function storyScene(chapter:number,beat=0,fromArt?:number,viewOnly=false){
   if(!storyReady){menuOpen=true;modal(waitPanel('이야기 준비 중','인물과 배경 그림을 마저 받고 있습니다. 끝나면 바로 시작합니다.'),false);void storyArt.then(()=>storyScene(chapter,beat,fromArt,viewOnly));return;}
   menuOpen=true;clearTimeout(aiTimer);sound.scene=chapter===4?'dream':'camp';void sound.start().then(updateSound);
   modal('<div class="ss-host yeon-host"></div>',false);
-  const root=$('.ss-host'),heading=`연의 · ${script.title}`,flags=yeonFlags(),picked:ChoiceEffect[]=[];let contest:{kind:'duel'|'debate';result:string}|undefined;
+  const root=$('.ss-host'),heading=`연의 · ${script.title}`,own=choiceFlags(script.scenes),flags=yeonFlags().filter(f=>!own.has(f)),picked:ChoiceEffect[]=[];let contest:{kind:'duel'|'debate';result:string}|undefined;
   const hero=levelInfo(campaign.xp.sima_yi??0).level;
   void (async()=>{
     if(script.history?.length&&script.scenes[0])await playNarration(root,{heading,year:script.year,title:script.title,lines:script.history,art:script.scenes[0].art,place:script.scenes[0].place});
@@ -666,7 +666,7 @@ function activate(){
   // A resumed battle should not replay every line whose moment has already passed.
   lineSeen=new Set(session.journal.length?dueLines(session.state.stage.id,session.state,new Set()).map(l=>l.id):[]);lineQueue=[];clearTimeout(lineTimer);lineTimer=undefined;lineToken++;$('#battle-line').hidden=true;$('#latest-log').textContent='';
   // 처음 싸우는 장: 목표를 펼쳐 안내하고(장수를 고르면 접힌다), 그 뒤로는 접어 둔 꼬리표만.
-  const guideId=session.state.stage.id,guide=!session.journal.length&&!goalGuideSeen(guideId);if(guide)markGoalGuide(guideId);
+  const guideId=session.state.stage.id+':'+JSON.stringify(session.state.stage.victory),guide=!session.journal.length&&!goalGuideSeen(guideId);if(guide)markGoalGuide(guideId);
   objectiveBox.open=guide;objectiveBox.guide=guide;goalSeen.session=undefined;$<HTMLDialogElement>('#modal').close();render();setObjectiveOpen(guide);if(guide){objectiveBox.auto=true;objectiveBox.guide=true;render();}pump();
 }
 function persist(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(session.save()));saveAvailable=true;localStorage.setItem(LAST_KEY,JSON.stringify({where:battleWhere(),turn:session.state.turn,ongoing:session.state.outcome==='ongoing'||!resultShown,at:Date.now()}));$('#save-status').textContent='✓ 자동 저장됨';}catch{$('#save-status').textContent='저장 공간 사용 불가';}}
@@ -1067,7 +1067,7 @@ function checkModal(){
     if(after){let k=0;$('#aftermath-next')?.addEventListener('click',e=>{k=(k+1)%after.beats.length;const b=after.beats[k]!;$('#aftermath-line').innerHTML=dialogueCaption(b.speaker,b.line);(e.currentTarget as HTMLButtonElement).textContent=k===after.beats.length-1?'↺ 처음 장면':'다음 장면 →';});}
     $('#result-undo').onclick=undo;$('#result-menu').onclick=showChronicle;
     $('#phase-restore')?.addEventListener('click',()=>{if(session.restorePhase()){activate();persist();}});
-    $('#retry').onclick=()=>{session=new Session(session.chapter,session.difficulty,215,session.preparation,session.revision,session.deployment?{...deployment(campaign,true),...(session.wide?{wide:(session.deployment?.wide??1)}:{}),...(session.deployment.retinue?{retinue:structuredClone(session.deployment.retinue)}:{}),...(session.deployment.extraOfficers?{extraOfficers:[...session.deployment.extraOfficers]}:{})}:undefined);activate();persist();};
+    $('#retry').onclick=()=>{session=new Session(session.chapter,session.difficulty,215,session.preparation,session.revision,session.deployment?{...deployment(campaign,true),...(session.wide?{wide:(session.deployment?.wide??1)}:{}),...(session.deployment.retinue?{retinue:structuredClone(session.deployment.retinue)}:{}),...(session.deployment.extraOfficers?{extraOfficers:[...session.deployment.extraOfficers]}:{}),...(session.deployment.storyMods?{storyMods:{...session.deployment.storyMods}}:{})}:undefined);activate();persist();};
     $('#epilogue')?.addEventListener('click',showEpilogue);
     $('#next-chapter')?.addEventListener('click',()=>storyScene(campaignOrder[campaignOrder.indexOf(session.chapter)+1]!));return;
   }
