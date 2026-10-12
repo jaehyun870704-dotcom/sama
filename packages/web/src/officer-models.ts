@@ -84,6 +84,10 @@ export const officerManifest:OfficerEntry[]=[
 // 완전 아트 세트가 추가된 장수: 공통 파일 규격(초상·흉상·일기토)을 색인에 연결한다.
 const COMPLETE_ART_IDS=['sun_jian','sun_ce','taishi_ci','cheng_pu','zhou_tai','ling_tong','yuan_shao','dong_zhuo','hua_xiong','gongsun_zan','zhang_jiao','gao_shun','ma_teng','liu_biao','xu_shu','zhang_ren','zhou_cang','jian_yong','mi_zhu','sun_qian','liao_hua','zhang_yi','li_yan','chen_shi','deng_zhi','wen_yang','zhang_chunhua','zhen_shi','wang_shuang','wen_qin','han_dang','zhang_qin','pan_zhang','lu_kang','diaochan','li_jue','guo_si','yuan_shu'] as const;
 for(const id of COMPLETE_ART_IDS){const e=officerManifest.find(x=>x.id===id);if(e){e.bust=`${id}-bust-v1.webp`;e.duel=`officers/${id}-duel-v1.webp`;}}
+// 장수 그림 한 벌(디자인 지시서 docs/design/장수-디자인-긴급지시.md): 병종과 무관한 SD 시트 하나(1400×280, 칸 350×280)와
+// 일기토 하나(1024×256). 이 장수들은 옛 병종별 시트·옛 일기토를 쓰지 않는다(파일도 지웠다). 목상 제갈량의 수레는 그대로 둔다.
+export const UNIFIED_SD_IDS=['liu_bei','ma_chao','guan_yu','zhang_fei','zhao_yun','huang_zhong','jiang_wei','pang_tong','wooden_zhuge','guan_ping'] as const;
+for(const id of UNIFIED_SD_IDS){const e=officerManifest.find(x=>x.id===id);if(!e)continue;const cart=e.battle.cart;e.battle={sd:{sheet:`officers/${id}-sd-v1.webp`,cell:[350,280],rows:1},...(cart?{cart}:{})};e.duel=`officers/${id}-duel-v2.webp`;}
 
 const legacySheets=[
   {id:'officer-battle-sima',url:'officer-battle-sima-v2.webp',rows:4,strictGrid:true,alphaCutoff:8},
@@ -137,9 +141,10 @@ const duelRows:Record<string,{sheet:string;row:number;rows:number}>={
   gao_shou:{sheet:'officers/gao_shou-duel-v1.webp',row:0,rows:1},guo_huai:{sheet:'officers/guo_huai-duel-v1.webp',row:0,rows:1},dai_ling:{sheet:'officers/dai_ling-duel-v1.webp',row:0,rows:1},zhang_zhao:{sheet:'officers/zhang_zhao-duel-v1.webp',row:0,rows:1},zhuge_jin:{sheet:'officers/zhuge_jin-duel-v1.webp',row:0,rows:1},zhang_ba:{sheet:'officers/zhang_ba-duel-v1.webp',row:0,rows:1},cao_xiu:{sheet:'officers/cao_xiu-duel-v1.webp',row:0,rows:1},cao_shuang:{sheet:'officers/cao_shuang-duel-v1.webp',row:0,rows:1},
 };
 for(const id of COMPLETE_ART_IDS)duelRows[id]={sheet:`officers/${id}-duel-v1.webp`,row:0,rows:1};
+for(const id of UNIFIED_SD_IDS)duelRows[id]={sheet:`officers/${id}-duel-v2.webp`,row:0,rows:1};
 export function officerDuelModel(u:OfficerLike){const e=officerEntry(u);return e?duelRows[e.id]:undefined;}
 /** 말을 탄 대결 모델(일기토에서 말 탄 크기·말 흔들림). 나머지 대결 모델은 걸어서 싸운다. */
-const MOUNTED_DUEL=new Set(['ma_chao','lu_bu','xiang_yu','sima_shi','cao_cao','cao_pi','zhao_yun','sun_quan','lu_meng','gongsun_yuan','meng_yan','bi_yan','guan_yu','zhang_liao','zhang_he','xiahou_dun','jiang_wei','xiahou_yuan','xu_huang','cao_ren','liu_bei','cao_rui','yuan_tan','yuan_shang','zhang_ba','cao_xiu','cao_shuang']);
+const MOUNTED_DUEL=new Set(['zhang_fei','wooden_zhuge','ma_chao','lu_bu','xiang_yu','sima_shi','cao_cao','cao_pi','zhao_yun','sun_quan','lu_meng','gongsun_yuan','meng_yan','bi_yan','guan_yu','zhang_liao','zhang_he','xiahou_dun','jiang_wei','xiahou_yuan','xu_huang','cao_ren','liu_bei','cao_rui','yuan_tan','yuan_shang','zhang_ba','cao_xiu','cao_shuang']);
 export function officerDuelMounted(u:OfficerLike){const e=officerEntry(u);return !!e&&!!duelRows[e.id]&&MOUNTED_DUEL.has(e.id);}
 
 /** 병종별 일기토 대표 모델(1024×256, 4프레임). 개별 장수 모델이 없을 때의 전용 폴백 자산. */
@@ -156,7 +161,7 @@ export const DUEL_CLASS_SHEETS=Object.freeze([
 const DUEL_FIT:Record<string,readonly [number,number]>={sima_yi:[236,202],sima_yi_young:[230,203],sima_lang:[236,216],sima_fang:[236,204],cao_zhen:[236,203],xu_chu:[236,216],ma_chao:[236,203],chen_gong:[235,180],zhou_yu:[236,174],lu_bu:[236,193],zhuge_ke:[229,182],cao_pi:[248,206],lu_fan:[229,183],sun_quan:[230,184],huang_zhong:[230,184],sima_shi:[246,228],sun_shao:[229,183],meng_yan:[230,167],bi_yan:[229,179],zhu_ran:[229,177],sima_zhao:[246,236],wang_ling:[229,163],cao_cao:[248,203],yang_ang:[229,184],meng_da:[229,187],wang_ping:[229,183],gao_xiang:[229,177],zhao_yun:[230,175],lu_meng:[230,176],gongsun_yuan:[230,175],xiang_yu:[236,174],lu_xun:[230,169],wei_yan:[230,176],ma_su:[229,174]};
 const DUEL_FOOT=230,DUEL_FOOT_H=182,DUEL_MOUNT_H=180;
 function duelFitStyle(id:string){
-  const f=DUEL_FIT[id];if(!f)return '';
+  const f=(UNIFIED_SD_IDS as readonly string[]).includes(id)?undefined:DUEL_FIT[id];if(!f)return '';
   const [foot,h]=f,k=Math.max(.8,Math.min(1.3,(MOUNTED_DUEL.has(id)?DUEL_MOUNT_H:DUEL_FOOT_H)/h));
   return `;transform-origin:50% ${(foot/256*100).toFixed(1)}%;translate:0 ${((DUEL_FOOT-foot)/256*100).toFixed(2)}%;scale:${k.toFixed(3)}`;
 }

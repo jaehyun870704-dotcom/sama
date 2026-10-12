@@ -1,6 +1,8 @@
 import {describe,expect,it} from 'vitest';
 import {existsSync,readFileSync} from 'node:fs';
 // 장수 그림 한 벌(디자인 지시서: {id}-sd-v1.webp 1400×280)이 들어온 장수는 병종과 무관하게 그 시트를 쓴다.
+// 새 일기토(-duel-v2)가 들어온 장수는 그 시트를 쓴다(옛 -v1은 지운다).
+const duelFile=(id:string)=>existsSync(new URL(`../public/officers/${id}-duel-v2.webp`,import.meta.url))?`${id}-duel-v2.webp`:`${id}-duel-v1.webp`;
 const hasSd=(id:string)=>existsSync(new URL(`../public/officers/${id}-sd-v1.webp`,import.meta.url));
 import {officerBattleSheet,officerDuelModel,officerDuelModelStyle,officerDuelMounted,officerEntry,officerManifest,officerModelSheets} from '../src/officer-models.ts';
 
@@ -94,22 +96,22 @@ describe('장수별 전투 SD와 대결 모델',()=>{
 
   it('우선순위 장수 19명은 각자 1024×256 전용 대결 시트를 쓴다',()=>{
     for(const id of priorityDuelIds){
-      expect(officerDuelModel({id,name:id})?.sheet,id).toBe(`officers/${id}-duel-v1.webp`);
-      expect(webpSize(new URL(`../public/officers/${id}-duel-v1.webp`,import.meta.url)),id).toEqual([1024,256]);
+      expect(officerDuelModel({id,name:id})?.sheet,id).toBe(`officers/${duelFile(id)}`);
+      expect(webpSize(new URL(`../public/officers/${duelFile(id)}`,import.meta.url)),id).toEqual([1024,256]);
     }
   });
 
   it('2차 장수 20명은 각자 1024×256 전용 대결 시트를 쓴다',()=>{
     for(const id of secondaryDuelIds){
-      expect(officerDuelModel({id,name:id})?.sheet,id).toBe(`officers/${id}-duel-v1.webp`);
-      expect(webpSize(new URL(`../public/officers/${id}-duel-v1.webp`,import.meta.url)),id).toEqual([1024,256]);
+      expect(officerDuelModel({id,name:id})?.sheet,id).toBe(`officers/${duelFile(id)}`);
+      expect(webpSize(new URL(`../public/officers/${duelFile(id)}`,import.meta.url)),id).toEqual([1024,256]);
     }
   });
 
   it('2차 추가 장수 8명도 각자 1024×256 전용 대결 시트를 쓴다',()=>{
     for(const id of secondaryFullIds){
-      expect(officerDuelModel({id,name:id})?.sheet,id).toBe(`officers/${id}-duel-v1.webp`);
-      expect(webpSize(new URL(`../public/officers/${id}-duel-v1.webp`,import.meta.url)),id).toEqual([1024,256]);
+      expect(officerDuelModel({id,name:id})?.sheet,id).toBe(`officers/${duelFile(id)}`);
+      expect(webpSize(new URL(`../public/officers/${duelFile(id)}`,import.meta.url)),id).toEqual([1024,256]);
     }
   });
 
@@ -134,6 +136,8 @@ describe('장수별 전투 SD와 대결 모델',()=>{
   it('이름있는 장수 28명은 병종별 표준 SD 시트를 쓴다',()=>{
     for(const [id,unitClass] of namedBattle){
       const model=officerBattleSheet({id,name:id,unitClass})!;
+      // 장수 그림 한 벌(SD)이 들어온 장수는 그 시트 하나만 쓴다(옛 병종별 시트는 지웠다).
+      if(hasSd(id)){expect(model.action.sheet,id).toBe(`officers/${id}-sd-v1.webp`);expect(model.action.cell,id).toEqual([350,280]);continue;}
       expect(model.action.sheet,id).toBe(`officers/${id}-battle-${unitClass}-v1.webp`);
       expect(model.action.cell,id).toEqual([280,224]);
       expect(webpSize(new URL(`../public/officers/${id}-battle-${unitClass}-v1.webp`,import.meta.url)),id).toEqual([1120,224]);
