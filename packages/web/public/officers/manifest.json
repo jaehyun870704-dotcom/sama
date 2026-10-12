@@ -97,6 +97,7 @@
     {"id":"ji_bu","name":"계포","aliases":["계포의 환영"],"battle":{"infantry":{"sheet":"ji_bu-battle-infantry-v1.webp","cell":[280,224],"rows":1}}},
     {"id":"yu_ji","name":"우희","aliases":["우희의 환영"],"battle":{"assassin":{"sheet":"yu_ji-battle-assassin-v1.webp","cell":[280,224],"rows":1}}},
     {"id":"long_ju","name":"용저","aliases":["용저의 환영"],"battle":{"cavalry":{"sheet":"long_ju-battle-cavalry-v1.webp","cell":[280,224],"rows":1}}},
-    {"id":"guan_ying","name":"관영","aliases":["관영의 환영"],"battle":{"cavalry":{"sheet":"guan_ying-battle-cavalry-v1.webp","cell":[280,224],"rows":1}}}
+    {"id":"guan_ying","name":"관영","aliases":["관영의 환영"],"battle":{"cavalry":{"sheet":"guan_ying-battle-cavalry-v1.webp","cell":[280,224],"rows":1}}},
+    {"id":"cao_shen","name":"조참","aliases":["조참의 환영"],"battle":{"infantry":{"sheet":"cao_shen-battle-infantry-v1.webp","cell":[280,224],"rows":1}}}
   ]
 }
