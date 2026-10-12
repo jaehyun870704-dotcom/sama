@@ -522,10 +522,10 @@ export function prepareRunBattle(state:BattleState,ref:RunBattleRef,rev=12){
   applyRelics(state,ref.relics);
   if(ref.mods)applyBattleMods(state,ref.mods);
 }
-/** 대사 선택의 효과: 사기(2턴) · 방어 태세(1턴) · 사마의 책략 MP +15 · 기습(적 체력 80%). 연의 장과 가상 전장 공통. */
+/** 대사 선택의 효과: 사기(2턴) · 방어 태세(1턴) · 총대장(사마의 · 제갈량전은 제갈량, 없으면 강유) 책략 MP +15 · 기습(적 체력 80%). 연의 장과 가상 전장 공통. */
 export function applyBattleMods(state:BattleState,m:BattleMods){
   for(const u of state.living('player')){if(m.rally)state.applyStatus(u,{kind:'rally',turns:2,magnitude:1});if(m.guard)state.applyStatus(u,{kind:'guard',turns:1,magnitude:1});}
-  if(m.insight){const h=state.find('sima_yi');if(h){h.stats.maxMp+=15;h.mp+=15;}}
+  if(m.insight){const h=state.find('sima_yi')??state.find('z_liang')??state.find('z_jiang_wei');if(h){h.stats.maxMp+=15;h.mp+=15;}}
   if(m.ambush)for(const e of state.living('enemy'))e.hp=Math.max(1,Math.round(e.stats.maxHp*.8));
 }
 
