@@ -70,12 +70,13 @@ export function contestModel(kind:DuelKind,side:'player'|'enemy',name:string){
 /** 1) 대결 선포 화면. */
 export function duelSplash(d:DuelState,acceptLine?:string,historic=false){
   const title=d.kind==='duel'?'일기토':'설전',sub=d.kind==='duel'?'단기접전':'설전';
-  const banner=(name:string,side:'red'|'blue',model:string)=>`<div class="vs-banner ${side}"><div class="vs-face">${face(name)}</div><b>${esc(displayName(name))}</b><div class="vs-model">${model}</div></div>`;
+  const banner=(name:string,side:'red'|'blue')=>`<div class="vs-banner ${side}"><div class="vs-face">${face(name)}</div><b>${esc(displayName(name))}</b></div>`;
   return `<div class="duel-splash ${d.kind}" role="dialog" aria-label="${sub}">
     <div class="vs-title">${sub}</div>
-    ${banner(d.enemy.name,'red','<span data-vs-model="enemy"></span>')}
+    ${banner(d.enemy.name,'red')}
     <div class="vs-emblem"><div class="vs-hex"></div><span class="vs-glyph">${title}</span><div class="vs-cross ${d.kind}"></div></div>
-    ${banner(d.player.name,'blue','<span data-vs-model="player"></span>')}
+    ${banner(d.player.name,'blue')}
+    <div class="vs-floor" aria-hidden="true"><span class="vs-unit vs-left" data-vs-model="enemy"></span><span class="vs-unit vs-right" data-vs-model="player"></span></div>
     ${acceptLine?`<p class="vs-accept">${historic?'<b>연의의 대결</b> · ':''}${esc(d.enemy.name)}: “${esc(acceptLine)}”</p>`:''}
     <button type="button" class="vs-go primary">${d.kind==='duel'?'겨룬다':'논한다'} ▶</button>
   </div>`;
@@ -126,12 +127,15 @@ export function duelArena(d:DuelState,o:{models:{player:string;enemy:string};bac
     .filter((x):x is {side:string;name:string}=>!!x).map(x=>`<div class="duel-cutin ${x.side}" aria-hidden="true"><span>${face(x.name)}</span><b>${esc(displayName(x.name))}<small>${d.kind==='duel'?'필살기':'논파'}</small></b></div>`).join(''):'';
   const endClass=(player:boolean)=>!d.result?'':d.result==='draw'?' result-draw':(d.result==='win')===player?' result-winner':' result-loser';
   const even=!!last&&edge===0&&d.kind==='duel';
-  return `<div class="duel-stage live-models ${d.kind}">
-    <div class="duel-view${shake}" style="${o.backdrop}">${special?`<i class="duel-flash ${d.kind}"></i>`:''}
+  // 연기(animateDuel): 첫 화면은 양쪽에서 걸어 들어오고, 합마다 '준비 → 돌진 → 맞부딪침 → 밀려남 → 제자리'.
+  // 맞부딪치는 순간까지 타격 효과·피해 숫자·흔들림을 숨겨 두었다가(pre-impact) 그때 터뜨린다.
+  const swing=(a:DuelAction|undefined)=>d.kind==='duel'&&(a==='attack'||a==='special')?`<i class="fx fx-arc${a==='special'?' big':''}"></i>`:'';
+  return `<div class="duel-stage live-models ${d.kind} choreo${last?' pre-impact':' entering'}" data-round="${d.history.length}" data-p-act="${last?.action??''}" data-e-act="${last?.enemyAction??''}">
+    <div class="duel-view${shake}" style="${o.backdrop}">${special?`<i class="duel-flash ${d.kind}"></i>`:''}${last?'':'<i class="duel-divider" aria-hidden="true"></i>'}
       <div class="duel-sun"></div>
       <div class="duel-ground${even?' clash-even':''}${d.result?' resolved':''}">
-        <div class="duel-fighter player motion-${last?.action??'idle'}${last?.taken?' hit':''}${endClass(true)}">${o.models.player}${last?hitFx(d.kind,last.enemyAction,last.action,last.taken,d.enemy.stat):''}</div>
-        <div class="duel-fighter enemy motion-${last?.enemyAction??'idle'}${last?.dealt?' hit':''}${endClass(false)}">${o.models.enemy}${last?hitFx(d.kind,last.action,last.enemyAction,last.dealt,d.player.stat):''}</div>
+        <div class="duel-fighter player motion-${last?.action??'idle'}${last?.taken?' hit':''}${endClass(true)}">${o.models.player}${swing(last?.action)}${last?hitFx(d.kind,last.enemyAction,last.action,last.taken,d.enemy.stat):''}</div>
+        <div class="duel-fighter enemy motion-${last?.enemyAction??'idle'}${last?.dealt?' hit':''}${endClass(false)}">${o.models.enemy}${swing(last?.enemyAction)}${last?hitFx(d.kind,last.action,last.enemyAction,last.dealt,d.player.stat):''}</div>
       </div>
       ${hp(d.player,'left fixed')}${hp(d.enemy,'right fixed')}
       ${cutin}
@@ -146,6 +150,50 @@ export function duelArena(d:DuelState,o:{models:{player:string;enemy:string};bac
       ${last?`<p class="duel-report" aria-live="polite">${last.round}합 · ${labels[last.action]} 대 ${labels[last.enemyAction]} · 준 피해 ${last.dealt} / 받은 피해 ${last.taken}</p>`:''}
     </div>
   </div>`;
+}
+
+/**
+ * 겨루기 연기 — 조조전의 단기접전처럼 두 장수가 맞달려 부딪치고, 맞은 쪽이 밀려났다가 제자리로 돌아온다.
+ * 화면은 합마다 새로 그리므로, 새로 그린 직후 이 함수가 그 합의 움직임을 이어서 보여 준다(Web Animations).
+ * 일기토는 크게 돌진하고, 설전은 한 걸음 다가서며 몸을 내민다. 움직임 줄이기 설정이면 바로 결과만 보인다.
+ */
+export function animateDuel(root:ParentNode=document){
+  const stage=root.querySelector<HTMLElement>('.duel-stage.choreo');if(!stage)return;
+  const p=stage.querySelector<HTMLElement>('.duel-fighter.player'),e=stage.querySelector<HTMLElement>('.duel-fighter.enemy');
+  const impact=()=>stage.classList.remove('pre-impact');
+  if(!p||!e||matchMedia('(prefers-reduced-motion: reduce)').matches||typeof p.animate!=='function'){impact();stage.classList.remove('entering');return;}
+  const smooth='cubic-bezier(.45,0,.25,1)';
+  if(stage.classList.contains('entering')){
+    // 입장: 화면 양 끝에서 걸어 들어와 마주 선다(걸음마다 살짝 뜬다).
+    const walk=(el:HTMLElement,from:string)=>el.animate([{transform:`translateX(${from})`,opacity:0},{transform:`translateX(${from})`,opacity:1,offset:.08},{transform:'translateX(0)',opacity:1}],{duration:1100,easing:'cubic-bezier(.25,.6,.3,1)'});
+    walk(p,'-38vw');walk(e,'38vw');
+    window.setTimeout(()=>stage.classList.remove('entering'),1150);return;
+  }
+  const debate=stage.classList.contains('debate'),pa=stage.dataset.pAct??'',ea=stage.dataset.eAct??'';
+  const rush=(a:string)=>a==='attack'||a==='special'||a==='feint';
+  const pr=p.getBoundingClientRect(),er=e.getBoundingClientRect();
+  const gap=Math.max(0,(er.left+er.width/2)-(pr.left+pr.width/2)-Math.min(pr.width,er.width)*.55);
+  const both=rush(pa)&&rush(ea),share=debate?.28:both?.5:.92;
+  const reach=(a:string)=>rush(a)?gap*share*(a==='feint'?.6:1):0;
+  const total=debate?1150:1250,hitAt=.44;
+  const play=(el:HTMLElement,a:string,dir:1|-1,hit:boolean)=>{
+    const x=reach(a)*dir,back=-dir*(hit?(debate?26:46):0);
+    const guard=a==='guard',rally=a==='rally';
+    const frames:Keyframe[]=[
+      {transform:'translate(0,0) rotate(0deg)',offset:0},
+      // 준비: 무게를 뒤로 싣는다.
+      {transform:`translate(${-dir*(guard?14:10)}px,2px) rotate(${-dir*2}deg)`,offset:.16},
+      // 돌진(또는 막기·기합).
+      {transform:rally?'translate(0,-22px) rotate(0deg)':guard?`translate(${-dir*6}px,0) rotate(${-dir*1}deg)`:`translate(${x}px,0) rotate(${dir*3}deg)`,offset:hitAt},
+      // 맞부딪침 직후: 맞았으면 뒤로 밀려나며 몸이 젖혀진다.
+      {transform:`translate(${(guard?-dir*6:x)+back}px,0) rotate(${hit?-dir*7:dir*1}deg)`,offset:.62},
+      {transform:`translate(${((guard?-dir*6:x)+back)*.5}px,0) rotate(0deg)`,offset:.8},
+      {transform:'translate(0,0) rotate(0deg)',offset:1},
+    ];
+    el.animate(frames,{duration:total,easing:smooth});
+  };
+  play(p,pa,1,p.classList.contains('hit'));play(e,ea,-1,e.classList.contains('hit'));
+  window.setTimeout(impact,Math.round(total*hitAt));
 }
 
 /**
@@ -164,6 +212,7 @@ export function playContest(kind:DuelKind,me:{name:string;stat:number},foe:{name
   const models={player:o.models?.player?duelModel(o.models.player,'player',me.name):contestModel(kind,'player',me.name),enemy:o.models?.enemy?duelModel(o.models.enemy,'enemy',foe.name):contestModel(kind,'enemy',foe.name)};
   return new Promise(resolve=>{
     const arena=()=>{el.innerHTML=`<div class="contest-box">${duelArena(d,{models,backdrop:duelBackdrop(kind,o.seed??foe.name,o.indoor),...(o.acceptLine?{openingLine:o.acceptLine}:{})}).replace('전장으로 돌아가기',esc(o.done??'이야기로 돌아가기')).replace(/전투 체력: 승자 15% · 패자 45% · 무승부 양쪽 25% 피해\(최소 1\)\. 패자는 2턴 [^<]*/,kind==='duel'?'이기면 이번 전투 아군 사기 상승 · 적의 기세가 꺾인다.':'이기면 이번 전투 아군 사기 상승 · 사마의 책략 MP +15.')}</div>`;
+      animateDuel(el);
       el.querySelectorAll<HTMLButtonElement>('[data-duel-action]').forEach(b=>b.onclick=()=>{if(duelRound(d,b.dataset.duelAction as DuelAction)){o.sound?.(b.dataset.duelAction==='special');arena();}});
       el.querySelector<HTMLButtonElement>('#duel-return')?.addEventListener('click',()=>{el.remove();resolve(d.result??'draw');});};
     el.innerHTML=`<div class="contest-box">${duelSplash(d,o.acceptLine)}</div>`;o.sound?.(true);

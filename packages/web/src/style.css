@@ -2052,3 +2052,39 @@ dialog:has(.title-screen),dialog:has(.lobby){width:min(1240px,calc(100vw - 24px)
 @keyframes sa-jolt{0%{translate:0 0}30%{translate:0 -9%}60%{translate:0 0}80%{translate:0 -3%}}
 @media (prefers-reduced-motion:reduce){.story-stage .sa,.story-stage .sa-body{animation:none!important;transition:none!important}}
 @media (orientation:landscape) and (max-height:520px){.story-stage .sa{height:30%;bottom:15%}.story-stage .sa-bubble{font-size:10px;padding:0 5px 2px}}
+
+/* ── 일기토·설전 연기(animateDuel) ───────────────────────────────────────────────────────── */
+/* 몸 전체 움직임은 스크립트가 맡는다: 예전의 짧은 CSS 돌진은 끄고, 숨쉬기만 남긴다. */
+.duel-stage.choreo .duel-fighter{animation:none!important}
+.duel-stage.choreo .duel-fighter .duel-model{animation:duel-idle 2.4s ease-in-out infinite}
+.duel-stage.choreo .duel-fighter.enemy .duel-model{animation-delay:-1.2s}
+.duel-stage.choreo .motion-attack .battle-model,.duel-stage.choreo .motion-special .battle-model{animation-delay:.18s!important}
+@keyframes duel-idle{0%,100%{translate:0 0}50%{translate:0 -3px}}
+/* 맞부딪치기 전에는 타격 효과·피해 숫자·번쩍임·흔들림을 감춘다(그 순간 한꺼번에 터진다). */
+.duel-stage.pre-impact .fx,.duel-stage.pre-impact .fx-word,.duel-stage.pre-impact .fx-guard,.duel-stage.pre-impact .damage-number,.duel-stage.pre-impact .duel-flash,.duel-stage.pre-impact .duel-clash{display:none!important}
+.duel-stage.pre-impact .duel-view{animation:none!important}
+.duel-stage.entering .duel-mini{opacity:0}
+.duel-stage .duel-mini{transition:opacity .4s}
+/* 휘두른 칼끝의 궤적(보랏빛·필살은 금빛) */
+.duel-stage .duel-fighter .fx-arc{left:50%;top:18%;width:78%;aspect-ratio:1;translate:-30% 0;border-radius:50%;border:6px solid transparent;border-top-color:rgba(190,110,255,.95);border-right-color:rgba(150,70,240,.6);filter:drop-shadow(0 0 6px #b070ff);animation:fx-arc .42s cubic-bezier(.2,.8,.3,1) both}
+.duel-stage .duel-fighter.enemy .fx-arc{translate:-70% 0;scale:-1 1}
+.duel-stage .duel-fighter .fx-arc.big{border-width:9px;border-top-color:#ffe070;border-right-color:#ff9a30;filter:drop-shadow(0 0 10px #ffb020)}
+@keyframes fx-arc{0%{rotate:-120deg;opacity:0}20%{opacity:1}100%{rotate:70deg;opacity:0}}
+/* 첫 화면: 두 대사 사이를 가르는 붉은 칼날 */
+.duel-divider{position:absolute;left:50%;top:5%;bottom:5%;width:clamp(14px,1.8vw,26px);translate:-50% 0;z-index:5;pointer-events:none;background:linear-gradient(90deg,#4a0804,#b0200e 30%,#ff8a5a 50%,#b0200e 70%,#4a0804);clip-path:polygon(50% 0,100% 7%,62% 50%,100% 93%,50% 100%,0 93%,38% 50%,0 7%);filter:drop-shadow(0 0 8px #ff3010);transform-origin:50% 50%;animation:duel-divider 2.4s ease both}
+@keyframes duel-divider{0%{scale:1 0;opacity:0}14%{scale:1 1;opacity:1}72%{opacity:1}100%{opacity:0;scale:1 1}}
+/* 선포 화면: 깃발 아래 두 장수가 서서 숨쉰다(깃발은 모양대로 잘려 있어 그 밖의 층에 세운다) */
+.duel-splash{position:relative}
+.vs-floor{position:absolute;inset:0;pointer-events:none;z-index:2}
+.vs-unit{position:absolute;top:50%;height:min(38%,220px);aspect-ratio:1;translate:-50% 0;animation:vs-model-in .7s .35s cubic-bezier(.2,.9,.3,1) both}
+.vs-unit.vs-left{left:17%}.vs-unit.vs-right{left:83%}
+.vs-unit .duel-model,.vs-unit .battle-model{width:100%!important;height:100%!important}
+.vs-unit .duel-model{animation:duel-idle 2.4s ease-in-out infinite}
+.vs-unit::after{content:'';position:absolute;left:18%;right:18%;bottom:2%;height:9%;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.55),transparent);z-index:-1}
+@keyframes vs-model-in{from{opacity:0;translate:0 24px}to{opacity:1;translate:0 0}}
+@media (prefers-reduced-motion:reduce){.duel-stage.choreo .duel-fighter .duel-model,.duel-divider,.fx-arc,.duel-splash .vs-model{animation:none!important}}
+
+.duel-stage.pre-impact .duel-fighter.hit .duel-model{animation:duel-idle 2.4s ease-in-out infinite!important}
+.duel-stage.choreo .duel-fighter.hit .duel-model{animation-delay:.04s!important}
+@media (prefers-reduced-motion:reduce){.vs-unit,.vs-unit .duel-model{animation:none!important}}
+@media (max-height:520px){.vs-unit{display:none}}

@@ -39,7 +39,7 @@ import {loadPortraitImages,portraitImage} from './portrait-images.ts';
 import {cardFace} from './faces.ts';
 import {renderHud,type CardOpts} from './unit-hud.ts';
 import {inkChoice} from './ink-choice.ts';
-import {duelSplash,duelArena,duelBackdrop,duelModel,preloadDuelArt} from './duel-ui.ts';
+import {duelSplash,duelArena,duelBackdrop,duelModel,preloadDuelArt,playContest,animateDuel} from './duel-ui.ts';
 // 플레이어가 만든 신장수를 장수록에 올린다(전투 능력·성격·무대 그림).
 registerCustoms(loadMetaForCustoms().customOfficers??[]);
 // 직접 넣은 초상 그림(저장소 public/portraits와 이 브라우저에 올린 것)을 먼저 읽어 둔다.
@@ -954,6 +954,7 @@ function showDuel(){
   }
   const indoor=session.state.map.tileAt(a.pos).terrain==='fort'||/궁|부$|청|막/.test(session.state.stage.subtitle??'');
   modal(duelArena(d,{models,backdrop:duelBackdrop(d.kind,session.state.stage.id+d.enemy.id,indoor),...(session.lastAccept?.line?{openingLine:session.lastAccept.line}:{})}),false);
+  animateDuel();
   document.querySelectorAll<HTMLButtonElement>('[data-duel-action]').forEach(el=>el.onclick=()=>{sound.event({kind:'duel',critical:el.dataset.duelAction==='special',debate:d.kind==='debate'});act({kind:'item',unit:d.player.id,item:'duel-round:'+el.dataset.duelAction});});
   $('#duel-return')?.addEventListener('click',()=>{duelPresented=true;$<HTMLDialogElement>('#modal').close();render();pump();});
 }
@@ -1127,5 +1128,5 @@ async function boot(){
   if(menuOpen&&document.getElementById('hub-training'))showMenu();
 }
 // ?dev only: a handle for QA scripts to inspect or nudge the running battle.
-if(devMode)Object.assign(window,{__sama:{get session(){return session;},get field(){return field;},render,start(chapter:number){session=new Session(chapter,'normal',215,'survival',RULES,{...deployment(campaign,true),wide:2});activate();},story(chapter:number){storyScene(chapter);},run(floor:number,kind:'battle'|'elite'|'boss'|'tale',seed=7,route?:Record<number,string>,tale?:string){const r=newRun(seed,startingOfficers());r.floor=floor;if(route)r.route=route as {1?:string;2?:string;3?:string};runHost.startBattle({levels:{sima_yi:2+floor,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},run:battleRef(r,kind,tale),trial:1},seed);},brief(chapter:number){briefing(chapter);},get campaign(){return campaign;},act(cmd:Command){act(cmd);}}});
+if(devMode)Object.assign(window,{__sama:{get session(){return session;},get field(){return field;},render,start(chapter:number){session=new Session(chapter,'normal',215,'survival',RULES,{...deployment(campaign,true),wide:2});activate();},story(chapter:number){storyScene(chapter);},contest(kind:'duel'|'debate',foe=kind==='duel'?'여포':'제갈량'){menuOpen=true;modal('<div class="story-scene"><p>개발용 대결</p></div>',false);void playContest(kind,{name:'사마의',stat:90},{name:foe,stat:88},{acceptLine:kind==='duel'?'덤벼라!':'그 말, 내가 받아 주겠소.'});},run(floor:number,kind:'battle'|'elite'|'boss'|'tale',seed=7,route?:Record<number,string>,tale?:string){const r=newRun(seed,startingOfficers());r.floor=floor;if(route)r.route=route as {1?:string;2?:string;3?:string};runHost.startBattle({levels:{sima_yi:2+floor,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},run:battleRef(r,kind,tale),trial:1},seed);},brief(chapter:number){briefing(chapter);},get campaign(){return campaign;},act(cmd:Command){act(cmd);}}});
 void boot();
