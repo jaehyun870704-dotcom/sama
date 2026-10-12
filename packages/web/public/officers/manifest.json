@@ -103,6 +103,7 @@
     {"id":"wutugu","name":"올돌골","aliases":["올돌골의 환영"],"battle":{"infantry":{"sheet":"wutugu-battle-infantry-v1.webp","cell":[280,224],"rows":1}}},
     {"id":"feng_ji","name":"봉기","aliases":["봉기의 환영"],"battle":{"strategist":{"sheet":"feng_ji-battle-strategist-v1.webp","cell":[280,224],"rows":1}}},
     {"id":"gao_lan","name":"고람","aliases":["고람의 환영"],"battle":{"cavalry":{"sheet":"gao_lan-battle-cavalry-v1.webp","cell":[280,224],"rows":1}}},
-    {"id":"guo_jia","name":"곽가","aliases":["곽가의 환영"],"battle":{"strategist":{"sheet":"guo_jia-battle-strategist-v1.webp","cell":[280,224],"rows":1}}}
+    {"id":"guo_jia","name":"곽가","aliases":["곽가의 환영"],"battle":{"strategist":{"sheet":"guo_jia-battle-strategist-v1.webp","cell":[280,224],"rows":1}}},
+    {"id":"xun_you","name":"순유","aliases":["순유의 환영"],"battle":{"strategist":{"sheet":"xun_you-battle-strategist-v1.webp","cell":[280,224],"rows":1}}}
   ]
 }
