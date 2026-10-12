@@ -1,0 +1,239 @@
+{
+  "id": "Z2-09",
+  "arc": "lower",
+  "order": 124,
+  "title": "천수의 기린아",
+  "subtitle": "천수 · 강유를 얻다",
+  "synopsis": "천수의 젊은 장수 강유가 계교를 꿰뚫고 조운과 맞서 물러서지 않는다. 기현을 치는 척 그를 성 밖으로 끌어내고, 태수 마준이 그를 의심하게 하라. 강유를 꺾되 죽이지 말고, 갈 곳 잃은 그를 우리 편으로 맞아라.",
+  "mapId": "z2-09-tianshui",
+  "initialPhase": "lure",
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_zhao_yun",
+      "z_wei_yan",
+      "z_ma_dai",
+      "z_guan_xing",
+      "z_zhang_bao"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "annihilate"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "turn_limit:10",
+      "extreme": "turn_limit:11"
+    },
+    {
+      "slot": 3,
+      "normal": "unit_survives",
+      "extreme": "unit_survives"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 24,
+      "recommendedLevel": 24,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 26,
+      "recommendedLevel": 26,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z2-09/foes",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_jiangwei_ts",
+              "name": "강유",
+              "template": "heavyCav",
+              "level": 25,
+              "region": "jiang_band",
+              "behavior": "advance"
+            },
+            {
+              "id": "z9_jw_a",
+              "name": "천수군 기병",
+              "template": "cavalry",
+              "level": 24,
+              "region": "jiang_band",
+              "behavior": "advance"
+            },
+            {
+              "id": "z9_jw_b",
+              "name": "천수군 창병",
+              "template": "spearman",
+              "level": 24,
+              "region": "jiang_band",
+              "behavior": "advance"
+            },
+            {
+              "id": "z9_jw_c",
+              "name": "천수군 궁병",
+              "template": "archer",
+              "level": 24,
+              "region": "jiang_side",
+              "behavior": "advance"
+            },
+            {
+              "id": "z9_jw_d",
+              "name": "천수군 보병",
+              "template": "infantry",
+              "level": 24,
+              "region": "jiang_side",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_ma_zun",
+              "name": "마준",
+              "template": "infantry",
+              "level": 25,
+              "region": "city",
+              "behavior": "hold"
+            },
+            {
+              "id": "z9_city_a",
+              "name": "천수군 수비병",
+              "template": "spearman",
+              "level": 24,
+              "region": "city_guard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z9_city_b",
+              "name": "천수군 노병",
+              "template": "crossbow",
+              "level": 24,
+              "region": "city_guard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z9_city_c",
+              "name": "천수군 수비병",
+              "template": "infantry",
+              "level": 24,
+              "region": "city_guard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z9_ji_a",
+              "name": "기현 수비병",
+              "template": "infantry",
+              "level": 24,
+              "region": "jixian",
+              "behavior": "hold"
+            },
+            {
+              "id": "z9_ji_b",
+              "name": "기현 궁병",
+              "template": "archer",
+              "level": 24,
+              "region": "jixian",
+              "behavior": "hold"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-09/shanggui",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 4,
+        "side": "player"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z9_sg_a",
+              "name": "상규 기병",
+              "template": "cavalry",
+              "level": 24,
+              "region": "north_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "z9_sg_b",
+              "name": "상규 보병",
+              "template": "infantry",
+              "level": 24,
+              "region": "north_road",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-09/doubt",
+      "phase": "lure",
+      "trigger": {
+        "type": "hp_below",
+        "unit": "z_jiangwei_ts",
+        "ratio": 0.5
+      },
+      "actions": [
+        {
+          "type": "convert_unit",
+          "targets": [
+            "z_jiangwei_ts"
+          ],
+          "toClass": "heavyCav",
+          "side": "allyAi"
+        },
+        {
+          "type": "remove_effect",
+          "targets": [
+            "z_jiangwei_ts"
+          ],
+          "effect": "confusion"
+        },
+        {
+          "type": "apply_effect",
+          "side": "enemy",
+          "effect": "dispirit",
+          "duration": 2
+        },
+        {
+          "type": "set_phase",
+          "phase": "joined"
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 30
+  }
+}

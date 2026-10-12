@@ -1,0 +1,283 @@
+{
+  "id": "Z2-06",
+  "arc": "lower",
+  "order": 121,
+  "title": "신성의 편지",
+  "subtitle": "신성 · 여드레 만의 급습",
+  "synopsis": "위의 신성 태수 맹달이 촉으로 돌아오겠다는 편지를 보냈다. 맹달을 만나 뜻을 확인하는 순간, 천이백 리를 여드레 만에 달려온 사마의의 군사가 성을 에워싼다. 맹달을 데리고 서문으로 빠져나가라.",
+  "mapId": "z2-06-xincheng",
+  "initialPhase": "approach",
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_guan_xing",
+      "z_zhang_bao",
+      "z_ma_dai",
+      "z_wang_ping"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "reach",
+      "unit": "z_liang",
+      "target": "keep"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "turn_limit:9",
+      "extreme": "turn_limit:9"
+    },
+    {
+      "slot": 3,
+      "normal": "unit_survives",
+      "extreme": "unit_survives"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 21,
+      "recommendedLevel": 21,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 23,
+      "recommendedLevel": 23,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z2-06/start",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "allyAi",
+          "units": [
+            {
+              "id": "z_meng_da",
+              "name": "맹달",
+              "template": "infantry",
+              "level": 21,
+              "region": "keep",
+              "behavior": "hold"
+            },
+            {
+              "id": "z6_guard_a",
+              "name": "신성 수비병",
+              "template": "spearman",
+              "level": 21,
+              "region": "mengda_guard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z6_guard_b",
+              "name": "신성 궁병",
+              "template": "archer",
+              "level": 21,
+              "region": "mengda_guard",
+              "behavior": "hold"
+            }
+          ]
+        },
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_shen_yi",
+              "name": "신의",
+              "template": "cavalry",
+              "level": 22,
+              "region": "shenyi_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "z6_xing_a",
+              "name": "위흥군 보병",
+              "template": "infantry",
+              "level": 21,
+              "region": "shenyi_road",
+              "behavior": "hold"
+            },
+            {
+              "id": "z6_xing_b",
+              "name": "위흥군 창병",
+              "template": "spearman",
+              "level": 21,
+              "region": "shenyi_road",
+              "behavior": "hold"
+            },
+            {
+              "id": "z6_xing_c",
+              "name": "위흥군 궁병",
+              "template": "archer",
+              "level": 21,
+              "region": "shenyi_hill",
+              "behavior": "hold"
+            },
+            {
+              "id": "z6_xing_d",
+              "name": "위흥군 보병",
+              "template": "infantry",
+              "level": 21,
+              "region": "shenyi_hill",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-06/meet",
+      "phase": "approach",
+      "trigger": {
+        "type": "unit_reaches",
+        "unit": "z_liang",
+        "region": "keep"
+      },
+      "actions": [
+        {
+          "type": "terrain_change",
+          "region": "east_door",
+          "terrain": "road"
+        },
+        {
+          "type": "dismiss_units",
+          "targets": [
+            "z_meng_da"
+          ]
+        },
+        {
+          "type": "spawn_units",
+          "side": "allyAi",
+          "units": [
+            {
+              "id": "z_meng_da",
+              "name": "맹달",
+              "template": "infantry",
+              "level": 21,
+              "region": "keep",
+              "behavior": "escortee",
+              "goalRegion": "west_exit"
+            }
+          ]
+        },
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_li_fu",
+              "name": "이보",
+              "template": "infantry",
+              "level": 22,
+              "region": "inner_east",
+              "behavior": "advance"
+            },
+            {
+              "id": "z6_turn_a",
+              "name": "이보의 병사",
+              "template": "infantry",
+              "level": 21,
+              "region": "inner_east",
+              "behavior": "advance"
+            },
+            {
+              "id": "z6_turn_b",
+              "name": "이보의 병사",
+              "template": "spearman",
+              "level": 21,
+              "region": "inner_east",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_sima_yi",
+              "name": "사마의",
+              "template": "strategist",
+              "level": 21,
+              "region": "sima_ford",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_xu_huang",
+              "name": "서황",
+              "template": "heavyCav",
+              "level": 22,
+              "region": "sima_ford",
+              "behavior": "advance"
+            },
+            {
+              "id": "z6_wei_a",
+              "name": "위군 기병",
+              "template": "cavalry",
+              "level": 21,
+              "region": "sima_ford",
+              "behavior": "advance"
+            },
+            {
+              "id": "z6_wei_b",
+              "name": "위군 보병",
+              "template": "infantry",
+              "level": 21,
+              "region": "sima_ford",
+              "behavior": "advance"
+            },
+            {
+              "id": "z6_wei_c",
+              "name": "위군 노병",
+              "template": "crossbow",
+              "level": 21,
+              "region": "sima_north",
+              "behavior": "advance"
+            },
+            {
+              "id": "z6_wei_d",
+              "name": "위군 기병",
+              "template": "cavalry",
+              "level": 21,
+              "region": "sima_north",
+              "behavior": "advance"
+            }
+          ]
+        },
+        {
+          "type": "change_victory",
+          "conditions": [
+            {
+              "type": "reach",
+              "unit": "z_liang",
+              "target": "west_exit"
+            }
+          ]
+        },
+        {
+          "type": "set_phase",
+          "phase": "escape"
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 30
+  }
+}

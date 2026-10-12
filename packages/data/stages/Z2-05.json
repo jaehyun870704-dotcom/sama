@@ -1,0 +1,253 @@
+{
+  "id": "Z2-05",
+  "arc": "lower",
+  "order": 120,
+  "title": "등갑군을 태우다",
+  "subtitle": "반사곡 · 오과국의 등갑군",
+  "synopsis": "기름 먹인 등나무 갑옷은 칼도 화살도 튕겨 내고 물에도 뜬다. 오과국 왕 올돌골의 등갑군이 몰려온다. 거짓으로 물러나 그들을 뱀처럼 굽은 반사곡으로 끌어들이고, 골짜기에 묻어 둔 불을 일으켜라.",
+  "mapId": "z2-05-panshe",
+  "initialPhase": "lure",
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_zhao_yun",
+      "z_wei_yan",
+      "z_ma_dai",
+      "z_wang_ping",
+      "z_guan_suo",
+      "z_zhang_yi"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "annihilate"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "turn_limit:6",
+      "extreme": "turn_limit:7"
+    },
+    {
+      "slot": 3,
+      "normal": "player_losses_lt:2",
+      "extreme": "player_losses_lt:2"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 20,
+      "recommendedLevel": 20,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 22,
+      "recommendedLevel": 22,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z2-05/foes",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_wutugu",
+              "name": "올돌골",
+              "template": "rattan",
+              "level": 21,
+              "region": "wuge_camp",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_tuan",
+              "name": "토안",
+              "template": "rattan",
+              "level": 21,
+              "region": "wuge_camp",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_xini",
+              "name": "해니",
+              "template": "rattan",
+              "level": 21,
+              "region": "wuge_camp",
+              "behavior": "advance"
+            },
+            {
+              "id": "z5_rattan_a",
+              "name": "오과국 등갑군",
+              "template": "rattan",
+              "level": 20,
+              "region": "wuge_camp",
+              "behavior": "advance"
+            },
+            {
+              "id": "z5_rattan_b",
+              "name": "오과국 등갑군",
+              "template": "rattan",
+              "level": 20,
+              "region": "wuge_camp",
+              "behavior": "advance"
+            },
+            {
+              "id": "z5_rattan_c",
+              "name": "오과국 등갑군",
+              "template": "rattan",
+              "level": 20,
+              "region": "wuge_west",
+              "behavior": "advance"
+            },
+            {
+              "id": "z5_rattan_d",
+              "name": "오과국 등갑군",
+              "template": "rattan",
+              "level": 20,
+              "region": "wuge_west",
+              "behavior": "advance"
+            },
+            {
+              "id": "z5_rattan_e",
+              "name": "오과국 등갑군",
+              "template": "rattan",
+              "level": 20,
+              "region": "wuge_east",
+              "behavior": "advance"
+            },
+            {
+              "id": "z5_rattan_f",
+              "name": "오과국 등갑군",
+              "template": "rattan",
+              "level": 20,
+              "region": "wuge_east",
+              "behavior": "advance"
+            },
+            {
+              "id": "z5_bow_a",
+              "name": "오과국 궁수",
+              "template": "archer",
+              "level": 20,
+              "region": "wuge_west",
+              "behavior": "advance"
+            },
+            {
+              "id": "z5_bow_b",
+              "name": "오과국 궁수",
+              "template": "archer",
+              "level": 20,
+              "region": "wuge_east",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-05/fire",
+      "phase": "lure",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 2,
+        "side": "player"
+      },
+      "actions": [
+        {
+          "type": "telegraph_aoe",
+          "region": "valley",
+          "label": "반사곡 화공",
+          "magnitude": 55,
+          "effect": "burn",
+          "duration": 1
+        },
+        {
+          "type": "set_phase",
+          "phase": "burn"
+        }
+      ]
+    },
+    {
+      "id": "Z2-05/fire2",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 5,
+        "side": "player"
+      },
+      "actions": [
+        {
+          "type": "telegraph_aoe",
+          "region": "valley",
+          "label": "두 번째 불길",
+          "magnitude": 40,
+          "effect": "burn",
+          "duration": 1
+        }
+      ]
+    },
+    {
+      "id": "Z2-05/second",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 4,
+        "side": "player"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z5_rattan_g",
+              "name": "오과국 등갑군",
+              "template": "rattan",
+              "level": 20,
+              "region": "wuge_camp",
+              "behavior": "advance"
+            },
+            {
+              "id": "z5_rattan_h",
+              "name": "오과국 등갑군",
+              "template": "rattan",
+              "level": 20,
+              "region": "wuge_camp",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_meng_huo",
+              "name": "맹획",
+              "template": "nanmanRider",
+              "level": 21,
+              "region": "mh_camp",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 30
+  }
+}

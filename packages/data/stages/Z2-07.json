@@ -1,0 +1,239 @@
+{
+  "id": "Z2-07",
+  "arc": "lower",
+  "order": 122,
+  "title": "출사표",
+  "subtitle": "기산 · 첫 번째 북벌",
+  "synopsis": "선제의 은혜를 갚으려 표를 올리고 북으로 나섰다. 장안을 지키던 부마 하후무가 서량의 대장 한덕과 함께 길을 막는다. 하후무를 몰아내고 기산의 진채를 차지해 북벌의 첫 발판을 놓아라.",
+  "mapId": "z2-07-qishan",
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_zhao_yun",
+      "z_deng_zhi",
+      "z_wei_yan",
+      "z_ma_dai",
+      "z_guan_xing",
+      "z_zhang_bao"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "z_xiahou_mao",
+      "order": 1
+    },
+    {
+      "type": "capture",
+      "target": "qishan",
+      "order": 2
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "turn_limit:8",
+      "extreme": "turn_limit:9"
+    },
+    {
+      "slot": 3,
+      "normal": "no_player_losses",
+      "extreme": "player_losses_lt:2"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 22,
+      "recommendedLevel": 22,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 24,
+      "recommendedLevel": 24,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z2-07/foes",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_xiahou_mao",
+              "name": "하후무",
+              "template": "heavyCav",
+              "level": 23,
+              "region": "xh_camp",
+              "behavior": "hold"
+            },
+            {
+              "id": "z7_guard_a",
+              "name": "위군 친위",
+              "template": "spearman",
+              "level": 22,
+              "region": "xh_camp",
+              "behavior": "hold"
+            },
+            {
+              "id": "z7_front_a",
+              "name": "위군 보병",
+              "template": "infantry",
+              "level": 22,
+              "region": "xh_front",
+              "behavior": "advance"
+            },
+            {
+              "id": "z7_front_b",
+              "name": "위군 창병",
+              "template": "spearman",
+              "level": 22,
+              "region": "xh_front",
+              "behavior": "advance"
+            },
+            {
+              "id": "z7_front_c",
+              "name": "위군 궁병",
+              "template": "archer",
+              "level": 22,
+              "region": "xh_front",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_han_de",
+              "name": "한덕",
+              "template": "xiliang",
+              "level": 23,
+              "region": "hande_band",
+              "behavior": "advance"
+            },
+            {
+              "id": "z7_xl_a",
+              "name": "서량 기병",
+              "template": "xiliang",
+              "level": 22,
+              "region": "hande_band",
+              "behavior": "advance"
+            },
+            {
+              "id": "z7_xl_b",
+              "name": "서량 기병",
+              "template": "xiliang",
+              "level": 22,
+              "region": "hande_band",
+              "behavior": "advance"
+            },
+            {
+              "id": "z7_qs_a",
+              "name": "기산 수비병",
+              "template": "infantry",
+              "level": 22,
+              "region": "qishan",
+              "behavior": "hold"
+            },
+            {
+              "id": "z7_qs_b",
+              "name": "기산 궁병",
+              "template": "archer",
+              "level": 22,
+              "region": "qishan_guard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z7_qs_c",
+              "name": "기산 노병",
+              "template": "crossbow",
+              "level": 22,
+              "region": "qishan_guard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z7_west_a",
+              "name": "위군 기병",
+              "template": "cavalry",
+              "level": 22,
+              "region": "west_wood",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-07/east",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3,
+        "side": "player"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z7_east_a",
+              "name": "서량 기병",
+              "template": "xiliang",
+              "level": 22,
+              "region": "east_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "z7_east_b",
+              "name": "위군 보병",
+              "template": "infantry",
+              "level": 22,
+              "region": "east_road",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-07/hande-falls",
+      "trigger": {
+        "type": "unit_retreats",
+        "unit": "z_han_de"
+      },
+      "actions": [
+        {
+          "type": "apply_effect",
+          "side": "player",
+          "effect": "rally",
+          "duration": 2
+        },
+        {
+          "type": "apply_effect",
+          "side": "enemy",
+          "effect": "dispirit",
+          "duration": 2
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 30
+  }
+}

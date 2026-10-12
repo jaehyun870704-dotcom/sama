@@ -1,0 +1,249 @@
+{
+  "id": "Z2-10",
+  "arc": "lower",
+  "order": 125,
+  "title": "왕랑을 꾸짖다",
+  "subtitle": "기산 앞 · 밤의 습격",
+  "synopsis": "위의 사도 왕랑이 진 앞에 나와 하늘의 뜻을 들먹이다, 제갈량의 꾸짖음을 듣고 말에서 떨어져 숨졌다. 분을 삼킨 조진이 그날 밤 촉의 영채를 습격한다. 빈 영채에 불을 묻고 숲에 숨어 기다렸다가, 거꾸로 조진의 본진을 쳐라.",
+  "mapId": "z2-10-weinan",
+  "initialPhase": "night",
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_zhao_yun",
+      "z_wei_yan",
+      "z_ma_dai",
+      "z_guan_xing",
+      "z_zhang_bao",
+      "z_jiang_wei",
+      "z_wang_ping"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "z_cao_zhen"
+    },
+    {
+      "type": "capture",
+      "target": "wei_camp"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "turn_limit:5",
+      "extreme": "turn_limit:6"
+    },
+    {
+      "slot": 3,
+      "normal": "unit_retreat:z_guo_huai",
+      "extreme": "unit_retreat:z_guo_huai"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 25,
+      "recommendedLevel": 25,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 27,
+      "recommendedLevel": 27,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z2-10/foes",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_cao_zun",
+              "name": "조준",
+              "template": "cavalry",
+              "level": 26,
+              "region": "raid",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_zhu_zan",
+              "name": "주찬",
+              "template": "infantry",
+              "level": 26,
+              "region": "raid",
+              "behavior": "advance"
+            },
+            {
+              "id": "z10_raid_a",
+              "name": "위군 야습 기병",
+              "template": "cavalry",
+              "level": 25,
+              "region": "raid",
+              "behavior": "advance"
+            },
+            {
+              "id": "z10_raid_b",
+              "name": "위군 야습 기병",
+              "template": "cavalry",
+              "level": 25,
+              "region": "raid",
+              "behavior": "advance"
+            },
+            {
+              "id": "z10_raid_c",
+              "name": "위군 야습 보병",
+              "template": "infantry",
+              "level": 25,
+              "region": "raid",
+              "behavior": "advance"
+            },
+            {
+              "id": "z10_raid_d",
+              "name": "위군 야습 보병",
+              "template": "infantry",
+              "level": 25,
+              "region": "raid",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_cao_zhen",
+              "name": "조진",
+              "template": "heavyCav",
+              "level": 25,
+              "region": "wei_camp",
+              "behavior": "hold"
+            },
+            {
+              "id": "z10_camp_a",
+              "name": "위군 친위",
+              "template": "spearman",
+              "level": 25,
+              "region": "wei_guard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z10_camp_b",
+              "name": "위군 궁병",
+              "template": "archer",
+              "level": 25,
+              "region": "wei_guard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z10_camp_c",
+              "name": "위군 노병",
+              "template": "crossbow",
+              "level": 25,
+              "region": "wei_guard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z_guo_huai",
+              "name": "곽회",
+              "template": "spearman",
+              "level": 25,
+              "region": "guo_camp",
+              "behavior": "advance"
+            },
+            {
+              "id": "z10_guo_a",
+              "name": "위군 창병",
+              "template": "spearman",
+              "level": 25,
+              "region": "guo_camp",
+              "behavior": "advance"
+            },
+            {
+              "id": "z10_guo_b",
+              "name": "위군 궁병",
+              "template": "archer",
+              "level": 25,
+              "region": "guo_camp",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-10/empty-camp",
+      "phase": "night",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 1,
+        "side": "player"
+      },
+      "actions": [
+        {
+          "type": "telegraph_aoe",
+          "region": "fire_field",
+          "label": "빈 영채의 불",
+          "magnitude": 45,
+          "effect": "burn",
+          "duration": 1
+        },
+        {
+          "type": "set_phase",
+          "phase": "counter"
+        }
+      ]
+    },
+    {
+      "id": "Z2-10/east",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 4,
+        "side": "player"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z10_east_a",
+              "name": "위군 기병",
+              "template": "cavalry",
+              "level": 25,
+              "region": "east_wood",
+              "behavior": "advance"
+            },
+            {
+              "id": "z10_east_b",
+              "name": "위군 보병",
+              "template": "infantry",
+              "level": 25,
+              "region": "east_wood",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 30
+  }
+}

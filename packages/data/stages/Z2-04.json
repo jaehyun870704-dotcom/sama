@@ -1,0 +1,316 @@
+{
+  "id": "Z2-04",
+  "arc": "lower",
+  "order": 119,
+  "title": "은갱동의 맹수",
+  "subtitle": "은갱동 · 목록대왕의 짐승 부대",
+  "synopsis": "맹획의 옛 터전 은갱동. 팔납동의 목록대왕이 바람을 부르고 범과 표범, 코끼리를 몰아온다. 짐승의 기세가 꺾일 때까지 버티고, 불을 뿜는 나무 짐승으로 맹수를 쫓아 은갱동을 차지하라.",
+  "mapId": "z2-04-yinkeng",
+  "initialPhase": "beasts",
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_zhao_yun",
+      "z_wei_yan",
+      "z_ma_dai",
+      "z_wang_ping",
+      "z_zhang_yi"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "annihilate"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "turn_limit:10",
+      "extreme": "turn_limit:12"
+    },
+    {
+      "slot": 3,
+      "normal": "no_player_losses",
+      "extreme": "player_losses_lt:2"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 19,
+      "recommendedLevel": 19,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 21,
+      "recommendedLevel": 21,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z2-04/foes",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_mulu",
+              "name": "목록대왕",
+              "template": "elephant",
+              "level": 20,
+              "region": "beast_north",
+              "behavior": "advance"
+            },
+            {
+              "id": "z4_beast_a",
+              "name": "팔납동 맹수",
+              "template": "nanmanBeast",
+              "level": 19,
+              "region": "beast_north",
+              "behavior": "advance"
+            },
+            {
+              "id": "z4_beast_b",
+              "name": "팔납동 맹수",
+              "template": "nanmanBeast",
+              "level": 19,
+              "region": "beast_north",
+              "behavior": "advance"
+            },
+            {
+              "id": "z4_eleph_a",
+              "name": "팔납동 코끼리",
+              "template": "elephant",
+              "level": 19,
+              "region": "beast_north",
+              "behavior": "advance"
+            },
+            {
+              "id": "z4_beast_c",
+              "name": "팔납동 맹수",
+              "template": "nanmanBeast",
+              "level": 19,
+              "region": "beast_mid",
+              "behavior": "advance"
+            },
+            {
+              "id": "z4_beast_d",
+              "name": "팔납동 맹수",
+              "template": "nanmanBeast",
+              "level": 19,
+              "region": "beast_mid",
+              "behavior": "advance"
+            },
+            {
+              "id": "z4_eleph_b",
+              "name": "팔납동 코끼리",
+              "template": "elephant",
+              "level": 19,
+              "region": "beast_mid",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_zhu_rong",
+              "name": "축융",
+              "template": "javelin",
+              "level": 20,
+              "region": "zhurong_band",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_dailai",
+              "name": "대래동주",
+              "template": "nanmanFoot",
+              "level": 20,
+              "region": "zhurong_band",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_meng_huo",
+              "name": "맹획",
+              "template": "nanmanRider",
+              "level": 20,
+              "region": "fort",
+              "behavior": "hold"
+            },
+            {
+              "id": "z4_fort_a",
+              "name": "은갱동 궁수",
+              "template": "archer",
+              "level": 19,
+              "region": "fort",
+              "behavior": "hold"
+            },
+            {
+              "id": "z4_fort_b",
+              "name": "은갱동 보병",
+              "template": "nanmanFoot",
+              "level": 19,
+              "region": "fort_front",
+              "behavior": "hold"
+            },
+            {
+              "id": "z4_fort_c",
+              "name": "은갱동 보병",
+              "template": "nanmanFoot",
+              "level": 19,
+              "region": "fort_front",
+              "behavior": "hold"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-04/roar",
+      "phase": "beasts",
+      "once": false,
+      "trigger": {
+        "type": "turn_start",
+        "side": "player"
+      },
+      "actions": [
+        {
+          "type": "apply_effect",
+          "side": "player",
+          "effect": "dispirit",
+          "duration": 1
+        }
+      ]
+    },
+    {
+      "id": "Z2-04/flank",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 2
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z4_flank_a",
+              "name": "팔납동 맹수",
+              "template": "nanmanBeast",
+              "level": 19,
+              "region": "beast_in",
+              "behavior": "advance"
+            },
+            {
+              "id": "z4_flank_b",
+              "name": "팔납동 맹수",
+              "template": "nanmanBeast",
+              "level": 19,
+              "region": "beast_in",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z2-04/wooden-beasts",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3,
+        "side": "player"
+      },
+      "actions": [
+        {
+          "type": "remove_effect",
+          "side": "player",
+          "effect": "dispirit"
+        },
+        {
+          "type": "spawn_units",
+          "side": "ally",
+          "units": [
+            {
+              "id": "z4_wood_a",
+              "name": "목수",
+              "template": "catapult",
+              "level": 19,
+              "region": "wood_in",
+              "behavior": "advance"
+            },
+            {
+              "id": "z4_wood_b",
+              "name": "목수",
+              "template": "catapult",
+              "level": 19,
+              "region": "wood_in",
+              "behavior": "advance"
+            },
+            {
+              "id": "z4_wood_c",
+              "name": "목수",
+              "template": "catapult",
+              "level": 19,
+              "region": "wood_in",
+              "behavior": "advance"
+            }
+          ]
+        },
+        {
+          "type": "apply_effect",
+          "targets": [
+            "z_mulu",
+            "z4_beast_a",
+            "z4_beast_b",
+            "z4_beast_c",
+            "z4_beast_d",
+            "z4_eleph_a",
+            "z4_eleph_b",
+            "z4_flank_a",
+            "z4_flank_b"
+          ],
+          "effect": "dispirit",
+          "duration": 3
+        },
+        {
+          "type": "apply_effect",
+          "targets": [
+            "z_mulu",
+            "z4_beast_a",
+            "z4_beast_b",
+            "z4_beast_c",
+            "z4_beast_d",
+            "z4_eleph_a",
+            "z4_eleph_b",
+            "z4_flank_a",
+            "z4_flank_b"
+          ],
+          "effect": "sluggish",
+          "duration": 3
+        },
+        {
+          "type": "set_phase",
+          "phase": "fire"
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 30
+  }
+}
