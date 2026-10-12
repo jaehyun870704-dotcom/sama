@@ -2,17 +2,17 @@
  * 이야기 무대의 도트 인물 — 고전 조조전의 이벤트 인물처럼 작은 2등신 반 인물을 도트로 그린다.
  * 그림 파일 없이 이름·병종으로 옷·관모·투구·수염·지닌 물건을 정해 한 장의 시트로 만든다(한 번 만들고 재사용).
  *
- * 시트: 칸 24×32, 가로 8칸 × 세로 3줄.
+ * 시트: 칸 24×32, 가로 9칸 × 세로 3줄.
  *   줄: 0 앞(비스듬히 오른쪽 아래를 봄) · 1 뒤(오른쪽 위) · 2 옆(오른쪽). 왼쪽은 CSS로 뒤집는다.
- *   칸: 0 서기 · 1 걸음 A · 2 걸음 B · 3 말하기(손을 듦) · 4 절(읍) · 5 무릎 꿇기 · 6 놀람(두 팔) · 7 가리키기(부채·손)
+ *   칸: 0 서기 · 1 걸음 A · 2 걸음 B · 3 말하기(손을 듦) · 4 절(읍) · 5 무릎 꿇기 · 6 놀람(두 팔) · 7 가리키기(부채·손) · 8 탁자 앞 좌식
  */
 import type {Look} from './scenario-types.ts';
 import {factionOf} from './officer-art.ts';
 
-export const PX_W=24,PX_H=32,PX_COLS=8,PX_ROWS=3;
+export const PX_W=24,PX_H=32,PX_COLS=9,PX_ROWS=3;
 export type PxDir='front'|'back'|'side';
 export const PX_ROW:Record<PxDir,number>={front:0,back:1,side:2};
-export const PX_POSE={stand:0,walkA:1,walkB:2,talk:3,bow:4,kneel:5,surprise:6,point:7} as const;
+export const PX_POSE={stand:0,walkA:1,walkB:2,talk:3,bow:4,kneel:5,surprise:6,point:7,sit:8} as const;
 export type PxPose=keyof typeof PX_POSE;
 
 type Body='robe'|'armor'|'light'|'monk'|'dress';
@@ -92,13 +92,13 @@ const shadeHex=(hex:string,k:number)=>{const n=parseInt(hex.slice(1),16),f=(v:nu
 function drawFrame(g:CanvasRenderingContext2D,ox:number,oy:number,c:Cfg,dir:PxDir,pose:PxPose){
   const p:Px=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(ox+x,oy+y,w,h);};
   const dark=shadeHex(c.main,0.62),light=shadeHex(c.main,1.25),skinD=shadeHex(c.skin,0.8);
-  const kneel=pose==='kneel',bow=pose==='bow';
-  const drop=kneel?6:bow?2:0;                 // 머리·몸이 내려가는 만큼
+  const kneel=pose==='kneel',sit=pose==='sit',low=kneel||sit,bow=pose==='bow';
+  const drop=kneel?6:sit?5:bow?2:0;           // 좌식은 무릎 꿇기보다 몸통을 세운다
   const step=pose==='walkA'?1:pose==='walkB'?-1:0;
   const bob=step?-1:0;
   const side=dir==='side',back=dir==='back';
   // ── 다리·발
-  if(!kneel){
+  if(!low){
     if(side){
       const fx=step===1?14:step===-1?9:11,bx=step===1?9:step===-1?14:13;
       p(bx,27,3,3,'#2a1e18');p(fx,28+bob+1,4,2,'#1a1210');
@@ -112,15 +112,15 @@ function drawFrame(g:CanvasRenderingContext2D,ox:number,oy:number,c:Cfg,dir:PxDi
   // ── 몸통
   const top=13+drop+bob;
   const robeLong=c.body==='robe'||c.body==='dress'||c.body==='monk';
-  if(c.cape&&!kneel){if(back)p(6,top,12,13,c.cape);else{p(5,top+1,2,11,shadeHex(c.cape,0.8));p(17,top+1,2,11,shadeHex(c.cape,0.8));}}
+  if(c.cape&&!low){if(back)p(6,top,12,13,c.cape);else{p(5,top+1,2,11,shadeHex(c.cape,0.8));p(17,top+1,2,11,shadeHex(c.cape,0.8));}}
   if(side){
-    const bottom=kneel?29:robeLong?28:24;
+    const bottom=low?29:robeLong?28:24;
     for(let y=top;y<bottom;y++){const t=(y-top)/(bottom-top),half=robeLong?3+Math.round(t*2):3;p(12-half,y,half*2,1,y===bottom-1?dark:c.main);}
     p(9,top,6,1,light);
     if(robeLong)p(14+(step===1?1:0),bottom-3,2,3,dark);
   }else{
-    const bottom=kneel?29:robeLong?28:24;
-    for(let y=top;y<bottom;y++){const t=(y-top)/(bottom-top),half=robeLong?5+Math.round(t*(kneel?3:2)):5,sway=robeLong&&t>0.7?step:0;
+    const bottom=low?29:robeLong?28:24;
+    for(let y=top;y<bottom;y++){const t=(y-top)/(bottom-top),half=robeLong?5+Math.round(t*(low?3:2)):5,sway=robeLong&&t>0.7?step:0;
       p(12-half+sway,y,half*2,1,c.main);p(12-half+sway,y,1,1,dark);p(12+half-1+sway,y,1,1,shadeHex(c.main,0.8));if(y>top+1)p(12-half+1+sway,y,1,1,light);}
     // 아래 단·옷주름·발밑 그늘
     p(12-(robeLong?7:5),bottom-1,robeLong?14:10,1,dark);
@@ -141,10 +141,14 @@ function drawFrame(g:CanvasRenderingContext2D,ox:number,oy:number,c:Cfg,dir:PxDi
   if(side){
     if(pose==='talk'||pose==='point'){p(13,armY+1,6,2,c.main);hand(19,armY+1);}
     else if(pose==='surprise'){p(12,armY-5,2,6,c.main);hand(12,armY-7);}
+    else if(sit){p(10,armY+5,7,2,c.main);hand(16,armY+5);}
     else if(bow||kneel){p(12,armY+3,4,2,c.main);hand(15,armY+3);}
     else{const sw=step;sleeve(11+sw,armY,7);hand(11+sw,armY+7);}
   }else if(pose==='surprise'){
     p(4,armY-6,3,7,c.main);p(17,armY-6,3,7,c.main);hand(4,armY-8);hand(18,armY-8);
+  }else if(sit){
+    // 탁자 아래로 들어가는 다리는 접고, 두 손은 무릎 위에 둔다.
+    sleeve(6,armY+1,5);sleeve(15,armY+1,5);p(8,armY+6,8,2,c.main);hand(10,armY+6);hand(14,armY+6);
   }else if(bow||kneel){
     // 두 손을 모아 읍한다
     sleeve(6,armY,5);sleeve(15,armY,5);p(9,armY+4,6,3,c.main);hand(11,armY+5);
@@ -188,13 +192,13 @@ function drawFrame(g:CanvasRenderingContext2D,ox:number,oy:number,c:Cfg,dir:PxDi
   }
   // ── 지닌 물건
   const front=!side&&!back;
-  if(c.item==='spear'&&!kneel&&!bow){const x=side?17:(front?20:3);p(x,1+bob,1,29,'#6a4a24');p(x-1,0+bob,3,2,'#d8dce4');p(x,2+bob,1,1,'#ffffff');p(x-1,3+bob,3,1,'#b02a1a');}
-  if(c.item==='staff'&&!kneel){const x=side?17:20;p(x,4+bob,1,25,'#5a3a1a');p(x-1,3+bob,3,2,'#8a6a3a');}
-  if(c.item==='fan'&&front&&!bow&&!kneel){const fx=pose==='point'?20:pose==='talk'?14:18,fy=pose==='point'?armY-2:pose==='talk'?armY:armY+6;p(fx,fy,3,4,'#f4f2ec');p(fx+1,fy+4,1,2,'#6a4a24');p(fx,fy,3,1,'#d8d4c8');}
+  if(c.item==='spear'&&!low&&!bow){const x=side?17:(front?20:3);p(x,1+bob,1,29,'#6a4a24');p(x-1,0+bob,3,2,'#d8dce4');p(x,2+bob,1,1,'#ffffff');p(x-1,3+bob,3,1,'#b02a1a');}
+  if(c.item==='staff'&&!low){const x=side?17:20;p(x,4+bob,1,25,'#5a3a1a');p(x-1,3+bob,3,2,'#8a6a3a');}
+  if(c.item==='fan'&&front&&!bow&&!low){const fx=pose==='point'?20:pose==='talk'?14:18,fy=pose==='point'?armY-2:pose==='talk'?armY:armY+6;p(fx,fy,3,4,'#f4f2ec');p(fx+1,fy+4,1,2,'#6a4a24');p(fx,fy,3,1,'#d8d4c8');}
   if(c.item==='fan'&&side&&(pose==='talk'||pose==='point')){p(20,armY-2,3,4,'#f4f2ec');}
-  if(c.item==='sword'&&!kneel){if(front)p(16,top+7,1,6,'#3a2a1a');if(side)p(9,top+7,1,6,'#3a2a1a');if(back)p(7,top+7,1,6,'#3a2a1a');}
+  if(c.item==='sword'&&!low){if(front)p(16,top+7,1,6,'#3a2a1a');if(side)p(9,top+7,1,6,'#3a2a1a');if(back)p(7,top+7,1,6,'#3a2a1a');}
   if(c.item==='bow'&&back){g.strokeStyle='#6a4a24';g.lineWidth=1;g.beginPath();g.arc(ox+12,oy+top+6,7,Math.PI*1.1,Math.PI*1.9);g.stroke();}
-  if(c.item==='scroll'&&front&&!kneel&&!bow){p(16,armY+7,4,2,'#efe4c4');p(16,armY+7,1,2,'#8a5a2a');}
+  if(c.item==='scroll'&&front&&!low&&!bow){p(16,armY+7,4,2,'#efe4c4');p(16,armY+7,1,2,'#8a5a2a');}
 }
 /** 칸마다 바깥 테두리(진한 갈색 1px)를 두른다 — 도트 인물이 배경에서 떠오르게. */
 function outline(g:CanvasRenderingContext2D,w:number,h:number){

@@ -689,12 +689,13 @@ const pack:ScenarioPack={
       scenes:[
         {place:'장안 · 출격 군의',art:14,
           cast:[
-            {name:'사마의',look:'strategist',at:[36,60],face:'right'},
+            {name:'사마의',look:'strategist',at:[36,60],face:'right',posture:'sit'},
             {name:'장합',look:'cavalry'},
           ],
           steps:[
             {narrate:'228년 봄. 촉의 승상 제갈량이 출사표를 올리고 기산으로 나왔다. 남안·천수·안정 세 군이 하루아침에 촉으로 돌아섰고, 장안은 술렁였다.'},
             {enter:'장합',at:[58,62],from:'right'},
+            {pose:'장합',as:'sit'},
             {say:'장합',line:'제갈량이 기산으로 나왔소. 선봉 마속이 가정을 맡았는데, 길목을 버리고 남산 위에 진을 쳤다는군.'},
             {emote:'사마의',text:'!'},
             {say:'사마의',line:'산 위의 진은 높아서 강해 보이지만 물이 없습니다. 북쪽 샘 두 곳만 지키면 사흘을 못 버틸 겁니다.'},
@@ -711,6 +712,7 @@ const pack:ScenarioPack={
                 note:'처음 두 턴 아군 사기 상승',
                 effects:[{kind:'rally'},{kind:'flag',flag:'h2_trust_zhanghe'}]},
             ]},
+            {pose:'장합',as:'stand'},
             {move:'장합',to:[48,62]},
           ]},
         {place:'가정 · 남산 위 촉군 진',art:3,
@@ -1044,8 +1046,8 @@ const pack:ScenarioPack={
       scenes:[
         {place:'장안 · 장합과의 군의',art:14,
           cast:[
-            {name:'사마의',look:'strategist',at:[34,60],face:'right'},
-            {name:'장합',look:'cavalry',at:[54,62],face:'left'},
+            {name:'사마의',look:'strategist',at:[34,60],face:'right',posture:'sit'},
+            {name:'장합',look:'cavalry',at:[54,62],face:'left',posture:'sit'},
             {name:'곽회',look:'archer'},
           ],
           steps:[
@@ -1055,6 +1057,7 @@ const pack:ScenarioPack={
             {say:'장합',line:'군을 둘로 나누어 옹과 미에 따로 두는 것이 어떻소? 한쪽이 막히면 다른 쪽이 돕게.'},
             {say:'사마의',line:'나누면 초의 세 군이 경포에게 하나씩 먹혔듯 됩니다. 한데 모으겠습니다.'},
             {enter:'곽회',at:[74,62],from:'right'},
+            {pose:'곽회',as:'sit'},
             {emote:'곽회',text:'땀'},
             {say:'곽회',line:'대릉 장군의 전선이 강가에 묶였습니다. 강물이 불어 건널 수 없고, 강 건너 투석기가 매일 진을 깎습니다.'},
             {say:'사마의',line:'막힌 곳을 아무리 두드려도 열리지 않소. 촉군의 군량은 성고 성채를 거쳐 오오. 북쪽 산길로 돌아 그곳을 찌르겠소.'},
@@ -1071,6 +1074,7 @@ const pack:ScenarioPack={
                 note:'사마의 책략 MP +15',
                 effects:[{kind:'insight'},{kind:'flag',flag:'h2_chenggu_feint'}]},
             ]},
+            {pose:'장합',as:'stand'},
             {move:'장합',to:[62,60]},
           ]},
         {place:'성고 · 불어난 강',art:4,
@@ -1160,12 +1164,13 @@ const pack:ScenarioPack={
       scenes:[
         {place:'상규 · 군막',art:14,
           cast:[
-            {name:'사마의',look:'strategist',at:[36,60],face:'right'},
+            {name:'사마의',look:'strategist',at:[36,60],face:'right',posture:'sit'},
             {name:'곽회',look:'archer'},
           ],
           steps:[
             {narrate:'그러나 제갈량은 곧장 물러나지 않았다. 굶주린 군을 이끌고 상규로 가, 익어 가는 보리를 베기 시작했다.'},
             {enter:'곽회',at:[56,62],from:'right'},
+            {pose:'곽회',as:'sit'},
             {say:'곽회',line:'도독, 제갈량의 군이 상규의 보리를 베고 있습니다. 고상이 수레를 몰고 서쪽 골짜기로 나가려 합니다.'},
             {emote:'사마의',text:'!'},
             {say:'사마의',line:'보리를 가져가면 저들은 한 달을 더 버틴다. 고상을 놓쳐서는 안 되오. 다만 저들은 밭에 불을 놓을 것이오.'},
@@ -1182,6 +1187,7 @@ const pack:ScenarioPack={
                 note:'처음 두 턴 아군 사기 상승',
                 effects:[{kind:'rally'},{kind:'flag',flag:'h2_wheat_firebreak'}]},
             ]},
+            {pose:'곽회',as:'stand'},
             {move:'곽회',to:[66,62]},
           ]},
         {place:'상규 · 익어 가는 보리밭',art:4,
@@ -1384,13 +1390,14 @@ const pack:ScenarioPack={
       scenes:[
         {place:'위수 북안 · 군막',art:14,
           cast:[
-            {name:'사마의',look:'strategist',at:[36,60],face:'right'},
-            {name:'사마사',look:'cavalry',at:[22,62],face:'right'},
+            {name:'사마의',look:'strategist',at:[36,60],face:'right',posture:'sit'},
+            {name:'사마사',look:'cavalry',at:[22,62],face:'right',posture:'sit'},
             {name:'곽회',look:'archer'},
           ],
           steps:[
             {narrate:'234년 봄. 세 해 동안 목우와 유마로 군량을 모은 제갈량이 다섯 번째로 나왔다. 이번에는 둔전까지 일구며 오래 머물 채비였다.'},
             {enter:'곽회',at:[58,62],from:'right'},
+            {pose:'곽회',as:'sit'},
             {say:'곽회',line:'제갈량이 위수 남쪽 오장원에 진을 쳤습니다. 여울은 셋, 우리가 지킬 곳도 셋입니다.'},
             {say:'사마의',line:'셋을 다 같은 힘으로 지키면 셋 다 뚫리오. 가운데를 두텁게 하고, 측면은 오는 것을 보고 예비대를 보내겠소.'},
             {say:'곽회',line:'서쪽 북원은 제가 맡겠습니다. 장 장군을 잃은 뒤로 병사들이 도독만 바라봅니다.'},
@@ -1408,6 +1415,7 @@ const pack:ScenarioPack={
                 note:'처음 두 턴 아군 사기 상승',
                 effects:[{kind:'rally'},{kind:'flag',flag:'h2_ford_zhanghe'}]},
             ]},
+            {pose:'곽회',as:'stand'},
             {exit:'곽회',to:'right'},
           ]},
         {place:'위수 · 남안 촉군 진',art:15,
@@ -1625,11 +1633,12 @@ const pack:ScenarioPack={
           ]},
         {place:'위수 · 별이 떨어진 밤',art:14,
           cast:[
-            {name:'사마의',look:'strategist',at:[36,60],face:'right'},
+            {name:'사마의',look:'strategist',at:[36,60],face:'right',posture:'sit'},
             {name:'곽회',look:'archer'},
           ],
           steps:[
             {enter:'곽회',at:[56,62],from:'right'},
+            {pose:'곽회',as:'sit'},
             {say:'곽회',line:'도독, 어젯밤 큰 별이 오장원 쪽으로 떨어졌습니다. 촉군 진영이 조용합니다.'},
             {emote:'사마의',text:'!'},
             {say:'사마의',line:'제갈량이 죽었소. 촉군이 물러나기 시작할 것이오. 지금 쫓으면 그들의 꼬리를 자를 수 있소.'},
@@ -1645,6 +1654,7 @@ const pack:ScenarioPack={
                 note:'아군 전원 처음 2턴 사기 상승 · 뒷이야기가 달라진다',
                 effects:[{kind:'rally'},{kind:'flag',flag:'hard_pursuit'}]},
             ]},
+            {pose:'곽회',as:'stand'},
             {exit:'곽회',to:'right'},
           ]},
         {place:'오장원 · 비어 가는 진영',art:4,

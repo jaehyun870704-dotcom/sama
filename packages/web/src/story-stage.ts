@@ -69,7 +69,7 @@ export interface StageHooks {
   /** 표식(when/unless 판정) — 선택으로 늘어날 수 있어 매번 읽는다. */
   flags():readonly string[];
 }
-type Actor={el:HTMLElement;cell:Cell;face:'left'|'right';look:Look;art:Art;on:boolean;tick:number;posedUntil:number;px:string;dir:PxDir;pose:PxPose};
+type Actor={el:HTMLElement;cell:Cell;face:'left'|'right';look:Look;art:Art;on:boolean;tick:number;posedUntil:number;px:string;dir:PxDir;pose:PxPose;rest:PxPose};
 /** 서 있을 때 번갈아 쓰는 그림(숨쉬듯 자세가 바뀐다). 병종 그림의 0번은 기본, 3번은 같은 자세의 다른 그림이다. */
 const IDLE_FRAMES=(look:Look,art?:Art)=>{if(art?.kind==='fig')return [0];const s=SPRITES[look];return s.sheet==='base'||s.sheet==='extra'||look==='monk'||look==='horseArcher'?[0,3]:[0];};
 /** 말을 꺼낼 때의 몸짓(책사는 부채로 가리키고, 의원은 약초를 들고, 무장은 자세를 고친다). */
@@ -157,7 +157,8 @@ export class Stage {
     el.innerHTML=`<div class="ss-shadow"></div><div class="ss-body"><div class="ss-sprite top"></div><div class="ss-sprite legs"></div></div><span class="ss-name">${esc(m.name)}</span><div class="ss-bubble" hidden></div>`;
     const cell=seat??(m.at?this.free(this.scene.toCell(m.at)):this.scene.toCell([-12,60]));
     const face=m.face??(this.scene.toPct(cell)[0]<50?'right':'left');
-    const a:Actor={el,cell,face,look,art,px:figSheet(m.name,m.look)??'',dir:'front',pose:'stand',on:!!m.at,tick:Math.floor(Math.random()*4),posedUntil:0};this.actors.set(m.name,a);el.style.setProperty('--d',`${-(Math.random()*2.4).toFixed(2)}s`);
+    const rest:PxPose=m.posture??'stand';
+    const a:Actor={el,cell,face,look,art,px:figSheet(m.name,m.look)??'',dir:'front',pose:rest,rest,on:!!m.at,tick:Math.floor(Math.random()*4),posedUntil:0};this.actors.set(m.name,a);el.style.setProperty('--d',`${-(Math.random()*2.4).toFixed(2)}s`);el.classList.toggle('seated',rest==='sit');
     this.paint(a);this.place(a,false);if(!m.at)el.classList.add('off');this.world.appendChild(el);
     // 그림을 아직 읽는 중이면 다 읽은 뒤에 칠한다
     if(!a.px)void loadFigures().then(()=>{a.px=figSheet(m.name,m.look)??'';this.paint(a);});
@@ -166,7 +167,10 @@ export class Stage {
   /** 인물 그림(윗몸·다리 두 겹에 같은 그림). */
   private paint(a:Actor,pose:PxPose=a.pose){a.pose=pose;a.el.querySelector<HTMLElement>('.ss-sprite.top')!.setAttribute('style',pxStyle(a.px,a.dir,pose));}
   /** 잠깐 한 자세(말하기·절·놀람 등)를 하고 돌아온다. */
-  private posePx(a:Actor,pose:PxPose,ms:number){if(a.el.classList.contains('walking'))return;a.posedUntil=Date.now()+ms;this.paint(a,pose);setTimeout(()=>{if(a.posedUntil<=Date.now()&&!a.el.classList.contains('walking'))this.paint(a,'stand');},ms+20);}
+  private posePx(a:Actor,pose:PxPose,ms:number){if(a.el.classList.contains('walking'))return;a.posedUntil=Date.now()+ms;this.paint(a,pose);setTimeout(()=>{if(a.posedUntil<=Date.now()&&!a.el.classList.contains('walking'))this.paint(a,a.rest);},ms+20);}
+  setPosture(name:string,posture:'stand'|'sit'){
+    const a=this.actors.get(name);if(!a)return;a.rest=posture;a.el.classList.toggle('seated',posture==='sit');if(!a.el.classList.contains('walking'))this.paint(a,posture);
+  }
   /** 화면 위 자리(%). */
   at(name:string):At|undefined{const a=this.actors.get(name);return a?this.scene.toPct(a.cell):undefined;}
   cellOf(name:string){return this.actors.get(name)?.cell;}
@@ -291,7 +295,7 @@ export class Stage {
         const pose:PxPose=Math.floor(prog(p)*D/stride)%2?'walkB':'walkA';if(pose!==lastPose){lastPose=pose;this.paint(a,pose);}
         if(p>=1)return finish();requestAnimationFrame(tick);
       };
-      const finish=()=>{a.cell=end;this.place(a,false);a.el.classList.remove('walking','step-b');if(sideways)a.dir='front';this.paint(a,'stand');done();};
+      const finish=()=>{a.cell=end;this.place(a,false);a.el.classList.remove('walking','step-b');if(sideways)a.dir='front';this.paint(a,a.rest);done();};
       requestAnimationFrame(tick);
     });
   }
@@ -342,6 +346,7 @@ export class Stage {
         if(r?.[1]==='shake'){const a=this.actors.get(st.emote);if(a)this.gesture(st.emote,ANGER_FRAME(a.look),900);}
         if(!this.skipping)await wait(650);continue;
       }
+      if('pose' in st){this.setPosture(st.pose,st.as);if(!this.skipping)await wait(280);continue;}
       if('narrate' in st){await this.narrate(st.narrate);continue;}
       if('say' in st){await this.say(st.say,st.line,st.to);continue;}
       if('choice' in st){

@@ -9,7 +9,8 @@
  * 비율로 맞춘다(그림 자체는 그대로). 모두 같은 키의 칸에 담고, 걷기·말하기·절·무릎 꿇기·놀람 자세는
  * 같은 그림의 윗몸과 아랫몸(옷자락·다리)을 나눠 기울이고 흔들어 만든다.
  *
- * 시트 배치는 도트 인물(story-pixel)과 같다: 8열(자세) × 3행(앞·뒤·옆).
+ * 시트 배치는 도트 인물(story-pixel)과 같다: 9열(자세) × 3행(앞·뒤·옆).
+ * 저장된 8열 원화에는 런타임에서 좌식 한 칸을 만들어 덧붙인다.
  */
 import type {Look} from './scenario-types.ts';
 import {officerLook} from './officer-art.ts';
@@ -65,7 +66,7 @@ const NECK=[0.25,0.205,0.235,0.235,0.255,0.245,0.235,0.255];
 const HEAD_UP=1.15,BODY_DOWN=0.74;
 
 const ready=new Map<string,HTMLCanvasElement>();
-const storyReady=new Set<string>();
+const storyReady=new Map<string,HTMLCanvasElement>();
 const atlasKey=(url:string,rows:number)=>url+':'+rows;
 /** 무대에 쓰는 그림들을 미리 읽어 둔다(main.ts가 시작할 때 부른다). */
 export async function loadFigures(){
@@ -73,7 +74,7 @@ export async function loadFigures(){
   for(const s of Object.values(BY_LOOK)){want.set(atlasKey(s.url,s.rows),s);if(s.walk)want.set(atlasKey(s.walk.url,s.walk.rows),s.walk);}
   await Promise.all([
     ...[...want].map(async([k,s])=>{try{ready.set(k,await spriteAtlas(s.url,s.rows));}catch{/* 없는 그림은 건너뛴다 */}}),
-    ...officerManifest.filter(e=>e.story&&e.id!=='sima_yi_young').map(e=>new Promise<void>(resolve=>{const url=`officers/${e.story}`,img=new Image();img.onload=()=>{storyReady.add(url);resolve();};img.onerror=()=>resolve();img.src=url;})),
+    ...officerManifest.filter(e=>e.story&&e.id!=='sima_yi_young').map(e=>new Promise<void>(resolve=>{const url=`officers/${e.story}`,img=new Image();img.onload=()=>{const cv=canvas(img.naturalWidth,img.naturalHeight);cv.getContext('2d')!.drawImage(img,0,0);storyReady.set(url,cv);resolve();};img.onerror=()=>resolve();img.src=url;})),
   ]);
 }
 export const figuresReady=()=>ready.has(atlasKey(OFFICERS.url,OFFICERS.rows));
@@ -163,17 +164,31 @@ function poseFrom(stand:HTMLCanvasElement,pose:PxPose,alt?:HTMLCanvasElement):HT
     case 'kneel':{const sq=0.55,drop=Math.round((b-hip)*(1-sq));
       g.save();g.beginPath();g.rect(0,hip+drop,FIG_W,FIG_H);g.clip();g.setTransform(1.12,0,0,sq,-cx*0.12,b-b*sq);g.drawImage(stand,0,0);g.restore();
       top(drop,0.12,U);break;}
+    case 'sit':{const sq=0.32,drop=Math.round((b-hip)*(1-sq));
+      // 다리는 탁자 아래에서 가로로 접고, 상체는 절하지 않고 세운다.
+      g.save();g.beginPath();g.rect(0,hip+drop,FIG_W,FIG_H);g.clip();g.setTransform(1.28,0,0,sq,-cx*0.28,b-b*sq);g.drawImage(stand,0,0);g.restore();
+      top(drop,0,0);break;}
     case 'surprise':g.setTransform(0.97,0,0,1.03,cx*0.03,-(FIG_H-FOOT)*0.03-2*U);g.drawImage(stand,0,0);break;
   }
   return out;
 }
 
 const sheets=new Map<string,string>();
+function paintedStorySheet(url:string,src:HTMLCanvasElement){
+  const key=`painted:${url}`,hit=sheets.get(key);if(hit)return hit;
+  const cv=canvas(FIG_W*PX_COLS,FIG_H*PX_ROWS),g=cv.getContext('2d')!,sw=src.width/8,sh=src.height/PX_ROWS;
+  for(let row=0;row<PX_ROWS;row++){
+    for(let col=0;col<8;col++)g.drawImage(src,col*sw,row*sh,sw,sh,col*FIG_W,row*FIG_H,FIG_W,FIG_H);
+    const stand=canvas(FIG_W,FIG_H);stand.getContext('2d')!.drawImage(src,0,row*sh,sw,sh,0,0,FIG_W,FIG_H);
+    g.drawImage(poseFrom(stand,'sit'),PX_POSE.sit*FIG_W,row*FIG_H);
+  }
+  const out=cv.toDataURL('image/png');sheets.set(key,out);return out;
+}
 const artKey=(a:FigArt,tint:number)=>a.kind==='fig'?`f${a.slot}:${a.tint+tint}`:`s${a.look}:${tint}`;
 /** 무대 인물 시트(data URL). 그림이 아직 안 읽혔으면 undefined. */
 export function figSheet(name:string,look:Look):string|undefined{
   const entry=officerEntry({id:'story_actor',name}),story=entry?.story?`officers/${entry.story}`:undefined;
-  if(story&&storyReady.has(story))return story;
+  const painted=story&&storyReady.get(story);if(story&&painted)return paintedStorySheet(story,painted);
   const art=figArtFor(name,look),tint=art.kind==='sheet'?sideTint(name):0,key=artKey(art,tint);
   const hit=sheets.get(key);if(hit)return hit;
   const frames=figFrames(art,tint);if(!frames)return undefined;

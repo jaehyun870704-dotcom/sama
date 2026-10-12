@@ -27,6 +27,8 @@ export interface CastMember {
   /** 처음 서 있는 자리. 없으면 무대 밖에 있다가 enter로 들어온다. */
   at?:At;
   face?:'left'|'right';
+  /** 탁자 앞 회의처럼 처음부터 유지할 기본 자세. */
+  posture?:'stand'|'sit';
 }
 
 /** 대사 선택의 효과. 전투에 바로 반영되거나(가상 전장), 다음 이야기·결말에 남는다. */
@@ -81,6 +83,8 @@ export type ScriptStep=(
   |{exit:string;to?:'left'|'right'}
   /** 머리 위 감정 표시: '!', '?', '…', '♪', '분노', '땀' 같은 짧은 글자. */
   |{emote:string;text:string}
+  /** 서기·좌식 전환. 말하거나 반응한 뒤에도 이 자세로 돌아온다. */
+  |{pose:string;as:'stand'|'sit'}
   /** 사마의의 선택. 장 하나에 최대 한 번. */
   |{choice:string;options:ChoiceOption[]}
 )&{
