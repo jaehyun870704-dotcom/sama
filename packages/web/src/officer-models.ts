@@ -57,6 +57,7 @@ export const officerManifest:OfficerEntry[]=[
   E('xiao_he','소하',c('xiao_he','fengshui')),E('ying_bu','영포',c('ying_bu','cavalry')),E('peng_yue','팽월',c('peng_yue','infantry')),E('fan_kuai','번쾌',c('fan_kuai','cavalry')),
   E('chen_ping','진평',c('chen_ping','strategist')),E('fan_zeng','범증',c('fan_zeng','strategist')),E('zhongli_mo','종리매',c('zhongli_mo','cavalry')),E('ji_bu','계포',c('ji_bu','infantry')),
   E('yu_ji','우희',{assassin:['yu_ji-battle-assassin-v1.webp',280,224,1]}),
+  E('long_ju','용저',{cavalry:['long_ju-battle-cavalry-v1.webp',280,224,1]}),
 ];
 
 const legacySheets=[
