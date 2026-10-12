@@ -1,6 +1,6 @@
 import {describe,it,expect,beforeEach} from 'vitest';
 import {freshCampaign,readCampaign,writeCampaign,mergeCampaigns,mergeRunCampaign,CAMPAIGN_KEYS,OFFICERS,treasures,xpAtLevel,levelInfo} from '../src/progression.ts';
-import {sealTiers,claimSealTier,sealTreasure,sealClaimed} from '../src/seal-rewards.ts';
+import {sealTiers,claimSealTier,sealRewardText,sealClaimed} from '../src/seal-rewards.ts';
 import {chapters,campaignOrder,sealNamesOf,Session} from '../src/session.ts';
 import {romanceOf} from '../src/romance.ts';
 import {choiceFlags} from '../src/story-stage.ts';
@@ -41,12 +41,12 @@ describe('연의 인장',()=>{
     const count=(p:string)=>campaignOrder.filter(i=>chapters[i]!.stage.id.startsWith(p)).length;
     expect([count('S1-'),count('S2-'),count('S3-')]).toEqual([11,14,7]);
   });
-  it('편별 인장 보상: 문턱 1/3·2/3·전부, 한 번만, 재화 없이 경험치와 보물',()=>{
+  it('편별 인장 보상: 문턱 1/3·2/3·전부, 한 번만, 경험치와 사마의전 금·도구',()=>{
     const tiers=sealTiers(0,11);expect(tiers.map(t=>t.need)).toEqual([22,44,66]);
     const c=freshCampaign(),before=c.xp.sima_lang!;
     expect(claimSealTier(c,tiers[0]!,21)).toBeNull();
-    const pick=sealTreasure(c,tiers[0]!.key);expect(pick).toBeDefined();expect(treasures.find(t=>t.id===pick)?.quest?.startsWith('R')).toBe(true);
-    const got=claimSealTier(c,tiers[0]!,22)!;expect(got.treasure).toBe(pick);expect(c.treasures).toContain(pick);
+    expect(sealRewardText(tiers[0]!)).toContain('금 400');expect(sealRewardText(tiers[2]!)).toContain('인수');
+    const got=claimSealTier(c,tiers[0]!,22)!;expect(got.gold).toBe(400);expect(c.gold?.S).toBe(1400);expect(c.supplies?.bean).toBe(3);
     for(const id of OFFICERS)expect(c.xp[id]).toBeGreaterThan(id==='sima_lang'?before:0);
     expect(sealClaimed(c,tiers[0]!.key)).toBe(true);expect(claimSealTier(c,tiers[0]!,66)).toBeNull();
   });

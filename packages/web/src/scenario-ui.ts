@@ -350,7 +350,7 @@ function launch(host:ScenarioHost,state:ScenarioState,step:ScenarioStep,picked:s
   const ref:RunBattleRef={seed:runSeed(state,step.id),floor:floorFor(step,state),kind:step.kind==='boss'?'boss':'tale',party,relics:[...(state.run?.relics??[])],route:{...state.route},
     ...(step.kind==='tale'?{tale:step.id}:{}),...(Object.keys(mods).length?{mods}:{}),enemyBase:enemyBase(state,hero.level,step),scenario:step.id};
   const loadouts=host.heroLoadout();
-  const deployment:Deployment={levels:{sima_yi:hero.level,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},...(loadouts?{loadouts:structuredClone(loadouts)}:{}),run:ref,trial:1,...perksFor(party),scenario:{chapter:step.id,...(difficulty==='extreme'?{difficulty:'extreme' as const}:{})}};
+  const deployment:Deployment={levels:{sima_yi:hero.level,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},...(loadouts?{loadouts:structuredClone(loadouts)}:{}),gearRules:2,run:ref,trial:1,...perksFor(party),scenario:{chapter:step.id,...(difficulty==='extreme'?{difficulty:'extreme' as const}:{})}};
   host.startBattle(deployment,runSeed(state,step.id),difficulty);
 }
 
@@ -518,7 +518,7 @@ function launchMarch(host:ScenarioHost,state:ScenarioState,after:string,kind:'ba
   const levels=party.map(u=>u.level),base=Math.max(1,Math.round(levels.reduce((a,b)=>a+b,0)/levels.length)+(kind==='elite'?1:0));
   const ref:RunBattleRef={seed:runSeed(state,'march:'+after),floor:marchFloor(state,next.act),kind:kind==='elite'?'elite':'battle',party,relics:[...state.run!.relics],route:{...state.route},enemyBase:base,scenario:'march:'+after};
   const loadouts=host.heroLoadout();
-  const deployment:Deployment={levels:{sima_yi:hero.level,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},...(loadouts?{loadouts:structuredClone(loadouts)}:{}),run:ref,trial:1,...perksFor(party),scenario:{chapter:'march:'+after}};
+  const deployment:Deployment={levels:{sima_yi:hero.level,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},...(loadouts?{loadouts:structuredClone(loadouts)}:{}),gearRules:2,run:ref,trial:1,...perksFor(party),scenario:{chapter:'march:'+after}};
   host.startBattle(deployment,ref.seed);
 }
 async function finishMarchBattle(host:ScenarioHost,battle:BattleState,deployment:Deployment,earned:Record<string,number>,after:string){

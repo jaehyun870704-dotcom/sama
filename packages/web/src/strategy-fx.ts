@@ -336,6 +336,11 @@ const BY_ELEMENT:Record<string,StratFx>={
  */
 for(const [id,src] of Object.entries(V12_ART_FROM))STRATEGY_FX[id]=STRATEGY_FX[src]!;
 Object.assign(STRATEGY_FX,{
+  // 사신 책략(사신보옥): 하늘이 크게 움직이는 연출
+  jewelAzure:F('raise','sky',0x40c8ff,[{k:'bolt',c:0xe0f4ff,n:5},{k:'cloud',c:0x20406a,s:1.5},ri(0x40c8ff,2,1.4)],8),
+  jewelVermilion:F('raise','sky',0xff2a40,[{k:'flash',c:0xff4a3a,a:.3},fl(0xff2a40,0xffd060,12,100),{k:'petals',c:0xff6a40,c2:0xffd060,n:12}],7),
+  jewelTortoise:F('raise','none',0x3a8a7a,[{k:'swirl',c:0x3a8a7a,n:12,s:1.5},ri(0x6ad0b0,3,1.5),{k:'flash',c:0x205a50,a:.25}],4),
+  jewelTiger:F('raise','rise',0xf0f0f0,[{k:'column',c:0xffffff,w:24,h:130},{k:'petals',c:0xe0e8ff,c2:0xffffff,n:16},ri(0xffffff,2,1.2)]),
   deadlyVenom:F('cast','orb',0x4ab030,[{k:'cloud',c:0x3a8a20,s:.9},bu(0x8aff6a,0x2a6a10,14,{fall:true}),gl(0x9aff7a,'skull')]),
   venomFlood:F('cast','wave',0x6aa040,[{k:'wave',c:0x5a9030,s:1.1},bu(0xa0e080,0x4a8a20,16,{fall:true})]),
   venomSea:F('raise','sky',0x5ab040,[{k:'rain',c:0x8ad060,n:16,tilt:.2},{k:'cloud',c:0x3a6a20,s:1.4}]),

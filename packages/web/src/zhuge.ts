@@ -8,7 +8,7 @@
 import type {StageDef} from '../../core/src/index.ts';
 import {evolvedClass,tierOf,VARIANTS,signatureSet,SIGNATURE_UNLOCK_TIERS} from '../../core/src/index.ts';
 import {classNames} from './troops.ts';
-import {levelInfo,xpAtLevel,type Campaign,type Deployment} from './progression.ts';
+import {levelInfo,xpAtLevel,gearDeployment,type Campaign,type Deployment} from './progression.ts';
 import {encounterLevels} from './campaign-rules.ts';
 import {ZHUGE_ROSTER,zhugeName} from './zhuge-data.ts';
 
@@ -22,10 +22,10 @@ export function zhugeLevel(c:Pick<Campaign,'retinueXp'>,name:string,stage:StageD
  * 제갈량전 장의 출진 기록. 사마의전 장수 칸은 저장 검사를 위해 1로 채운다(이 장에는 나오지 않는다).
  * 보물은 두 이야기가 함께 쓴다: 장수 이름에 단 보물(Campaign.loadouts)을 그대로 입고 나선다.
  */
-export function zhugeDeployment(c:Pick<Campaign,'retinueXp'|'loadouts'>,stage:StageDef,difficulty:'normal'|'extreme'):Deployment{
+export function zhugeDeployment(c:Pick<Campaign,'retinueXp'|'loadouts'>&Partial<Campaign>,stage:StageDef,difficulty:'normal'|'extreme'):Deployment{
   const levels:Record<string,number>={sima_yi:1,sima_lang:1,sima_fang:1,cao_zhen:1};
   for(const id of stage.deployment.forced){const name=zhugeName(id);if(name)levels[id]=zhugeLevel(c,name,stage,difficulty);}
-  return {levels,equipped:{},wide:2,treasureRules:1,...(c.loadouts?{loadouts:structuredClone(c.loadouts)}:{})};
+  return {levels,equipped:{},wide:2,treasureRules:1,...(c.loadouts?{loadouts:structuredClone(c.loadouts)}:{}),...(c.treasures?gearDeployment(c as Campaign):{}),gearRules:2};
 }
 /**
  * 이긴 뒤 성장: 출진한 장수마다 싸워 번 경험치 + 승리 몫을 이름별 기록에 더한다.

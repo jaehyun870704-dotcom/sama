@@ -44,6 +44,16 @@ export interface DamageContext {
   element?: string;
   /** 명중률 상한(%) — 규칙판 12 책략의 최대 명중. */
   maxHit?: number;
+  /** 반드시 빗나간다(거울갑옷의 간접 방어·연환갑옷의 연격 방어). 필중보다 앞선다. */
+  forceMiss?: boolean;
+  /** 회심을 받지 않는다(황금갑옷). 반드시 회심보다 앞선다. */
+  noCritical?: boolean;
+  /** 반드시 회심(옥새). */
+  sureCritical?: boolean;
+  /** 연속 공격·연속 반격의 두 번째 타격인가 */
+  double?: boolean;
+  /** 반격 타격인가 */
+  counter?: boolean;
 }
 
 export interface TraitHooks {

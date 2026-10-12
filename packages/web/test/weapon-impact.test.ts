@@ -13,13 +13,16 @@ describe('weapon-shaped battle impact',()=>{
     expect(weaponShape(unit('boss','가후','strategist'))).toBe('fan');
   });
   it('keeps an officer signature weapon ahead of currently equipped treasure',()=>{
-    expect(weaponShape(unit('cao_zhen','조진','infantry'),'tigerSpear')).toBe('sword');
+    expect(weaponShape(unit('cao_zhen','조진','infantry'),'serpentSpear')).toBe('sword');
     expect(weaponShape(unit('zhang_fei','장비','spearman'),'yitian')).toBe('spear');
   });
   it('uses equipped weapons only for units without a signature weapon',()=>{
-    expect(weaponShape(unit('support_1','지원병','infantry'),'tigerSpear')).toBe('spear');
-    expect(equippedWeaponShape('repeatingCrossbow')).toBe('crossbow');
+    expect(weaponShape(unit('support_1','지원병','infantry'),'serpentSpear')).toBe('spear');
+    expect(weaponShape(unit('support_1','지원병','infantry'),'shop:spear:2#4')).toBe('spear');
+    expect(equippedWeaponShape('goldFireCannon')).toBe('crossbow');
     expect(equippedWeaponShape('meteorHammer')).toBe('blunt');
+    expect(equippedWeaponShape('halberd')).toBe('polearm');
+    expect(equippedWeaponShape('shop:armor:1#2')).toBeUndefined();
   });
   it('maps each shape to a distinct readable hit trace',()=>{
     expect(weaponImpact('spear')).toBe('pierce');

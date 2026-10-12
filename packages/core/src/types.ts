@@ -156,6 +156,10 @@ export interface StrategyDef {
   readonly sureHit?: boolean;
   /** 건 상태이상의 지속 턴(기본 2). */
   readonly statusTurns?: number;
+  /** 범위 안의 적 가운데 무작위로 이만큼 떨어진다(사신 책략 「청룡」의 낙뢰). */
+  readonly strikes?: number;
+  /** 맵 위 모든 부대의 능력을 무작위로 바꾼다(사신 책략 「현무」: 아군은 대개 강화, 적은 대개 약화). */
+  readonly mutate?: boolean;
 }
 
 // ─────────────────────────────────────────────────────────── 상태이상
@@ -263,6 +267,8 @@ export interface Unit {
   visionRange?: number;
   /** behavior "follow": 매 차례 이 유닛 곁으로 다가간다. */
   followUnit?: string;
+  /** 장비가 더한 능력치(병종이 바뀌어 능력치를 다시 계산할 때 다시 더한다). */
+  gearBonus?: Partial<UnitStats>;
 }
 
 export type AiBehavior =

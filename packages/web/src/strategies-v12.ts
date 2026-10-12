@@ -84,6 +84,16 @@ export const V12_ATTACKS:LearnedStrategy[]=[
   ['azureStorm','청룡의 뇌우',33,'thunder','spread',3,1,60,150,90,'shock'],
 ].map(r=>atk(r as A));
 
+/**
+ * 사신 책략 넷: 사신보옥을 지닌 계통만 쓴다(청룡=기마책사계 · 주작=책사계 · 현무=도사계 · 백호=풍수사계).
+ * 배워서 익히지 않는다(습득 레벨 99 · 단계 진화 없음). MP를 크게 쓴다.
+ */
+export const JEWEL_STRATEGY_DEFS:LearnedStrategy[]=[
+  {id:'jewelAzure',name:'청룡',level:99,element:'thunder',shape:'spread',range:4,radius:2,mpCost:50,power:110,maxHit:95,strikes:5,inflicts:['shock'],targetSides:ENEMY},
+  {id:'jewelVermilion',name:'주작',level:99,element:'fire',shape:'spread',range:4,radius:2,mpCost:55,power:150,maxHit:95,inflicts:['burn'],targetSides:ENEMY},
+  {id:'jewelTortoise',name:'현무',level:99,element:'earth',shape:'global',range:99,radius:0,mpCost:50,power:0,mutate:true,targetSides:['enemy','player','ally','allyAi']},
+  {id:'jewelTiger',name:'백호',level:99,support:'renew',element:'support',shape:'global',range:99,radius:0,mpCost:50,power:45,targetSides:FRIENDS},
+];
 export const V12_SUPPORTS:LearnedStrategy[]=[
   // 상승: 순발(경신) · 사기(격려) · 능력(분발) · 방어(방비) · 이동(급행) · 전부(위풍). 위력 = 지속 턴.
   ['swiftCross','경신령',2,'swift','cross',4,1,8,3],
@@ -241,6 +251,8 @@ export const V12_ART_FROM:Record<string,string>={
 
 /** 책략 도감 설명(규칙판 12). */
 export const V12_TEXT:Record<string,string>={
+  jewelAzure:'청룡보옥으로 동쪽 하늘의 비구름을 불러 둘레 두 칸 안의 적에게 벼락을 다섯 번 무작위로 떨어뜨린다. 맞은 적은 감전된다.',jewelVermilion:'주작보옥으로 불의 새를 불러 둘레 두 칸을 크게 태운다. 화상을 남긴다.',
+  jewelTortoise:'현무보옥으로 전장 모든 부대의 기세를 뒤흔든다. 우리 편은 대개 강해지고 상대 편은 대개 약해진다.',jewelTiger:'백호보옥으로 맵 위 아군 모두의 상처를 치료하고 해로운 상태를 걷어 낸다.',
   emberBolt:'불덩이 하나를 던져 한 부대를 태운다. 가장 먼저 배우는 화계.',searingFire:'한 부대를 거센 불길로 감싼다. 사거리는 짧지만 화력이 세다.',
   flameWheel:'불의 고리를 십자로 펼쳐 둘레를 함께 태운다.',flameDragonX:'불의 용이 십자로 휘돌아 넓게 태우고 화상을 남긴다.',
   flameLance:'불길을 창처럼 곧게 내질러 한 줄의 적을 꿰뚫는다.',fireArrows:'기름 먹인 불화살을 퍼부어 정신력을 거의 무시하고 태운다. 방어를 깎는다.',

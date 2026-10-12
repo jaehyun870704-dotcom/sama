@@ -23,7 +23,8 @@ describe('계통별 책략·특수기(규칙판 11 이하 목록)',()=>{
   }
  });
  it('범위는 주변·십자 반경 1, 직선 3칸, 사거리 5(범위 책략 4)를 넘지 않고 3단에서도 넓어지지 않는다',()=>{
-  for(const s of allStrategies){if(s.shape==='global'||(s.support&&s.range>=99))continue;
+  // 사신보옥 책략(청룡·주작)은 사양상 큰 범위(둘레 두 칸)라 이 상한 밖이다.
+  for(const s of allStrategies){if(s.shape==='global'||(s.support&&s.range>=99)||s.level===99)continue;
    for(const t of [s,tieredStrategy(s,3)]){
     if(t.shape==='line')expect(t.radius,s.id).toBeLessThanOrEqual(2);else if(t.shape!=='single')expect(t.radius,s.id).toBeLessThanOrEqual(1);
     expect(t.range,s.id).toBeLessThanOrEqual(t.shape==='single'?MAX_SINGLE_RANGE:MAX_AREA_RANGE);

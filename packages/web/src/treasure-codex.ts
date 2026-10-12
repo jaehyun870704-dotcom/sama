@@ -1,15 +1,14 @@
 /**
- * 보물 도감 — 첫 화면(본영)에서 보물을 한눈에: 가진 것, 어디서 얻는지, 효과(능력치·특기·특성), 장착한 장수.
+ * 보물 도감 — 첫 화면(본영)에서 고유 보물을 한눈에: 가진 것, 두 이야기에서 어디서 얻는지, 능력·고유 기능, 장착한 장수.
  *
- * 도감은 종류(무기·방어구·보조구·회차 보물)·형태(검·창·방패·말…)·등급(전설~일반)·보유로 걸러 보고, 등급별로 묶어 보인다.
+ * 도감은 칸(무기·방어구·보조구·회차 보물)·종류(검·창·방패·명마…)·등급(전설~일반)·보유로 걸러 보고, 등급별로 묶어 보인다.
  *
  * 보물은 두 갈래다.
- *  · 장착 보물(treasures): 연의 전장·보물 외전에서 얻어 장수에게 끼운다(무기·방어구·보조구). 영구 보관.
+ *  · 고유 보물(treasures · 50점): 연의 전장·외전·제갈량전의 장에서 얻어 장수에게 끼운다(무기·방어구·보조구). 영구 보관. 팔 수 없다.
  *  · 회차 보물(RELICS): 천명의 길·원정의 행군로 '보물고'에서 고른다. 그 회차 동안 부대 전원에 효과. 회차가 끝나면 사라진다.
+ * 이름 없는 상점 장비는 도감이 아니라 상점(shop.ts)에서 본다.
  */
-import {treasures,treasureInfo,gearNames,readCampaign,type GearSlot} from './progression.ts';
-import {treasurePowerText} from '../../core/src/treasure-traits.ts';
-import {TREASURE_SPECIALS} from './treasure-specials.ts';
+import {treasures,treasureInfo,readCampaign,type GearSlot} from './progression.ts';
 import {treasureIcon,relicIcon,formOf,FORMS,GRADES,RELIC_GRADE,type TreasureForm} from './treasure-art.ts';
 import {RELICS} from './roguelike.ts';
 import {loadRun} from './run-ui.ts';
@@ -28,8 +27,8 @@ export const defaultFilter=(tab:TreasureTab='all'):CodexFilter=>({kind:tab==='ow
 
 /** 보물을 얻는 곳(연의 장 제목 또는 보물 외전·연무장 이름) */
 export function treasureSource(stage:string){
-  const ch=chapters.find(c=>c.stage.id===stage);if(ch)return `연의 「${ch.stage.title}」 (${ch.label})`;
-  const q=expeditions.find(e=>e.id===stage);if(q)return q.kind==='training'?`연무장 「${q.name}」 첫 승리`:q.kind==='bounty'?`보물 사냥 「${q.name}」 승리마다 하나씩`:q.kind==='challenge'?`도전 ${q.step}단계 첫 돌파`:`보물 외전 「${q.name}」`;
+  const ch=chapters.find(c=>c.stage.id===stage);if(ch)return /^Z/.test(stage)?`제갈량전 「${ch.stage.title}」`:`연의 「${ch.stage.title}」 (${ch.label})`;
+  const q=expeditions.find(e=>e.id===stage);if(q)return q.kind==='training'?`연무장 「${q.name}」 첫 승리`:q.kind==='bounty'?`보물 사냥 「${q.name}」`:q.kind==='challenge'?`도전 ${q.step}단계 첫 돌파`:`보물 외전 「${q.name}」 첫 승리`;
   return stage;
 }
 /** 지금 가진 보물과 장착 상태(영구 보관 + 이번 회차) */
@@ -55,11 +54,10 @@ export function filterTreasures(f:CodexFilter,h=treasureHoldings()){
 }
 
 function card(id:string,h:ReturnType<typeof treasureHoldings>){
-  const t=treasures.find(x=>x.id===id)!,info=treasureInfo(id),own=h.owned.has(id),who=h.wearer.get(id),power=treasurePowerText(id),sp=TREASURE_SPECIALS[id];
-  const extra=[power?`특성 · ${esc(power)}`:'',sp?`✦ 「${esc(sp.name)}」 ${esc(sp.text)}`:''].filter(Boolean).join(' · ');
+  const t=treasures.find(x=>x.id===id)!,info=treasureInfo(id),own=h.owned.has(id),who=h.wearer.get(id);
   return `<article class="tc-card g${info.grade} ${own?'owned':'missing'}">${treasureIcon(id)}<div class="tc-body"><h4>${esc(t.name)} <small class="tc-star g${info.grade}">${'★'.repeat(info.grade)}</small></h4>
-    <p class="tc-effect">${esc(t.effect)}</p>${extra?`<p class="tc-power" title="${extra.replace(/<[^>]+>/g,'')}">${extra}</p>`:''}
-    <p class="tc-where">${own?who?`장착 · ${esc(OFFICER_KO[who]??who)}`:'보관 중':`얻는 곳 · ${esc(treasureSource(t.stage))}`}</p></div></article>`;
+    <p class="tc-effect">${esc(t.effect)}</p><p class="tc-power" title="${esc(t.description)}">${esc(t.description)}</p>
+    <p class="tc-where">${own?who?`장착 · ${esc(OFFICER_KO[who]??who)}`:'보관 중':`얻는 곳 · ${esc(treasureSource(t.stage))} / ${esc(treasureSource(t.zstage))}`}</p></div></article>`;
 }
 function relicCard(id:string,h:ReturnType<typeof treasureHoldings>){
   const r=RELICS.find(x=>x.id===id)!,have=h.relics.has(id),g=RELIC_GRADE[id]??1;
@@ -81,7 +79,7 @@ export function treasureCodex(f:CodexFilter|TreasureTab=defaultFilter()){
     <div class="tc-row" role="group" aria-label="보유"><b>보유</b>${chip('tc-own','all','전체',f.own==='all')}${chip('tc-own','owned','가진 것',f.own==='owned',count({own:'owned'}))}${chip('tc-own','missing','못 얻은 것',f.own==='missing',count({own:'missing'}))}
       <span class="muted">가진 것 ${s.owned+s.relics}/${all.length}</span></div>
   </div>
-  <p class="muted tc-help">장착 보물은 장수에게 끼우고, 회차 보물은 그 회차 동안 부대 전원에 효과가 있다.</p>
+  <p class="muted tc-help">고유 보물 50점은 장수에게 끼우고(계통에 맞는 종류만), 회차 보물은 그 회차 동안 부대 전원에 효과가 있다. 고유 보물은 사마의전과 제갈량전 어느 쪽에서든 얻는다.</p>
   ${groups.length?groups.map(g=>`<section class="tc-group g${g.grade}"><h3><span class="tc-star g${g.grade}">${'★'.repeat(g.grade)}</span> ${g.name} <small>${g.items.filter(e=>e.have).length}/${g.items.length}</small></h3>
     <div class="tc-grid">${g.items.map(e=>e.relic?relicCard(e.id,h):card(e.id,h)).join('')}</div></section>`).join(''):'<p class="muted tc-empty">이 조건에 맞는 보물이 없다.</p>'}`;
 }

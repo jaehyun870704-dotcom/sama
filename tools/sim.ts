@@ -28,7 +28,7 @@ const load = (p: string) => server.ssrLoadModule(p);
 const { Session, chapters, campaignOrder, zhugeOrder } = await load("/packages/web/src/session.ts");
 const { zhugeDeployment } = await load("/packages/web/src/zhuge.ts");
 const { isZhugeStage } = await load("/packages/web/src/zhuge-data.ts");
-const { award, deployment, equip, freshCampaign, treasures, OFFICERS } =
+const { award, deployment, equipSlot, freshCampaign, treasures, treasureInfo, canWear, OFFICERS } =
   await load("/packages/web/src/progression.ts");
 const { martialPower } = await load("/packages/web/src/officers.ts");
 const { CONTROLLABLE, decide, evaluate, rememberedGoal, key, manhattan } = await load("/packages/core/src/index.ts");
@@ -50,14 +50,17 @@ function campaignAt(chapter: number, difficulty: Difficulty) {
     const stage = chapters[index].stage;
     award(campaign, stage.id, "normal", stage.deployment.forced, [1]);
   }
-  // 난이도 기준은 보물·연구 없이 잰다(SIM_TREASURE=1이면 얻은 보물을 등급 순으로 장수에게 한 개씩 채운 상태).
+  // 난이도 기준은 보물·연구 없이 잰다(SIM_TREASURE=1이면 얻은 고유 보물을 장수마다 칸별로 계통에 맞는 가장 높은 등급부터 채운 상태).
   if (!process.env.SIM_TREASURE) return campaign;
   const owned = treasures
     .filter((t: { id: string }) => campaign.treasures.includes(t.id))
     .sort((a: { grade: number }, b: { grade: number }) => b.grade - a.grade);
+  const worn = new Set<string>();
   for (const officer of OFFICERS) {
-    const item = owned.find((t: { id: string }) => !Object.values(campaign.equipped).includes(t.id));
-    if (item) equip(campaign, officer, item.id);
+    for (const slot of ["weapon", "armor", "accessory"]) {
+      const item = owned.find((t: { id: string }) => !worn.has(t.id) && treasureInfo(t.id).slot === slot && canWear(officer, t.id).ok);
+      if (item && equipSlot(campaign, officer, slot, item.id)) worn.add(item.id);
+    }
   }
   return campaign;
 }

@@ -1,200 +1,136 @@
-import {defineTrait,combine,type DamageContext} from './traits.ts';
-import type {Unit} from './types.ts';
-import {familyOf} from './classes.ts';
-type Condition='always'|'physical'|'strategy'|'melee'|'ranged'|'wounded'|'healthy'|'mounted'|'armored'|'caster'|'stationary'|'moving';
-type Effect='power'|'pierce'|'critical'|'accuracy'|'reduction'|'evade'|'safe'|'hp'|'mp'|'rough'|'counter';
-type Rule=readonly [Effect,number,Condition?];
-// Ordered independently of UI catalogues: the first 60 are stable 6 × 10 atlas positions.
-export const treasurePowers:Array<{id:string;name:string;rules:Rule[]}>=([
- ['silverarmor','백은 수호',[['reduction',12,'physical']]],
- ['yitian','군주의 검',[['power',12,'healthy']]],
- ['dunjia','기문 보행',[['rough',1],['mp',1]]],
- ['taiping','청령의 숨결',[['hp',4]]],
- ['sevenstar','칠성 관통',[['pierce',18,'physical']]],
- ['dilu','위기 탈출',[['evade',15,'wounded']]],
- ['mengde','용병의 지혜',[['mp',2],['power',5,'strategy']]],
- ['qinggang','청공 파갑',[['pierce',18,'physical']]],
- ['greenDragon','청룡 참격',[['power',15,'mounted']]],
- ['serpentSpear','장판의 기세',[['power',16,'wounded']]],
- ['halberd','무쌍의 예봉',[['critical',15,'physical']]],
- ['bow','보조 조준',[['accuracy',12,'ranged']]],
- ['redHare','질풍 돌격',[['power',12,'moving']]],
- ['fan','백우 운책',[['power',12,'strategy']]],
- ['seal','옥새의 위엄',[['reduction',8],['mp',1]]],
- ['ironArmor','철갑 전열',[['reduction',7,'melee']]],
- ['doubleSwords','쌍검 연계',[['critical',10,'melee'],['accuracy',5,'melee']]],
- ['ancientBlade','강동의 예기',[['power',14,'healthy']]],
- ['leatherArmor','가벼운 피갑',[['evade',7,'ranged']]],
- ['warDrum','진군의 북',[['power',6,'moving']]],
- ['ironSpear','기마 저지',[['power',12,'mounted']]],
- ['flyingBlade','비도 견제',[['safe',1,'ranged']]],
- ['chainArmor','쇄환 방호',[['reduction',12,'ranged']]],
- ['militarySeal','군령 유지',[['mp',1],['reduction',4,'healthy']]],
- ['phoenixSpear','봉황의 예봉',[['pierce',15,'armored']]],
- ['crescentBlade','월아 압박',[['critical',12,'melee']]],
- ['scaleArmor','어린 방진',[['reduction',10,'stationary']]],
- ['swiftSaddle','우회 기동',[['evade',9,'moving']]],
- ['ironBow','강궁 파갑',[['pierce',18,'ranged']]],
- ['repeatingCrossbow','연노 제압',[['power',14,'stationary']]],
- ['rattanArmor','등갑 방호',[['reduction',18,'physical'],['reduction',-12,'strategy']]],
- ['sunzi','허실 간파',[['power',9,'strategy'],['accuracy',7,'strategy']]],
- ['threePointBlade','삼첨 압도',[['power',12,'armored']]],
- ['steelWhip','강편 파쇄',[['pierce',12,'melee'],['accuracy',4,'physical']]],
- ['brightArmor','명광 호신',[['reduction',12,'strategy']]],
- ['sixTeachings','육도 준비',[['mp',2],['accuracy',5,'strategy']]],
- ['longbow','양유 원사',[['power',10,'ranged'],['accuracy',5,'ranged']]],
- ['ironAxe','개산 강타',[['power',15,'armored']]],
- ['blackArmor','현철 버팀',[['reduction',14,'wounded']]],
- ['threeStrategies','삼략 정진',[['mp',3]]],
- ['dragonSpear','용담 돌파',[['safe',1,'moving']]],
- ['twinHalberds','쌍극 응수',[['counter',2]]],
- ['tigerArmor','호위 결의',[['reduction',14,'melee']]],
- ['shadowHorse','그림자 회피',[['evade',12,'ranged']]],
- ['goldHammer','유금 격쇄',[['pierce',16,'armored']]],
- ['moonSword','월광 정밀',[['critical',18,'healthy']]],
- ['craneRobe','학창 명상',[['mp',2],['reduction',6,'strategy']]],
- ['yellowHorse','조황 선회',[['evade',10,'physical']]],
- ['jadeSword','백옥 영기',[['power',10,'strategy'],['accuracy',6,'strategy']]],
- ['tigerSpear','호두 위압',[['power',16,'caster']]],
- ['cloudRobe','운금 유연',[['evade',12,'strategy']]],
- ['qingshu','청낭 양생',[['hp',7]]],
- ['sevenStarFlag','칠성 집중',[['accuracy',15,'strategy']]],
- ['formationScroll','팔진 대응',[['reduction',15,'stationary'],['mp',1]]],
- ['dragonArmor','용린 강건',[['reduction',16,'physical']]],
- ['goldArmor','황금 불굴',[['reduction',15,'wounded'],['hp',2]]],
- ['springAutumn','춘추 대의',[['power',10,'healthy'],['mp',1]]],
- ['jadePendant','백옥 안정',[['hp',3],['mp',1]]],
- ['tigerTally','호부 결전',[['power',14,'wounded'],['accuracy',5,'physical']]],
- ['strategistRobe','군사 정심',[['reduction',15,'strategy'],['mp',1]]],
- // 아래는 그림 판(6×10) 밖의 보물: 그림은 public/treasures/<id>.webp 낱장을 쓴다.
- ['rattanShield','등패 막이',[['reduction',10,'ranged']]],
- ['hujia','호가의 가락',[['hp',2],['mp',1]]],
- ['meteorHammer','유성 강타',[['power',14,'armored']]],
- ['phoenixHelm','봉시의 투구',[['reduction',9,'physical']]],
- ['hookSpear','구겸 걸기',[['power',15,'mounted']]],
- ['baguaMirror','팔괘 반사',[['reduction',14,'strategy']]],
- ['purpleGourd','자금 단약',[['mp',2],['hp',3]]],
- ['bearCloak','흑웅의 가죽',[['reduction',10,'wounded'],['hp',2]]],
- ['phoenixHairpin','봉황의 비녀',[['evade',8],['mp',1]]],
- ['swiftBoots','신행의 걸음',[['rough',1],['evade',6,'moving']]],
- ['zhanmaDao','참마의 일격',[['power',15,'mounted'],['critical',5,'physical']]],
- ['tigerShield','호두 방벽',[['reduction',14,'melee']]],
- ['lionHelm','사자의 위용',[['reduction',12],['hp',3]]],
- ['tortoiseToken','현무의 영패',[['reduction',10,'stationary'],['counter',2]]],
- // 반복 퀘스트(보물 사냥)·도전 퀘스트 보물
- ['bronzeSword','고검의 손맛',[['accuracy',8,'melee']]],
- ['hornBowSmall','각궁 겨냥',[['accuracy',10,'ranged']]],
- ['hideShield','가죽 방패',[['reduction',8,'melee']]],
- ['strawCape','도롱이 엉킴',[['evade',6,'ranged']]],
- ['copperBell','방울 경계',[['mp',1]]],
- ['travelPouch','행낭의 양식',[['hp',2]]],
- ['ringBlade','환수 베기',[['critical',8,'physical']]],
- ['ironRod','철곤 울림',[['power',10,'armored']]],
- ['lamellarVest','미늘 막이',[['reduction',8,'physical']]],
- ['wolfHelm','낭두의 기개',[['reduction',8,'strategy']]],
- ['bambooSlips','죽간의 계책',[['power',8,'strategy']]],
- ['ponyBridle','청총마 박차',[['evade',6,'moving']]],
- ['snakeBlade','사검 파고들기',[['critical',10,'melee']]],
- ['armorPiercer','파갑',[['pierce',15,'physical']]],
- ['boltQuiver','연사 견제',[['accuracy',12,'ranged']]],
- ['mountainArmor','산문 철벽',[['reduction',12,'melee']]],
- ['fireproofRobe','화완 불침',[['reduction',14,'strategy']]],
- ['beaconToken','봉화의 경보',[['reduction',6,'stationary'],['counter',2]]],
- ['wuhuanBow','오환 기사',[['power',12,'ranged']]],
- ['cavalrySaber','마상 환도',[['power',12,'moving']]],
- ['feltArmor','모전 누빔',[['reduction',10,'ranged']]],
- ['horseBarding','마갑 돌파',[['reduction',12,'physical']]],
- ['eagleFeather','해동청의 눈',[['evade',10]]],
- ['nomadSteed','초원의 발굽',[['rough',1],['evade',6,'moving']]],
- ['poisonDarts','독침',[['critical',12,'physical']]],
- ['tuskSpear','상아 관통',[['power',16,'armored']]],
- ['rattanHelm','등투구',[['reduction',14,'ranged']]],
- ['shuBrocade','촉금의 결',[['reduction',12],['hp',3]]],
- ['bronzeDrum','동고의 울림',[['power',8]]],
- ['spiritBead','벽사',[['reduction',16,'strategy'],['mp',1]]],
- ['initiateBadge','첫 문의 각오',[['power',6]]],
- ['sharpSpearhead','예리한 창끝',[['pierce',12,'physical']]],
- ['riverShield','다리목 방패',[['reduction',12,'ranged']]],
- ['summitBanner','정상의 깃발',[['accuracy',10]]],
- ['gatekeeperHalberd','수문장의 극',[['critical',15,'physical'],['power',8,'healthy']]],
- ['gatekeeperArmor','수문장의 갑',[['reduction',15,'melee']]],
- ['courtSeal','정위의 법',[['power',12,'strategy']]],
- ['cliffSandals','잔도 걸음',[['rough',1],['evade',8]]],
- ['fordHorse','도하',[['evade',10,'moving']]],
- ['hundredPaceBow','백보천양',[['accuracy',15,'ranged'],['critical',8,'physical']]],
- ['peerlessSword','천하제일',[['power',12],['critical',8,'physical']]],
- ['overlordArmor','패왕의 기개',[['reduction',14,'physical'],['counter',2]]],
- // 삼국지14 명품(보물 사냥 꾸러미)
- ['simaFa','사마의 군례',[['reduction',8,'stationary'],['accuracy',5,'physical']]],
- ['weiLiaozi','울료의 군령',[['reduction',6,'melee']]],
- ['shiji','흥망의 기록',[['power',6,'strategy'],['mp',1]]],
- ['hanfeizi','법술세',[['accuracy',8,'strategy']]],
- ['guanzi','창고가 차면',[['hp',3]]],
- ['shangjunshu','변법의 엄정',[['power',8,'healthy']]],
- ['yanziChunqiu','이도살삼사',[['mp',1],['accuracy',4,'strategy']]],
- ['yinfu','음부의 비책',[['accuracy',6,'strategy'],['evade',5,'strategy']]],
- ['siminYueling','달마다의 살림',[['hp',2]]],
- ['yantielun','염철의 비축',[['reduction',6,'physical']]],
- ['laozi','유능제강',[['power',10,'strategy'],['mp',1]]],
- ['zhuangzi','소요유',[['evade',8,'strategy']]],
- ['lunyu','인의 마음',[['reduction',8,'strategy'],['mp',1]]],
- ['shijing','출정의 노래',[['mp',2]]],
- ['shujing','성왕의 말씀',[['accuracy',6,'strategy']]],
- ['yijing','변화의 이치',[['evade',5],['mp',1]]],
- ['liji','군례',[['reduction',5]]],
- ['taipingYaoshu','풍우의 술',[['power',12,'strategy'],['mp',2]]],
- ['shanhaijing','기이한 것을 앎',[['reduction',12,'strategy'],['evade',6,'strategy']]],
- ['xishuMap','촉의 지세',[['rough',1],['accuracy',8]]],
- ['guoxiaMa','과하의 걸음',[['rough',1]]],
- ['liangzhouMa','서량의 질주',[['power',10,'moving']]],
- ['baihu','백곡의 날개',[['evade',8,'moving']]],
- ['fourWheelCart','사륜 지휘',[['reduction',6,'stationary'],['mp',1]]],
- ['zhansheSword','참사의 위광',[['power',12,'healthy'],['critical',6,'physical']]],
- ['baipiDao','백 번 담금질',[['critical',8,'melee']]],
- // 조조전 보물
- ['ironHelm','철투구',[['reduction',8,'melee']]],
- ['beanBag','콩주머니',[['hp',3]]],
- ['twinWhips','쌍편 연타',[['power',12,'armored'],['accuracy',4,'melee']]],
- ['plantainFan','파초의 큰바람',[['power',10,'strategy'],['mp',1]]],
- ['mirrorArmor','거울의 눈부심',[['evade',8,'physical'],['reduction',6,'strategy']]],
- ['dragonGi','비룡의 몸놀림',[['evade',10,'melee']]],
- ['silverShield','백은 방벽',[['reduction',12,'physical']]],
- ['lubuBow','원문사극',[['power',12,'ranged'],['accuracy',8,'ranged']]],
- ['linkedArmor','연환의 고리',[['reduction',12,'melee']]],
- ['windGodShield','풍신의 바람막이',[['reduction',16,'ranged']]],
- ['noFeatherDart','몰우의 돌팔매',[['accuracy',10,'ranged'],['safe',1,'ranged']]],
- ['goldFireCannon','금화의 불길',[['power',14,'ranged'],['pierce',10,'ranged']]],
- ['fiveFireFan','오화의 불꽃',[['power',14,'strategy']]],
- ['sageSword','성자의 벽사',[['power',12,'caster'],['reduction',8,'strategy']]],
- ['darkRobe','칠흑의 술기',[['power',8,'strategy'],['reduction',10,'strategy']]],
- ['phoenixRobe','봉황의 재생',[['hp',5]]],
- ['windWheel','바람의 바퀴',[['rough',1],['power',8,'moving']]],
- ['zhugeTurban','와룡의 두건',[['accuracy',8,'strategy'],['mp',1]]],
- ['azureJewel','청룡의 기운',[['power',10]]],
- ['vermilionJewel','주작의 기운',[['power',10,'strategy'],['mp',1]]],
- ['blackTortoiseJewel','현무의 기운',[['reduction',10]]],
- ['whiteTigerJewel','백호의 기운',[['critical',10,'physical']]]
-] as Array<[string,string,Rule[]]>).map(([id,name,rules])=>({id,name,rules}));
-const conditionText:Record<Condition,string>={always:'',physical:'물리 공격 시 ',strategy:'책략 공격 시 ',melee:'인접 교전 시 ',ranged:'거리 2칸 이상 교전 시 ',wounded:'자신의 HP 50% 이하 시 ',healthy:'자신의 HP 80% 이상 시 ',mounted:'기병 계열 상대 시 ',armored:'보병·창병·중기병·충차 상대 시 ',caster:'책략 병종 상대 시 ',stationary:'이번 차례 이동 전 ',moving:'이번 차례 이동 후 '};
-function matches(c:Condition,ctx:DamageContext,self:Unit){switch(c){
- case 'physical':return ctx.kind==='physical';case 'strategy':return ctx.kind==='strategy';case 'melee':return ctx.distance===1;case 'ranged':return ctx.distance>=2;
- case 'wounded':return self.hp<=self.stats.maxHp*.5;case 'healthy':return self.hp>=self.stats.maxHp*.8;
- case 'mounted':return ctx.kind==='physical'&&['cavalry','heavyCav','horseArcher'].includes(familyOf(ctx.defender.unitClass));
- case 'armored':return ctx.kind==='physical'&&['infantry','spearman','heavyCav','ram'].includes(familyOf(ctx.defender.unitClass));
- case 'caster':return ctx.kind==='physical'&&['strategist','fengshui','shaman','taoist','maiden'].includes(familyOf(ctx.defender.unitClass));
- case 'stationary':return !self.movedThisTurn;case 'moving':return !!self.movedThisTurn;default:return true;
-}}
-export function treasurePowerText(id:string){return treasurePowers.find(t=>t.id===id)?.rules.map(([effect,n,when='always'])=>{
- if(effect==='hp'||effect==='mp')return '자기 차례 시작 '+effect.toUpperCase()+' '+n+' 회복';
- if(effect==='rough')return '험지 이동 비용 무시 (통행 가능 지형만)';
- if(effect==='counter')return '진영 차례마다 반격 최대 '+n+'회';
- const label={power:'공격 위력 +',pierce:'방어 관통 ',critical:'회심 확률 +',accuracy:'명중 +',reduction:n<0?'받는 피해 증가 ':'받는 피해 감소 ',evade:'상대 명중 -',safe:'반격 억제'}[effect];
- return conditionText[when]+label+(effect==='safe'?'':Math.abs(n)+(effect==='accuracy'||effect==='evade'||effect==='critical'?'%p':'%'));
-}).join(' · ')??'';}
-for(const item of treasurePowers)defineTrait({id:'treasure:'+item.id,name:item.name,description:treasurePowerText(item.id),hooks:{
- onAttack(ctx,self){for(const [effect,n,when='always'] of item.rules)if(matches(when,ctx,self)){if(effect==='power')ctx.attackMul*=1+n/100;if(effect==='pierce')ctx.defenseIgnore=Math.max(ctx.defenseIgnore,n/100);if(effect==='critical')ctx.criticalChance+=n;if(effect==='accuracy')ctx.accuracyMod+=n;if(effect==='safe'&&ctx.kind==='physical')ctx.suppressCounter=true;}},
- onDefend(ctx,self){for(const [effect,n,when='always'] of item.rules)if(matches(when,ctx,self)){if(effect==='reduction')ctx.reduction=n>=0?combine(ctx.reduction,n/100):1-(1-ctx.reduction)*(1-n/100);if(effect==='evade')ctx.accuracyMod-=n;}},
- onTurnStart(self){for(const [effect,n] of item.rules){if(effect==='hp')self.hp=Math.min(self.stats.maxHp,self.hp+n);if(effect==='mp')self.mp=Math.min(self.stats.maxMp,self.mp+n);}},
- ...(item.rules.some(r=>r[0]==='rough')?{ignoresRoughTerrain:true}:{}),
- ...(item.rules.some(r=>r[0]==='counter')?{counterLimit:()=>2}:{})
-}});
+/**
+ * 장비의 전투 특성(`gear:*`) — 고유 보물 50점의 고유 기능과 상점 보조구(방패·장갑·기마갑옷)의 효과.
+ *
+ * 피해 파이프라인 훅으로 되는 것은 여기서 정하고, 타격 순서를 바꾸는 기능(재반격·관통·인도 공격·MP 방어·
+ * 자동 콩·책략 모방·통과 이동)은 표식만 두고 battle.ts·grid.ts·state.ts가 읽는다. 적 부대도 같은 규칙을 따른다.
+ */
+import { defineTrait, combine, type DamageContext } from "./traits.ts";
+import type { Unit, StatusKind } from "./types.ts";
+import { gearDef, gearGroupOf, type GearGroup } from "./equipment.ts";
+
+/** 간접 공격을 하는 계통(활·노·궁기병·투석기). */
+const INDIRECT: ReadonlySet<GearGroup> = new Set(["archer", "crossbow", "horseArcher", "siege"]);
+export const isIndirectAttack = (ctx: Pick<DamageContext, "attacker" | "distance">) => INDIRECT.has(gearGroupOf(ctx.attacker.unitClass)) || ctx.distance >= 2;
+/** 나쁜 상태(태평청령서·만능약이 푼다). */
+export const BAD_STATUS: ReadonlySet<StatusKind> = new Set<StatusKind>(["confusion", "immobile", "bound", "bleed", "burn", "shock", "seal", "weaken", "breach", "slow", "sluggish", "dispirit"]);
+/** 맞히면 반드시 거는 상태(여포궁·이광궁·유성추·금화관포). */
+export const ON_HIT_STATUS: Readonly<Record<string, StatusKind>> = { "gear:immobilize": "immobile", "gear:sealShot": "seal", "gear:confuse": "confusion", "gear:poison": "bleed" };
+const has = (u: Unit, id: string) => u.traits.includes(id);
+const marker = (id: string, name: string, description: string) => defineTrait({ id, name, description, hooks: {} });
+
+marker("gear:reCounter", "재반격", "내 공격에 상대가 반격하면 한 번 더 반격한다(위력 param%).");
+defineTrait({ id: "gear:cavalryBane", name: "기병 특효", description: "기병계 적에게 주는 물리 피해가 param% 늘어난다(군주·궁기병·기마책사 제외).", hooks: {
+  onAttack(ctx, _s, p) { if (ctx.kind === "physical" && gearGroupOf(ctx.defender.unitClass) === "cav") ctx.attackMul *= 1 + p / 100; } } });
+// 물리 회피: 의천검과 상점 방패는 겹치지 않는다(큰 쪽만). 풍신방패는 따로 더해진다.
+defineTrait({ id: "gear:yitian", name: "물리 회피", description: "물리 공격을 param% 더 피한다(방패의 물리 회피와 겹치지 않는다).", hooks: {
+  onDefend(ctx, self, p) { if (ctx.kind === "physical" && (self.traitParams["gear:shield"] ?? 0) <= p) ctx.accuracyMod -= p; } } });
+defineTrait({ id: "gear:shield", name: "방패", description: "물리 공격을 param% 더 피한다.", hooks: {
+  onDefend(ctx, self, p) { if (ctx.kind === "physical" && !(has(self, "gear:yitian") && (self.traitParams["gear:yitian"] ?? 0) >= p)) ctx.accuracyMod -= p; } } });
+defineTrait({ id: "gear:windGod", name: "풍신의 막이", description: "물리 공격과 책략을 param% 더 피한다(아군의 지원 책략도 param% 빗나간다).", hooks: {
+  onDefend(ctx, _s, p) { if (ctx.kind === "physical" || ctx.kind === "strategy") ctx.accuracyMod -= p; } } });
+defineTrait({ id: "gear:stratEvade", name: "책략 회피", description: "책략을 param% 더 피한다(아군의 지원 책략도 param% 빗나간다).", hooks: {
+  onDefend(ctx, _s, p) { if (ctx.kind === "strategy") ctx.accuracyMod -= p; } } });
+defineTrait({ id: "gear:accuracy", name: "장갑", description: "물리 공격 명중이 param% 오른다.", hooks: {
+  onAttack(ctx, _s, p) { if (ctx.kind === "physical") ctx.accuracyMod += p; } } });
+defineTrait({ id: "gear:barding", name: "기마갑옷", description: "간접 공격(활·노·투석기, 두 칸 밖의 물리 공격)으로 받는 피해가 param% 줄어든다.", hooks: {
+  onDefend(ctx, _s, p) { if (ctx.kind === "physical" && isIndirectAttack(ctx)) ctx.reduction = combine(ctx.reduction, p / 100); } } });
+defineTrait({ id: "gear:noCounter", name: "무반격", description: "내 물리 공격에 상대가 반격하지 못한다.", hooks: {
+  onAttack(ctx) { if (ctx.kind === "physical") ctx.suppressCounter = true; } } });
+marker("gear:pierceLine", "관통", "맞힌 적 바로 뒤(같은 방향 한 칸)의 적도 함께 맞는다. 반격에도 적용된다.");
+marker("gear:chase", "인도 공격", "적을 퇴각시키면 사거리 안의 다른 적 하나를 한 번 더 친다.");
+marker("gear:immobilize", "부동 일격", "물리 공격이 맞으면 반드시 부동에 빠뜨린다.");
+marker("gear:sealShot", "봉인 일격", "물리 공격이 맞으면 반드시 책략을 봉인한다.");
+marker("gear:confuse", "혼란 일격", "물리 공격이 맞으면 반드시 혼란에 빠뜨린다.");
+marker("gear:poison", "독 일격", "물리 공격이 맞으면 반드시 독(출혈)에 빠뜨린다.");
+defineTrait({ id: "gear:windPower", name: "큰바람", description: "바람 책략의 위력이 param% 오른다.", hooks: {
+  onAttack(ctx, _s, p) { if (ctx.kind === "strategy" && ctx.element === "wind") ctx.attackMul *= 1 + p / 100; } } });
+defineTrait({ id: "gear:firePower", name: "불꽃", description: "불 책략의 위력이 param% 오른다.", hooks: {
+  onAttack(ctx, _s, p) { if (ctx.kind === "strategy" && ctx.element === "fire") ctx.attackMul *= 1 + p / 100; } } });
+marker("gear:mpHalf", "절반의 술법", "책략에 드는 MP가 절반(내림)이 된다.");
+defineTrait({ id: "gear:stratAccuracy", name: "책략 명중", description: "책략 명중이 param% 오른다.", hooks: {
+  onAttack(ctx, _s, p) { if (ctx.kind === "strategy") ctx.accuracyMod += p; } } });
+defineTrait({ id: "gear:indirectGuard", name: "간접 방어", description: "활·노·궁기병·투석기의 일반 공격을 반드시 피한다(혼란 중에도).", hooks: {
+  onDefend(ctx) { if (ctx.kind === "physical" && INDIRECT.has(gearGroupOf(ctx.attacker.unitClass))) ctx.forceMiss = true; } } });
+defineTrait({ id: "gear:critGuard", name: "회심 방어", description: "회심의 일격을 받지 않는다.", hooks: {
+  onDefend(ctx) { ctx.noCritical = true; } } });
+defineTrait({ id: "gear:chainGuard", name: "연격 방어", description: "연속 공격·연속 반격의 두 번째 타격을 반드시 피한다.", hooks: {
+  onDefend(ctx) { if (ctx.kind === "physical" && ctx.double) ctx.forceMiss = true; } } });
+defineTrait({ id: "gear:stratHalf", name: "책략 반감", description: "책략으로 받는 피해가 param% 줄어든다.", hooks: {
+  onDefend(ctx, _s, p) { if (ctx.kind === "strategy") ctx.reduction = combine(ctx.reduction, p / 100); } } });
+marker("gear:mpShield", "MP 방어", "물리 피해를 체력 대신 MP로 받는다(MP가 모자라도 그 타격은 MP만 0이 된다). 책략에는 듣지 않는다.");
+defineTrait({ id: "gear:regen20", name: "재생", description: "자기 차례 시작에 최대 체력의 param%를 회복한다(여럿 지녀도 한 번).", hooks: {
+  onTurnStart(u, p) { if (u.hp < u.stats.maxHp) u.hp = Math.min(u.stats.maxHp, u.hp + Math.max(1, Math.round(u.stats.maxHp * p / 100))); } } });
+marker("gear:passEnemies", "돌격 이동", "적이 선 칸을 지나갈 수 있다(멈추지는 못한다). 적의 이동 방해를 받지 않는다.");
+defineTrait({ id: "gear:rough", name: "험로 이동", description: "지나갈 수 있는 모든 지형의 이동 소모가 1이 된다.", hooks: { ignoresRoughTerrain: true } });
+marker("gear:sling", "돌팔매", "공격 사거리가 상하좌우 두 칸까지 늘어난다.");
+marker("gear:sunzi", "병법의 깨달음", "자기 차례마다 경험치를 param 얻는다.");
+marker("gear:mengde", "용병의 지혜", "얻는 경험치와 장비 경험치가 param% 늘어난다.");
+defineTrait({ id: "gear:cleanse", name: "청령", description: "자기 차례 시작에 나쁜 상태를 모두 푼다.", hooks: {
+  onTurnStart(u) { u.statuses = u.statuses.filter((s) => !BAD_STATUS.has(s.kind)); } } });
+defineTrait({ id: "gear:manaTen", name: "요술의 샘", description: "자기 차례 시작에 MP를 param 회복한다.", hooks: {
+  onTurnStart(u, p) { u.mp = Math.min(u.stats.maxMp, u.mp + p); } } });
+marker("gear:mimic", "책략 모방", "상하좌우로 붙은 부대(아군·적군)가 쓰는 책략을 쓸 수 있다(사신 책략은 보옥이 있어야).");
+marker("gear:weaponDrill", "무기 단련", "자기 차례마다 무기 경험치를 param 얻는다.");
+marker("gear:armorDrill", "방어구 단련", "자기 차례마다 방어구 경험치를 param 얻는다.");
+marker("gear:beanBag", "콩주머니", "피해를 받으면 보관함의 회복의 콩을 저절로 써서 체력을 회복한다(콩이 있을 때만).");
+defineTrait({ id: "gear:sureCrit", name: "옥새의 위엄", description: "물리 공격이 반드시 회심의 일격이 된다.", hooks: {
+  onAttack(ctx) { if (ctx.kind === "physical") ctx.sureCritical = true; } } });
+marker("gear:jewelAzure", "청룡의 부름", "책략 「청룡」을 쓸 수 있다(기마책사계).");
+marker("gear:jewelVermilion", "주작의 부름", "책략 「주작」을 쓸 수 있다(책사계).");
+marker("gear:jewelTortoise", "현무의 부름", "책략 「현무」를 쓸 수 있다(도사계).");
+marker("gear:jewelTiger", "백호의 부름", "책략 「백호」를 쓸 수 있다(풍수사계).");
+
+/** 사신 책략 id → 그 책략을 여는 보옥 특성. */
+export const JEWEL_STRATEGIES: Readonly<Record<string, string>> = { jewelAzure: "gear:jewelAzure", jewelVermilion: "gear:jewelVermilion", jewelTortoise: "gear:jewelTortoise", jewelTiger: "gear:jewelTiger" };
+
+/** 장비 하나의 고유 기능 설명(능력치 밖). 없으면 빈 글. */
+export function gearPowerText(id: string): string {
+  const d = gearDef(id);
+  if (!d?.traits?.length) return "";
+  return d.traits.map(([t, p]) => {
+    switch (t) {
+      case "gear:reCounter": return `재반격 · 상대가 반격하면 한 번 더 반격(위력 ${p}%)`;
+      case "gear:cavalryBane": return `기병 특효 · 기병계에게 피해 +${p}%`;
+      case "gear:yitian": return `물리 회피 +${p}% (방패와 겹치지 않음)`;
+      case "gear:shield": return `물리 회피 +${p}%`;
+      case "gear:windGod": return `물리·책략 회피 +${p}% (아군 지원 책략도 ${p}% 빗나감)`;
+      case "gear:stratEvade": return `책략 회피 +${p}% (아군 지원 책략도 ${p}% 빗나감)`;
+      case "gear:accuracy": return `물리 명중 +${p}%`;
+      case "gear:barding": return `간접 공격 피해 -${p}%`;
+      case "gear:noCounter": return "무반격 · 내 공격에 상대가 반격하지 못함";
+      case "gear:pierceLine": return "관통 · 맞힌 적 바로 뒤의 적도 함께 맞음(반격 포함)";
+      case "gear:chase": return "인도 공격 · 적을 퇴각시키면 사거리 안 다른 적을 한 번 더 공격";
+      case "gear:immobilize": return "맞히면 반드시 부동";
+      case "gear:sealShot": return "맞히면 반드시 책략 봉인";
+      case "gear:confuse": return "맞히면 반드시 혼란";
+      case "gear:poison": return "맞힌 대상을 반드시 독(출혈)에 빠뜨림";
+      case "gear:windPower": return `바람 책략 위력 +${p}%`;
+      case "gear:firePower": return `불 책략 위력 +${p}%`;
+      case "gear:mpHalf": return "책략 MP 소모 절반(내림)";
+      case "gear:stratAccuracy": return `책략 명중 +${p}%`;
+      case "gear:indirectGuard": return "간접 방어 · 활·노·궁기병·투석기 공격을 반드시 회피";
+      case "gear:critGuard": return "회심 방어 · 회심의 일격을 받지 않음";
+      case "gear:chainGuard": return "연격 방어 · 연속 공격·반격의 두 번째 타격을 반드시 회피";
+      case "gear:stratHalf": return `책략 피해 ${p}% 감소`;
+      case "gear:mpShield": return "MP 방어 · 물리 피해를 체력 대신 MP로 받음";
+      case "gear:regen20": return `자기 차례마다 최대 체력 ${p}% 회복(청낭서·봉황깃옷은 겹치지 않음)`;
+      case "gear:passEnemies": return "돌격 이동 · 적이 선 칸을 지나갈 수 있음";
+      case "gear:rough": return "험로 이동 · 모든 지형 이동 소모 1";
+      case "gear:sling": return `공격 사거리 상하좌우 ${p}칸`;
+      case "gear:sunzi": return `자기 차례마다 경험치 +${p}`;
+      case "gear:mengde": return `얻는 경험치·장비 경험치 ${1 + p / 100}배`;
+      case "gear:cleanse": return "자기 차례마다 나쁜 상태 회복";
+      case "gear:manaTen": return `자기 차례마다 MP +${p}`;
+      case "gear:mimic": return "책략 모방 · 붙어 있는 부대의 책략을 쓸 수 있음";
+      case "gear:weaponDrill": return `자기 차례마다 무기 경험치 +${p}`;
+      case "gear:armorDrill": return `자기 차례마다 방어구 경험치 +${p}`;
+      case "gear:beanBag": return "피해를 받으면 회복의 콩을 저절로 씀";
+      case "gear:sureCrit": return "물리 공격이 반드시 회심";
+      case "gear:jewelAzure": return "책략 「청룡」 사용(기마책사계)";
+      case "gear:jewelVermilion": return "책략 「주작」 사용(책사계)";
+      case "gear:jewelTortoise": return "책략 「현무」 사용(도사계)";
+      case "gear:jewelTiger": return "책략 「백호」 사용(풍수사계)";
+      default: return "";
+    }
+  }).filter(Boolean).join(" · ");
+}

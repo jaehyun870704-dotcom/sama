@@ -2,7 +2,7 @@ import type {Growth} from './progression.ts';
 import type {StrategyDef,Unit} from '../../core/src/index.ts';
 import {capArea} from '../../core/src/index.ts';
 import {romanceInt,romanceWar} from './romance.ts';
-import {V12_STRATEGIES,v12Equivalent} from './strategies-v12.ts';
+import {V12_STRATEGIES,v12Equivalent,JEWEL_STRATEGY_DEFS} from './strategies-v12.ts';
 export const officerFeatures:Record<string,{name:string;description:string;trait:string;strength:number}>={
   sima_yi:{name:'은인자중',description:'책략 피해 15% 감소 · 매 턴 MP 3 회복',trait:'simaPatience',strength:30},
   cao_zhen:{name:'선봉 지휘',description:'물리 공격 피해 12% 증가',trait:'caoVanguard',strength:78},
@@ -115,6 +115,8 @@ export const legacyStrategies:LearnedStrategy[]=[...learnedStrategies,...more,..
 /** 지금 목록(규칙판 12): 새 책략 + 물리 계통 특수기. 사거리 무제한 지원 책략은 범위 상한을 받지 않는다. */
 export const allStrategies:LearnedStrategy[]=[...V12_STRATEGIES,...skills].map(s=>s.support&&s.range>=99?s:capArea(s)).sort((a,b)=>a.level-b.level);
 for(const s of [...legacyStrategies,...allStrategies])(s as {learnLevel?:number}).learnLevel=s.level;
+// 사신 책략(사신보옥 전용)은 배우지 않고 단계 진화도 없다: 어느 규칙판의 전투에서든 보옥이 열어 준다.
+allStrategies.push(...JEWEL_STRATEGY_DEFS);
 /** 규칙판에 맞는 책략 목록. */
 export function strategiesFor(revision:number):LearnedStrategy[]{return revision>=12?allStrategies:legacyStrategies;}
 /** 예전 책략 id를 지금 목록의 가장 가까운 책략으로(지금 목록에 있으면 그대로). 물리 특수기는 그대로 둔다. */

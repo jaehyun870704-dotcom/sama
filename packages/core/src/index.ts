@@ -16,6 +16,7 @@ export * from "./loader.ts";
 export * from "./dialogue.ts";
 export * from "./sim.ts";
 
+export * from "./equipment.ts";
 export * from "./treasure-traits.ts";
 export * from "./troop-effects.ts";
 export * from "./classes.ts";
