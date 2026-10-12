@@ -1,0 +1,243 @@
+{
+  "id": "Z1-03",
+  "focusVictoryTargets": true,
+  "arc": "upper",
+  "order": 103,
+  "title": "박망파의 불",
+  "subtitle": "신야 북쪽 박망파",
+  "synopsis": "조조가 하후돈에게 십만 군사를 주어 신야를 치게 했다. 처음 군을 맡은 제갈량은 박망파 골짜기에 갈대와 마른 풀을 쌓게 한다. 조운이 적을 골짜기 깊이 끌어들이면 때맞춰 불을 놓고, 불길 속의 하후돈을 물리쳐라.",
+  "mapId": "z1-03-bowang",
+  "deployment": {
+    "forced": [
+      "z_liu_bei",
+      "z_guan_yu",
+      "z_zhang_fei",
+      "z_zhao_yun",
+      "z_liang",
+      "z_guan_ping"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "z_xiahou_dun"
+    },
+    {
+      "type": "annihilate"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    },
+    {
+      "type": "retreat",
+      "unit": "z_liu_bei"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "turn_limit:5",
+      "extreme": "turn_limit:5"
+    },
+    {
+      "slot": 3,
+      "normal": "enemy_retreat_count:8",
+      "extreme": "enemy_retreat_count:9"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 5,
+      "recommendedLevel": 5,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 7,
+      "recommendedLevel": 7,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z1-03/vanguard",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_xiahou_dun",
+              "name": "하후돈",
+              "template": "cavalry",
+              "level": 6,
+              "region": "north_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_xiahou_lan",
+              "name": "하후란",
+              "template": "cavalry",
+              "level": 6,
+              "region": "north_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_han_hao",
+              "name": "한호",
+              "template": "infantry",
+              "level": 6,
+              "region": "north_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "z3_cav_a",
+              "name": "위군 기병",
+              "template": "cavalry",
+              "level": 5,
+              "region": "north_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "z3_cav_b",
+              "name": "위군 기병",
+              "template": "cavalry",
+              "level": 5,
+              "region": "north_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "z3_inf_a",
+              "name": "위군 보병",
+              "template": "infantry",
+              "level": 5,
+              "region": "north_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "z3_inf_b",
+              "name": "위군 보병",
+              "template": "infantry",
+              "level": 5,
+              "region": "north_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "z3_bow_a",
+              "name": "위군 궁병",
+              "template": "archer",
+              "level": 5,
+              "region": "north_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "z3_inf_c",
+              "name": "위군 보병",
+              "template": "infantry",
+              "level": 5,
+              "region": "north_road",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-03/rear",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3,
+        "side": "enemy"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_yu_jin",
+              "name": "우금",
+              "template": "spearman",
+              "level": 6,
+              "region": "north_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_li_dian",
+              "name": "이전",
+              "template": "infantry",
+              "level": 6,
+              "region": "north_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "z3_rear_a",
+              "name": "위군 창병",
+              "template": "spearman",
+              "level": 5,
+              "region": "north_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "z3_rear_d",
+              "name": "위군 보병",
+              "template": "infantry",
+              "level": 5,
+              "region": "north_road",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-03/fire",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 2,
+        "side": "player"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "terrain_change",
+          "region": "valley",
+          "hazard": "fire",
+          "duration": 4
+        },
+        {
+          "type": "apply_effect",
+          "side": "enemy",
+          "hpRatioDamage": 0.45,
+          "effect": "burn",
+          "duration": 2
+        },
+        {
+          "type": "apply_effect",
+          "side": "enemy",
+          "effect": "dispirit",
+          "duration": 2
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "A",
+    "maxSimultaneousUnits": 20
+  }
+}

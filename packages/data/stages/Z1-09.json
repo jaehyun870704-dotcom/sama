@@ -1,0 +1,297 @@
+{
+  "id": "Z1-09",
+  "arc": "upper",
+  "order": 109,
+  "title": "남쪽 네 고을",
+  "subtitle": "영릉·무릉·계양·장사",
+  "synopsis": "적벽 뒤 유비는 형주 남쪽의 네 고을을 거두러 나선다. 네 부대가 갈라져 영릉·무릉·계양·장사로 나아간다. 장사에는 늙은 명궁 황충이 있다. 네 성의 안채를 모두 차지하라.",
+  "mapId": "z1-09-four-commanderies",
+  "deployment": {
+    "forced": [
+      "z_liu_bei",
+      "z_liang",
+      "z_zhang_fei",
+      "z_guan_ping",
+      "z_zhao_yun",
+      "z_guan_yu"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "capture",
+      "target": "lingling_keep",
+      "order": 1
+    },
+    {
+      "type": "capture",
+      "target": "guiyang_keep",
+      "order": 2
+    },
+    {
+      "type": "capture",
+      "target": "wuling_keep",
+      "order": 3
+    },
+    {
+      "type": "capture",
+      "target": "changsha_keep",
+      "order": 4
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "turn_limit:18",
+      "extreme": "turn_limit:18"
+    },
+    {
+      "slot": 3,
+      "normal": "no_player_losses",
+      "extreme": "no_player_losses"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 10,
+      "recommendedLevel": 10,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 12,
+      "recommendedLevel": 12,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z1-09/lingling",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_liu_du",
+              "name": "유도",
+              "template": "strategist",
+              "level": 11,
+              "region": "lingling_yard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z_xing_daorong",
+              "name": "형도영",
+              "template": "infantry",
+              "level": 11,
+              "region": "lingling_out",
+              "behavior": "advance"
+            },
+            {
+              "id": "z9_ll_a",
+              "name": "영릉 군사",
+              "template": "spearman",
+              "level": 10,
+              "region": "lingling_yard",
+              "behavior": "hold"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-09/guiyang",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_zhao_fan",
+              "name": "조범",
+              "template": "strategist",
+              "level": 11,
+              "region": "guiyang_yard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z_chen_ying",
+              "name": "진응",
+              "template": "spearman",
+              "level": 11,
+              "region": "guiyang_out",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_bao_long",
+              "name": "포융",
+              "template": "infantry",
+              "level": 11,
+              "region": "guiyang_out",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-09/wuling",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_jin_xuan",
+              "name": "금선",
+              "template": "infantry",
+              "level": 11,
+              "region": "wuling_yard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z9_wl_a",
+              "name": "무릉 군사",
+              "template": "infantry",
+              "level": 10,
+              "region": "wuling_yard",
+              "behavior": "advance"
+            },
+            {
+              "id": "z9_wl_b",
+              "name": "무릉 궁병",
+              "template": "archer",
+              "level": 10,
+              "region": "wuling_yard",
+              "behavior": "hold"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-09/changsha",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_han_xuan",
+              "name": "한현",
+              "template": "strategist",
+              "level": 11,
+              "region": "changsha_yard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z_huang_zhong",
+              "name": "황충",
+              "template": "archer",
+              "level": 11,
+              "region": "changsha_gate",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_wei_yan",
+              "name": "위연",
+              "template": "cavalry",
+              "level": 11,
+              "region": "changsha_yard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z9_cs_a",
+              "name": "장사 군사",
+              "template": "spearman",
+              "level": 10,
+              "region": "changsha_yard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z9_cs_b",
+              "name": "장사 궁병",
+              "template": "archer",
+              "level": 10,
+              "region": "changsha_yard",
+              "behavior": "hold"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-09/huang-zhong",
+      "trigger": {
+        "type": "hp_below",
+        "unit": "z_huang_zhong",
+        "ratio": 0.5
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "apply_effect",
+          "targets": [
+            "z_han_xuan"
+          ],
+          "hpRatioDamage": 1
+        },
+        {
+          "type": "grant_control",
+          "targets": [
+            "z_huang_zhong",
+            "z_wei_yan"
+          ]
+        },
+        {
+          "type": "recover_units",
+          "targets": [
+            "z_huang_zhong"
+          ]
+        },
+        {
+          "type": "apply_effect",
+          "targets": [
+            "z_huang_zhong",
+            "z_wei_yan"
+          ],
+          "effect": "rally",
+          "duration": 2
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 30
+  }
+}

@@ -1,0 +1,212 @@
+{
+  "id": "Z1-06",
+  "arc": "upper",
+  "order": 106,
+  "title": "강동의 설전",
+  "subtitle": "남병산 칠성단에서 강가 나루로",
+  "synopsis": "오의 선비들을 말로 꺾고 손권과 맹약을 맺은 제갈량은 남병산에 칠성단을 쌓고 동남풍을 빈다. 바람이 불자 주유는 제갈량을 두려워해 정봉과 서성을 보낸다. 조운의 배가 기다리는 나루까지 빠져나가라.",
+  "mapId": "z1-06-nanping",
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_zhao_yun"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "reach",
+      "unit": "z_liang",
+      "target": "objective"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "turn_limit:6",
+      "extreme": "turn_limit:6"
+    },
+    {
+      "slot": 3,
+      "normal": "enemy_retreat_count:1",
+      "extreme": "enemy_retreat_count:2"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 8,
+      "recommendedLevel": 8,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 10,
+      "recommendedLevel": 10,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z1-06/guards",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z6_guard_a",
+              "name": "칠성단 파수병",
+              "template": "spearman",
+              "level": 8,
+              "region": "altar_guard",
+              "behavior": "passive"
+            },
+            {
+              "id": "z6_guard_b",
+              "name": "칠성단 파수병",
+              "template": "infantry",
+              "level": 8,
+              "region": "altar_guard",
+              "behavior": "passive"
+            },
+            {
+              "id": "z6_block_a",
+              "name": "길목 오군",
+              "template": "infantry",
+              "level": 8,
+              "region": "road_block",
+              "behavior": "hold"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-06/landing",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3,
+        "side": "enemy"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z6_land_a",
+              "name": "오군 보병",
+              "template": "infantry",
+              "level": 8,
+              "region": "landing",
+              "behavior": "advance"
+            },
+            {
+              "id": "z6_land_b",
+              "name": "오군 창병",
+              "template": "spearman",
+              "level": 8,
+              "region": "landing",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-06/xu-sheng",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 2,
+        "side": "enemy"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_xu_sheng",
+              "name": "서성",
+              "template": "navy",
+              "level": 9,
+              "region": "xu_sheng_boats",
+              "behavior": "advance"
+            },
+            {
+              "id": "z6_boat_a",
+              "name": "오군 수군",
+              "template": "navy",
+              "level": 8,
+              "region": "xu_sheng_boats",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-06/ding-feng",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 2,
+        "side": "enemy"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_ding_feng",
+              "name": "정봉",
+              "template": "cavalry",
+              "level": 9,
+              "region": "west_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "z6_cav_a",
+              "name": "오군 기병",
+              "template": "cavalry",
+              "level": 8,
+              "region": "west_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "z6_inf_a",
+              "name": "오군 보병",
+              "template": "infantry",
+              "level": 8,
+              "region": "west_road",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "A",
+    "maxSimultaneousUnits": 20
+  }
+}

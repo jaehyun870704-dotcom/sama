@@ -1,0 +1,222 @@
+{
+  "id": "Z1-07",
+  "arc": "upper",
+  "order": 107,
+  "title": "화용도",
+  "subtitle": "오림에서 화용도로",
+  "synopsis": "적벽의 불길에 대군을 잃은 조조가 화용도로 달아난다. 조운과 장비가 길목에서 패잔병을 치고, 화용도 좁은 길에서는 관우가 기다린다. 조조를 쓰러뜨리지 말고, 관우가 조조와 마주치게 하라.",
+  "mapId": "z1-07-huarong",
+  "deployment": {
+    "forced": [
+      "z_liu_bei",
+      "z_guan_yu",
+      "z_zhang_fei",
+      "z_zhao_yun",
+      "z_liang"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "dialogue_complete",
+      "target": "huarong"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    },
+    {
+      "type": "retreat",
+      "unit": "z_cao_cao"
+    },
+    {
+      "type": "retreat",
+      "unit": "z_guan_yu"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "turn_limit:5",
+      "extreme": "turn_limit:5"
+    },
+    {
+      "slot": 3,
+      "normal": "enemy_retreat_count:6",
+      "extreme": "enemy_retreat_count:7"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 8,
+      "recommendedLevel": 8,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 10,
+      "recommendedLevel": 10,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z1-07/remnant",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_xu_chu",
+              "name": "허저",
+              "template": "cavalry",
+              "level": 9,
+              "region": "wulin",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_zhang_liao",
+              "name": "장료",
+              "template": "cavalry",
+              "level": 9,
+              "region": "wulin",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_xu_huang",
+              "name": "서황",
+              "template": "infantry",
+              "level": 9,
+              "region": "wulin",
+              "behavior": "advance"
+            },
+            {
+              "id": "z7_inf_a",
+              "name": "패잔병",
+              "template": "infantry",
+              "level": 8,
+              "region": "wulin",
+              "behavior": "advance"
+            },
+            {
+              "id": "z7_spear_a",
+              "name": "패잔병",
+              "template": "spearman",
+              "level": 8,
+              "region": "wulin",
+              "behavior": "advance"
+            },
+            {
+              "id": "z7_bow_a",
+              "name": "패잔 궁병",
+              "template": "archer",
+              "level": 8,
+              "region": "wulin",
+              "behavior": "advance"
+            }
+          ]
+        },
+        {
+          "type": "apply_effect",
+          "side": "enemy",
+          "hpRatioDamage": 0.25,
+          "effect": "dispirit",
+          "duration": 3
+        }
+      ]
+    },
+    {
+      "id": "Z1-07/cao-cao",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3,
+        "side": "enemy"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_cao_cao",
+              "name": "조조",
+              "template": "lord",
+              "level": 9,
+              "region": "cao_arrive",
+              "behavior": "race",
+              "goalRegion": "guan_side"
+            },
+            {
+              "id": "z7_guard_a",
+              "name": "호위병",
+              "template": "infantry",
+              "level": 8,
+              "region": "cao_arrive",
+              "behavior": "advance"
+            },
+            {
+              "id": "z7_guard_b",
+              "name": "호위병",
+              "template": "spearman",
+              "level": 8,
+              "region": "cao_arrive",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-07/meet",
+      "trigger": {
+        "type": "units_adjacent",
+        "unitA": "z_guan_yu",
+        "unitB": "z_cao_cao"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "play_dialogue",
+          "dialogueId": "huarong"
+        }
+      ]
+    }
+  ],
+  "dialogues": [
+    {
+      "id": "huarong",
+      "speaker": "z_cao_cao",
+      "text": "관 장군, 옛날 오관을 지날 때의 일을 기억하시오? 이 늙은 몸에게 길을 열어 주시오.",
+      "options": [
+        {
+          "id": "spare",
+          "text": "관우가 말머리를 돌려 길을 비킨다",
+          "correct": true
+        },
+        {
+          "id": "stand",
+          "text": "관우가 칼을 들었다가 끝내 내리친다… 내리치지 못한다",
+          "correct": true
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "A",
+    "maxSimultaneousUnits": 20
+  }
+}

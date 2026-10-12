@@ -1,0 +1,364 @@
+{
+  "id": "Z1-04",
+  "initialPhase": "evac",
+  "arc": "upper",
+  "order": 104,
+  "title": "신야를 비우다",
+  "subtitle": "신야성과 백하",
+  "synopsis": "하후돈을 물리쳤으나 조조가 몸소 대군을 이끌고 남하한다. 작은 신야성으로는 버틸 수 없다. 백성을 먼저 백하 건너로 내보내고, 빈 성에 들어온 적은 불로, 물을 건너는 적은 물로 꺾어라.",
+  "mapId": "z1-04-xinye",
+  "deployment": {
+    "forced": [
+      "z_liu_bei",
+      "z_guan_yu",
+      "z_zhang_fei",
+      "z_zhao_yun",
+      "z_liang",
+      "z_guan_ping",
+      "z_mi_zhu"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "annihilate"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    },
+    {
+      "type": "retreat",
+      "unit": "z_liu_bei"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "unit_survives",
+      "extreme": "unit_survives"
+    },
+    {
+      "slot": 3,
+      "normal": "turn_limit:7",
+      "extreme": "turn_limit:7"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 6,
+      "recommendedLevel": 6,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 8,
+      "recommendedLevel": 8,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z1-04/people",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "allyAi",
+          "units": [
+            {
+              "id": "z4_people_a",
+              "name": "신야 백성",
+              "template": "civilian",
+              "level": 6,
+              "at": {
+                "x": 12,
+                "y": 8
+              },
+              "behavior": "escortee",
+              "goalRegion": "exit"
+            },
+            {
+              "id": "z4_people_b",
+              "name": "신야 백성",
+              "template": "civilian",
+              "level": 6,
+              "at": {
+                "x": 13,
+                "y": 9
+              },
+              "behavior": "escortee",
+              "goalRegion": "exit"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-04/cao-ren",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_cao_ren",
+              "name": "조인",
+              "template": "cavalry",
+              "level": 7,
+              "region": "west_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "z_cao_hong",
+              "name": "조홍",
+              "template": "cavalry",
+              "level": 7,
+              "region": "west_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "z4_inf_a",
+              "name": "위군 보병",
+              "template": "infantry",
+              "level": 6,
+              "region": "west_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "z4_inf_b",
+              "name": "위군 보병",
+              "template": "infantry",
+              "level": 6,
+              "region": "west_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "z4_spear_a",
+              "name": "위군 창병",
+              "template": "spearman",
+              "level": 6,
+              "region": "west_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "z4_bow_a",
+              "name": "위군 궁병",
+              "template": "archer",
+              "level": 6,
+              "region": "west_road",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-04/fire",
+      "phase": "evac",
+      "trigger": {
+        "type": "region_held",
+        "region": "town",
+        "by": "enemy",
+        "n": 1
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "terrain_change",
+          "region": "town",
+          "hazard": "fire",
+          "duration": 3
+        },
+        {
+          "type": "apply_effect",
+          "targets": [
+            "z_cao_ren",
+            "z_cao_hong",
+            "z4_inf_a",
+            "z4_inf_b",
+            "z4_spear_a",
+            "z4_bow_a"
+          ],
+          "hpRatioDamage": 0.4,
+          "effect": "burn",
+          "duration": 2
+        },
+        {
+          "type": "set_phase",
+          "phase": "fire"
+        }
+      ]
+    },
+    {
+      "id": "Z1-04/fire-late",
+      "phase": "evac",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 5,
+        "side": "player"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "terrain_change",
+          "region": "town",
+          "hazard": "fire",
+          "duration": 3
+        },
+        {
+          "type": "apply_effect",
+          "targets": [
+            "z_cao_ren",
+            "z_cao_hong",
+            "z4_inf_a",
+            "z4_inf_b",
+            "z4_spear_a",
+            "z4_bow_a"
+          ],
+          "hpRatioDamage": 0.4,
+          "effect": "burn",
+          "duration": 2
+        },
+        {
+          "type": "set_phase",
+          "phase": "fire"
+        }
+      ]
+    },
+    {
+      "id": "Z1-04/xu-chu",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3,
+        "side": "enemy"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_xu_chu",
+              "name": "허저",
+              "template": "cavalry",
+              "level": 7,
+              "region": "northwest",
+              "behavior": "advance"
+            },
+            {
+              "id": "z4_cav_a",
+              "name": "호위 기병",
+              "template": "cavalry",
+              "level": 6,
+              "region": "northwest",
+              "behavior": "advance"
+            },
+            {
+              "id": "z4_cav_b",
+              "name": "호위 기병",
+              "template": "cavalry",
+              "level": 6,
+              "region": "northwest",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-04/flood",
+      "phase": "fire",
+      "trigger": {
+        "type": "unit_reaches",
+        "unit": "z_xu_chu",
+        "region": "crossing"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "apply_effect",
+          "targets": [
+            "z_xu_chu",
+            "z4_cav_a",
+            "z4_cav_b"
+          ],
+          "hpRatioDamage": 0.4,
+          "effect": "slow",
+          "duration": 2
+        },
+        {
+          "type": "apply_effect",
+          "targets": [
+            "z_xu_chu",
+            "z4_cav_a",
+            "z4_cav_b"
+          ],
+          "effect": "dispirit",
+          "duration": 2
+        },
+        {
+          "type": "set_phase",
+          "phase": "water"
+        }
+      ]
+    },
+    {
+      "id": "Z1-04/flood-late",
+      "phase": "fire",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 7,
+        "side": "player"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "apply_effect",
+          "targets": [
+            "z_xu_chu",
+            "z4_cav_a",
+            "z4_cav_b"
+          ],
+          "hpRatioDamage": 0.4,
+          "effect": "slow",
+          "duration": 2
+        },
+        {
+          "type": "apply_effect",
+          "targets": [
+            "z_xu_chu",
+            "z4_cav_a",
+            "z4_cav_b"
+          ],
+          "effect": "dispirit",
+          "duration": 2
+        },
+        {
+          "type": "set_phase",
+          "phase": "water"
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "A",
+    "maxSimultaneousUnits": 20
+  }
+}

@@ -1,0 +1,283 @@
+{
+  "id": "Z1-05",
+  "arc": "upper",
+  "order": 105,
+  "title": "강하로 가는 배",
+  "subtitle": "한진에서 강하 나루까지",
+  "synopsis": "장판에서 조조의 기병에 쫓긴 유비 일행은 한진 나루에서 관우의 배를 만난다. 백성을 실은 배가 한수를 따라 강하로 내려가는 동안, 강가에는 복병이 숨어 있고 뒤에서는 추격 기병이 따라붙는다. 배를 지켜 강하 나루에 닿아라.",
+  "mapId": "z1-05-hanjin",
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_guan_yu",
+      "z_zhang_fei",
+      "z_zhao_yun",
+      "z_mi_fang"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "reach",
+      "unit": "z5_ship",
+      "target": "objective"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    },
+    {
+      "type": "retreat",
+      "unit": "z5_ship"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "player_losses_lt:2",
+      "extreme": "player_losses_lt:2"
+    },
+    {
+      "slot": 3,
+      "normal": "turn_limit:8",
+      "extreme": "turn_limit:8"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 7,
+      "recommendedLevel": 7,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 9,
+      "recommendedLevel": 9,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z1-05/ship",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "allyAi",
+          "units": [
+            {
+              "id": "z5_ship",
+              "name": "피난민 배",
+              "template": "navy",
+              "level": 7,
+              "region": "ship_start",
+              "behavior": "escortee",
+              "goalRegion": "objective"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-05/ambush",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z5_bow_n1",
+              "name": "강가 복병",
+              "template": "archer",
+              "level": 7,
+              "region": "north_ambush",
+              "behavior": "hold"
+            },
+            {
+              "id": "z5_bow_n2",
+              "name": "강가 복병",
+              "template": "archer",
+              "level": 7,
+              "region": "north_ambush",
+              "behavior": "hold"
+            },
+            {
+              "id": "z5_bow_s1",
+              "name": "강가 복병",
+              "template": "archer",
+              "level": 7,
+              "region": "south_ambush",
+              "behavior": "hold"
+            },
+            {
+              "id": "z5_bow_s2",
+              "name": "강가 복병",
+              "template": "archer",
+              "level": 7,
+              "region": "south_ambush",
+              "behavior": "hold"
+            },
+            {
+              "id": "z5_ford_n",
+              "name": "여울 복병",
+              "template": "spearman",
+              "level": 7,
+              "region": "north_ford",
+              "behavior": "hold"
+            },
+            {
+              "id": "z5_ford_s",
+              "name": "여울 복병",
+              "template": "infantry",
+              "level": 7,
+              "region": "south_ford",
+              "behavior": "hold"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-05/wen-pin",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3,
+        "side": "enemy"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_wen_pin",
+              "name": "문빙",
+              "template": "cavalry",
+              "level": 8,
+              "region": "north_pursuit",
+              "behavior": "advance"
+            },
+            {
+              "id": "z5_cav_n1",
+              "name": "추격 기병",
+              "template": "cavalry",
+              "level": 7,
+              "region": "north_pursuit",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-05/cao-chun",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 5,
+        "side": "enemy"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z_cao_chun",
+              "name": "조순",
+              "template": "cavalry",
+              "level": 8,
+              "region": "north_pursuit",
+              "behavior": "advance"
+            },
+            {
+              "id": "z5_cav_s1",
+              "name": "호표기",
+              "template": "cavalry",
+              "level": 7,
+              "region": "north_pursuit",
+              "behavior": "advance"
+            },
+            {
+              "id": "z5_inf_s2",
+              "name": "추격 보병",
+              "template": "infantry",
+              "level": 7,
+              "region": "south_pursuit",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-05/liu-qi",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 4,
+        "side": "allyAi"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "allyAi",
+          "units": [
+            {
+              "id": "z_liu_qi",
+              "name": "유기",
+              "template": "navy",
+              "level": 8,
+              "region": "liu_qi_boats",
+              "behavior": "advance"
+            },
+            {
+              "id": "z5_jx_boat",
+              "name": "강하 수군",
+              "template": "navy",
+              "level": 7,
+              "region": "liu_qi_boats",
+              "behavior": "advance"
+            },
+            {
+              "id": "z5_jx_foot",
+              "name": "강하 군사",
+              "template": "infantry",
+              "level": 7,
+              "region": "liu_qi_bank",
+              "behavior": "advance"
+            },
+            {
+              "id": "z5_jx_foot2",
+              "name": "강하 군사",
+              "template": "infantry",
+              "level": 7,
+              "region": "liu_qi_bank",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "A",
+    "maxSimultaneousUnits": 20
+  }
+}

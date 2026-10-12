@@ -1,0 +1,174 @@
+{
+  "id": "Z1-02",
+  "arc": "upper",
+  "order": 102,
+  "title": "융중의 초가",
+  "subtitle": "형주 융중 산길",
+  "synopsis": "숙부 제갈현을 여읜 제갈량은 아우 제갈균과 함께 양양 서쪽 융중에 초가를 짓기로 한다. 그러나 산길에는 난리를 틈탄 도적 떼가 길을 막고 있다. 도적 두목을 물리치고 초가에 닿아라.",
+  "mapId": "z1-02-longzhong",
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_jun"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "z2_chief",
+      "order": 1
+    },
+    {
+      "type": "reach",
+      "unit": "z_liang",
+      "target": "objective",
+      "order": 2
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "no_player_losses",
+      "extreme": "no_player_losses"
+    },
+    {
+      "slot": 3,
+      "normal": "turn_limit:14",
+      "extreme": "turn_limit:14"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 4,
+      "recommendedLevel": 4,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 6,
+      "recommendedLevel": 6,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "Z1-02/bandits",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "z2_chief",
+              "name": "산적 두목",
+              "template": "bandit",
+              "level": 5,
+              "region": "chief_camp",
+              "behavior": "hold"
+            },
+            {
+              "id": "z2_guard_a",
+              "name": "산적",
+              "template": "bandit",
+              "level": 4,
+              "region": "chief_guard",
+              "behavior": "hold"
+            },
+            {
+              "id": "z2_bridge_a",
+              "name": "도적 졸개",
+              "template": "infantry",
+              "level": 4,
+              "region": "bridge_east",
+              "behavior": "advance"
+            },
+            {
+              "id": "z2_road_a",
+              "name": "도적 졸개",
+              "template": "infantry",
+              "level": 4,
+              "region": "road_ambush",
+              "behavior": "advance"
+            },
+            {
+              "id": "z2_road_b",
+              "name": "도적 졸개",
+              "template": "infantry",
+              "level": 4,
+              "region": "road_ambush",
+              "behavior": "advance"
+            },
+            {
+              "id": "z2_bow",
+              "name": "산적 궁수",
+              "template": "archer",
+              "level": 4,
+              "region": "archer_hill",
+              "behavior": "hold"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z1-02/scatter",
+      "trigger": {
+        "type": "unit_retreats",
+        "unit": "z2_chief"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "dismiss_units",
+          "side": "enemy"
+        }
+      ]
+    },
+    {
+      "id": "Z1-02/xu-shu",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 1,
+        "side": "allyAi"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "allyAi",
+          "units": [
+            {
+              "id": "z_xu_shu",
+              "name": "서서",
+              "template": "infantry",
+              "level": 5,
+              "region": "xu_arrive",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "A",
+    "maxSimultaneousUnits": 20
+  }
+}
