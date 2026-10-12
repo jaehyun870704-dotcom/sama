@@ -117,7 +117,7 @@ export function condText(c:RecruitCond,x:RecruitContext):string{
     case 'extreme':return `「${x.stageName(c.stage)}」 극한 승리`;
     case 'level':return `사마의 Lv.${c.level} (지금 ${x.heroLevel})`;
     case 'officer':return `${c.name} 먼저 등용`;
-    case 'seals':return `인장 ${c.count}개 (지금 ${x.seals})`;
+    case 'seals':return `연의 천명 ${c.count}개 (지금 ${x.seals})`;
     case 'challenge':return `도전의 관문 ${c.step}단계 돌파 (지금 ${x.challenges})`;
     case 'training':return `수련 ${c.wins}승 (지금 ${x.trainingWins})`;
     case 'ending':return `결말 ${c.count}개 보기 (지금 ${x.endings})`;

@@ -37,6 +37,8 @@ export interface MetaState {
   recruited?:string[];
   /** 계승: 연 초한 영웅의 유산들과 지금 계승한 영웅(chuhan.ts) */
   legacies?:string[];heir?:string;
+  /** 쓸 천명으로 바꿔 준 연의 천명(옛 인장) — 'S1-01:normal:2' 꼴. 같은 것을 두 번 주지 않는다. */
+  sealPaid?:string[];
 }
 export interface Unlock {id:string;name:string;cost:number;effect:string}
 
@@ -66,9 +68,11 @@ export function readMeta(raw:string|null):MetaState{
       endings:Array.isArray(m.endings)?m.endings.filter(x=>typeof x==='string'&&ALL_ENDINGS.includes(x)):[],
       ...(Array.isArray(m.customOfficers)?{customOfficers:readCustoms(m.customOfficers)}:{}),
       ...(Array.isArray(m.recruited)?{recruited:strList(m.recruited,80)}:{}),
+      ...(Array.isArray(m.sealPaid)?{sealPaid:[...new Set(m.sealPaid.filter((x):x is string=>typeof x==='string'&&SEAL_KEY.test(x)))].slice(0,400)}:{}),
       ...cleanProgress(m)};
   }catch{return freshMeta();}
 }
+const SEAL_KEY=/^S[1-3]-\d\d:(normal|extreme):[1-3]$/;
 const isName=(k:string)=>k.length>0&&k.length<=12;
 const strList=(v:unknown,limit:number)=>Array.isArray(v)?[...new Set(v.filter((x):x is string=>typeof x==='string'&&x.length<=40))].slice(0,limit):[];
 /** 연구·장수 효과·장수 최고 레벨을 정리한다(없는 칸·이상한 값은 버린다). */
@@ -96,6 +100,17 @@ export function buyUnlock(m:MetaState,id:string){
 }
 /** 연의 전장을 이긴 순간 바로 기록한다(원정이 나중에 끝나도 남는다). */
 export function recordStory(m:MetaState,stage:string){if(!m.chronicle.includes(stage))m.chronicle.push(stage);}
+/**
+ * 연의 천명(옛 인장): 장마다 일반 3 + 극한 3. 처음 얻을 때마다 쓸 천명 1을 준다(연구에 쓴다).
+ * earned는 '장:난이도' → 얻은 칸 번호. 준 것은 sealPaid에 남아, 다시 이기거나 지난 기록을 읽어도 두 번 주지 않는다.
+ */
+export function paySeals(m:MetaState,earned:Readonly<Record<string,readonly number[]|undefined>>,stageIds:readonly string[]):number{
+  const paid=new Set(m.sealPaid??[]);let gain=0;
+  for(const id of stageIds)for(const d of ['normal','extreme'] as const)for(const slot of earned[`${id}:${d}`]??[]){
+    const k=`${id}:${d}:${slot}`;if(!SEAL_KEY.test(k)||paid.has(k))continue;paid.add(k);gain++;}
+  if(gain){m.sealPaid=[...paid];m.mandate+=gain;m.earned+=gain;}
+  return gain;
+}
 /** 원정이 끝났을 때 한 번만 천명을 준다. */
 export function settleRun(m:MetaState,run:Run){
   if(run.mandateGranted||(run.status!=='won'&&run.status!=='lost'))return 0;

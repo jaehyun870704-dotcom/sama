@@ -102,7 +102,7 @@ export function showTitle(host:RunHost){
   host.modal(`<div class="title-screen"><div class="title-bg" aria-hidden="true"></div><img class="title-hero" src="sima-portrait-v2.webp" alt="부채를 든 사마의 창작 초상">
   <div class="title-copy"><p class="title-eyebrow">삼국지 · 사마의 연대기</p><h1 class="title-logo">사마의전</h1><p class="title-tag">칼을 거두고, 때를 기다린다.</p>
   <nav class="title-menu" aria-label="첫 화면 메뉴">
-    <div class="tm-group">${item('title-start','시작',c.next?`연의 · ${esc(c.next)}`:'연의 32장 완료 · 극한 인장에 도전','primary')}${resume&&last?item('title-resume','이어하기',`${esc(last.where)}${last.turn?` · ${last.turn}턴`:''} · 내 차례부터`):''}${item('title-load','불러오기','저장 칸에서 기록을 불러온다')}</div>
+    <div class="tm-group">${item('title-start','시작',c.next?`연의 · ${esc(c.next)}`:'연의 32장 완료 · 극한 천명 조건에 도전','primary')}${resume&&last?item('title-resume','이어하기',`${esc(last.where)}${last.turn?` · ${last.turn}턴`:''} · 내 차례부터`):''}${item('title-load','불러오기','저장 칸에서 기록을 불러온다')}</div>
     <div class="tm-group">${item('title-codex','도감 보기','인물 · 병종 · 책략 · 보물 · 갈림길')}${item('title-custom','신장수 만들기','나만의 장수 · 신세력')}${item('title-lobby','본영','수련장 · 도전 · 등용 · 연구')}</div>
     <div class="tm-group sub">${item('title-roguelike','천명의 길','회차마다 갈림길을 골라 결말까지','title-sub')}</div>
   </nav>
@@ -121,9 +121,9 @@ export function showHub(host:RunHost){
   const meta=loadMeta(),sc=scenarioSummary(),run=loadRun(),c=host.chronicleSummary();
   host.modal(`<div class="lobby"><div class="lobby-bg" aria-hidden="true"></div>
   <header class="lobby-head"><div><p class="eyebrow">본영 · 사마의의 군막</p><h2>천하를 향한 다음 수</h2></div>
-  <div class="hub-stats"><span><b>${c.won}/${c.total}</b><small>이긴 연의</small></span><span><b>${c.seals}/${c.sealMax}</b><small>인장</small></span><span><b>${(meta.recruited??[]).length}</b><small>등용</small></span><span><b>${meta.mandate}</b><small>천명</small></span></div></header>
+  <div class="hub-stats"><span><b>${c.won}/${c.total}</b><small>이긴 연의</small></span><span><b>${c.seals}/${c.sealMax}</b><small>연의 천명</small></span><span><b>${(meta.recruited??[]).length}</b><small>등용</small></span><span><b>${meta.mandate}</b><small>천명</small></span></div></header>
   <div class="lobby-main">
-    ${tile('hub-chronicle','연',c.won?'연의 이어하기':'연의 시작','본편 · 상편 11장 · 중편 14장 · 하편 7장 · 일반/극한과 인장',c.next?`다음 · ${esc(c.next)}`:'32장 완료 · 극한 인장과 인장 보상을 모아 보자','primary wide')}
+    ${tile('hub-chronicle','연',c.won?'연의 이어하기':'연의 시작','본편 · 상편 11장 · 중편 14장 · 하편 7장 · 일반/극한과 천명 조건',c.next?`다음 · ${esc(c.next)}`:'32장 완료 · 극한 천명 조건과 천명 보상을 모아 보자','primary wide')}
     ${tile('hub-training','수','수련장','막혔을 때 레벨업 · 다음 연의 장 권장 레벨까지','승리마다 경험치 · 연의 장수 모두')}
     ${tile('hub-challenge','관','도전의 관문','10단계 · 단계마다 적이 늘고 강해진다','처음 넘는 단계마다 보물')}
     ${tile('hub-recruit','등','등용','계보마다 조건을 채워 장수를 휘하로 · 연의에 데려간다',`등용 ${(meta.recruited??[]).length}/${RECRUITABLE.length}명`)}
