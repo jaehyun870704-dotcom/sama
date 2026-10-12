@@ -145,7 +145,7 @@ export function showHub(host:RunHost){
     ${tile('hub-chronicle','사','사마의전',`연의 ${c.total}장 · 일반/극한과 천명 조건`,c.next?`다음 · ${esc(c.next)}`:`${c.total}장 완료 · 극한 천명 조건과 천명 보상을 모아 보자`,'primary')}
     ${tile('hub-zhuge','제','제갈량전',`연의 ${host.zhugeSummary().total}장 · 피난길에서 오장원까지`,host.zhugeSummary().next?`다음 · ${esc(host.zhugeSummary().next!)}`:'이어지는 장을 기다린다','primary')}
     ${tile('hub-training','수','수련장','막혔을 때 레벨업 · 다음 연의 장 권장 레벨까지','승리마다 경험치 · 연의 장수 모두')}
-    ${tile('hub-challenge','관','도전의 관문','10단계 · 단계마다 적이 늘고 강해진다','처음 넘는 단계마다 보물')}
+    ${tile('hub-challenge','관','도전의 관문','10단계 · 단계마다 적이 늘고 강해진다','처음 넘는 단계마다 장비·금 · 6~9단계는 사신보옥')}
     ${tile('hub-archive','서','시나리오 보기','지난 이야기를 다시 보고, 이긴 장을 다시 싸운다',`결말 ${meta.endings.length}/${ALL_ENDINGS.length}`)}
     ${tile('hub-shop','상','상점','장비·도구를 사고팔고 장수의 장비를 정비한다',host.shopLine())}
     ${tile('hub-collections','감','도감','인물 · 병종 · 책략 · 보물 · 갈림길',`고유 보물 ${treasureSummary().owned}/${treasureSummary().total}`)}

@@ -226,6 +226,26 @@ describe("고유 기능 · 엔진", () => {
   });
 });
 
+describe("사신 책략", () => {
+  it("청룡: 범위 안의 적에게 낙뢰가 다섯 번 무작위로 떨어진다", () => {
+    const azure: StrategyDef = { id: "jewelAzure", name: "청룡", element: "thunder", shape: "spread", range: 4, radius: 2, mpCost: 50, power: 110, strikes: 5, inflicts: ["shock"], targetSides: ["enemy"] };
+    const { state, battle } = field([{ id: "a", side: "player", cls: "mountedStrategist", x: 1, y: 1 }, { id: "e1", side: "enemy", cls: "infantry", x: 4, y: 1 }, { id: "e2", side: "enemy", cls: "infantry", x: 4, y: 2 }], 5, new Map([["jewelAzure", azure]]));
+    const a = state.get("a"); a.strategies = ["jewelAzure"]; a.stats.maxMp = a.mp = 99;
+    for (const id of ["e1", "e2"]) state.get(id).stats.maxHp = state.get(id).hp = 999;
+    expect(battle.execute({ kind: "strategy", unit: "a", strategy: "jewelAzure", at: { x: 4, y: 1 } }).ok).toBe(true);
+    const e = state.log.find((x) => x.t === "strategy");
+    expect(e && e.t === "strategy" && e.targets.length).toBe(5);
+    expect(a.mp).toBe(49);
+  });
+  it("현무: 맵 위 모든 부대의 능력이 무작위로 바뀐다", () => {
+    const tortoise: StrategyDef = { id: "jewelTortoise", name: "현무", element: "earth", shape: "global", range: 99, radius: 0, mpCost: 50, power: 0, mutate: true, targetSides: ["enemy", "player", "ally", "allyAi"] };
+    const { state, battle } = field([{ id: "a", side: "player", cls: "taoist", x: 1, y: 1 }, { id: "b", side: "player", cls: "infantry", x: 1, y: 2 }, { id: "e", side: "enemy", cls: "infantry", x: 7, y: 7 }], 5, new Map([["jewelTortoise", tortoise]]));
+    const a = state.get("a"); a.strategies = ["jewelTortoise"]; a.stats.maxMp = a.mp = 99;
+    expect(battle.execute({ kind: "strategy", unit: "a", strategy: "jewelTortoise", at: a.pos }).ok).toBe(true);
+    for (const id of ["a", "b", "e"]) expect(state.get(id).statuses.length, id).toBeGreaterThan(0);
+  });
+});
+
 describe("소모품(도구)", () => {
   it("열한 가지 소모품: 복숭아·술은 팔지 않는다", () => {
     expect(CONSUMABLES.map((c) => c.name)).toEqual(["회복의 콩", "회복의 쌀", "회복의 복숭아", "신비로운 물", "신비로운 술", "해독약", "각성약", "도포약", "양치약", "만능약", "인수"]);
