@@ -23,7 +23,7 @@ const hit = (a: Unit, d: Unit) => { const ctx = createDamageContext(a, d, "physi
 
 describe("이름있는 장수 고유특성", () => {
   it("게임에 나오는 이름있는 장수 96명이 셋씩, 288개 모두 다른 이름·다른 효과를 갖는다", () => {
-    expect(SIGNATURE_NAMES).toHaveLength(96);
+    expect(SIGNATURE_NAMES).toHaveLength(97);
     const all = SIGNATURE_NAMES.flatMap((k) => signatureSet(k));
     expect(all).toHaveLength(288);
     expect(new Set(all.map((g) => g.name)).size).toBe(288);

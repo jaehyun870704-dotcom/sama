@@ -235,6 +235,8 @@ const S: Record<string, Signature> = {
     hooks: { onTurnStart(u, p) { const a = [u, ...around(u, 3, "friend")].filter((x) => x.hp < x.stats.maxHp).sort((x, y) => hpRate(x) - hpRate(y))[0]; if (a) heal(a, pct(12, sigMul(p)) / 100); } } },
   범증: { name: "옥결", text: (t = 1) => `이름있는 적 장수에게 주는 책략 피해 ${pct(25, sigMul(t))}% 증가.`,
     hooks: { onAttack(ctx, _s, p) { if (strat(ctx) && isNamedOfficer(ctx.defender)) ctx.attackMul *= 1 + pct(25, sigMul(p)) / 100; } } },
+  우희: { name: "패왕별희", text: (t = 1) => `회피 확률 +${pct(10, sigMul(t))}%p. 체력이 절반 이하이면 받는 피해 ${pct(15, sigMul(t))}% 감소.`,
+    hooks: { onDefend(ctx, s, p) { ctx.accuracyMod -= pct(10, sigMul(p)); if (hpRate(s) <= .5) ctx.reduction = combine(ctx.reduction, pct(15, sigMul(p)) / 100); } } },
   영포: { name: "경형의 맹장", text: (t = 1) => `물리 공격으로 입힌 피해의 ${pct(15, sigMul(t))}%만큼 체력을 회복한다.`,
     hooks: { onAttack(ctx, _s, p) { if (phys(ctx)) ctx.lifesteal += pct(15, sigMul(p)) / 100; } } },
   팽월: { name: "유격", text: (t = 1) => `숲·갈대늪 칸에서 회피 +${pct(20, sigMul(t))}%p.`,
