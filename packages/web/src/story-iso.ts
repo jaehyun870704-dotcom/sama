@@ -1268,7 +1268,9 @@ function build(kind:Kind,seed:number,place='',clear:Set<string>=new Set(),artNo=
       add(bonsai(8.6,0.5,R));add(bonsai(0.5,12.4,R));
       break;
     case 'tent':
-      add(rug(4,4,6,5,'#5a3a22'));add(table(5.4,5.2,3,2,R));add(rack(0.4,3,3));add(brazier(1.4,9,R));add(brazier(9.5,1.4,R));add(banner(0.6,0.6,'#8a1f1a'));add(armorStand(3,0.6));add(chest(6,0.5));add(chest(0.5,12,'#4a3018'));add(cushion(4.6,6));add(cushion(8.6,6.4));add(barrel(12,0.6));add(warDrum(0.6,6.2));add(torch(3,9.6,R));add(torch(9.6,3,R));
+      add(rug(4,4,6,5,'#5a3a22'));add(lowTable(5.4,5.2,3,2,R));add(rack(0.4,3,3));add(brazier(1.4,9,R));add(brazier(9.5,1.4,R));add(banner(0.6,0.6,'#8a1f1a'));add(armorStand(3,0.6));add(chest(6,0.5));add(chest(0.5,12,'#4a3018'));
+      add(cushion(4.5,5.6));add(cushion(8.9,6.5));add(cushion(6.1,8,'#2a3a6a'));add(cushion(7.7,4.1,'#2a3a6a'));
+      add(barrel(12,0.6));add(warDrum(0.6,6.2));add(torch(3,9.6,R));add(torch(9.6,3,R));
       break;
     case 'store':
       for(let i=0;i<5;i++)add(crate(0.4+(i%2)*1.1,1.4+i*1.6,0.9));for(let i=0;i<4;i++)add(sacks(3+i*1.4,0.3,R));add(rack(10,0.4,3));add(lamp(6,6));for(let i=0;i<4;i++)add(barrel(13.5+(i%2)*0.6,0.4+Math.floor(i/2)*0.6));add(hay(2.6,9,R));add(chest(0.5,10.5,'#4a3018'));

@@ -10,7 +10,7 @@
  * 같은 그림의 윗몸과 아랫몸(옷자락·다리)을 나눠 기울이고 흔들어 만든다.
  *
  * 시트 배치는 도트 인물(story-pixel)과 같다: 9열(자세) × 3행(앞·뒤·옆).
- * 저장된 8열 원화에는 런타임에서 좌식 한 칸을 만들어 덧붙인다.
+ * 저장된 8열 원화에는 원화의 실제 무릎 자세를 좌식 한 칸으로 덧붙인다.
  */
 import type {Look} from './scenario-types.ts';
 import {officerLook} from './officer-art.ts';
@@ -200,15 +200,17 @@ function trimBleed(src:HTMLCanvasElement,sw:number,sh:number){
 }
 function paintedStorySheet(url:string,src:HTMLCanvasElement){
   const key=`painted:${url}`,hit=sheets.get(key);if(hit)return hit;
-  const cv=canvas(FIG_W*PX_COLS,FIG_H*PX_ROWS),g=cv.getContext('2d')!,sw=src.width/8,sh=src.height/PX_ROWS;
+  const cv=canvas(FIG_W*PX_COLS,FIG_H*PX_ROWS),g=cv.getContext('2d')!,sh=src.height/PX_ROWS,sourceCols=Math.round(src.width/sh),sw=src.width/sourceCols;
   // 칸을 꽉 채워 그린 시트(인물 키가 칸의 90% 넘게)는 기존 시트처럼 키 86%·발끝 94%로 줄여 담는다.
   // 그대로 담으면 다른 장수보다 머리 하나쯤 커 보이고, 발끝·창끝이 칸 가장자리에서 잘린다.
   const fit=figureFit(src,sw,sh),dw=FIG_W*fit.scale,dh=FIG_H*fit.scale,dx=(FIG_W-dw)/2,dy=fit.dy;
   src=trimBleed(src,sw,sh);
   for(let row=0;row<PX_ROWS;row++){
     for(let col=0;col<8;col++)g.drawImage(src,col*sw,row*sh,sw,sh,col*FIG_W+dx,row*FIG_H+dy,dw,dh);
-    const stand=canvas(FIG_W,FIG_H);stand.getContext('2d')!.drawImage(src,0,row*sh,sw,sh,dx,dy,dw,dh);
-    g.drawImage(poseFrom(stand,'sit'),PX_POSE.sit*FIG_W,row*FIG_H);
+    // 아홉째 칸 원화가 들어오면 그것을 쓰고, 기존 8열 시트는 실제로 그린
+    // 여섯째 칸(무릎 자세)을 쓴다. 서 있는 다리를 눌러 만든 좌식은 쓰지 않는다.
+    const sitCol=sourceCols>8?8:PX_POSE.kneel;
+    g.drawImage(src,sitCol*sw,row*sh,sw,sh,PX_POSE.sit*FIG_W+dx,row*FIG_H+dy,dw,dh);
   }
   const out=cv.toDataURL('image/png');sheets.set(key,out);return out;
 }
