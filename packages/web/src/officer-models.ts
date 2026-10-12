@@ -68,6 +68,7 @@ export const officerManifest:OfficerEntry[]=[
   E('xun_you','순유',{strategist:['xun_you-battle-strategist-v1.webp',280,224,1]}),
   E('cheng_yu','정욱',{strategist:['cheng_yu-battle-strategist-v1.webp',280,224,1]}),
   E('dian_wei','전위',{infantry:['dian_wei-battle-infantry-v1.webp',280,224,1]}),
+  E('pang_de','방덕',{cavalry:['pang_de-battle-cavalry-v1.webp',280,224,1]}),
 ];
 
 const legacySheets=[

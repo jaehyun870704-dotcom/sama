@@ -106,6 +106,7 @@
     {"id":"guo_jia","name":"곽가","aliases":["곽가의 환영"],"battle":{"strategist":{"sheet":"guo_jia-battle-strategist-v1.webp","cell":[280,224],"rows":1}}},
     {"id":"xun_you","name":"순유","aliases":["순유의 환영"],"battle":{"strategist":{"sheet":"xun_you-battle-strategist-v1.webp","cell":[280,224],"rows":1}}},
     {"id":"cheng_yu","name":"정욱","aliases":["정욱의 환영"],"battle":{"strategist":{"sheet":"cheng_yu-battle-strategist-v1.webp","cell":[280,224],"rows":1}}},
-    {"id":"dian_wei","name":"전위","aliases":["전위의 환영"],"battle":{"infantry":{"sheet":"dian_wei-battle-infantry-v1.webp","cell":[280,224],"rows":1}}}
+    {"id":"dian_wei","name":"전위","aliases":["전위의 환영"],"battle":{"infantry":{"sheet":"dian_wei-battle-infantry-v1.webp","cell":[280,224],"rows":1}}},
+    {"id":"pang_de","name":"방덕","aliases":["방덕의 환영"],"battle":{"cavalry":{"sheet":"pang_de-battle-cavalry-v1.webp","cell":[280,224],"rows":1}}}
   ]
 }
