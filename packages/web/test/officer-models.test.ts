@@ -22,10 +22,11 @@ const namedBattle=[
   ['fan_kuai','cavalry'],['chen_ping','strategist'],['fan_zeng','strategist'],['zhongli_mo','cavalry'],['ji_bu','infantry'],
 ] as const;
 function webpSize(file:URL){
-  const b=readFileSync(file),vp8x=b.indexOf(Buffer.from('VP8X'));
-  expect(vp8x).toBeGreaterThanOrEqual(0);
-  const n=(i:number)=>b[i]!|(b[i+1]!<<8)|(b[i+2]!<<16);
-  return [n(vp8x+12)+1,n(vp8x+15)+1] as const;
+  const b=readFileSync(file),at=(tag:string)=>b.indexOf(Buffer.from(tag)),n=(i:number)=>b[i]!|(b[i+1]!<<8)|(b[i+2]!<<16);
+  const vp8x=at('VP8X');if(vp8x>=0)return [n(vp8x+12)+1,n(vp8x+15)+1] as const;
+  const lossless=at('VP8L');if(lossless>=0){const v=b.readUInt32LE(lossless+9);return [(v&0x3fff)+1,((v>>14)&0x3fff)+1] as const;}
+  const lossy=at('VP8 ');expect(lossy).toBeGreaterThanOrEqual(0);
+  return [b.readUInt16LE(lossy+14)&0x3fff,b.readUInt16LE(lossy+16)&0x3fff] as const;
 }
 
 describe('장수별 전투 SD와 대결 모델',()=>{
@@ -60,12 +61,12 @@ describe('장수별 전투 SD와 대결 모델',()=>{
     for(const id of lordIds)for(const unitClass of ['lord','hegemon','sovereign','sonOfHeaven'] as const){
       const model=officerBattleSheet({id,name:id,unitClass})!;
       expect(model.action.sheet,`${id}/${unitClass}`).toBe(`officers/${id}-battle-lord-v1.webp`);
-      expect(model.action.cell,`${id}/${unitClass}`).toEqual([350,280]);
+      expect(model.action.cell,`${id}/${unitClass}`).toEqual([280,224]);
     }
   });
 
-  it('군주 10명의 전투 시트는 1400×280이다',()=>{
-    for(const id of lordIds)expect(webpSize(new URL(`../public/officers/${id}-battle-lord-v1.webp`,import.meta.url)),id).toEqual([1400,280]);
+  it('군주 10명의 전투 시트는 1120×224(280×224 × 4칸)이다',()=>{
+    for(const id of lordIds)expect(webpSize(new URL(`../public/officers/${id}-battle-lord-v1.webp`,import.meta.url)),id).toEqual([1120,224]);
   });
 
   it('id, 환영, wooden_zhuge, boss의 연의 이름 순서로 찾는다',()=>{
