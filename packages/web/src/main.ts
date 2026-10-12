@@ -275,7 +275,7 @@ function showZhuge(){
   menuOpen=true;clearTimeout(aiTimer);sound.scene='title';sound.combat=false;resetStoryEra();
   const rows=zhugeOrder.map((i,k)=>{const c=chapters[i]!,sc=scriptOf(c.stage.id),open=zhugeUnlocked(i),done=zhugeCleared(i);
     return `<li class="zg-row ${done?'done':open?'open':'locked'}"><span class="zg-no">${k+1}</span><div class="zg-text"><b>${esc(sc?.title??c.stage.title)}</b><small>${esc(c.year)} · ${esc(c.label)}</small>${open?`<p>${esc(sc?.synopsis??c.stage.synopsis??'')}</p>`:''}</div><span class="zg-seal">연의 천명 ${zhugeSeals(c.stage.id)}/6</span>${open?`<button data-zg="${i}" class="${done?'':'primary'}">${done?'다시 출진':'이야기 시작'} →</button>`:'<em>앞 장을 이기면 열린다</em>'}</li>`;}).join('');
-  modal(`<div class="briefing zhuge-list"><div class="eyebrow">제갈량전 · 와룡에서 오장원까지</div><h2>장 목록</h2><p class="screen-lede">피난길의 소년이 와룡이 되기까지. 장을 이기면 다음 장이 열린다. 보물·연구와 장수마다 쌓은 레벨은 다른 이야기와 함께 쓴다.</p><ol class="zg-list">${rows}</ol><p class="muted">다음 장들은 이어서 더해진다.</p><div class="modal-actions"><button id="zg-back">← 이야기 고르기</button></div></div>`,false);
+  modal(`<div class="briefing zhuge-list"><div class="eyebrow">제갈량전 · 와룡에서 오장원까지</div><h2>장 목록</h2><p class="screen-lede">피난길의 소년이 와룡이 되기까지. 장을 이기면 다음 장이 열린다. 보물·연구와 장수마다 쌓은 레벨은 다른 이야기와 함께 쓴다.</p><ol class="zg-list">${rows}</ol><div class="modal-actions"><button id="zg-back">← 이야기 고르기</button></div></div>`,false);
   document.querySelectorAll<HTMLButtonElement>('[data-zg]').forEach(b=>b.onclick=()=>storyScene(Number(b.dataset.zg)));
   $('#zg-back').onclick=()=>showStoryPick(runHost,showMenu);
 }
@@ -321,7 +321,7 @@ function finishZhuge(){
   }
   const k=zhugeOrder.indexOf(chapter),next=zhugeOrder[k+1],sc=scriptOf(id),xp={...session.xpEarned};
   const result=()=>{menuOpen=true;
-    modal(`<div class="result"><div class="result-character">${win?'승':'패'}</div><h2>${win?'살아서 다음 길로.':'아직, 끝이 아니다.'}</h2><p>${esc(s.stage.title)} · ${s.turn}턴</p>${news.length?`<div class="run-news">${news.map(x=>`<p>${esc(x)}</p>`).join('')}</div>`:''}<div class="seals">${session.sealNames.map((name,i)=>`<div class="${seals.includes(i+1)?'earned':''}"><b>◆</b><span>${esc(name)}</span></div>`).join('')}</div><p>${win?'전투 기록과 천명이 저장되었습니다.':esc(session.failure)}</p><div class="modal-actions"><button id="zg-retry">다시 도전</button><button id="zg-list">장 목록</button>${win?(next!==undefined?'<button id="zg-next" class="primary">다음 장 →</button>':'<button disabled title="다음 장은 이어서 더해진다">다음 장 준비 중</button>'):''}</div></div>`,false);
+    modal(`<div class="result"><div class="result-character">${win?'승':'패'}</div><h2>${win?'살아서 다음 길로.':'아직, 끝이 아니다.'}</h2><p>${esc(s.stage.title)} · ${s.turn}턴</p>${news.length?`<div class="run-news">${news.map(x=>`<p>${esc(x)}</p>`).join('')}</div>`:''}<div class="seals">${session.sealNames.map((name,i)=>`<div class="${seals.includes(i+1)?'earned':''}"><b>◆</b><span>${esc(name)}</span></div>`).join('')}</div><p>${win?'전투 기록과 천명이 저장되었습니다.':esc(session.failure)}</p><div class="modal-actions"><button id="zg-retry">다시 도전</button><button id="zg-list">장 목록</button>${win?(next!==undefined?'<button id="zg-next" class="primary">다음 장 →</button>':'<button disabled>제갈량전 끝</button>'):''}</div></div>`,false);
     $('#zg-retry').onclick=()=>zhugeBriefing(chapter);$('#zg-list').onclick=showZhuge;
     document.getElementById('zg-next')?.addEventListener('click',()=>storyScene(next!));
   };
