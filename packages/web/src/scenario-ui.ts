@@ -3,7 +3,7 @@
  * 규칙은 scenario.ts, 무대 연출은 story-stage.ts. 연의 장의 정비·전투·보상은 main.ts의 기존 흐름을 쓴다.
  */
 import {loadScenario,saveScenario,scenarioPath,winOver,currentStep,scriptOf,choose,undoChoice,finishStep,fateChoices,floorFor,scenarioParty,rewardOfficers,endingNotes,routeTales,COMPANIONS,
-  ensureRun,joinRecruits,newScenarioRun,inWhatIf,joinCaptive,pendingMarch,marchNodes,recruitOffer,relicOffer,recruitOfficer,rosterFull,healAll,finishMarch,marchFloor,afterFight,loseFight,runMandate,omenOffer,omenOf,chooseOmen,omenReward,addRunBonus,EXTRA_TALES,type ScenarioState,type ScenarioStep,type MarchNode} from './scenario.ts';
+  ensureRun,joinRecruits,newScenarioRun,inWhatIf,joinCaptive,pendingMarch,marchNodes,recruitOffer,relicOffer,recruitOfficer,healAll,finishMarch,marchFloor,afterFight,loseFight,runMandate,omenOffer,omenOf,chooseOmen,omenReward,addRunBonus,EXTRA_TALES,type ScenarioState,type ScenarioStep,type MarchNode} from './scenario.ts';
 import {playScenes,playNarration,Stage} from './story-stage.ts';
 import {startPersuasion,speak,reaction,PITCH,GREETING,AGREE,REFUSE,APPROACH_NAMES,PERSUADE_GOAL,type Approach} from './persuade.ts';
 import {openCamp} from './story-camp.ts';
@@ -248,7 +248,7 @@ export function prepare(host:ScenarioHost,step:ScenarioStep){
     const offer=omenOffer(state,step.id);
     return choiceScreen(host,`전황 · ${stepTitle(step,state)} — 싸우기 전에 하늘을 읽는다`,offer.map(o=>({title:(o.goal?'⚑ 도전 · ':'')+o.name,detail:o.text})),i=>{const st=loadScenario();chooseOmen(st,step.id,offer[i]!.id);saveScenario(st);prepare(host,step);},'천명의 길 · 전황 카드');
   }
-  if(step.kind==='story'){const run=state.run,hp=run?.hp['사마의'],h=host.hero(),taken=stageOfficerNames(chapters[chapterIndex(step.stage!)]!.stage),recruits=soloStage(chapters[chapterIndex(step.stage!)]!.stage)?[]:scenarioParty(state,h.level,h.xp).filter(u=>!u.hero&&!taken.has(u.name)).sort((a,b)=>b.level-a.level).slice(0,3).map(u=>({...u,id:'rc_'+u.id}));host.storyBriefing(chapterIndex(step.stage!),{chapter:step.id,mods:modsOf(state,step),...(run?.relics.length?{relics:[...run.relics]}:{}),...(hp!==undefined?{heroHp:hp}:{}),...(recruits.length?{recruits}:{})});return;}
+  if(step.kind==='story'){const run=state.run,hp=run?.hp['사마의'],h=host.hero(),taken=stageOfficerNames(chapters[chapterIndex(step.stage!)]!.stage),recruits=soloStage(chapters[chapterIndex(step.stage!)]!.stage)?[]:scenarioParty(state,h.level,h.xp,Object.keys(state.officers)).filter(u=>!u.hero&&!taken.has(u.name)).sort((a,b)=>b.level-a.level).slice(0,3).map(u=>({...u,id:'rc_'+u.id}));host.storyBriefing(chapterIndex(step.stage!),{chapter:step.id,mods:modsOf(state,step),...(run?.relics.length?{relics:[...run.relics]}:{}),...(hp!==undefined?{heroHp:hp}:{}),...(recruits.length?{recruits}:{})});return;}
   showIfPrep(host,state,step);
 }
 /** 대본에 갈림길 선택이 없을 때의 대비: 길 목록에서 고른다. */
@@ -362,7 +362,7 @@ export async function finishIfBattle(host:ScenarioHost,state:BattleState,deploym
   finishStep(sc,step.id);saveScenario(sc);noteLevels([...Object.values(sc.officers),{name:'사마의',level:host.hero().level}]);
   // 가상 시나리오: 꺾은 적장이 붙잡혔다. 설득하면 부대에 들어온다.
   const foe=step.tale?.target;
-  if(step.kind==='tale'&&foe&&!back&&!sc.officers[foe.name]&&Object.keys(sc.officers).length<8){
+  if(step.kind==='tale'&&foe&&!back&&!sc.officers[foe.name]){
     const level=Math.max(1,Math.round(ref.party.reduce((a,u)=>a+u.level,0)/Math.max(1,ref.party.length))-1);
     const tryIt=await captiveChoice(host,foe.name,foe.unitClass);
     if(tryIt){const ok=await persuadeOfficer(host,foe.name,foe.unitClass,runSeed(sc,step.id+'#captive'));const st=loadScenario();
@@ -446,8 +446,8 @@ function pickMarch(host:ScenarioHost,after:string,node:MarchNode){
   const state=loadScenario(),run=state.run!,meta=loadMeta(),hero=host.hero();
   const done=(news:string[])=>{finishMarch(state,after);saveScenario(state);marchResult(host,node.label,news);};
   if(node.kind==='rest'){healAll(state,Math.min(1,(meta.unlocks.includes('field_medic')?1:.6)*restMult(meta)));return done(['의원에서 사마의와 장수들이 기운을 되찾았다.']);}
-  if(node.kind==='training'){const party=scenarioParty(state,hero.level,hero.xp),news=rewardOfficers(state,party,{},100);news.push(...host.addHeroXp(80));return done(news);}
-  if(node.kind==='recruit'){const offer=recruitOffer(state,after);if(!offer.length)return done([rosterFull(state)?'부대가 가득 차(8명) 더 맞아들일 수 없었다.':'맞아들일 사람이 없었다.']);
+  if(node.kind==='training'){const party=scenarioParty(state,hero.level,hero.xp,Object.keys(state.officers)),news=rewardOfficers(state,party,{},100);news.push(...host.addHeroXp(80));return done(news);}
+  if(node.kind==='recruit'){const offer=recruitOffer(state,after);if(!offer.length)return done(['맞아들일 사람이 없었다.']);
     return choiceScreen(host,inWhatIf(state)?'모병소 · 누구를 설득할까 (가상 시나리오 — 설득해야 합류)':'모병소 · 누구를 맞아들일까',offer.map(o=>({title:`${o.name} (${classNames[o.unitClass]??o.unitClass})`,detail:`${romanceStats(o.name)??''}${temperOf(o.name)?` · 성격 ${temperNames[temperOf(o.name)!]}`:''}`})),i=>{const o=offer[i]!;
       if(!inWhatIf(state)){recruitOfficer(state,o.name,hero.level+recruitBonus(meta),meta.unlocks.includes('elite_recruits'));return done([`${이가(o.name)} 사마의의 부대에 들어왔다.`]);}
       void persuadeOfficer(host,o.name,o.unitClass,run.seed^hashSeed(after)).then(ok=>{if(ok){recruitOfficer(state,o.name,hero.level+recruitBonus(meta),meta.unlocks.includes('elite_recruits'));done([`${이가(o.name)} 설득에 응해 사마의의 부대에 들어왔다.`]);}else done([`${은는(o.name)} 이번엔 거절하고 떠났다. 다른 길목에서 다시 만날 수 있다.`]);});});}
@@ -466,7 +466,7 @@ function battleSpoils(host:ScenarioHost,step:ScenarioStep,battle:BattleState):Pr
     {title:'천명 +3',detail:'공을 하늘에 돌린다 · 회차가 끝날 때 연구에 쓸 천명으로 받는다',take:st=>{addRunBonus(st,3);return '전공 보상 — 천명 +3';}},
     ...(relic?[{title:`보물 · ${relic.name}`,detail:relic.effect+' · 이번 회차 내내 전원에게',take:(st:ScenarioState)=>{st.run!.relics.push(relic.id);return `전공 보상 — 보물 「${relic.name}」`;}}]:[]),
     wounded?{title:'군의 치료',detail:'다친 장수 모두 체력을 회복한다',take:st=>{healAll(st,1);return '전공 보상 — 모든 장수가 회복했다';}}
-      :{title:'장수 수련',detail:'함께 싸우는 장수들 경험치 +60',take:st=>{const lines=rewardOfficers(st,scenarioParty(st,h.level,h.xp).filter(u=>!u.hero),{},60);return ['전공 보상 — 장수 수련',...lines].join(' · ');}},
+      :{title:'장수 수련',detail:'부대의 모든 장수 경험치 +60',take:st=>{const lines=rewardOfficers(st,scenarioParty(st,h.level,h.xp,Object.keys(st.officers)).filter(u=>!u.hero),{},60);return ['전공 보상 — 장수 수련',...lines].join(' · ');}},
   ];
   return new Promise(done=>choiceScreen(host,'전공 보상 · 무엇을 받을까',items,i=>{const st=loadScenario();out.push(items[i]!.take(st));saveScenario(st);done(out);},'전공 보상'));
 }

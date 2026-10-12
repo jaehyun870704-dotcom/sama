@@ -4,7 +4,7 @@ import {allStrategies} from './officers.ts';
 import {RECRUITABLE} from './recruit.ts';
 import {showResearch} from './research-ui.ts';
 import {newRun,startingOfficers,departingOfficers,floorChoices,visitNode,finishBattle,finishStory,takeReward,skipReward,describeReward,nextEvolutionText,battleRef,survivorsOf,
-  regionFor,actOf,isBossFloor,mandateEarned,chooseFate,taleById,RELICS,REGIONS,STORY_ORDER,RUN_FLOORS,PARTY_LIMIT,XP_PER_LEVEL,type Run,type RunNode,type RunUnit,type OfficerSpec} from './roguelike.ts';
+  regionFor,actOf,isBossFloor,mandateEarned,chooseFate,taleById,RELICS,REGIONS,STORY_ORDER,RUN_FLOORS,PARTY_LIMIT,XP_PER_LEVEL,sortieOf,type Run,type RunNode,type RunUnit,type OfficerSpec} from './roguelike.ts';
 import {romanceStats,romanceByName} from './romance.ts';
 import {scenarioSummary} from './scenario-ui.ts';
 import {runBoard} from './run-board.ts';
@@ -71,8 +71,8 @@ const pips=(c:UnitClass)=>{const t=Math.max(1,Math.min(4,tierOf(c)));return '◆
 const stageTitle=(id:string)=>{const c=chapters.find(x=>x.stage.id===id);return c?`${c.stage.subtitle??c.stage.title}`:id;};
 const ongoing=(run:Run|null):run is Run=>!!run&&(run.status==='map'||run.status==='reward');
 
-function unitCard(u:RunUnit){
-  return `<div class="run-unit${u.hero?' hero':''}${u.officer?' officer':''}"><div class="run-unit-head"><strong>${esc(u.hero?'사마의':u.name)}</strong><span class="run-tier" title="병종 단계">${pips(u.unitClass)}</span></div>
+function unitCard(u:RunUnit,bench=false){
+  return `<div class="run-unit${u.hero?' hero':''}${u.officer?' officer':''}${bench?' bench':''}"><div class="run-unit-head"><strong>${esc(u.hero?'사마의':u.name)}${bench?' <em class="run-bench" title="다음 싸움에는 본진에서 쉰다(출진은 체력·레벨 순 '+PARTY_LIMIT+'명)">대기</em>':''}</strong><span class="run-tier" title="병종 단계">${pips(u.unitClass)}</span></div>
   <small>${esc(name(u.unitClass))} · Lv.${u.level} · 경험치 ${u.xp}/${XP_PER_LEVEL}</small>
   <div class="run-bar hp" title="체력"><i style="width:${Math.round(u.hp*100)}%"></i></div>
   <div class="run-bar xp" title="경험치"><i style="width:${Math.round(u.xp/XP_PER_LEVEL*100)}%"></i></div>
@@ -80,7 +80,8 @@ function unitCard(u:RunUnit){
 }
 function partyPanel(run:Run){
   const relics=run.relics.map(id=>RELICS.find(r=>r.id===id)!).map(r=>`<span class="run-relic" title="${esc(r.effect)}">${esc(r.name)}</span>`).join('');
-  return `<div class="run-party">${run.party.map(unitCard).join('')}</div><p class="run-relics">${relics||'<span class="muted">보물 없음</span>'}${run.secondChance?'<span class="run-relic grace" title="원정마다 한 번, 패배해도 원정이 끝나지 않는다">천명의 가호</span>':''}</p>`;
+  const go=new Set(sortieOf(run));
+  return `<div class="run-party">${run.party.map(u=>unitCard(u,!go.has(u))).join('')}</div><p class="run-relics">${relics||'<span class="muted">보물 없음</span>'}${run.secondChance?'<span class="run-relic grace" title="원정마다 한 번, 패배해도 원정이 끝나지 않는다">천명의 가호</span>':''}</p>`;
 }
 const news=(run:Run)=>run.news.length?`<div class="run-news">${run.news.map(n=>`<p${n.startsWith('진화!')?' class="evo"':''}>${esc(n)}</p>`).join('')}</div>`:'';
 const actTrack=(run:Run)=>`<div class="run-track" aria-label="원정 진행">${[1,2,3].map(act=>{const cur=actOf(run.floor),r=regionFor(run,(act-1)*6+1),route=routeById(run.route?.[act as 1|2|3]);return `<span class="${act<cur?'done':act===cur?'now':''}${route&&!route.history?' if':''}">${r.arc} · ${!route?'갈림길 전':r.name}${route&&!route.history?' · 가상':''}</span>`;}).join('')}</div>`;
@@ -220,7 +221,7 @@ function showStart(host:RunHost){
     <small>${esc(r?.epithet??'')}</small><small>${esc(romanceStats(o.name))}</small>${t?`<small class="run-next">전법 「${esc(t.name)}」 ${esc(t.description)}</small>`:''}</div>`;};
   host.modal(`<div class="briefing run-screen"><div class="eyebrow">천명의 원정 · 출발</div><h2>사마의를 따르는 장수들</h2>
   <p>원정은 언제나 이 장수들과 함께 떠난다. 장수는 연의의 능력을 지니고, 싸울 때마다 경험치를 얻어 레벨이 오르며 병종이 진화한다. 쓰러진 장수는 돌아오지 않고, 사마의가 쓰러지면 원정이 끝난다. 새 장수는 모병소와 전투 보상에서 영입한다.</p>
-  <p class="muted">천명 ${meta.mandate} · 해금 ${meta.unlocks.length}/${UNLOCKS.length} · 부대는 사마의 포함 최대 ${PARTY_LIMIT}</p>
+  <p class="muted">천명 ${meta.mandate} · 해금 ${meta.unlocks.length}/${UNLOCKS.length} · 영입은 제한 없음 · 싸움에는 사마의 포함 ${PARTY_LIMIT}명이 나간다(체력·레벨 순)</p>
   <div class="run-party"><div class="run-unit hero"><div class="run-unit-head"><strong>사마의</strong><span class="run-tier">책사</span></div><small>${esc(romanceByName('사마의')?.epithet??'')}</small><small>${esc(romanceStats('사마의'))}</small></div>${start.map(card).join('')}</div>
   <div class="run-actions"><button id="run-go" class="primary">출진</button><button id="run-back">← 천명의 원정</button></div></div>`,false);
   document.getElementById('run-go')!.onclick=()=>{
@@ -326,7 +327,7 @@ function choose(host:RunHost,run:Run,node:RunNode){
 function showReward(host:RunHost,run:Run){
   const offer=run.offer??[];
   host.modal(`<div class="briefing run-screen"><div class="eyebrow">천명의 원정 · ${run.floor}층 · 보상</div><h2>하나를 고른다</h2>${news(run)}${partyPanel(run)}
-  <div class="run-choices">${offer.map((o,i)=>{const d=describeReward(o);return `<button data-reward="${i}"><strong>${esc(d.title)}</strong><small>${esc(d.detail)}${o.kind==='recruit'&&run.party.length>=PARTY_LIMIT?' · 부대가 가득 차 경험치로 바뀜':''}</small></button>`;}).join('')}</div>
+  <div class="run-choices">${offer.map((o,i)=>{const d=describeReward(o);return `<button data-reward="${i}"><strong>${esc(d.title)}</strong><small>${esc(d.detail)}</small></button>`;}).join('')}</div>
   <div class="run-actions"><button id="run-skip">건너뛰기</button></div></div>`,false);
   document.querySelectorAll<HTMLButtonElement>('[data-reward]').forEach(b=>b.onclick=()=>{takeReward(run,Number(b.dataset.reward));saveRun(run);showRun(host,run);});
   document.getElementById('run-skip')!.onclick=()=>{skipReward(run);saveRun(run);showRun(host,run);};
@@ -359,7 +360,7 @@ function showEnd(host:RunHost,run:Run){
 export function finishRunBattle(host:RunHost,state:BattleState,deployment:Deployment,earned:Record<string,number>={}){
   const ref=deployment.run!,run=loadRun();
   if(!run||run.floor!==ref.floor||run.status!=='map'||!run.active||run.active==='story'){host.toast('이 전투의 원정 기록을 찾을 수 없습니다.');return host.showMenu();}
-  finishBattle(run,{kind:ref.kind,label:'',detail:'',...(ref.tale?{tale:ref.tale}:{})},state.outcome==='victory',survivorsOf(state,ref),earned);
+  finishBattle(run,{kind:ref.kind,label:'',detail:'',...(ref.tale?{tale:ref.tale}:{})},state.outcome==='victory',survivorsOf(state,ref),earned,ref.party.map(u=>u.id));
   saveRun(run);showRun(host,run);
 }
 

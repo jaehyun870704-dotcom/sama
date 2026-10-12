@@ -18,7 +18,7 @@ import {을를} from './josa.ts';
 
 export const FLOORS_PER_ACT=6;
 export const RUN_FLOORS=18;
-/** 사마의를 포함한 원정 부대 상한(출진 칸 7개) */
+/** 사마의를 포함해 한 싸움에 나가는 인원(출진 칸 7개). 영입에는 상한이 없다. */
 export const PARTY_LIMIT=7;
 export const XP_PER_LEVEL=100;
 /** 쓰러진 부대가 돌아올 때의 체력(중상). 원정·본편 공통. */
@@ -201,12 +201,11 @@ export function startingOffers(seed:number,unlocks:string[]=[]):UnitClass[][]{
 }
 
 export function recruitOfficer(run:Run,o:OfficerSpec,level:number){
-  if(run.party.length>=PARTY_LIMIT||run.party.some(u=>u.name===o.name))return false;
+  if(run.party.some(u=>u.name===o.name))return false;
   run.party.push({id:'of'+run.nextId++,name:o.name,unitClass:evolvedClass(o.unitClass,level),level,xp:0,hp:1,officer:true});
   return true;
 }
 export function recruit(run:Run,cls:UnitClass,level:number){
-  if(run.party.length>=PARTY_LIMIT)return false;
   const evolved=evolvedClass(cls,level);
   run.party.push({id:'r'+run.nextId++,name:uniqueName(run,evolved),unitClass:evolved,level,xp:0,hp:1});
   return true;
@@ -277,21 +276,23 @@ export function grantXp(run:Run,amount:number,who=run.party){
 }
 
 /** 전투 결과를 원정에 반영한다. survivors: 살아남은 부대의 체력 비율. */
-export function finishBattle(run:Run,node:RunNode,victory:boolean,survivors:Record<string,number>,earned:Record<string,number>={}){
+export function finishBattle(run:Run,node:RunNode,victory:boolean,survivors:Record<string,number>,earned:Record<string,number>={},deployed?:readonly string[]){
   run.news=[];delete run.active;delete run.activeTale;
+  // 나간 부대만 셈한다(deployed가 없으면 부대 전원). 본진에 남은 부대는 체력 그대로, 승리 보너스의 절반을 받는다.
+  const fought=new Set(deployed??run.party.map(u=>u.id)),out=(u:RunUnit)=>fought.has(u.id);
   // 쓰러진 부대는 떠나지 않는다: 크게 다쳐(체력 25%) 물러났다가 다음 싸움에 다시 나선다.
-  const lost=run.party.filter(u=>survivors[u.id]===undefined);
+  const lost=run.party.filter(u=>out(u)&&survivors[u.id]===undefined);
   if(!victory||!survivors.sima_yi){
     for(const u of lost)if(!u.hero)u.hp=WOUNDED;
     if(spendSecondChance(run))return;
     run.news.push(survivors.sima_yi?`${run.floor}층 전투에서 패했다. 원정은 여기서 끝난다.`:`사마의가 ${run.floor}층에서 쓰러졌다. 원정은 여기서 끝난다.`);run.status='lost';return;}
-  for(const u of run.party)u.hp=survivors[u.id]===undefined?WOUNDED:Math.max(.05,survivors[u.id]!);
+  for(const u of run.party)if(out(u))u.hp=survivors[u.id]===undefined?WOUNDED:Math.max(.05,survivors[u.id]!);
   if(lost.length)run.news.push(`중상: ${lost.map(u=>u.name).join(', ')} — 물러나 치료받고 체력 25%로 다시 나선다.`);
   if(run.relics.includes('herbs'))for(const u of run.party)u.hp=Math.min(1,u.hp+.2);
   if(node.kind==='boss'){for(const u of run.party)u.hp=1;run.bosses=(run.bosses??0)+1;}
   // 전투 중에 싸워서 번 경험치(공격·격파·책략)에 승리 보너스를 더한다.
   const bonus=completionXp(node.kind);
-  for(const u of [...run.party])grantXp(run,bonus+(earned[u.id]??0),[u]);
+  for(const u of [...run.party])grantXp(run,out(u)?bonus+(earned[u.id]??0):Math.round(bonus/2),[u]);
   if(node.kind==='tale'&&node.tale)run.talesDone=[...new Set([...(run.talesDone??[]),node.tale])];
   if(node.kind==='boss'&&run.floor>=RUN_FLOORS){run.status='won';return;}
   const r=rngFor(run,run.floor*53+11);
@@ -463,7 +464,13 @@ export const casts=(cls:UnitClass)=>profileOf(cls).canUseStrategy;
 export interface RunBattleRef {seed:number;floor:number;kind:NodeKind;party:RunUnit[];relics:string[];route?:Run['route'];tale?:string;
   /** 시나리오 모드: 대사 선택의 효과와 적 레벨 기준(부대 레벨에 맞춘다), 장 id */
   mods?:BattleMods;enemyBase?:number;scenario?:string}
-export const battleRef=(run:Run,kind:NodeKind,tale?:string):RunBattleRef=>({seed:run.seed,floor:run.floor,kind,party:structuredClone(run.party),relics:[...run.relics],...(run.route?{route:{...run.route}}:{}),...(tale?{tale}:{})});
+/** 이번 싸움에 나가는 부대: 사마의 + 체력·레벨이 높은 순으로 출진 칸(PARTY_LIMIT)만큼. 나머지는 본진에서 쉰다. */
+export function sortieOf(run:Run):RunUnit[]{
+  const hero=run.party.filter(u=>u.hero),rest=run.party.filter(u=>!u.hero).map((u,i)=>({u,i}))
+    .sort((a,b)=>b.u.hp-a.u.hp||b.u.level-a.u.level||a.i-b.i).slice(0,Math.max(0,PARTY_LIMIT-hero.length)).map(x=>x.u);
+  return run.party.filter(u=>hero.includes(u)||rest.includes(u));
+}
+export const battleRef=(run:Run,kind:NodeKind,tale?:string):RunBattleRef=>({seed:run.seed,floor:run.floor,kind,party:structuredClone(sortieOf(run)),relics:[...run.relics],...(run.route?{route:{...run.route}}:{}),...(tale?{tale}:{})});
 export function refBattle(ref:RunBattleRef){
   const run:Run={version:1,seed:ref.seed,floor:ref.floor,party:ref.party,relics:ref.relics,fallen:[],status:'map',nextId:0,news:[],...(ref.route?{route:ref.route}:{})};
   return runBattle(run,ref.kind,ref.tale,{...(ref.mods?{mods:ref.mods}:{}),...(ref.enemyBase!==undefined?{enemyBase:ref.enemyBase}:{}),...(ref.scenario?{scenario:ref.scenario}:{})});

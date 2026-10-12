@@ -40,9 +40,9 @@ describe('천명의 원정 · 규칙',()=>{
   grantXp(run,800,[foot]);expect(foot.unitClass).toBe('royalGuard');expect(tierOf(foot.unitClass)).toBe(3);
   const hero=run.party[0]!;grantXp(run,400,[hero]);expect(hero.unitClass).toBe('tactician');expect(hero.name).toBe('사마의');
  });
- it('recruits arrive already evolved when their level is past a threshold, up to the party limit',()=>{
+ it('recruits arrive already evolved when their level is past a threshold, with no roster cap',()=>{
   const run=fresh();expect(recruit(run,'archer',9)).toBe(true);expect(run.party.at(-1)!.unitClass).toBe('longbow');
-  while(run.party.length<PARTY_LIMIT)recruit(run,'spearman',2);expect(recruit(run,'spearman',2)).toBe(false);
+  while(run.party.length<PARTY_LIMIT)recruit(run,'spearman',2);expect(recruit(run,'spearman',2)).toBe(true);expect(run.party.length).toBe(PARTY_LIMIT+1);
  });
  it('brings fallen units back badly wounded instead of losing them, carries wounds, and offers a reward after a win',()=>{
   const run=fresh(),lost=run.party[1]!.id;

@@ -259,11 +259,15 @@ export function floorFor(step:ScenarioStep,state:ScenarioState){
   return Math.min(RUN_FLOORS,base+2+Math.max(0,i));
 }
 
-/** 가상 전장에 나가는 부대(사마의 + 고른 장수들, 최대 6). heroLevel/heroXp는 연의 진행의 사마의. */
+/**
+ * 가상 전장에 나가는 부대(사마의 + 장수들). heroLevel/heroXp는 연의 진행의 사마의.
+ * picked를 주면 그 장수들 모두(출진 화면·수련은 스스로 인원을 정한다), 안 주면 체력·레벨이 높은 순으로 6명.
+ * 영입에는 상한이 없다: 부대는 계속 커지고, 싸움에 나가는 인원만 정해진다.
+ */
 export function scenarioParty(state:ScenarioState,heroLevel:number,heroXp:number,picked?:string[]):RunUnit[]{
   const hp=(n:string)=>state.run?.hp[n]??1;
   const hero:RunUnit={id:'sima_yi',name:'사마의',unitClass:evolvedClass('strategist',heroLevel),level:heroLevel,xp:Math.min(XP_PER_LEVEL-1,heroXp),hp:hp('사마의'),hero:true};
-  const names=(picked??Object.keys(state.officers)).filter(n=>state.officers[n]).slice(0,6);
+  const names=picked?[...new Set(picked)].filter(n=>state.officers[n]):Object.keys(state.officers).sort((a,b)=>hp(b)-hp(a)||state.officers[b]!.level-state.officers[a]!.level).slice(0,6);
   return [hero,...names.map((n,i)=>{const o=state.officers[n]!;return {id:'of'+(i+1),name:n,unitClass:evolvedClass(o.unitClass,o.level),level:o.level,xp:o.xp,hp:hp(n),officer:true as const};})];
 }
 
@@ -355,8 +359,6 @@ export function recruitPool(state:ScenarioState){
 }
 /** 모병소·전투 보상에 나오는 장수 둘. */
 export function recruitOffer(state:ScenarioState,after:string,n=2){
-  // 부대가 가득 차면(8명) 영입을 내밀지 않는다: 설득까지 마치고도 들어오지 못하던 문제.
-  if(rosterFull(state))return [];
   const r=new Rng((state.run!.seed^hashId(after+'#recruit'))>>>0||1),pool=recruitPool(state),out:typeof pool=[];
   while(out.length<n&&pool.length)out.push(pool.splice(r.int(0,pool.length-1),1)[0]!);return out;
 }
@@ -365,9 +367,8 @@ export function relicOffer(state:ScenarioState,after:string,n=3){
   const r=new Rng((state.run!.seed^hashId(after+'#relic'))>>>0||1),pool=RELICS.filter(x=>!state.run!.relics.includes(x.id)),out:typeof pool=[];
   while(out.length<n&&pool.length)out.push(pool.splice(r.int(0,pool.length-1),1)[0]!);return out;
 }
-export const rosterFull=(state:ScenarioState)=>Object.keys(state.officers).length>=8;
 export function recruitOfficer(state:ScenarioState,name:string,heroLevel:number,elite=false){
-  const o=recruitPool(state).find(x=>x.name===name);if(!o||Object.keys(state.officers).length>=8)return false;
+  const o=recruitPool(state).find(x=>x.name===name);if(!o)return false;
   state.officers[name]={name,unitClass:landClass(o.unitClass),level:Math.max(1,heroLevel-1+(elite?3:0)),xp:0};return true;
 }
 export function healAll(state:ScenarioState,amount=1){const run=state.run!;for(const k of Object.keys(run.hp))run.hp[k]=Math.min(1,run.hp[k]!+amount);for(const [k,v] of Object.entries(run.hp))if(v>=1)delete run.hp[k];}
@@ -434,6 +435,6 @@ export function addRunBonus(state:ScenarioState,n:number){if(state.run&&n>0)stat
 export function inWhatIf(state:ScenarioState){const step=currentStep(state);if(!step)return false;const r=routeById(state.route[step.act]);return !!r&&!r.history;}
 /** 가상 전장에서 꺾은 적장을 설득해 들인다(성공하면 그 병종·레벨로 합류). */
 export function joinCaptive(state:ScenarioState,name:string,unitClass:UnitClass,level:number){
-  if(state.officers[name]||Object.keys(state.officers).length>=8)return false;
+  if(state.officers[name])return false;
   state.officers[name]={name,unitClass:landClass(unitClass),level:Math.max(1,level),xp:0};return true;
 }

@@ -2244,3 +2244,4 @@ dialog:has(.title-screen),dialog:has(.lobby){width:min(1240px,calc(100vw - 24px)
 .epilogue-cut.still *{transition:none!important;animation:none!important}
 @media (prefers-reduced-motion:reduce){.ep-bg.on{animation:none}}
 @media (max-height:520px){.ep-beat{bottom:16%;right:12%;gap:6px}.ep-line{line-height:1.45}.ep-years li{margin-bottom:14px}.ep-close{gap:6px}.ep-close p{line-height:1.45}.ep-cover h2,.ep-close h2{font-size:clamp(26px,5vw,44px)}.ep-stats{margin:2px 0}}
+.run-unit.bench{opacity:.62}.run-bench{font-style:normal;font-size:calc(11.5px*var(--fs,1));color:#a7b1a0;border:1px solid #5a6656;padding:0 5px;margin-left:4px;vertical-align:1px}

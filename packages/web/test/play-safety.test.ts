@@ -1,8 +1,8 @@
 // 게임 전 전수조사에서 고친 진행 오류들이 다시 생기지 않게 지킨다.
 import {describe,it,expect} from 'vitest';
 import {levelInfo,deployment,freshCampaign} from '../src/progression.ts';
-import {freshScenario,choose,undoChoice,readScenario,recruitOffer,rosterFull,type ScenarioState} from '../src/scenario.ts';
-import {grantXp,newRun,finishBattle,RUN_FLOORS,type Run} from '../src/roguelike.ts';
+import {freshScenario,choose,undoChoice,readScenario,recruitOffer,recruitOfficer,joinCaptive,scenarioParty,type ScenarioState} from '../src/scenario.ts';
+import {grantXp,newRun,finishBattle,recruit,battleRef,sortieOf,PARTY_LIMIT,RUN_FLOORS,type Run} from '../src/roguelike.ts';
 import type {ScenarioStep} from '../src/scenario-types.ts';
 
 describe('저장·성장 상한',()=>{
@@ -36,11 +36,16 @@ describe('천명의 길 선택 되돌리기',()=>{
   choose(s,step,'shi',shi,10);expect(s.officers['사마사']).toBeDefined();
   undoChoice(s,step);expect(s.officers['사마사']).toBeUndefined();
  });
- it('부대가 가득 차면 영입을 내밀지 않는다',()=>{
+ it('천명의 길 영입에는 상한이 없고, 싸움에는 체력·레벨 순으로 6명만 나간다',()=>{
   const s:ScenarioState=freshScenario();
-  for(let i=0;i<8;i++)s.officers['장수'+i]={name:'장수'+i,unitClass:'infantry',level:1,xp:0};
-  s.run={seed:7} as ScenarioState['run'];
-  expect(rosterFull(s)).toBe(true);expect(recruitOffer(s,'IF1-1')).toEqual([]);
+  for(let i=0;i<12;i++)s.officers['장수'+i]={name:'장수'+i,unitClass:'infantry',level:1+i,xp:0};
+  s.run={seed:7,hp:{'장수11':.3}} as unknown as ScenarioState['run'];
+  expect(recruitOffer(s,'IF1-1').length).toBeGreaterThan(0);
+  const name=recruitOffer(s,'IF1-1')[0]!.name;expect(recruitOfficer(s,name,10)).toBe(true);
+  expect(joinCaptive(s,'포로장수','infantry',5)).toBe(true);expect(Object.keys(s.officers).length).toBe(14);
+  const party=scenarioParty(s,10,0).filter(u=>!u.hero).map(u=>u.name);
+  expect(party.length).toBe(6);expect(party).not.toContain('장수11');expect(party).toContain('장수10');
+  expect(scenarioParty(s,10,0,Object.keys(s.officers)).length).toBe(15);
  });
 });
 
@@ -49,5 +54,15 @@ describe('천명의 원정 마지막 층',()=>{
   const run=newRun(3,['infantry','archer']);run.floor=RUN_FLOORS;run.secondChance=true;
   finishBattle(run,{kind:'boss'} as Parameters<typeof finishBattle>[1],false,{});
   expect(run.floor).toBe(RUN_FLOORS);expect(run.status).toBe('map');
+ });
+ it('원정 영입에도 상한이 없고, 출진은 7명 · 본진 대기는 체력이 그대로다',()=>{
+  const run:Run=newRun(11,['infantry','archer']);
+  for(let i=0;i<10;i++)expect(recruit(run,'infantry',3)).toBe(true);
+  expect(run.party.length).toBeGreaterThan(PARTY_LIMIT);
+  const ref=battleRef(run,'battle');expect(ref.party.length).toBe(PARTY_LIMIT);expect(ref.party.some(u=>u.hero)).toBe(true);
+  expect(sortieOf(run).length).toBe(PARTY_LIMIT);
+  const bench=run.party.find(u=>!ref.party.some(r=>r.id===u.id))!;bench.hp=.8;
+  run.status='map';finishBattle(run,{kind:'battle',label:'',detail:''},true,Object.fromEntries(ref.party.map(u=>[u.id,1])),{},ref.party.map(u=>u.id));
+  expect(bench.hp).toBe(.8);expect(run.party.filter(u=>ref.party.some(r=>r.id===u.id)).every(u=>u.hp===1)).toBe(true);
  });
 });
