@@ -298,6 +298,8 @@ export function storyDeployment(run:Run,stage:string):{chapter:number;deployment
   d.levels.sima_yi=Math.min(40,Math.max(d.levels.sima_yi??1,hero.level));
   d.runStory={seed:run.seed,floor:run.floor,stage,heroLevel:hero.level,heroHp:hero.hp,relics:[...run.relics],heroXp:hero.xp};
   {const p=deploymentPerks(loadMeta(),['사마의']);if(p)d.perks=p;}d.trial=1;
+  // 본편 연의와 같은 넓은 전장으로 싸운다(예전 좁은 전장은 S1-09·S1-02 일반 클리어율이 63~81%로 낮았다 · 넓은 전장 98~100%).
+  d.wide=2;
   return {chapter,deployment:d};
 }
 function launchStory(host:RunHost,run:Run,stage:string){

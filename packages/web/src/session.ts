@@ -133,7 +133,9 @@ export const strategies: StrategyDef[] = [
   {id:'fire',name:'화계',element:'fire',shape:'single',range:3,radius:0,mpCost:12,power:110,inflicts:['burn'],targetSides:['enemy']},
 ];
 type Intent = Command | {kind:'aiTick'};
-export interface Save {version:2; revision?:2|3|4|5|6|7|8|9|10|11|12|13; deployment?:Deployment; chapter:number; difficulty:Difficulty; seed:number; preparation:Preparation; journal:Intent[]; checkpoints:number[]}
+export interface Save {version:2; revision?:2|3|4|5|6|7|8|9|10|11|12|13; deployment?:Deployment; chapter:number; difficulty:Difficulty; seed:number; preparation:Preparation; journal:Intent[]; checkpoints:number[];
+  /** 이 전투의 보상을 이미 받았다(결과창 무르기 뒤 새로고침하고 다시 이겨도 두 번 받지 않게). */
+  rewarded?:true}
 
 /** Persist commands, not mutable engine internals. Replay also restores terrain,
  * counter budgets, patrol progress and RNG when undoing across a phase boundary. */
@@ -721,7 +723,9 @@ export class Session {
       this.journal.push(entry);
     }
   }
-  save():Save{return {version:2,revision:this.revision,chapter:this.chapter,difficulty:this.difficulty,seed:this.seed,preparation:this.preparation,...(this.deployment?{deployment:structuredClone(this.deployment)}:{}),journal:this.journal,checkpoints:this.checkpoints};}
+  /** 이 전투의 보상을 이미 받았다(저장에 남는다 · 무르기로도 지워지지 않는다). */
+  rewarded=false;
+  save():Save{return {version:2,revision:this.revision,chapter:this.chapter,difficulty:this.difficulty,seed:this.seed,preparation:this.preparation,...(this.deployment?{deployment:structuredClone(this.deployment)}:{}),journal:this.journal,checkpoints:this.checkpoints,...(this.rewarded?{rewarded:true as const}:{})};}
   static load(raw:unknown){
     const data=raw as Save;
     // 은퇴한 병종 이름으로 저장된 기록(병종 정리 이전)도 지금 이름으로 바꿔 읽는다.
@@ -760,7 +764,7 @@ export class Session {
     if(data.deployment?.perks!==undefined&&!validGrants(data.deployment.perks))throw new Error('잘못된 연구·장수 효과 기록');
     if(data.deployment?.growth&&Object.values(data.deployment.growth).some(n=>!Number.isSafeInteger(n)||n<0))throw new Error('잘못된 성장 기록');
     const session=new Session(data.chapter,data.difficulty,data.seed,data.preparation,data.revision??2,data.deployment?structuredClone(data.deployment):undefined);
-    session.journal=structuredClone(data.journal);session.checkpoints=[...data.checkpoints];session.replay();return session;
+    session.journal=structuredClone(data.journal);session.checkpoints=[...data.checkpoints];session.rewarded=data.rewarded===true;session.replay();return session;
   }
 }
 /** 장의 인장 세 개 이름(전투 전에도 보이게 — 연의 장 상세·정비 화면). */

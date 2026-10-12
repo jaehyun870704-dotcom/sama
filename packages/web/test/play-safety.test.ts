@@ -5,7 +5,10 @@ import {freshScenario,choose,undoChoice,readScenario,recruitOffer,recruitOfficer
 import {grantXp,newRun,finishBattle,recruit,battleRef,sortieOf,sortieSize,RUN_FLOORS,type Run} from '../src/roguelike.ts';
 import type {ScenarioStep} from '../src/scenario-types.ts';
 import {Session} from '../src/session.ts';
-import {RUN_CHAPTER} from '../src/run-ui.ts';
+import {RUN_CHAPTER,storyDeployment} from '../src/run-ui.ts';
+import {campaignOrder} from '../src/session.ts';
+import {readCustoms,type CustomOfficer} from '../src/custom.ts';
+import {guardStorage,isQuotaError,STORAGE_FAIL} from '../src/storage-guard.ts';
 
 describe('저장·성장 상한',()=>{
  it('40레벨에서는 남는 경험치를 0으로 둔다(출진 기록이 저장 검사를 통과하게)',()=>{
@@ -73,5 +76,29 @@ describe('천명의 원정 마지막 층',()=>{
   run.floor=18;const ref=battleRef(run,'boss');expect(ref.party.length).toBe(12);
   const state=new Session(RUN_CHAPTER,'normal',run.seed,'survival',4,{levels:{sima_yi:run.party[0]!.level,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},run:ref}).state;
   for(const u of ref.party)expect(state.find(u.id),u.name).toBeDefined();
+ });
+ it('보상을 받았다는 표시는 저장에 남는다(무르기 뒤 새로고침해도 두 번 받지 않게)',()=>{
+  const s=new Session(campaignOrder[0]!,'normal',215,'survival',13);
+  expect(s.save().rewarded).toBeUndefined();
+  s.rewarded=true;const data=JSON.parse(JSON.stringify(s.save()));expect(data.rewarded).toBe(true);
+  expect(Session.load(data).rewarded).toBe(true);
+  delete data.rewarded;expect(Session.load(data).rewarded).toBe(false);
+ });
+ it('이름이 연의 장수와 겹친 신장수는 버리지 않고 비슷한 빈 이름으로 살린다',()=>{
+  const base:CustomOfficer={name:'조운',epithet:'',unitClass:'infantry',temper:'calm',war:50,int:50,lead:50,pol:50,cha:50} as CustomOfficer;
+  const list=readCustoms([base,{...base,name:'한결'},{...base,name:'한결'}]);
+  expect(list).toHaveLength(3);expect(list[0]!.name).not.toBe('조운');expect(list[0]!.name.startsWith('조운')).toBe(true);
+  expect(new Set(list.map(o=>o.name)).size).toBe(3);
+ });
+ it('저장이 실패하면(저장 공간 가득 참) 알림 이벤트를 내고 원래 오류는 그대로 던진다',()=>{
+  class FakeStorage{setItem(_k:string,_v:string){const e=new Error('full');(e as {name:string}).name='QuotaExceededError';throw e;}}
+  const events:unknown[]=[];const target={Storage:FakeStorage,dispatchEvent:(e:unknown)=>{events.push(e);return true;}} as unknown as typeof globalThis;
+  guardStorage(target);
+  expect(()=>new FakeStorage().setItem('k','v')).toThrow('full');
+  expect(events).toHaveLength(1);expect((events[0] as CustomEvent).type).toBe(STORAGE_FAIL);expect((events[0] as CustomEvent<{quota:boolean}>).detail.quota).toBe(true);
+  expect(isQuotaError({name:'NS_ERROR_DOM_QUOTA_REACHED'})).toBe(true);expect(isQuotaError(new Error('x'))).toBe(false);
+ });
+ it('원정의 연의 전장도 본편과 같은 넓은 전장으로 싸운다',()=>{
+  const run:Run=newRun(5,['infantry']);expect(storyDeployment(run,'S1-09').deployment.wide).toBe(2);
  });
 });

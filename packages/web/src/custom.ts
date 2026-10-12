@@ -43,12 +43,26 @@ export function checkFaction(f:Faction):string|undefined{
   if(!FACTION_COLORS.includes(f.color))return '깃발 색을 고르세요';
   return undefined;
 }
-/** 저장된 신장수를 정리한다(잘못된 것은 버림). */
+const NAME_CLASH=new Set(['이미 있는 이름','연의 장수록에 이미 있는 이름']);
+const NAME_TAILS=['공','랑','경','덕','진','원','문','백','소','명'];
+/** 겹친 이름 대신 쓸 빈 이름: 끝에 한 글자를 붙인다(4자를 넘으면 끝 글자를 바꾼다). 못 찾으면 undefined. */
+export function freeCustomName(o:CustomOfficer,others:readonly string[]):string|undefined{
+  const base=[...o.name];
+  for(const t of NAME_TAILS){const name=(base.length>=4?base.slice(0,3):base).join('')+t;if(!checkCustom({...o,name},others))return name;}
+  return undefined;
+}
+/**
+ * 저장된 신장수를 정리한다(잘못된 것은 버림).
+ * 이름이 다른 신장수나 연의 장수록(게임이 새로 더한 장수 포함)과 겹치면 버리지 않고 비슷한 빈 이름으로 바꿔 살린다.
+ */
 export function readCustoms(raw:unknown):CustomOfficer[]{
   if(!Array.isArray(raw))return [];const out:CustomOfficer[]=[];
   for(const x of raw){const o=x as CustomOfficer;if(!o||typeof o!=='object')continue;
     const pt=readPortrait(o.portrait),clean:CustomOfficer={name:String(o.name??''),epithet:String(o.epithet??'').slice(0,24),unitClass:currentClass(String(o.unitClass)),temper:o.temper,war:o.war,int:o.int,lead:o.lead,pol:o.pol,cha:o.cha,...(pt?{portrait:pt}:{}),...(isPresetPortrait(o.art)?{art:o.art}:{})};
-    if(!checkCustom(clean,out.map(c=>c.name))&&out.length<CUSTOM_LIMIT)out.push(clean);}
+    if(out.length>=CUSTOM_LIMIT)break;
+    const others=out.map(c=>c.name),why=checkCustom(clean,others);
+    if(!why){out.push(clean);continue;}
+    if(NAME_CLASH.has(why)){const name=freeCustomName(clean,others);if(name)out.push({...clean,name});}}
   return out;
 }
 let registered:string[]=[],registeredList:CustomOfficer[]=[];
