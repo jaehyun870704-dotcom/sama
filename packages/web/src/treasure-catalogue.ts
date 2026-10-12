@@ -59,7 +59,7 @@ const questEntries:Array<[string,string,GearSlot,number,string,Treasure['bonus']
  ['snakeBlade','청명검','weapon',3,'R03',{attack:6,agility:2},'손권의 여섯 명검 가운데 하나. 푸른 하늘빛이 감도는 칼날.'],
  ['armorPiercer','파갑추','weapon',3,'R03',{attack:6,maxHp:4},'끝이 뾰족한 쇠망치. 갑옷을 뚫으려고 만들었다.'],
  ['boltQuiver','노전통','weapon',3,'R03',{attack:5,agility:3},'짧은 쇠뇌 살을 가득 담은 통과 손쇠뇌.'],
- ['mountainArmor','산문갑','armor',3,'R03',{defense:4,maxHp:9},'산(山) 자 무늬로 미늘을 맞춘 갑옷.'],
+ ['mountainArmor','산문갑','armor',3,'R03',{defense:4,maxHp:9},'‘산’ 자 무늬로 미늘을 맞춘 갑옷.'],
  ['fireproofRobe','화완포','armor',3,'R03',{defense:3,maxHp:6,spirit:2},'불에 넣으면 때만 타고 깨끗해진다는 옷감.'],
  ['beaconToken','봉화 영전','accessory',3,'R03',{spirit:3,defense:1},'봉화대 수장이 차는 화살 모양 영패.'],
  ['wuhuanBow','오환 각궁','weapon',4,'R04',{attack:7,agility:3},'북방 기마민의 큰 각궁. 달리며 쏘아도 곧게 날아간다.'],

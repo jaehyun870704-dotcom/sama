@@ -58,9 +58,12 @@ describe('연의에 데려가는 등용 장수',()=>{
     const u=s.state.find('rt_0');expect(u?.name).toBe('장합');expect(u?.side).toBe('player');expect(romanceOf(u!)?.name).toBe('장합');
     expect([...s.state.units.values()].filter(x=>x.name==='사마랑')).toHaveLength(1);
   });
-  it('이야기 선택의 사기·방어 효과를 등용 장수도 받는다',()=>{
-    const s=new Session(campaignOrder[0]!,'normal',215,'survival',13,{levels:{sima_yi:5,sima_lang:5,sima_fang:5,cao_zhen:5},equipped:{},storyMods:{rally:true,guard:true},retinue:[{id:'rt_0',name:'장합',unitClass:'cavalry',level:4,xp:0,hp:1}]} as never);
-    const u=s.state.find('rt_0')!;expect(u.statuses.some(x=>x.kind==='rally')).toBe(true);expect(u.statuses.some(x=>x.kind==='guard')).toBe(true);
+  it('이야기 선택의 사기·방어 효과는 연의 기반 등용 장수만 받는다',()=>{
+    const s=new Session(campaignOrder[0]!,'normal',215,'survival',13,{levels:{sima_yi:5,sima_lang:5,sima_fang:5,cao_zhen:5},equipped:{},storyMods:{rally:true,guard:true},retinue:[{id:'rt_0',name:'장합',unitClass:'cavalry',level:4,xp:0,hp:1},{id:'rt_1',name:'장료',unitClass:'cavalry',level:4,xp:0,hp:1}]} as never);
+    const story=s.state.find('rt_0')!,other=s.state.find('rt_1')!;
+    expect(story.statuses.some(x=>x.kind==='rally')).toBe(true);expect(story.statuses.some(x=>x.kind==='guard')).toBe(true);
+    expect(other.statuses.some(x=>x.kind==='rally'||x.kind==='guard')).toBe(false);
+    expect(s.state.find('sima_yi')!.statuses.some(x=>x.kind==='rally')).toBe(true);
   });
   it('저장·불러오기를 거쳐도 남고, 세 명 이상이면 기록을 거부한다',()=>{
     const base={levels:{sima_yi:5,sima_lang:5,sima_fang:5,cao_zhen:5},equipped:{},retinue:[{id:'rt_0',name:'장합',unitClass:'cavalry',level:4,xp:0,hp:1}]};

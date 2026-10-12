@@ -120,14 +120,14 @@ export function showHub(host:RunHost){
   <header class="lobby-head"><div><p class="eyebrow">본영 · 사마의의 군막</p><h2>천하를 향한 다음 수</h2></div>
   <div class="hub-stats"><span><b>${c.won}/${c.total}</b><small>이긴 연의</small></span><span><b>${c.seals}/${c.sealMax}</b><small>인장</small></span><span><b>${(meta.recruited??[]).length}</b><small>등용</small></span><span><b>${meta.mandate}</b><small>천명</small></span></div></header>
   <div class="lobby-main">
-    ${tile('hub-chronicle','演',c.won?'연의 이어하기':'연의 시작','본편 · 상편 11장 · 중편 14장 · 하편 7장 · 일반/극한과 인장',c.next?`다음 · ${esc(c.next)}`:'32장 완료 · 극한 인장과 인장 보상을 모아 보자','primary wide')}
-    ${tile('hub-training','練','수련장','막혔을 때 레벨업 · 다음 연의 장 권장 레벨까지','승리마다 경험치 · 연의 장수 모두')}
-    ${tile('hub-challenge','關','도전의 관문','10단계 · 단계마다 적이 늘고 강해진다','처음 넘는 단계마다 보물')}
-    ${tile('hub-recruit','聘','등용','계보마다 조건을 채워 장수를 휘하로 · 연의에 데려간다',`등용 ${(meta.recruited??[]).length}/${RECRUITABLE.length}명`)}
-    ${tile('hub-archive','書','시나리오 보기','지난 이야기를 다시 보고, 이긴 장을 다시 싸운다',`결말 ${meta.endings.length}/${ALL_ENDINGS.length}`)}
-    ${tile('hub-collections','鑑','도감','인물 · 병종 · 책략 · 보물 · 갈림길',`보물 ${treasureSummary().owned}/${treasureSummary().total}`)}
-    ${tile('hub-scenario','命','천명의 길','서브 · 로그라이크 회차 · 갈림길의 가상 전장과 결말',sc.state.run?`제${sc.state.run.no}회차 · ${esc(sc.tag)} 「${esc(sc.title)}」`:'연의와 레벨·보물을 함께 쓴다','sub')}
-    ${tile('hub-run','征','천명의 원정','서브 · 로그라이크 · 3편 18층을 오르는 한 번뿐인 길',ongoing(run)?`원정 중 · ${run.floor}층`:`최고 ${meta.best}층 · 천명 ${meta.mandate}`,'sub')}
+    ${tile('hub-chronicle','연',c.won?'연의 이어하기':'연의 시작','본편 · 상편 11장 · 중편 14장 · 하편 7장 · 일반/극한과 인장',c.next?`다음 · ${esc(c.next)}`:'32장 완료 · 극한 인장과 인장 보상을 모아 보자','primary wide')}
+    ${tile('hub-training','수','수련장','막혔을 때 레벨업 · 다음 연의 장 권장 레벨까지','승리마다 경험치 · 연의 장수 모두')}
+    ${tile('hub-challenge','관','도전의 관문','10단계 · 단계마다 적이 늘고 강해진다','처음 넘는 단계마다 보물')}
+    ${tile('hub-recruit','등','등용','계보마다 조건을 채워 장수를 휘하로 · 연의에 데려간다',`등용 ${(meta.recruited??[]).length}/${RECRUITABLE.length}명`)}
+    ${tile('hub-archive','서','시나리오 보기','지난 이야기를 다시 보고, 이긴 장을 다시 싸운다',`결말 ${meta.endings.length}/${ALL_ENDINGS.length}`)}
+    ${tile('hub-collections','감','도감','인물 · 병종 · 책략 · 보물 · 갈림길',`보물 ${treasureSummary().owned}/${treasureSummary().total}`)}
+    ${tile('hub-scenario','명','천명의 길','서브 · 로그라이크 회차 · 갈림길의 가상 전장과 결말',sc.state.run?`제${sc.state.run.no}회차 · ${esc(sc.tag)} 「${esc(sc.title)}」`:'연의와 레벨·보물을 함께 쓴다','sub')}
+    ${tile('hub-run','정','천명의 원정','서브 · 로그라이크 · 3편 18층을 오르는 한 번뿐인 길',ongoing(run)?`원정 중 · ${run.floor}층`:`최고 ${meta.best}층 · 천명 ${meta.mandate}`,'sub')}
   </div>
   <nav class="lobby-sub">${host.resumeSaved?'<button id="hub-resume" class="primary">전투 이어하기</button>':''}<button id="hub-research">연구</button><button id="hub-custom">신장수 · 신세력</button><button id="hub-slots">저장 칸</button><button id="hub-title">첫 화면</button></nav></div>`,false);
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
@@ -147,12 +147,12 @@ export function showCollections(host:RunHost,back?:()=>void){
   const card=(id:string,seal:string,title:string,line:string,count:string)=>`<button id="${id}" class="codex-card"><span class="lobby-seal" aria-hidden="true">${seal}</span><strong>${title}</strong><small>${line}</small><em>${count}</em></button>`;
   host.modal(`<div class="briefing collections-screen"><div class="eyebrow">도감 · 모은 것과 알게 된 것</div><h2>난세의 기록</h2>
   <div class="codex-cards">
-    ${card('col-people','人','인물 열전','연의·정사의 장수 · 능력 · 고유특성 · 열전',`${codexNames().length}명`)}
-    ${card('col-classes','兵','병종','병종마다 무기·상성·부대효과',`${Object.keys(classNames).length}종`)}
-    ${card('col-evolution','進','병종 진화표','레벨이 오르면 어떻게 강해지는가','4단계 진화')}
-    ${card('col-strategies','策','책략','속성 단계 · 상승 · 감소 · 보급 · 사신',`${allStrategies.length}종`)}
-    ${card('col-treasures','寶','보물','가진 것 · 얻는 곳 · 효과 · 특기',`${t.owned}/${t.total} · 회차 ${t.relics}/${t.relicTotal}`)}
-    ${card('col-fate','岐','갈림길 지도','정사와 가상이 갈라지는 곳과 결말',`결말 ${meta.endings.length}/${ALL_ENDINGS.length}`)}
+    ${card('col-people','인','인물 열전','연의·정사의 장수 · 능력 · 고유특성 · 열전',`${codexNames().length}명`)}
+    ${card('col-classes','병','병종','병종마다 무기·상성·부대효과',`${Object.keys(classNames).length}종`)}
+    ${card('col-evolution','진','병종 진화표','레벨이 오르면 어떻게 강해지는가','4단계 진화')}
+    ${card('col-strategies','책','책략','속성 단계 · 상승 · 감소 · 보급 · 사신',`${allStrategies.length}종`)}
+    ${card('col-treasures','보','보물','가진 것 · 얻는 곳 · 효과 · 특기',`${t.owned}/${t.total} · 회차 ${t.relics}/${t.relicTotal}`)}
+    ${card('col-fate','갈','갈림길 지도','정사와 가상이 갈라지는 곳과 결말',`결말 ${meta.endings.length}/${ALL_ENDINGS.length}`)}
   </div>
   <div class="run-actions"><button id="col-back">← 돌아가기</button></div></div>`,false);
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};

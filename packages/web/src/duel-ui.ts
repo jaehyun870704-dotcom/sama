@@ -202,7 +202,7 @@ export function animateDuel(root:ParentNode=document){
     void dir;};
   // 설전: 다가서지 않고 제자리에서 부채·손을 휘두르며 말한다. 말이 먹글자가 되어 상대에게 날아가 꽂히고,
   // 꽂힌 쪽은 움찔 물러서며 식은땀을 흘린다(논파당함). 막으면 같은 글자를 되받아친다.
-  const glyphs=['理','義','策','論','辯','證'];
+  const glyphs=['논리','의리','계책','반론','변론','증거'];
   const speak=(el:HTMLElement,a:string,dir:1|-1)=>{const m=body(el);if(!m||a==='guard')return;
     const lean=a==='rally'?0:dir*10;
     m.animate([{translate:'0 0',rotate:'0deg'},{translate:`${lean*.4}px -4px`,rotate:`${dir*-4}deg`,offset:.2},{translate:`${lean}px 0`,rotate:`${dir*5}deg`,offset:.36},{translate:`${lean*.6}px -3px`,rotate:`${dir*-3}deg`,offset:.5},{translate:`${lean}px 0`,rotate:`${dir*4}deg`,offset:.64},{translate:'0 0',rotate:'0deg'}],{duration:total,easing:'ease-in-out',composite:'add'});};

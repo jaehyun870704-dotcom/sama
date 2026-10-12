@@ -174,12 +174,40 @@ function poseFrom(stand:HTMLCanvasElement,pose:PxPose,alt?:HTMLCanvasElement):HT
 }
 
 const sheets=new Map<string,string>();
+/** 시트 첫 칸(앞모습 서기)의 인물 키를 재서, 기존 시트 비율(키 86%·발끝 94%)에 맞출 배율을 돌려준다. */
+function figureFit(src:HTMLCanvasElement,sw:number,sh:number){
+  const w=Math.round(sw),h=Math.round(sh),d=src.getContext('2d')!.getImageData(0,0,w,h).data;let top=h,bottom=-1;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(d[(y*w+x)*4+3]!>40){if(y<top)top=y;bottom=y;break;}
+  const tall=bottom<top?0:(bottom-top+1)/h;
+  if(tall<=0.9)return {scale:1,dy:0};
+  const scale=0.86/tall,foot=(bottom+1)/h*scale*FIG_H;
+  return {scale,dy:FIG_H*0.94-foot};
+}
+/**
+ * 윗줄 인물의 발끝이 아랫줄 칸 맨 위로 넘어온 시트가 있다(칸 경계를 넘겨 그린 원화).
+ * 칸마다 위 5% 안에서 처음 비는 가로줄을 찾아, 그 위에 걸친 조각을 지운다. 빈 줄이 없으면(머리 장식이 칸 끝에 닿음) 두지 않는다.
+ */
+function trimBleed(src:HTMLCanvasElement,sw:number,sh:number){
+  const out=canvas(src.width,src.height),g=out.getContext('2d')!;g.drawImage(src,0,0);
+  const band=Math.max(2,Math.round(sh*0.05));
+  for(let row=1;row<PX_ROWS;row++)for(let col=0;col<8;col++){
+    const x0=Math.round(col*sw),y0=Math.round(row*sh),w=Math.round(sw),d=g.getImageData(x0,y0,w,band).data;
+    let clearTo=-1;
+    for(let y=0;y<band;y++){let any=false;for(let x=0;x<w;x++)if(d[(y*w+x)*4+3]!>40){any=true;break;}if(!any){clearTo=y;break;}}
+    if(clearTo>0)g.clearRect(x0,y0,w,clearTo);
+  }
+  return out;
+}
 function paintedStorySheet(url:string,src:HTMLCanvasElement){
   const key=`painted:${url}`,hit=sheets.get(key);if(hit)return hit;
   const cv=canvas(FIG_W*PX_COLS,FIG_H*PX_ROWS),g=cv.getContext('2d')!,sw=src.width/8,sh=src.height/PX_ROWS;
+  // 칸을 꽉 채워 그린 시트(인물 키가 칸의 90% 넘게)는 기존 시트처럼 키 86%·발끝 94%로 줄여 담는다.
+  // 그대로 담으면 다른 장수보다 머리 하나쯤 커 보이고, 발끝·창끝이 칸 가장자리에서 잘린다.
+  const fit=figureFit(src,sw,sh),dw=FIG_W*fit.scale,dh=FIG_H*fit.scale,dx=(FIG_W-dw)/2,dy=fit.dy;
+  src=trimBleed(src,sw,sh);
   for(let row=0;row<PX_ROWS;row++){
-    for(let col=0;col<8;col++)g.drawImage(src,col*sw,row*sh,sw,sh,col*FIG_W,row*FIG_H,FIG_W,FIG_H);
-    const stand=canvas(FIG_W,FIG_H);stand.getContext('2d')!.drawImage(src,0,row*sh,sw,sh,0,0,FIG_W,FIG_H);
+    for(let col=0;col<8;col++)g.drawImage(src,col*sw,row*sh,sw,sh,col*FIG_W+dx,row*FIG_H+dy,dw,dh);
+    const stand=canvas(FIG_W,FIG_H);stand.getContext('2d')!.drawImage(src,0,row*sh,sw,sh,dx,dy,dw,dh);
     g.drawImage(poseFrom(stand,'sit'),PX_POSE.sit*FIG_W,row*FIG_H);
   }
   const out=cv.toDataURL('image/png');sheets.set(key,out);return out;

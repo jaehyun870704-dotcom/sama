@@ -2113,7 +2113,7 @@ dialog:has(.title-screen),dialog:has(.lobby){width:min(1240px,calc(100vw - 24px)
 .duel-stage.choreo.live-models .duel-ground.resolved .result-winner .duel-model{animation:winner-pose .7s ease-out .7s both}
 .duel-stage.choreo.live-models .duel-ground.resolved .result-loser .duel-model{animation:loser-kneel .7s ease-out .7s both;filter:saturate(.6) brightness(.85)}
 /* 설전: 말이 먹글자가 되어 날아간다 · 논파당한 쪽의 식은땀 */
-.duel-glyph{position:absolute;left:0;top:0;z-index:6;pointer-events:none;font:900 clamp(20px,3vw,34px)/1 'LocalSerif','Batang',serif;color:#1a1009;-webkit-text-stroke:1px #f4e6c0;text-shadow:0 0 8px #f4e6c0,0 0 16px #5a8ac9}
+.duel-glyph{position:absolute;left:0;top:0;z-index:6;pointer-events:none;white-space:nowrap;font:900 clamp(20px,3vw,34px)/1 'LocalSerif','Batang',serif;color:#1a1009;-webkit-text-stroke:1px #f4e6c0;text-shadow:0 0 8px #f4e6c0,0 0 16px #5a8ac9}
 .duel-glyph.big{color:#5a0a06;text-shadow:0 0 10px #ffe070,0 0 22px #ff9a30}
 .duel-sweat{position:absolute;right:18%;top:12%;font-style:normal;font-size:clamp(16px,2.2vw,26px);animation:duel-sweat 1s ease-in both;pointer-events:none;z-index:5}
 @keyframes duel-sweat{0%{opacity:0;translate:0 -6px}20%{opacity:1}100%{opacity:0;translate:4px 18px}}
