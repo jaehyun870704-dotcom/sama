@@ -62,6 +62,7 @@ export const officerManifest:OfficerEntry[]=[
   E('cao_shen','조참',{infantry:['cao_shen-battle-infantry-v1.webp',280,224,1]}),
   E('cao_zhi','조식',{strategist:['cao_zhi-battle-strategist-v1.webp',280,224,1]}),
   E('wutugu','올돌골',{infantry:['wutugu-battle-infantry-v1.webp',280,224,1]}),
+  E('feng_ji','봉기',{strategist:['feng_ji-battle-strategist-v1.webp',280,224,1]}),
 ];
 
 const legacySheets=[
