@@ -18,13 +18,13 @@ describe('회차에서 얻은 장수·보물은 연의 전장에 곧바로 실�
 });
 
 describe('보물 특기',()=>{
- it('lets a 둔갑천서 bearer cast its strategies with extra MP, and a 청공검 bearer pierce harder',()=>{
-  const d={levels:{sima_yi:6,sima_lang:4,sima_fang:1,cao_zhen:4},equipped:{},loadouts:{sima_lang:{accessory:'dunjia',weapon:'qinggang'}}};
+ it('lets a 둔갑천서 bearer borrow an adjacent unit\'s strategy, and a 청공검 bearer hit cavalry harder',()=>{
+  const d={levels:{sima_yi:6,sima_lang:4,sima_fang:1,cao_zhen:4},equipped:{},gearRules:2,loadouts:{sima_lang:{accessory:'dunjia',weapon:'qinggang'}}};
   const plain=new Session(2,'normal',215,'survival',4,{levels:d.levels,equipped:{}}),s=new Session(2,'normal',215,'survival',4,d as never);
   const a=plain.state.get('sima_lang'),b=s.state.get('sima_lang');
-  expect(b.strategies).toEqual(expect.arrayContaining(['gust','windDragon','feint']));
-  expect(s.state.strategies.has('feint')).toBe(true);
-  expect(b.stats.maxMp).toBeGreaterThan(a.stats.maxMp+19);
-  expect(b.traitParams.penetrate??0).toBeGreaterThan(a.traitParams.penetrate??0);
+  expect(b.traits).toEqual(expect.arrayContaining(['gear:mimic','gear:cavalryBane']));
+  expect(b.stats.attack).toBeGreaterThan(a.stats.attack);
+  const hero=s.state.get('sima_yi');hero.pos={x:b.pos.x+1,y:b.pos.y};
+  for(const id of hero.strategies)if(!b.strategies.includes(id))expect(s.state.usableStrategies(b)).toContain(id);
  });
 });

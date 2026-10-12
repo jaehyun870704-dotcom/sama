@@ -4,7 +4,7 @@ import {Session,campaignOrder,chapters} from '../src/session.ts';
 import {freshCampaign,deployment,award,equip} from '../src/progression.ts';
 import {CONTROLLABLE,decide,key,manhattan} from '../../core/src/index.ts';
 function create(difficulty:'normal'|'extreme'='normal',preparation:'strategy'|'survival'='strategy'){
- const c=freshCampaign();for(const index of [2,0,3,4,5])award(c,chapters[index]!.stage.id,'normal',chapters[index]!.stage.deployment.forced,[1]);if(difficulty==='extreme')award(c,'S1-06','normal',['sima_yi','cao_zhen'],[1]);equip(c,'sima_yi','mengde');equip(c,'cao_zhen',difficulty==='extreme'?'yitian':'sevenstar');return new Session(6,difficulty,215,preparation,3,deployment(c));
+ const c=freshCampaign();for(const index of [2,0,3,4,5])award(c,chapters[index]!.stage.id,'normal',chapters[index]!.stage.deployment.forced,[1]);if(difficulty==='extreme')award(c,'S1-06','normal',['sima_yi','cao_zhen'],[1]);expect(equip(c,'sima_yi','fan')).toBe(true);expect(equip(c,'cao_zhen',difficulty==='extreme'?'greenDragon':'serpentSpear')).toBe(true);return new Session(6,difficulty,215,preparation,3,deployment(c));
 }
 function play(s:Session,guardId:string){for(let i=0;i<1800&&s.state.outcome==='ongoing';i++){
  const st=s.state;if(!CONTROLLABLE.has(st.currentSide)){s.tick();continue;}const u=st.living(st.currentSide).find(u=>!u.hasActed);if(!u){s.tick();continue;}

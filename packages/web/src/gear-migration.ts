@@ -1,0 +1,12 @@
+/**
+ * 지운 이름 있는 보물(고유 보물 50점 밖의 114점)의 칸·등급. 예전 저장을 읽을 때만 쓴다.
+ * 이 보물을 가진 저장은 같은 칸·같은 등급의 상점 장비로 바꿔 준다(progression.ts readCampaign).
+ * 글자: w 무기 · a 방어구 · c 보조구, 숫자는 등급(1 일반 ~ 4 전설).
+ */
+import type {GearSlot,GearGrade} from '../../core/src/index.ts';
+const TABLE:Record<string,string>={bow:'w2',ironArmor:'a1',leatherArmor:'a1',warDrum:'c1',ironSpear:'w2',flyingBlade:'w2',chainArmor:'a2',militarySeal:'c2',phoenixSpear:'w3',crescentBlade:'w3',scaleArmor:'a2',swiftSaddle:'c2',ironBow:'w3',repeatingCrossbow:'w3',rattanArmor:'a3',threePointBlade:'w3',steelWhip:'w2',brightArmor:'a3',longbow:'w3',ironAxe:'w2',blackArmor:'a3',dragonSpear:'w4',twinHalberds:'w3',tigerArmor:'a3',goldHammer:'w3',moonSword:'w3',jadeSword:'w4',tigerSpear:'w3',cloudRobe:'a3',sevenStarFlag:'c4',formationScroll:'c4',springAutumn:'c4',jadePendant:'c3',tigerTally:'c4',strategistRobe:'a4',rattanShield:'a1',hujia:'c1',phoenixHelm:'a2',hookSpear:'w3',baguaMirror:'c3',purpleGourd:'c3',bearCloak:'a2',phoenixHairpin:'c3',swiftBoots:'c3',zhanmaDao:'w4',tigerShield:'a4',lionHelm:'a4',tortoiseToken:'c4',bronzeSword:'w1',hideShield:'a1',strawCape:'a1',copperBell:'c1',travelPouch:'c2',ringBlade:'w2',ironRod:'w2',lamellarVest:'a2',wolfHelm:'a2',bambooSlips:'c2',ponyBridle:'c3',snakeBlade:'w3',armorPiercer:'w3',boltQuiver:'w3',mountainArmor:'a3',fireproofRobe:'a3',beaconToken:'c3',wuhuanBow:'w4',cavalrySaber:'w3',feltArmor:'a3',horseBarding:'a4',eagleFeather:'c4',nomadSteed:'c4',poisonDarts:'w4',tuskSpear:'w4',rattanHelm:'a4',shuBrocade:'a4',bronzeDrum:'c4',spiritBead:'c4',simaFa:'c3',weiLiaozi:'c2',shiji:'c3',hanfeizi:'c3',guanzi:'c3',shangjunshu:'c3',yanziChunqiu:'c2',yinfu:'c3',siminYueling:'c1',yantielun:'c2',laozi:'c4',zhuangzi:'c3',lunyu:'c3',shijing:'c3',shujing:'c2',yijing:'c2',liji:'c2',shanhaijing:'c4',xishuMap:'c4',guoxiaMa:'c2',liangzhouMa:'c3',baihu:'c3',fourWheelCart:'c3',zhansheSword:'w4',baipiDao:'w2',initiateBadge:'c2',sharpSpearhead:'w3',riverShield:'a3',summitBanner:'c3',gatekeeperHalberd:'w4',gatekeeperArmor:'a4',courtSeal:'c4',cliffSandals:'c4',fordHorse:'c4',hundredPaceBow:'w4',peerlessSword:'w4',overlordArmor:'a4'};
+export function legacyGear(id:string):{slot:GearSlot;grade:GearGrade}|undefined{
+  const v=Object.hasOwn(TABLE,id)?TABLE[id]:undefined;if(!v)return undefined;
+  return {slot:v[0]==='w'?'weapon':v[0]==='a'?'armor':'accessory',grade:Number(v[1]) as GearGrade};
+}
+export const LEGACY_GEAR_IDS:readonly string[]=Object.keys(TABLE);

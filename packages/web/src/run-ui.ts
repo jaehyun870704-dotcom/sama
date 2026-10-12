@@ -52,6 +52,10 @@ export interface RunHost {
   showRecruit():void;
   /** 제갈량전: 장 목록 */
   showZhuge():void;
+  /** 상점(본영에서 · 이야기마다 따로 쓰는 금) */
+  showShop(back:()=>void):void;
+  /** 상점 칸에 보일 금 한 줄 */
+  shopLine():string;
   /** 제갈량전 진행 요약 */
   zhugeSummary():{next?:string;won:number;total:number;seals:number;sealMax:number};
   /** 자동 저장된 전투가 있으면 이어 하기 */
@@ -143,12 +147,13 @@ export function showHub(host:RunHost){
     ${tile('hub-training','수','수련장','막혔을 때 레벨업 · 다음 연의 장 권장 레벨까지','승리마다 경험치 · 연의 장수 모두')}
     ${tile('hub-challenge','관','도전의 관문','10단계 · 단계마다 적이 늘고 강해진다','처음 넘는 단계마다 보물')}
     ${tile('hub-archive','서','시나리오 보기','지난 이야기를 다시 보고, 이긴 장을 다시 싸운다',`결말 ${meta.endings.length}/${ALL_ENDINGS.length}`)}
-    ${tile('hub-collections','감','도감','인물 · 병종 · 책략 · 보물 · 갈림길',`보물 ${treasureSummary().owned}/${treasureSummary().total}`)}
+    ${tile('hub-shop','상','상점','장비·도구를 사고팔고 장수의 장비를 정비한다',host.shopLine())}
+    ${tile('hub-collections','감','도감','인물 · 병종 · 책략 · 보물 · 갈림길',`고유 보물 ${treasureSummary().owned}/${treasureSummary().total}`)}
   </div>
   <nav class="lobby-sub">${host.resumeSaved?'<button id="hub-resume" class="primary">전투 이어하기</button>':''}<button id="hub-research">연구</button><button id="hub-slots">저장 칸</button><button id="hub-title">첫 화면</button></nav></div>`,false);
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
   on('hub-chronicle',host.showChronicleNext);on('hub-zhuge',host.showZhuge);on('hub-training',host.showTraining);on('hub-challenge',()=>host.showExpeditions('challenge'));
-  on('hub-archive',host.showStoryArchive);on('hub-collections',()=>showCollections(host,()=>showHub(host)));
+  on('hub-archive',host.showStoryArchive);on('hub-shop',()=>host.showShop(()=>showHub(host)));on('hub-collections',()=>showCollections(host,()=>showHub(host)));
   on('hub-research',()=>showResearch({modal:host.modal,toast:host.toast,back:()=>showHub(host),codex:()=>codexOf(host)()}));
   on('hub-resume',()=>host.resumeSaved?.());on('hub-slots',()=>host.showSlots());on('hub-title',()=>showTitle(host));
 }
@@ -167,7 +172,7 @@ export function showCollections(host:RunHost,back?:()=>void){
     ${card('col-classes','병','병종','병종마다 무기·상성·부대효과',`${Object.keys(classNames).length}종`)}
     ${card('col-evolution','진','병종 진화표','레벨이 오르면 어떻게 강해지는가','4단계 진화')}
     ${card('col-strategies','책','책략','속성 단계 · 상승 · 감소 · 보급 · 사신',`${allStrategies.length}종`)}
-    ${card('col-treasures','보','보물','가진 것 · 얻는 곳 · 효과 · 특기',`${t.owned}/${t.total} · 회차 ${t.relics}/${t.relicTotal}`)}
+    ${card('col-treasures','보','보물','고유 보물 50점 · 얻는 곳 · 고유 기능',`${t.owned}/${t.total} · 회차 ${t.relics}/${t.relicTotal}`)}
     ${card('col-fate','갈','갈림길 지도','정사와 가상이 갈라지는 곳과 결말',`결말 ${meta.endings.length}/${ALL_ENDINGS.length}`)}
   </div>
   <div class="run-actions"><button id="col-back">← 돌아가기</button></div></div>`,false);

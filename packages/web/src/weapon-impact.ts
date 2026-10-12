@@ -1,13 +1,13 @@
 import {familyOf,type Unit} from '../../core/src/index.ts';
-import {formOf} from './treasure-art.ts';
+import {gearDef,gearBaseId,GEAR_KINDS} from '../../core/src/index.ts';
 
 /** 전투 효과가 따라 그릴 무기 실루엣. 이름 있는 장수는 고유 무기를 가장 먼저 따른다. */
 export type WeaponShape='sword'|'blade'|'spear'|'polearm'|'axe'|'bow'|'crossbow'|'blunt'|'fan'|'siege';
 export type WeaponImpact='slash'|'cleave'|'pierce'|'arrow'|'bolt'|'blunt'|'fan';
 
-const CROSSBOWS=new Set(['repeatingCrossbow','boltQuiver','goldFireCannon']);
-const AXES=new Set(['ironAxe']);
-const BLUNTS=new Set(['ironRod','armorPiercer','steelWhip','goldHammer','meteorHammer','twinWhips','noFeatherDart','poisonDarts','flyingBlade']);
+/** 고유 보물 가운데 종류와 다른 실루엣을 쓰는 것(방천화극·청룡언월도는 긴 날, 금화관포는 쏘는 동작). */
+const NAMED_SHAPE:Record<string,WeaponShape>={halberd:'polearm',greenDragon:'polearm',goldFireCannon:'crossbow',ancientBlade:'blade'};
+const KIND_SHAPE:Partial<Record<string,WeaponShape>>={sword:'sword',sacredSword:'sword',spear:'spear',bow:'bow',club:'blunt',fan:'fan'};
 
 /** 연의에서 실루엣이 분명한 장수는 병종의 범용 무기보다 고유 주무기를 우선한다. */
 const SIGNATURE:Record<string,WeaponShape>={
@@ -28,8 +28,8 @@ const SIGNATURE:Record<string,WeaponShape>={
 };
 
 export function equippedWeaponShape(id?:string):WeaponShape|undefined{
-  if(!id)return undefined;if(CROSSBOWS.has(id))return 'crossbow';if(AXES.has(id))return 'axe';if(BLUNTS.has(id))return 'blunt';
-  const form=formOf(id);return form==='sword'?'sword':form==='blade'?'blade':form==='spear'?'spear':form==='polearm'?'polearm':form==='bow'?'bow':form==='hidden'?'blunt':undefined;
+  if(!id)return undefined;const base=gearBaseId(id);if(NAMED_SHAPE[base])return NAMED_SHAPE[base];
+  const d=gearDef(id);if(!d||GEAR_KINDS[d.kind].slot!=='weapon')return undefined;return KIND_SHAPE[d.kind];
 }
 
 export function weaponShape(u:Pick<Unit,'id'|'name'|'unitClass'>,equippedWeapon?:string):WeaponShape{

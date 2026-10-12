@@ -94,13 +94,14 @@ describe('진화 병종의 계열 기능',()=>{
   expect(cryFor('mastermind',true)).toEqual(cryFor('strategist',true));
   expect(classFamily('lancer')).toBe('horse');expect(classFamily('greatBow')).toBe('bow');expect(classFamily('immortal')).toBe('sage');
  });
- it('applies treasure conditions (mounted, caster, armored) to evolved troops too',()=>{
+ it('applies gear effects that read the foe\'s line (cavalry bane) to evolved troops too',()=>{
   const me=makeUnit({id:'a',unitClass:'infantry',level:10,side:'player',pos:{x:0,y:0}});
-  const boost=(trait:string,foe:UnitClass)=>{const ctx={attacker:me,defender:makeUnit({id:'b',unitClass:foe,level:10,side:'enemy',pos:{x:1,y:0}}),kind:'physical',distance:1,attackMul:1,reduction:0,accuracyMod:0,defenseIgnore:0,critChance:0,evasionMod:0} as unknown as DamageContext;
-   getTrait('treasure:'+trait).hooks.onAttack!(ctx,me);return ctx.attackMul;};
-  expect(boost('greenDragon','tigerRider')).toBeCloseTo(boost('greenDragon','cavalry'));expect(boost('greenDragon','tigerRider')).toBeGreaterThan(1);
-  expect(boost('greenDragon','warElephant')).toBeGreaterThan(1);
-  expect(boost('ironAxe','royalGuard')).toBeGreaterThan(1);
+  const boost=(trait:string,param:number,foe:UnitClass)=>{const ctx={attacker:me,defender:makeUnit({id:'b',unitClass:foe,level:10,side:'enemy',pos:{x:1,y:0}}),kind:'physical',distance:1,attackMul:1,reduction:0,accuracyMod:0,defenseIgnore:0,critChance:0,evasionMod:0} as unknown as DamageContext;
+   getTrait(trait).hooks.onAttack!(ctx,me,param);return ctx.attackMul;};
+  expect(boost('gear:cavalryBane',50,'tigerRider')).toBeCloseTo(boost('gear:cavalryBane',50,'cavalry'));expect(boost('gear:cavalryBane',50,'tigerRider')).toBeCloseTo(1.5);
+  expect(boost('gear:cavalryBane',50,'ironPagoda')).toBeCloseTo(1.5);
+  // 군주·궁기병·기마책사는 기병 특효를 받지 않는다.
+  expect(boost('gear:cavalryBane',50,'lord')).toBe(1);expect(boost('gear:cavalryBane',50,'nomad')).toBe(1);expect(boost('gear:cavalryBane',50,'mountedTactician')).toBe(1);
  });
  it('evolves story officers by level and keeps what they learned',()=>{
   const d=deployment(freshCampaign(),true);d.levels.sima_yi=16;d.levels.cao_zhen=12;d.levels.sima_fang=3;

@@ -7,7 +7,7 @@ function create(difficulty:'normal'|'extreme',seed=215){
   const campaign=freshCampaign();
   for(const i of [2,0,3,4,5,6])award(campaign,chapters[i]!.stage.id,'normal',chapters[i]!.stage.deployment.forced,[1]);
   if(difficulty==='extreme')award(campaign,'S1-07','normal',['sima_yi','cao_zhen'],[1]);
-  equip(campaign,'sima_yi','mengde');equip(campaign,'cao_zhen','yitian');
+  expect(equip(campaign,'sima_yi','fan')).toBe(true);expect(equip(campaign,'cao_zhen','serpentSpear')).toBe(true);
   return new Session(7,difficulty,seed,'strategy',3,deployment(campaign));
 }
 function play(s:Session){
@@ -32,6 +32,8 @@ function play(s:Session){
       expect(s.act({kind:'wait',unit:u.id}).ok).toBe(true);continue;
     }
     for(const cmd of decide(st,u)){
+      // 자동 일기토를 마치고 돌아온 장수는 이미 움직였다: 다시 움직이지 않는다.
+      if(cmd.kind==='move'&&u.hasMoved&&key(cmd.to)!==key(u.pos))break;
       if(cmd.kind==='move'&&key(cmd.to)===key(u.pos))continue;
       const result=s.act(cmd);expect(result.ok,result.error).toBe(true);
       if(st.outcome!=='ongoing'||s.activeDuel)break;
@@ -73,7 +75,7 @@ describe('한중 정벌전 上 · 산길의 수비망',()=>{
     expect(reward.treasure?.id).toBe('silverarmor');expect(equip(c,'cao_zhen','silverarmor')).toBe(true);
     const s=new Session(1,'normal',215,'survival',3,deployment(c));
     const unequipped=structuredClone(c);unequipped.equipped={};const baseline=new Session(1,'normal',215,'survival',3,deployment(unequipped));
-    expect(s.state.get('cao_zhen').stats.defense-baseline.state.get('cao_zhen').stats.defense).toBe(4);
+    expect(s.state.get('cao_zhen').stats.defense-baseline.state.get('cao_zhen').stats.defense).toBe(6);
     expect(award(c,'S1-07','normal',['sima_yi'],[1]).xp).toBe(0);
   });
 });

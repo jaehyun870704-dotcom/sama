@@ -3,7 +3,8 @@ import {Session} from '../src/session.ts';
 import {freshCampaign,deployment} from '../src/progression.ts';
 import {allStrategies,legacyStrategies,upgradeStrategyId,findStrategy} from '../src/officers.ts';
 import {V12_LINEAGE} from '../src/strategies-v12.ts';
-import {TREASURE_SPECIALS} from '../src/treasure-specials.ts';
+import {JEWEL_STRATEGY_DEFS} from '../src/strategies-v12.ts';
+import {JEWEL_STRATEGIES} from '../../core/src/index.ts';
 import {effAgility,Battle,BattleState,makeUnit} from '../../core/src/index.ts';
 import {flatMap,minimalStage} from '../../core/test/fixtures.ts';
 
@@ -23,8 +24,9 @@ describe('규칙판 12 책략 목록',()=>{
   expect(old.state.get('sima_yi').strategies).toContain('fire');
   expect(Session.load(old.save()).state.snapshot()).toEqual(old.state.snapshot());
  });
- it('보물이 주는 책략도 새 목록으로 바뀌고 설명의 이름도 새 이름이다',()=>{
-  for(const sp of Object.values(TREASURE_SPECIALS))for(const id of sp.strategies??[]){expect(allStrategies.some(s=>s.id===id),id).toBe(true);expect(sp.text).toContain(findStrategy(id)!.name);}
+ it('사신보옥이 여는 사신 책략 넷은 지금 목록에 있고, 배워서 익히지 않는다',()=>{
+  expect(JEWEL_STRATEGY_DEFS.map(s=>s.name)).toEqual(['청룡','주작','현무','백호']);
+  for(const id of Object.keys(JEWEL_STRATEGIES)){expect(allStrategies.some(s=>s.id===id),id).toBe(true);expect(findStrategy(id)!.level).toBe(99);expect(legacyStrategies.some(s=>s.id===id)).toBe(false);}
  });
  it('정좌는 체력을 MP로 바꾸고, 진언은 자기 자신에게 쓸 수 없다',()=>{
   const s=trial(12),u=s.state.get('sima_yi');u.strategies.push('meditation','counsel');u.mp=0;const hp=u.hp;

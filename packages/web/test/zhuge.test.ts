@@ -28,7 +28,7 @@ describe('제갈량전',()=>{
   });
   it('보물은 두 이야기가 함께 쓴다: 장수 이름에 단 보물을 입고 나선다',()=>{
     const st=chapters[zhugeOrder[0]!]!.stage,c=freshCampaign();
-    const armor=treasures.find(t=>treasureInfo(t.id).slot==='armor')!;c.treasures.push(armor.id);
+    const armor=treasures.find(t=>treasureInfo(t.id).slot==='armor'&&t.kind==='robe')!;c.treasures.push(armor.id);
     expect(equipSlot(c,'제갈량','armor',armor.id)).toBe(true);
     const plain=new Session(zhugeOrder[0]!,'normal',215,'survival',13,zhugeDeployment(freshCampaign(),st,'normal')).state.find('z_liang')!;
     const geared=new Session(zhugeOrder[0]!,'normal',215,'survival',13,zhugeDeployment(c,st,'normal')).state.find('z_liang')!;

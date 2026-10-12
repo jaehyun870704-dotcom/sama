@@ -3,7 +3,8 @@ import {trialMap,expeditionLandscape,navalEnemies,trialLayout} from './expeditio
 import {layoutMap} from './expedition-maps-data.ts';
 import type {MapFile,StageDef,UnitClass} from '../../core/src/index.ts';
 import base from '../../data/stages/S1-07.json';
-import {treasures,levelInfo,OFFICERS,type Campaign} from './progression.ts';
+import {levelInfo,OFFICERS,grantTreasure,newShopItem,addGold,addSupply,gearName,type Campaign} from './progression.ts';
+import {consumable} from '../../core/src/index.ts';
 export type ExpeditionKind='training'|'quest'|'bounty'|'challenge';
 export interface Expedition {id:string;name:string;kind:ExpeditionKind;level:number;requires:number;art:number;lines:string[];/** 도전 퀘스트 단계(1~10) */step?:number}
 /** 반복 퀘스트 · 보물 사냥: 이길 때마다 꾸러미에서 아직 없는 보물 하나. */
@@ -25,20 +26,20 @@ const challengeSteps:Array<[string,number,number,number,string,string,string]>=[
  ['일곱 번째 문 · 검각 잔도',6,24,11,'시험관: 벼랑 사이 잔도, 물러설 곳이 없다.','조진: 좁은 길이 오히려 우리 편이다.','시험관: 잔도를 넘었다.'],
  ['여덟 번째 문 · 한수 여울',7,28,3,'시험관: 여울을 건너는 동안 적의 기병이 덮친다.','사마의: 여울목 앞에 창병을 세우고 기다리겠습니다.','시험관: 여울을 건넜다. 두 문 남았다.'],
  ['아홉 번째 문 · 박망파',8,32,11,'시험관: 박망파의 숲, 네 번의 물결이 온다.','조진: 버티면 반드시 틈이 생긴다.','시험관: 박망파를 넘었다. 마지막 문이다.'],
- ['열 번째 문 · 패왕의 성채',8,36,17,'패왕의 수문장: 열 번째 문은 아무도 넘지 못했다.','사마의: 오늘 처음으로 넘는 자가 나올 것입니다.','시험관: 열 개의 문을 모두 넘었다. 천하제일검과 패왕갑은 그대의 것이다.'],
+ ['열 번째 문 · 패왕의 성채',8,36,17,'패왕의 수문장: 열 번째 문은 아무도 넘지 못했다.','사마의: 오늘 처음으로 넘는 자가 나올 것입니다.','시험관: 열 개의 문을 모두 넘었다. 수문장의 창과 인수는 그대의 것이다.'],
 ];
 const tales:Array<[string,number,number,number,string,string,string]>=[
- ['흩어진 무구',1,2,9,'사마랑: 피난민의 수레에 가문의 무구와 군고가 실려 있었다.','사마의: 약탈대의 길목을 막고, 무구가 주인을 찾게 하겠습니다.','장인: 자웅일대검과 고정도를 손질했습니다. 피갑과 군고도 가져가십시오.'],
- ['봉인된 군수고',2,3,2,'사마방: 낙양을 떠나며 맡긴 군수고에 도적이 들었다.','사마의: 군수고의 열쇠를 되찾아 남은 이들의 장비를 마련하겠습니다.','수문장: 열쇠를 되찾았군요. 사모와 비도, 쇄자갑과 장군인을 받아 주십시오.'],
- ['산길의 약속',2,4,11,'길잡이: 고개를 지키던 동료들이 산적에게 쫓겨났습니다.','사마랑: 우회로를 확보하고 장인들을 안전하게 돌려보내자.','길잡이: 봉취도와 월아극, 어린갑과 비운안을 약속대로 드립니다.'],
- ['활시위의 비밀',3,5,6,'노장: 사수들이 지키는 진지를 뚫어 보아라. 무작정 다가오면 쓰러질 것이다.','사마의: 숲을 이용해 접근하고 기병으로 측면을 열겠습니다.','노장: 철태궁과 원융노를 맡긴다. 등갑과 손자병법서도 전술에 보탬이 될 것이다.'],
- ['병서가 잠든 사당',4,6,14,'학자: 사당을 점거한 무리가 병서를 불태우려 합니다.','사마의: 기록이 사라지면 다음 세대는 같은 실수를 되풀이합니다.','학자: 육도와 명광개를 지켰습니다. 삼첨도와 강편도 함께 가져가십시오.'],
- ['잃어버린 군마',5,7,3,'조진: 군마를 빼앗은 기병이 능선에 진을 쳤다.','사마의: 창병으로 돌격을 막고 노병으로 퇴로를 끊으십시오.','조진: 양유궁과 개산부, 현철갑과 삼략을 회수했다. 다음 싸움에 쓰자.'],
- ['용담의 시험',6,8,17,'백마의 무인: 창은 용기만으로 다루는 것이 아니다. 동료를 지키는 눈이 필요하다.','사마의: 지원대를 보존하면서 중앙의 수비대를 격파하겠습니다.','백마의 무인: 용담창과 쌍철극, 호위갑과 절영을 맡길 만하군.'],
- ['달빛 아래의 교환',6,9,0,'상인: 약탈자를 막아 준다면 숨겨 둔 보물을 내놓겠습니다.','조진: 거래보다 사람이 먼저다. 피난길을 열자.','상인: 유금추와 월광검, 학창과 조황비전입니다. 약속을 지킵니다.'],
- ['의원의 잃어버린 서책',7,10,9,'의원: 청낭서를 빼앗겼습니다. 부상자들을 치료할 방법이 담겨 있습니다.','사마의: 책을 되찾을 때까지 다친 병사를 뒤로 물리고 진을 유지하십시오.','의원: 청낭서와 백옥검, 호두창과 운금포를 드립니다. 생명을 지키는 데 써 주십시오.'],
- ['팔진의 문',8,11,7,'노군사: 길이 보인다고 곧장 나아가지 마라. 진의 틈을 읽어라.','사마의: 적의 중앙을 묶고 양익을 돌파하겠습니다.','노군사: 팔진도와 칠성기, 용린갑옷과 황금갑옷을 계승할 자격을 얻었다.'],
- ['천하를 읽는 기록',8,12,14,'사마방: 사람을 얻는 것과 땅을 얻는 것 중 무엇이 더 어려운가.','사마의: 오늘의 승리보다 내일 함께할 이들을 남기겠습니다.','사마방: 춘추좌씨전과 백옥환, 호부와 군사포를 받거라. 네 길의 증표다.'],
+ ['흩어진 무구',1,2,9,'사마랑: 피난민의 수레에 가문의 무구와 군고가 실려 있었다.','사마의: 약탈대의 길목을 막고, 무구가 주인을 찾게 하겠습니다.','장인: 흩어졌던 무구를 손질했습니다. 이 철투구는 보병의 머리를 지켜 줄 겁니다.'],
+ ['봉인된 군수고',2,3,2,'사마방: 낙양을 떠나며 맡긴 군수고에 도적이 들었다.','사마의: 군수고의 열쇠를 되찾아 남은 이들의 장비를 마련하겠습니다.','수문장: 열쇠를 되찾았군요. 군수고의 콩주머니와 군량을 받아 주십시오.'],
+ ['산길의 약속',2,4,11,'길잡이: 고개를 지키던 동료들이 산적에게 쫓겨났습니다.','사마랑: 우회로를 확보하고 장인들을 안전하게 돌려보내자.','길잡이: 산적이 쓰던 유성추입니다. 약속대로 드립니다.'],
+ ['활시위의 비밀',3,5,6,'노장: 사수들이 지키는 진지를 뚫어 보아라. 무작정 다가오면 쓰러질 것이다.','사마의: 숲을 이용해 접근하고 기병으로 측면을 열겠습니다.','노장: 내 활과 말 갑옷을 맡긴다. 다음 싸움에 쓰거라.'],
+ ['병서가 잠든 사당',4,6,14,'학자: 사당을 점거한 무리가 병서를 불태우려 합니다.','사마의: 기록이 사라지면 다음 세대는 같은 실수를 되풀이합니다.','학자: 불길에서 건진 태평요술서입니다. 바람과 비의 이치가 담겨 있습니다.'],
+ ['잃어버린 군마',5,7,3,'조진: 군마를 빼앗은 기병이 능선에 진을 쳤다.','사마의: 창병으로 돌격을 막고 노병으로 퇴로를 끊으십시오.','조진: 군마도 되찾고 말에 입힐 갑옷도 얻었다. 다음 싸움에 쓰자.'],
+ ['용담의 시험',6,8,17,'백마의 무인: 창은 용기만으로 다루는 것이 아니다. 동료를 지키는 눈이 필요하다.','사마의: 지원대를 보존하면서 중앙의 수비대를 격파하겠습니다.','백마의 무인: 이 창과 방패를 맡길 만하군. 동료를 지키는 데 써라.'],
+ ['달빛 아래의 교환',6,9,0,'상인: 약탈자를 막아 준다면 숨겨 둔 보물을 내놓겠습니다.','조진: 거래보다 사람이 먼저다. 피난길을 열자.','상인: 약속대로 칠흑도복을 드립니다. 도사가 맡겨 둔 옷이지요.'],
+ ['의원의 잃어버린 서책',7,10,9,'의원: 청낭서를 빼앗겼습니다. 부상자들을 치료할 방법이 담겨 있습니다.','사마의: 책을 되찾을 때까지 다친 병사를 뒤로 물리고 진을 유지하십시오.','의원: 청낭서를 되찾았습니다. 쌀도 조금 챙겨 가십시오. 생명을 지키는 데 써 주십시오.'],
+ ['팔진의 문',8,11,7,'노군사: 길이 보인다고 곧장 나아가지 마라. 진의 틈을 읽어라.','사마의: 적의 중앙을 묶고 양익을 돌파하겠습니다.','노군사: 성자보검을 이어받을 자격을 얻었다. 술법을 아껴 쓰거라.'],
+ ['천하를 읽는 기록',8,12,14,'사마방: 사람을 얻는 것과 땅을 얻는 것 중 무엇이 더 어려운가.','사마의: 오늘의 승리보다 내일 함께할 이들을 남기겠습니다.','사마방: 이 부채와 두건을 받거라. 네 길의 증표다.'],
 ];
 export const expeditions:Expedition[]=[
  {id:'T01',name:'초진 연무',kind:'training',level:1,requires:0,art:6,lines:['교관: 처음부터 실전에 익숙한 병사는 없다.','사마의: 이동과 협공을 반복하며 부대의 호흡을 맞추겠습니다.','교관: 오늘의 성장을 다음 전장으로 가져가거라. 다시 연습해도 좋다.']},
@@ -68,11 +69,46 @@ export const storyWins=(c:Campaign)=>new Set(c.rewards.filter(x=>x.endsWith(':no
 export function canExpedition(c:Campaign,id:string){const m=expeditions.find(x=>x.id===id);if(!m||storyWins(c)<m.requires)return false;
  // 도전은 앞 단계를 넘어야 다음 단계가 열린다.
  return m.kind!=='challenge'||m.step===1||(c.challenges??[]).includes('C'+String(m.step!-1).padStart(2,'0'));}
-/** 보물 사냥 꾸러미에서 이번 승리로 받을 보물: 아직 없는 것 중 runId로 정한 하나(다시 불러와도 같다). */
-export function bountyPick(c:Campaign,id:string,runId:string){
- const pool=treasures.filter(t=>t.quest===id&&!c.treasures.includes(t.id));if(!pool.length)return undefined;
- let h=0;for(const ch of runId)h=(h*31+ch.charCodeAt(0))>>>0;return pool[h%pool.length]!.id;
+/**
+ * 외전 보상. 고유 보물(named)·상점 장비(gear: 상점 정의 id)·소모품(supplies)·금(gold, 사마의전 금).
+ * 보물 인연(Q)·도전(C)은 첫 승리에 한 번, 수련(T)은 첫 승리에 소모품, 보물 사냥(R)은 이길 때마다 꾸러미에서 하나.
+ */
+export interface MissionReward {named?:string;gear?:string[];supplies?:Record<string,number>;gold?:number}
+export const MISSION_REWARDS:Readonly<Record<string,MissionReward>>={
+ Q01:{named:'ironHelm',gold:400},Q02:{named:'beanBag',gold:400,supplies:{bean:5}},Q03:{named:'meteorHammer',gold:500},
+ Q04:{gear:['shop:bow:2','shop:barding:1'],gold:600},Q05:{named:'taipingYaoshu',gold:600},Q06:{gear:['shop:barding:2'],gold:700,supplies:{rice:2}},
+ Q07:{gear:['shop:spear:3','shop:shield:2'],gold:800},Q08:{named:'darkRobe',gold:800},Q09:{named:'qingshu',gold:900,supplies:{rice:3}},
+ Q10:{named:'sageSword',gold:1000},Q11:{gear:['shop:fan:3','shop:hood:3'],gold:1200},
+ T01:{supplies:{bean:3}},T02:{supplies:{water:2,bean:2}},T03:{supplies:{antidote:2,awaken:2}},T07:{supplies:{salve:2,rice:1}},
+ T04:{supplies:{rice:2,gargle:2}},T05:{supplies:{panacea:2}},T06:{supplies:{rice:3,panacea:2}},
+ C01:{gear:['shop:gloves:1'],gold:300},C02:{gear:['shop:shield:1'],gold:400},C03:{gear:['shop:helmet:2'],gold:500},C04:{gear:['shop:gloves:2'],gold:600},
+ C05:{gear:['shop:sword:3','shop:armor:3'],gold:1000},C06:{named:'azureJewel',gold:1200},C07:{named:'vermilionJewel',gold:1400},
+ C08:{named:'blackTortoiseJewel',gold:1600},C09:{named:'whiteTigerJewel',gold:1800},C10:{gear:['shop:spear:4'],supplies:{promotion:1},gold:3000},
+};
+/** 보물 사냥 꾸러미(이길 때마다 runId로 정한 하나): 상점 장비 정의 id 또는 소모품 'supply:<id>:<개수>'. 복숭아·술은 여기서만 나온다. */
+export const BOUNTY_POOLS:Readonly<Record<string,readonly string[]>>={
+ R01:['supply:bean:3','supply:antidote:2','shop:gloves:1','shop:shield:1','shop:helmet:1','shop:hood:1'],
+ R02:['supply:rice:2','supply:water:2','shop:gloves:2','shop:shield:2','shop:helmet:2','shop:hood:2'],
+ R03:['supply:rice:2','supply:panacea:1','supply:peach:1','shop:gloves:3','shop:shield:3','shop:barding:2'],
+ R04:['supply:wine:1','supply:peach:1','shop:barding:3','shop:shield:3','shop:helmet:3','shop:hood:3'],
+ R05:['supply:peach:2','supply:wine:2','supply:promotion:1','shop:gloves:4','shop:shield:4','shop:helmet:4'],
+};
+/** 보물 사냥 꾸러미에서 이번 승리로 받을 것(runId로 정한 하나 · 다시 불러와도 같다). */
+export function bountyPick(_c:Campaign,id:string,runId:string){
+ const pool=BOUNTY_POOLS[id];if(!pool?.length)return undefined;
+ let h=0;for(const ch of runId)h=(h*31+ch.charCodeAt(0))>>>0;return pool[h%pool.length]!;
 }
+/** 꾸러미 항목·상점 장비 정의 id를 말로. */
+export function rewardItemName(entry:string){const m=/^supply:([a-z]+):(\d+)$/.exec(entry);if(m)return `${consumable(m[1]!)?.name??m[1]} ${m[2]}개`;return gearName(entry);}
+/** 외전의 보상 한 줄(목록 카드용). */
+export function missionRewardText(id:string){const r=MISSION_REWARDS[id];if(!r)return '';return [...(r.named?[gearName(r.named)]:[]),...(r.gear??[]).map(gearName),...Object.entries(r.supplies??{}).map(([k,n])=>`${consumable(k)?.name??k} ${n}개`),...(r.gold?[`금 ${r.gold.toLocaleString()}`]:[])].join(' · ');}
+/** 받을 것을 성장 기록에 넣는다. 받은 것의 이름 목록. */
+function grant(c:Campaign,r:MissionReward){const got:string[]=[];
+ if(r.named&&grantTreasure(c,r.named))got.push(gearName(r.named));
+ for(const g of r.gear??[]){newShopItem(c,g);got.push(gearName(g));}
+ for(const [k,n] of Object.entries(r.supplies??{})){addSupply(c,k,n);got.push(`${consumable(k)?.name??k} ${n}개`);}
+ if(r.gold){addGold(c,'S',r.gold);got.push(`금 ${r.gold.toLocaleString()}`);}
+ return got;}
 export function trainingXp(c:Campaign,m:Expedition){
  const excess=Math.max(0,levelInfo(c.xp.sima_yi??0).level-m.level-3);
  return Math.max(20,Math.round((40+m.level*12)*Math.max(.3,1-excess*.12)));
@@ -92,9 +128,13 @@ export function expeditionReward(c:Campaign,id:string,runId:string,victory:boole
  if(m.kind==='challenge'&&(c.challenges??[]).includes(id))return {xp:0,items:[] as string[]};
  const xp=m.kind==='quest'?100+m.level*12:m.kind==='challenge'?120+m.level*14:trainingXp(c,m);
  for(const who of OFFICERS)c.xp[who]=(c.xp[who]??0)+xp;
- if(m.kind==='bounty'){c.bountyWins=(c.bountyWins??0)+1;const pick=bountyPick(c,id,runId);if(pick)c.treasures.push(pick);return {xp,items:pick?[pick]:[]};}
- if(m.kind==='training')c.trainingWins=(c.trainingWins??0)+1;else if(m.kind==='challenge')(c.challenges??=[]).push(id);else(c.quests??=[]).push(id);
- const items=treasures.filter(t=>t.quest===id&&!c.treasures.includes(t.id)).map(t=>t.id);c.treasures.push(...items);return {xp,items};
+ if(m.kind==='bounty'){c.bountyWins=(c.bountyWins??0)+1;const pick=bountyPick(c,id,runId),gold=150+m.level*10,items:string[]=[];
+  if(pick){const sm=/^supply:([a-z]+):(\d+)$/.exec(pick);if(sm)addSupply(c,sm[1]!,Number(sm[2]));else newShopItem(c,pick);items.push(rewardItemName(pick));}
+  addGold(c,'S',gold);items.push(`금 ${gold.toLocaleString()}`);return {xp,items};}
+ const firstTraining=m.kind==='training'&&!(c.trained??[]).includes(id);
+ if(m.kind==='training'){c.trainingWins=(c.trainingWins??0)+1;if(firstTraining)(c.trained??=[]).push(id);const gold=50+m.level*5;addGold(c,'S',gold);return {xp,items:[...(firstTraining?grant(c,MISSION_REWARDS[id]??{}):[]),`금 ${gold.toLocaleString()}`]};}
+ if(m.kind==='challenge')(c.challenges??=[]).push(id);else(c.quests??=[]).push(id);
+ return {xp,items:grant(c,MISSION_REWARDS[id]??{})};
 }
 export function expeditionBattle(id:string,seed:number,version=1,supportClasses?:UnitClass[]){
  const m=expeditions.find(x=>x.id===id);if(!m)throw new Error('알 수 없는 외전');
