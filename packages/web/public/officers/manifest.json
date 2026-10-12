@@ -94,6 +94,7 @@
     {"id":"chen_ping","name":"진평","aliases":["진평의 환영"],"battle":{"strategist":{"sheet":"chen_ping-battle-strategist-v1.webp","cell":[280,224],"rows":1}}},
     {"id":"fan_zeng","name":"범증","aliases":["범증의 환영"],"battle":{"strategist":{"sheet":"fan_zeng-battle-strategist-v1.webp","cell":[280,224],"rows":1}}},
     {"id":"zhongli_mo","name":"종리매","aliases":["종리매의 환영"],"battle":{"cavalry":{"sheet":"zhongli_mo-battle-cavalry-v1.webp","cell":[280,224],"rows":1}}},
-    {"id":"ji_bu","name":"계포","aliases":["계포의 환영"],"battle":{"infantry":{"sheet":"ji_bu-battle-infantry-v1.webp","cell":[280,224],"rows":1}}}
+    {"id":"ji_bu","name":"계포","aliases":["계포의 환영"],"battle":{"infantry":{"sheet":"ji_bu-battle-infantry-v1.webp","cell":[280,224],"rows":1}}},
+    {"id":"yu_ji","name":"우희","aliases":["우희의 환영"],"battle":{"assassin":{"sheet":"yu_ji-battle-assassin-v1.webp","cell":[280,224],"rows":1}}}
   ]
 }
