@@ -214,5 +214,9 @@
   "사병": "role-soldier.webp",
   "성채 수비장": "role-soldier.webp",
   "옥졸": "role-soldier.webp",
-  "파양 어부": "role-boatman.webp"
+  "파양 어부": "role-boatman.webp",
+  "손견": "sun_jian.webp", "손책": "sun_ce.webp", "태사자": "taishi_ci.webp", "정보": "cheng_pu.webp", "주태": "zhou_tai.webp", "능통": "ling_tong.webp",
+  "원소": "yuan_shao.webp", "동탁": "dong_zhuo.webp", "화웅": "hua_xiong.webp", "공손찬": "gongsun_zan.webp", "장각": "zhang_jiao.webp", "고순": "gao_shun.webp", "마등": "ma_teng.webp", "유표": "liu_biao.webp", "서서": "xu_shu.webp",
+  "장임": "zhang_ren.webp", "주창": "zhou_cang.webp", "간옹": "jian_yong.webp", "미축": "mi_zhu.webp", "손건": "sun_qian.webp", "요화": "liao_hua.webp", "장익": "zhang_yi.webp", "이엄": "li_yan.webp", "진식": "chen_shi.webp", "등지": "deng_zhi.webp",
+  "문앙": "wen_yang.webp", "장춘화": "zhang_chunhua.webp", "견씨": "zhen_shi.webp", "왕쌍": "wang_shuang.webp", "문흠": "wen_qin.webp", "한당": "han_dang.webp", "장흠": "zhang_qin.webp", "반장": "pan_zhang.webp", "육항": "lu_kang.webp", "초선": "diaochan.webp", "이각": "li_jue.webp", "곽사": "guo_si.webp", "원술": "yuan_shu.webp"
 }
