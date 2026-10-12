@@ -1,7 +1,8 @@
 // 게임 전 전수조사에서 고친 진행 오류들이 다시 생기지 않게 지킨다.
 import {describe,it,expect} from 'vitest';
 import {levelInfo,deployment,freshCampaign} from '../src/progression.ts';
-import {freshScenario,choose,undoChoice,readScenario,recruitOffer,recruitOfficer,joinCaptive,scenarioParty,type ScenarioState} from '../src/scenario.ts';
+import {freshScenario,choose,undoChoice,readScenario,recruitOffer,recruitOfficer,joinCaptive,scenarioParty,chooseOmen,omenOf,type ScenarioState} from '../src/scenario.ts';
+import {contestOf} from '../src/scenario-ui.ts';
 import {grantXp,newRun,finishBattle,recruit,battleRef,sortieOf,sortieSize,RUN_FLOORS,type Run} from '../src/roguelike.ts';
 import type {ScenarioStep} from '../src/scenario-types.ts';
 import {Session} from '../src/session.ts';
@@ -100,5 +101,12 @@ describe('천명의 원정 마지막 층',()=>{
  });
  it('원정의 연의 전장도 본편과 같은 넓은 전장으로 싸운다',()=>{
   const run:Run=newRun(5,['infantry']);expect(storyDeployment(run,'S1-09').deployment.wide).toBe(2);
+ });
+ it('우두머리 전(단계 id에 :가 있는 장)도 고른 전황과 대결 결과를 읽는다(전황 카드를 끝없이 다시 묻지 않게)',()=>{
+  const s:ScenarioState=freshScenario();
+  for(const id of ['cao_zhi:boss','IF1-yuan-3']){
+   expect(chooseOmen(s,id,'wind')).toBe(true);expect(omenOf(s,id)?.id).toBe('wind');
+   s.flags.push(`contest:${id}:duel:win`);expect(contestOf(s,{id,kind:'boss',act:2} as ScenarioStep)).toEqual({kind:'duel',result:'win'});
+  }
  });
 });

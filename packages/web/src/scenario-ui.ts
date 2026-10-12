@@ -90,7 +90,7 @@ const kindTag:Record<ScenarioStep['kind'],string>={story:'연의',fate:'갈림�
 function firstArt(step:ScenarioStep){return scriptOf(step.id)?.scenes[0]?.art??(step.kind==='fate'?12:step.kind==='ending'?5:14);}
 
 /** 이 장에서 치른 대결(일기토·설전)의 결과. */
-export function contestOf(state:ScenarioState,step:ScenarioStep){const f=state.flags.find(x=>x.startsWith(`contest:${step.id}:`));if(!f)return undefined;const [, , kind,result]=f.split(':');return {kind:kind as 'duel'|'debate',result:result as 'win'|'lose'|'draw'};}
+export function contestOf(state:ScenarioState,step:ScenarioStep){const pre=`contest:${step.id}:`,f=state.flags.find(x=>x.startsWith(pre));if(!f)return undefined;const [kind,result]=f.slice(pre.length).split(':');return {kind:kind as 'duel'|'debate',result:result as 'win'|'lose'|'draw'};}
 /** 이야기 선택·출진 전 조우에서 그 자리 대결. 무력(일기토)·지력(설전)에 레벨을 더해 겨룬다. */
 async function runContest(host:ScenarioHost,state:ScenarioState,step:ScenarioStep,kind:'duel'|'debate',foe:string,by='사마의',line?:string){
   const hero=host.hero(),lvOf=(n:string)=>n==='사마의'?hero.level:state.officers[n]?.level??hero.level;

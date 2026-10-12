@@ -419,7 +419,8 @@ export function omenOffer(state:ScenarioState,stepId:string,n=3){
   const r=new Rng(((state.run?.seed??7)^omenHash(stepId+'#omen'))>>>0||1),pool=[...OMENS],out:Omen[]=[];
   while(out.length<n&&pool.length)out.push(pool.splice(r.int(0,pool.length-1),1)[0]!);return out;
 }
-export function omenOf(state:ScenarioState,stepId:string){const f=state.flags.find(x=>x.startsWith(`omen:${stepId}:`));return f?OMENS.find(o=>o.id===f.split(':')[2]):undefined;}
+/** 고른 전황. 단계 id에 ':'가 들어갈 수 있어(우두머리 '{길}:boss') 앞머리를 잘라 읽는다(':'로 나누면 우두머리 전의 전황을 못 찾아 카드를 끝없이 다시 묻던 문제). */
+export function omenOf(state:ScenarioState,stepId:string){const pre=`omen:${stepId}:`,f=state.flags.find(x=>x.startsWith(pre));return f?OMENS.find(o=>o.id===f.slice(pre.length)):undefined;}
 export function chooseOmen(state:ScenarioState,stepId:string,id:string){
   const o=OMENS.find(x=>x.id===id);if(!o)return false;state.flags=state.flags.filter(f=>!f.startsWith(`omen:${stepId}:`));state.flags.push(`omen:${stepId}:${id}`);
   if(o.goal==='gamble'&&state.run)state.run.hp['사마의']=Math.min(state.run.hp['사마의']??1,.7);return true;
