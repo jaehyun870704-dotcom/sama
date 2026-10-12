@@ -56,11 +56,11 @@ export function goalRegions(stage:StageDef):Map<string,'reach'|'capture'>{
     for(const v of Object.values(r))walk(v);};
   walk(stage);return out;
 }
-/** 대본 안에서 지형을 바꾸는(terrain_change) 지역 이름. */
+/** 대본 안에서 지형을 바꾸거나(terrain_change·성문 여닫기) 영역 피해를 주는(damage_region) 지역 이름. */
 export function changedRegions(stage:StageDef):Set<string>{
   const out=new Set<string>();
   const walk=(o:unknown)=>{if(Array.isArray(o)){o.forEach(walk);return;}if(!o||typeof o!=='object')return;
-    const r=o as Record<string,unknown>;if(r.type==='terrain_change'&&typeof r.region==='string')out.add(r.region);
+    const r=o as Record<string,unknown>;if(['terrain_change','open_gate','close_gate','damage_region'].includes(r.type as string)&&typeof r.region==='string')out.add(r.region);
     for(const v of Object.values(r))walk(v);};
   walk(stage);return out;
 }

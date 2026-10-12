@@ -316,7 +316,8 @@ function paintWalls(ctx:CanvasRenderingContext2D,state:BattleState){
     for(let r=0;r<4;r++)for(let k=(r%2)*8;k<T;k+=16){ctx.beginPath();ctx.moveTo(px+k,py+r*12);ctx.lineTo(px+k,py+r*12+12);ctx.stroke();}
     if(gate){
       const across=L||Rr;// 성벽이 가로로 이어지면 문은 위아래로 지난다
-      const intact=!!state.find(`gate_${x}_${y}`);
+      // 성문 방벽이 서 있거나, 이벤트가 닫아 둔 성문(close_gate)이면 문짝이 닫혀 있다.
+      const intact=!!state.find(`gate_${x}_${y}`)||!!state.map.tileAt({x,y}).locked;
       ctx.fillStyle='rgb(120,110,92)';if(across)ctx.fillRect(px+10,py,T-20,T);else ctx.fillRect(px,py+10,T,T-20);
       if(!intact){ctx.fillStyle='rgba(20,14,8,.35)';if(across)ctx.fillRect(px+12,py,T-24,T);else ctx.fillRect(px,py+12,T,T-24);}
       else for(const side of [0,1]){const dx=across?(side?T/2:12):0,dy=across?0:(side?T/2:12);ctx.fillStyle='rgb(110,34,22)';if(across)ctx.fillRect(px+dx,py+6,T/2-12,T-12);else ctx.fillRect(px+6,py+dy,T-12,T/2-12);

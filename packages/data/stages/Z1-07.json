@@ -157,8 +157,8 @@
               "template": "lord",
               "level": 9,
               "region": "cao_arrive",
-              "behavior": "race",
-              "goalRegion": "guan_side"
+              "behavior": "follow",
+              "followUnit": "z_guan_yu"
             },
             {
               "id": "z7_guard_a",

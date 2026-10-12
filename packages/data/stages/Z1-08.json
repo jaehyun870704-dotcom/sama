@@ -6,6 +6,7 @@
   "subtitle": "남군과 양양",
   "synopsis": "적벽 뒤 주유는 남군의 조인과 한 해 가까이 맞선다. 그 틈에 제갈량은 조인의 병부를 빌려 성의 군사를 밖으로 불러낸다. 주유가 조인을 붙잡고 있는 동안 남군과 양양 두 성의 안채를 먼저 차지하라.",
   "mapId": "z1-08-nanjun",
+  "siege": false,
   "deployment": {
     "forced": [
       "z_liu_bei",
@@ -49,8 +50,8 @@
     },
     {
       "slot": 3,
-      "normal": "unit_retreat:z_cao_ren",
-      "extreme": "unit_retreat:z_cao_ren"
+      "normal": "no_player_losses",
+      "extreme": "no_player_losses"
     }
   ],
   "difficulty": {

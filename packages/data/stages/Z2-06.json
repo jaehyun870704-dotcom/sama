@@ -6,6 +6,8 @@
   "subtitle": "신성 · 여드레 만의 급습",
   "synopsis": "위의 신성 태수 맹달이 촉으로 돌아오겠다는 편지를 보냈다. 맹달을 만나 뜻을 확인하는 순간, 천이백 리를 여드레 만에 달려온 사마의의 군사가 성을 에워싼다. 맹달을 데리고 서문으로 빠져나가라.",
   "mapId": "z2-06-xincheng",
+  "goalMemory": true,
+  "siege": false,
   "initialPhase": "approach",
   "deployment": {
     "forced": [
@@ -22,7 +24,14 @@
     {
       "type": "reach",
       "unit": "z_liang",
-      "target": "keep"
+      "target": "keep",
+      "order": 1
+    },
+    {
+      "type": "reach",
+      "unit": "z_liang",
+      "target": "west_exit",
+      "order": 2
     }
   ],
   "defeat": [
@@ -68,6 +77,10 @@
         "type": "battle_start"
       },
       "actions": [
+        {
+          "type": "close_gate",
+          "region": "east_door"
+        },
         {
           "type": "spawn_units",
           "side": "allyAi",
@@ -156,9 +169,8 @@
       },
       "actions": [
         {
-          "type": "terrain_change",
-          "region": "east_door",
-          "terrain": "road"
+          "type": "open_gate",
+          "region": "east_door"
         },
         {
           "type": "dismiss_units",
@@ -256,16 +268,6 @@
               "level": 21,
               "region": "sima_north",
               "behavior": "advance"
-            }
-          ]
-        },
-        {
-          "type": "change_victory",
-          "conditions": [
-            {
-              "type": "reach",
-              "unit": "z_liang",
-              "target": "west_exit"
             }
           ]
         },

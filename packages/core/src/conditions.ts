@@ -2,6 +2,7 @@ import type { BattleState } from "./state.ts";
 import type { VictoryCondition } from "./stage.ts";
 import { sameCoord } from "./grid.ts";
 import type { Side } from "./types.ts";
+import { WEATHERS } from "./types.ts";
 import { familyOf } from "./classes.ts";
 
 /**
@@ -61,7 +62,30 @@ export function evaluate(state: BattleState, cond: VictoryCondition): boolean {
 
     case "dialogue_complete":
       return state.choices.some((c) => c.nodeId === cond.target);
+
+    case "weather":
+      return state.weather === cond.target;
   }
+}
+
+/**
+ * 이미 이룬 차례 목표인가. 붙잡아 두는 규칙(stickyGoals)에서 지금 단계보다 앞선 order의 조건은
+ * 다시 채울 필요가 없다 — AI가 이 조건을 보고 이미 지나온 지점으로 되돌아가지 않게 한다.
+ */
+export function goalAchieved(state: BattleState, cond: VictoryCondition): boolean {
+  if (!state.stickyGoals || cond.order === undefined) return false;
+  if (!state.victory.includes(cond)) return false;
+  const steps = [...new Set(state.victory.filter((c) => c.order !== undefined).map((c) => c.order!))].sort((a, b) => a - b);
+  const index = steps.indexOf(cond.order);
+  return index >= 0 && index < state.goalProgress;
+}
+
+/**
+ * AI가 이 목표를 "이미 이뤘으니 다시 채우지 않아도 된다"고 볼 것인가. 스테이지가 goalMemory를 켠 경우에만
+ * (opt-in) 이룬 차례 목표를 건너뛴다 — 켜지 않은 장은 예전처럼 앞 단계 지점으로도 되돌아간다.
+ */
+export function rememberedGoal(state: BattleState, cond: VictoryCondition): boolean {
+  return state.stage.goalMemory === true && goalAchieved(state, cond);
 }
 
 /**
@@ -148,6 +172,11 @@ export function parseSeal(expr: string): VictoryCondition | null {
       return { type: "escort_survive", side: "allyAi" };
     case "dialogue":
       return { type: "dialogue_complete", target: str() };
+    case "weather": {
+      const w = str();
+      if (!(WEATHERS as readonly string[]).includes(w)) throw new Error(`알 수 없는 날씨: "${expr}"`);
+      return { type: "weather", target: w };
+    }
     default:
       throw new Error(`알 수 없는 인장 표현식: ${expr}`);
   }

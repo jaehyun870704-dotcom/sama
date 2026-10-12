@@ -5,9 +5,9 @@
  * 판정 규칙(core/conditions.ts): order가 없는 조건은 하나만 충족해도 되고(또는),
  * order가 있는 조건은 낮은 단계부터 차례로 모두 충족해야 한다(→).
  */
-import type {BattleState,Coord,StageDef,VictoryCondition} from '../../core/src/index.ts';
+import type {BattleState,Coord,StageDef,VictoryCondition,Weather} from '../../core/src/index.ts';
 import {evaluate,currentGoalStep} from '../../core/src/index.ts';
-import {stageRules,subject} from './stage-rules.ts';
+import {stageRules,subject,WEATHER_NAMES} from './stage-rules.ts';
 import {classNames} from './troops.ts';
 import {isEscapeRegion} from './stretch.ts';
 
@@ -50,6 +50,7 @@ function line(state:BattleState,c:VictoryCondition,lose:boolean){
     case 'dialogue_complete':return `${DIALOGUE_NAMES[c.target??'']??'작전 대화'} 마치기`;
     case 'turn_limit':return `${c.n??0}턴 넘김`;
     case 'escort_survive':return `${name(c.unit)} 생존`;
+    case 'weather':return `날씨가 ${WEATHER_NAMES[c.target as Weather]??c.target}`;
   }
 }
 export type GoalMark={target:string;cells:Coord[];kind:'escape'|'reach'|'capture';label:string;/** 그곳에 가야 하는 장수(아직 닿지 않은) */who:string[]};

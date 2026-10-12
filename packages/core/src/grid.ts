@@ -106,6 +106,8 @@ export class BattleMap {
 
   moveCost(unitClass: UnitClass, c: Coord, ignoreRough = false): number {
     const t = this.tileAt(c);
+    // 닫힌 성문: 문이 열리기(open_gate) 전에는 누구도 지나지 못한다.
+    if (t.locked) return Infinity;
     const cost = (MOVE_COST[unitClass] ?? MOVE_COST[familyOf(unitClass)]!)[t.terrain] ?? Infinity;
     // 험로 이동 특성: 유한한 비용은 모두 1로 압축
     if (ignoreRough && Number.isFinite(cost)) return 1;

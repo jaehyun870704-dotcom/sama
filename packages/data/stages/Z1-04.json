@@ -43,13 +43,13 @@
     },
     {
       "slot": 2,
-      "normal": "unit_survives",
-      "extreme": "unit_survives"
+      "normal": "no_player_losses",
+      "extreme": "no_player_losses"
     },
     {
       "slot": 3,
-      "normal": "turn_limit:7",
-      "extreme": "turn_limit:7"
+      "normal": "turn_limit:6",
+      "extreme": "turn_limit:6"
     }
   ],
   "difficulty": {
@@ -186,18 +186,13 @@
           "duration": 3
         },
         {
-          "type": "apply_effect",
-          "targets": [
-            "z_cao_ren",
-            "z_cao_hong",
-            "z4_inf_a",
-            "z4_inf_b",
-            "z4_spear_a",
-            "z4_bow_a"
-          ],
-          "hpRatioDamage": 0.4,
+          "type": "damage_region",
+          "region": "town",
+          "side": "enemy",
+          "ratio": 0.4,
           "effect": "burn",
-          "duration": 2
+          "duration": 2,
+          "label": "신야의 불"
         },
         {
           "type": "set_phase",
@@ -222,18 +217,13 @@
           "duration": 3
         },
         {
-          "type": "apply_effect",
-          "targets": [
-            "z_cao_ren",
-            "z_cao_hong",
-            "z4_inf_a",
-            "z4_inf_b",
-            "z4_spear_a",
-            "z4_bow_a"
-          ],
-          "hpRatioDamage": 0.4,
+          "type": "damage_region",
+          "region": "town",
+          "side": "enemy",
+          "ratio": 0.4,
           "effect": "burn",
-          "duration": 2
+          "duration": 2,
+          "label": "신야의 불"
         },
         {
           "type": "set_phase",

@@ -1,4 +1,5 @@
-import type { Unit, Side, Coord, BattleOutcome, Status, StatusKind, StrategyDef, TerrainKind } from "./types.ts";
+import type { Unit, Side, Coord, BattleOutcome, Status, StatusKind, StrategyDef, TerrainKind, Weather, HazardKind } from "./types.ts";
+import { weatherAllows } from "./types.ts";
 import { BattleMap, key, isHostile } from "./grid.ts";
 import { Rng, type RngSnapshot } from "./rng.ts";
 import { evolveStrategy } from "./strategy-tiers.ts";
@@ -23,7 +24,9 @@ export type LogEntry =
   | { t: "spotted"; watcher: string; target: string }
   | { t: "terrain"; region: string; terrain: TerrainKind }
   | { t: "telegraph"; id: string; cells: Coord[]; turns: number; label?: string; warning?: boolean }
-  | { t: "strike"; id: string; cells: Coord[]; hits: Array<{ unit: string; damage: number }> }
+  | { t: "strike"; id: string; cells: Coord[]; hits: Array<{ unit: string; damage: number }>; label?: string }
+  | { t: "weather"; weather: Weather }
+  | { t: "gate"; region: string; open: boolean }
   | { t: "outcome"; outcome: BattleOutcome };
 
 /** 턴 순서. 우군 AI는 적 페이즈 뒤에 별도로 움직인다. */
@@ -59,6 +62,8 @@ export class BattleState {
 
   units: Map<string, Unit> = new Map();
   turn = 1;
+  /** 지금 날씨. 스테이지가 정한 날씨로 시작하고 set_weather 이벤트가 바꾼다. */
+  weather: Weather;
   scenarioPhase: string;
   phaseIndex = 0;
   outcome: BattleOutcome = "ongoing";
@@ -95,6 +100,7 @@ export class BattleState {
   constructor(stage: StageDef, map: BattleMap, seed: number, difficulty: Difficulty = "normal") {
     this.stage = stage;
     this.scenarioPhase = stage.initialPhase ?? '';
+    this.weather = stage.weather ?? "clear";
     this.map = map;
     this.rng = new Rng(seed);
     this.difficulty = difficulty;
@@ -175,6 +181,12 @@ export class BattleState {
     this.push({ t: "status", unit: unit.id, kind: status.kind, turns: status.turns });
   }
 
+  /** 이 칸에서 지금 해를 끼치는 위험 지대. 날씨 조건(hazardWhen)이 맞지 않으면 잠잠하다("none"). */
+  activeHazard(c: Coord): HazardKind {
+    const tile = this.map.tileAt(c);
+    return tile.hazard !== "none" && weatherAllows(tile.hazardWhen, this.weather) ? tile.hazard : "none";
+  }
+
   hasStatus(unit: Unit, kind: StatusKind): boolean {
     return unit.statuses.some((s) => s.kind === kind);
   }
@@ -190,6 +202,7 @@ export class BattleState {
     return {
       units: structuredClone([...this.units.values()]),
       turn: this.turn,
+      weather: this.weather,
       scenarioPhase: this.scenarioPhase,
       phaseIndex: this.phaseIndex,
       outcome: this.outcome,
@@ -212,6 +225,7 @@ export class BattleState {
   restore(snap: BattleSnapshot): void {
     this.units = new Map(snap.units.map((u) => [u.id, structuredClone(u)]));
     this.turn = snap.turn;
+    this.weather = snap.weather ?? this.stage.weather ?? "clear";
     this.scenarioPhase = snap.scenarioPhase;
     this.phaseIndex = snap.phaseIndex;
     this.outcome = snap.outcome;
@@ -263,6 +277,7 @@ export interface BattleSnapshot {
   scenarioPhase: string;
   units: Unit[];
   turn: number;
+  weather?: Weather;
   phaseIndex: number;
   outcome: BattleOutcome;
   logLength: number;

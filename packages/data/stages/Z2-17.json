@@ -51,7 +51,7 @@
     },
     {
       "slot": 3,
-      "normal": "turn_limit:5",
+      "normal": "turn_limit:4",
       "extreme": "turn_limit:5"
     }
   ],

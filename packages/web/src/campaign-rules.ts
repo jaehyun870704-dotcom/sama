@@ -24,6 +24,8 @@ export function structureKind(id:string){return /^gate_\d+_\d+$/.test(id)?'gate'
 /** Frame in the 4×2 scenery sheet: gate, watchtower, and the wall segment reused as a barricade. */
 export function structureFrame(kind:'gate'|'tower'|'barricade'){return kind==='gate'?2:kind==='tower'?3:7;}
 export function addFortifications(state:BattleState){
+  // 공성전이 아닌 성(stage.siege===false): 성문은 지형과 이벤트(close_gate·open_gate)로만 여닫는다.
+  if(state.stage.siege===false)return;
   // Castle stages: the two original sieges, plus any later stage whose map marks watchtowers.
   if(!['S1-08','S1-06'].includes(state.stage.id)&&!(state.stage.order>11&&state.map.regions.has('watchtowers')))return;
   const level=(state.stage.id==='S1-06'?6:state.stage.id==='S1-08'?5:encounterLevels[state.stage.id]??5)+(state.difficulty==='extreme'?2:0);
@@ -53,7 +55,7 @@ export function isAssault(state:BattleState,from:{x:number;y:number}){
 }
 /** Castle maps where we assault the walls receive a controllable siege crew in new-rules battles. */
 export function addSiegeCompany(state:BattleState){
-  if(state.stage.id==='S1-04')return;
+  if(state.stage.id==='S1-04'||state.stage.siege===false)return;
   const cells=[];for(let y=0;y<state.map.height;y++)for(let x=0;x<state.map.width;x++)cells.push({x,y});
   // Only castles with a gate to breach: a defended citadel (no gate) needs no rams.
   if(!cells.some(p=>state.map.tileAt(p).terrain==='wall')||!cells.some(p=>state.map.tileAt(p).terrain==='gate'))return;

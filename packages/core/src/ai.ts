@@ -13,7 +13,7 @@ import { manhattan, key, sameCoord, isHostile } from "./grid.ts";
 import { inReach, reachSpec, reachOffsets, unitReachSpec } from "./reach.ts";
 import { ignoresRough } from "./traits.ts";
 import { estimatePhysical, estimateStrategy } from "./formulas.ts";
-import { evaluate } from "./conditions.ts";
+import { evaluate, rememberedGoal } from "./conditions.ts";
 
 /** 유닛 1기의 다음 행동을 결정한다. 상태를 변경하지 않는다. */
 export function decide(state: BattleState, unit: Unit): Command[] {
@@ -66,6 +66,20 @@ export function decide(state: BattleState, unit: Unit): Command[] {
   // 시야 안에 적이 들어오면 순찰을 멈추고 교전 판단으로 넘어간다.
   if (behavior === "patrol" && !hasSpotted(state, unit)) {
     return patrolStep(state, unit, reach);
+  }
+
+  // follow — 지정한 유닛(followUnit) 곁으로 다가간다. 교전하지 않는다(화용도의 조조가 관우를 찾아가듯).
+  // 대상이 없거나 쓰러졌으면 보통 전진(advance)처럼 움직인다.
+  if (behavior === "follow") {
+    const leader = unit.followUnit ? state.find(unit.followUnit) : undefined;
+    if (leader?.alive && leader.id !== unit.id) {
+      if (manhattan(unit.pos, leader.pos) === 1) return [{ kind: "wait", unit: unit.id }];
+      const goal = followGoal(state, unit, leader);
+      const step = bestStepToward(state, unit, reach, goal);
+      return step && !sameCoord(step, unit.pos)
+        ? [{ kind: "move", unit: unit.id, to: step }, { kind: "wait", unit: unit.id }]
+        : [{ kind: "wait", unit: unit.id }];
+    }
   }
 
   // 목표 지점 위에 서 있다면 목표 달성이 최우선이다.
@@ -198,6 +212,9 @@ function objectiveRegion(state: BattleState, unit: Unit): Objective | null {
   for (const cond of [...state.victory, ...state.defeat]) {
     if (!cond.target) continue;
     if (waitsForKill(cond)) continue;
+    // 목표 기억(stage.goalMemory): 붙잡아 둔 차례 목표(이미 이룬 앞 단계)로는 되돌아가지 않는다 —
+    // "A에 닿고 → B에 닿기"에서 A를 떠나도 된다.
+    if (rememberedGoal(state, cond)) continue;
     // 이미 충족된 목표는 건너뛴다. 건너뛰지 않으면 점령을 끝낸 유닛이 같은
     // 영역에 선 채로 매 턴 점령 명령만 되풀이해 순차 목표가 영구히 멈춘다.
     if (evaluate(state, cond)) continue;
@@ -375,6 +392,18 @@ function goalCoord(state: BattleState, unit: Unit, region: string): Coord | null
     return !occupant || occupant.id === unit.id;
   });
   return closestCoord(unit.pos, free.length > 0 ? free : coords);
+}
+
+/**
+ * 따라갈 유닛 곁의 빈 칸 가운데 따르는 유닛이 설 수 있고 가장 가까운 칸. 곁이 모두 막혔으면 대상의 자리
+ * (그쪽으로 최대한 다가간다). 동점은 좌표 순으로 갈라 결정론을 지킨다.
+ */
+function followGoal(state: BattleState, unit: Unit, leader: Unit): Coord {
+  const free = [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }]
+    .map((d) => ({ x: leader.pos.x + d.x, y: leader.pos.y + d.y }))
+    .filter((c) => state.map.inBounds(c) && Number.isFinite(state.map.moveCost(unit.unitClass, c)) && (() => { const o = state.unitAt(c); return !o || o.id === unit.id; })())
+    .sort((a, b) => manhattan(a, unit.pos) - manhattan(b, unit.pos) || a.y - b.y || a.x - b.x);
+  return free[0] ?? leader.pos;
 }
 
 /** 순찰 유닛의 시야에 적대 유닛이 들어왔는가. */

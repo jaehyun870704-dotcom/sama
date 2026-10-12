@@ -84,6 +84,8 @@ export interface MakeUnitOptions {
   patrolRoute?: Coord[];
   /** 시야 범위 (M-02) */
   visionRange?: number;
+  /** behavior "follow"의 대상 유닛 */
+  followUnit?: string;
 }
 
 export function makeUnit(o: MakeUnitOptions): Unit {
@@ -113,6 +115,7 @@ export function makeUnit(o: MakeUnitOptions): Unit {
   if (o.behavior !== undefined) unit.behavior = o.behavior;
   if (o.goalRegion !== undefined) unit.goalRegion = o.goalRegion;
   if (o.visionRange !== undefined) unit.visionRange = o.visionRange;
+  if (o.followUnit !== undefined) unit.followUnit = o.followUnit;
   if (o.patrolRoute !== undefined) {
     unit.patrolRoute = o.patrolRoute.map((c) => ({ ...c }));
     unit.patrolIndex = 0;

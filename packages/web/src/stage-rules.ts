@@ -1,4 +1,4 @@
-import type {BattleState,Difficulty} from '../../core/src/index.ts';
+import type {BattleState,Difficulty,Weather} from '../../core/src/index.ts';
 import {ZHUGE_BATCHES} from './zhuge/index.ts';
 import {fireScripted,familyOf} from '../../core/src/index.ts';
 
@@ -15,6 +15,8 @@ export interface StageRules {
   calm?:boolean;
   /** Weather line shown over the map. */
   weather?:string;
+  /** 날씨가 바뀌는 장(스테이지 weather · set_weather): 지금 날씨마다 보여 줄 줄. 없는 날씨는 weather 줄 앞에 날씨 이름을 붙인다. */
+  weatherText?:Partial<Record<Weather,string>>;
   /** Non-combatants under escort: unarmed, sturdier, slower. */
   protect?:Array<{unit:string;hp:number;movement?:number}>;
   /** Named foes that must be handled by the gimmick rather than worn down. */
@@ -45,6 +47,17 @@ export interface StageRules {
   failure?:(v:StageView)=>string|undefined;
   /** 적 전력 보정(%): 공격·체력에 곱한다. 연의 장수 능력으로 아군이 강해진 전장의 긴장을 되돌린다. */
   foeEdge?:{normal?:number;extreme?:number};
+}
+/** 날씨 이름(전장 위 날씨 줄 · 군보). */
+export const WEATHER_NAMES:Record<Weather,string>={clear:'☀ 맑음',cloudy:'☁ 흐림',rain:'☂ 비',fog:'≋ 안개',snow:'❄ 눈'};
+/**
+ * 전장 위 날씨 줄. 날씨를 정하지도 바꾸지도 않는 장은 규칙의 weather 줄 그대로(예전과 같다).
+ * 날씨가 있는 장은 지금 날씨의 weatherText, 없으면 날씨 이름 · 규칙 줄.
+ */
+export function weatherLine(state:BattleState,rules:StageRules|undefined,fallback:string):string{
+  const live=state.stage.weather!==undefined||state.log.some(e=>e.t==='weather');
+  if(!live)return rules?.weather??fallback;
+  return rules?.weatherText?.[state.weather]??`${WEATHER_NAMES[state.weather]}${rules?.weather?' · '+rules.weather:''}`;
 }
 const HILL=['ma_su','hill_spear','hill_bow','hill_foot_a','hill_foot_b','hill_xbow'];
 

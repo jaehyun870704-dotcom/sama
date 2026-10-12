@@ -224,7 +224,8 @@ export class Battle {
     };
     const first = cast(false);
 
-    if (def.leavesHazard) {
+    // 비가 오는 동안에는 불길이 남지 않는다.
+    if (def.leavesHazard && !(def.leavesHazard === "fire" && this.state.weather === "rain")) {
       for (const coord of area) {
         if (!this.state.map.inBounds(coord)) continue;
         const tile = this.state.map.tileAt(coord);
@@ -348,10 +349,11 @@ export class Battle {
   }
 
   private applyTileHazard(u: Unit): void {
-    const tile = this.state.map.tileAt(u.pos);
-    if (tile.hazard === "fire") {
+    // 날씨 조건이 붙은 위험 지대(독 샘 등)는 그 날씨일 때만 해를 끼친다.
+    const hazard = this.state.activeHazard(u.pos);
+    if (hazard === "fire") {
       this.state.applyStatus(u, { kind: "burn", turns: 2, magnitude: 1 });
-    } else if (tile.hazard === "trap") {
+    } else if (hazard === "trap") {
       const dmg = Math.round(u.stats.maxHp * 0.25);
       u.hp = Math.max(1, u.hp - dmg); // 함정은 퇴각시키지 않는다 (PRD 2-10)
     }

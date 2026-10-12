@@ -6,6 +6,8 @@
   "subtitle": "남안성 · 거짓 사자와 동문",
   "synopsis": "하후무가 숨어든 남안성은 쉽게 떨어지지 않는다. 사로잡은 안정 태수 최량의 군사 틈에 관흥과 장포를 섞어 성 안으로 들여보냈다. 성 안의 계교를 뚫고 동문을 열어, 밖에서 기다리는 본대를 들여라.",
   "mapId": "z2-08-nanan",
+  "goalMemory": true,
+  "siege": false,
   "initialPhase": "infiltrate",
   "deployment": {
     "forced": [
@@ -23,12 +25,19 @@
     {
       "type": "reach",
       "unit": "z_guan_xing",
-      "target": "door_inner"
+      "target": "door_inner",
+      "order": 1
     },
     {
       "type": "reach",
       "unit": "z_zhang_bao",
-      "target": "door_inner"
+      "target": "door_inner",
+      "order": 1
+    },
+    {
+      "type": "retreat",
+      "unit": "z_xiahou_mao",
+      "order": 2
     }
   ],
   "defeat": [
@@ -82,6 +91,10 @@
         "type": "battle_start"
       },
       "actions": [
+        {
+          "type": "close_gate",
+          "region": "east_door"
+        },
         {
           "type": "spawn_units",
           "side": "enemy",
@@ -212,18 +225,8 @@
       },
       "actions": [
         {
-          "type": "terrain_change",
-          "region": "east_door",
-          "terrain": "road"
-        },
-        {
-          "type": "change_victory",
-          "conditions": [
-            {
-              "type": "retreat",
-              "unit": "z_xiahou_mao"
-            }
-          ]
+          "type": "open_gate",
+          "region": "east_door"
         },
         {
           "type": "apply_effect",
@@ -247,18 +250,8 @@
       },
       "actions": [
         {
-          "type": "terrain_change",
-          "region": "east_door",
-          "terrain": "road"
-        },
-        {
-          "type": "change_victory",
-          "conditions": [
-            {
-              "type": "retreat",
-              "unit": "z_xiahou_mao"
-            }
-          ]
+          "type": "open_gate",
+          "region": "east_door"
         },
         {
           "type": "apply_effect",

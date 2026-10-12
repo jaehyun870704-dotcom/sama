@@ -4,7 +4,8 @@
  * 스테이지는 코드가 아니라 데이터다. 새 스테이지를 추가할 때
  * packages/core 안의 파일은 단 한 줄도 바뀌지 않아야 한다. (PRD R7)
  */
-import type { Side, UnitClass, StatusKind, HazardKind, TerrainKind, Coord } from "./types.ts";
+import type { Side, UnitClass, StatusKind, HazardKind, TerrainKind, Coord, Weather, WeatherGate } from "./types.ts";
+import { WEATHERS } from "./types.ts";
 import type { DialogueNode } from "./dialogue.ts";
 
 export type Arc = "upper" | "middle" | "lower";
@@ -28,7 +29,9 @@ export interface VictoryCondition {
     | "ally_loss_limit"
     | "dialogue_complete"
     | "turn_limit"
-    | "escort_survive";
+    | "escort_survive"
+    /** 지금 날씨가 target인가(예: 인장 "weather:rain"). */
+    | "weather";
   unit?: string;
   target?: string;
   by?: Side;
@@ -71,6 +74,10 @@ export interface Trigger {
   side?: Side;
   /** unit_spotted: 발각한 순찰 유닛 (생략 시 아무 순찰 유닛이나) */
   watcher?: string;
+  /** turn_start/turn_end + every: (turn − offset)이 every의 배수일 때(기본 0). 날씨를 돌릴 때 쓴다. */
+  offset?: number;
+  /** 어떤 트리거든 이 날씨 조건일 때만 발동한다. */
+  whenWeather?: WeatherGate;
 }
 
 export interface Action {
@@ -90,7 +97,14 @@ export interface Action {
     | "start_duel"
     | "grant_control"
     | "revoke_control"
-    | "telegraph_aoe";
+    | "telegraph_aoe"
+    /** 날씨를 바꾼다(weather). 비가 오면 불길 칸이 꺼진다. */
+    | "set_weather"
+    /** 영역(region) 안의 부대(side로 거른다)에 최대 체력 ratio만큼 피해 · effect가 있으면 상태이상(duration). */
+    | "damage_region"
+    /** 영역의 칸을 연다/닫는다(닫힌 칸은 어느 병종도 지나지 못한다 · 성문). */
+    | "open_gate"
+    | "close_gate";
   units?: UnitSpawnSpec[];
   phase?: string;
   at?: Coord;
@@ -111,6 +125,14 @@ export interface Action {
   label?: string;
   /** telegraph_aoe: cells in this region are sheltered and never marked (M-18 cover). */
   exceptRegion?: string;
+  /** set_weather: 바꿀 날씨. */
+  weather?: Weather;
+  /** damage_region: 최대 체력 대비 피해 비율(0~1). */
+  ratio?: number;
+  /** damage_region: 체력 1을 남기고 퇴각시키지 않는다. */
+  nonLethal?: boolean;
+  /** terrain_change: 놓은 hazard가 이 날씨 조건일 때만 해를 끼친다. */
+  whenWeather?: WeatherGate;
 }
 
 export interface UnitSpawnSpec {
@@ -127,6 +149,8 @@ export interface UnitSpawnSpec {
   goalRegion?: string;
   patrolRoute?: Coord[];
   visionRange?: number;
+  /** behavior "follow"의 대상 유닛 id. */
+  followUnit?: string;
 }
 
 export interface StageEvent {
@@ -157,6 +181,12 @@ export interface StageDef {
   /** 아군 자동 전투가 승리 조건의 적장(퇴각 대상)을 먼저 노린다(원정·가상 전장처럼 적장을 물리치면 끝나는 싸움). */
   focusVictoryTargets?: boolean;
   initialPhase?: string;
+  /** 전투가 시작할 때의 날씨(생략하면 맑음). 이벤트 set_weather가 바꾼다. */
+  weather?: Weather;
+  /** true: 이미 이룬 차례 목표(order · stickyGoals 규칙)로 AI가 되돌아가지 않는다(목표 기억). 생략하면 예전처럼. */
+  goalMemory?: boolean;
+  /** false: 성벽·성문이 있어도 공성대(충차)·성문 방벽·감시탑을 자동으로 붙이지 않는다(성문은 이벤트로 연다). */
+  siege?: boolean;
   arc: Arc;
   order: number;
   title: string;
@@ -233,5 +263,50 @@ export function validateStage(stage: StageDef): string[] {
     }
   }
 
+  errors.push(...validateEngineFields(stage));
+  return errors;
+}
+
+/** 날씨·영역 피해·성문·따라가기 필드 검사(오타 난 날씨가 조용히 "맑음"으로 동작하지 않게). */
+function validateEngineFields(stage: StageDef): string[] {
+  const errors: string[] = [];
+  const tag = `[${stage.id}]`;
+  const known = (w: unknown) => typeof w === "string" && (WEATHERS as readonly string[]).includes(w);
+  const gate = (where: string, g: WeatherGate | undefined) => {
+    if (g === undefined) return;
+    if (typeof g !== "object" || g === null) { errors.push(`${tag} ${where}: 날씨 조건은 {is?,not?} 객체여야 함`); return; }
+    for (const w of [...(g.is ?? []), ...(g.not ?? [])]) if (!known(w)) errors.push(`${tag} ${where}: 알 수 없는 날씨 "${String(w)}"`);
+    if (!g.is?.length && !g.not?.length) errors.push(`${tag} ${where}: 빈 날씨 조건`);
+  };
+  if (stage.weather !== undefined && !known(stage.weather)) errors.push(`${tag} 알 수 없는 시작 날씨 "${String(stage.weather)}"`);
+  if (stage.siege !== undefined && typeof stage.siege !== "boolean") errors.push(`${tag} siege는 true/false여야 함`);
+  if (stage.goalMemory !== undefined) {
+    if (typeof stage.goalMemory !== "boolean") errors.push(`${tag} goalMemory는 true/false여야 함`);
+    const goalSets = [stage.victory, ...(stage.events ?? []).flatMap((ev) => ev.actions.filter((a) => a.type === "change_victory").map((a) => a.conditions ?? []))];
+    if (stage.goalMemory && !goalSets.some((cs) => cs.some((c) => c.order !== undefined))) errors.push(`${tag} goalMemory를 켰지만 차례 목표(order)가 없음`);
+  }
+  for (const c of [...stage.victory, ...stage.defeat]) if (c.type === "weather" && !known(c.target)) errors.push(`${tag} 날씨 조건의 target이 날씨가 아님: "${String(c.target)}"`);
+  (stage.events ?? []).forEach((ev, i) => {
+    const where = `이벤트 ${ev.id ?? i}`;
+    gate(`${where} 트리거`, ev.trigger.whenWeather);
+    if (ev.trigger.offset !== undefined && ev.trigger.every === undefined) errors.push(`${tag} ${where}: offset은 every와 함께 써야 함`);
+    for (const a of ev.actions) {
+      if (a.type === "set_weather" && !known(a.weather)) errors.push(`${tag} ${where}: set_weather의 날씨가 없거나 잘못됨 "${String(a.weather)}"`);
+      if (a.type === "damage_region") {
+        if (!a.region) errors.push(`${tag} ${where}: damage_region에 region이 없음`);
+        if (a.ratio === undefined && !a.effect) errors.push(`${tag} ${where}: damage_region에 ratio도 effect도 없음`);
+        if (a.ratio !== undefined && (!(a.ratio >= 0) || a.ratio > 1)) errors.push(`${tag} ${where}: damage_region의 ratio는 0~1 (현재 ${a.ratio})`);
+      }
+      if ((a.type === "open_gate" || a.type === "close_gate") && !a.region) errors.push(`${tag} ${where}: ${a.type}에 region이 없음`);
+      if (a.whenWeather !== undefined) {
+        if (a.type !== "terrain_change" || !a.hazard) errors.push(`${tag} ${where}: whenWeather는 hazard를 놓는 terrain_change에만 씀`);
+        gate(`${where} ${a.type}`, a.whenWeather);
+      }
+      for (const u of a.units ?? []) {
+        if (u.behavior === "follow" && !u.followUnit) errors.push(`${tag} ${where}: follow 부대 ${u.id ?? u.template}에 followUnit이 없음`);
+        if (u.followUnit !== undefined && u.behavior !== "follow") errors.push(`${tag} ${where}: followUnit은 behavior "follow"와 함께 써야 함 (${u.id ?? u.template})`);
+      }
+    }
+  });
   return errors;
 }

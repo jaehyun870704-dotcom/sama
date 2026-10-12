@@ -9,6 +9,7 @@ import type { StageEvent, Trigger, Action } from "./stage.ts";
 import { makeUnit } from "./units.ts";
 import { adjacent, sameCoord, key, manhattan, passableFor, isHostile } from "./grid.ts";
 import type { Coord, Side, UnitClass } from "./types.ts";
+import { weatherAllows } from "./types.ts";
 
 export interface EventPhase {
   kind: "battle_start" | "turn_start" | "turn_end" | "after_action";
@@ -34,6 +35,8 @@ export function runEvents(state: BattleState, phase: EventPhase): void {
 }
 
 function matches(state: BattleState, trig: Trigger, phase: EventPhase): boolean {
+  // 날씨 조건은 어떤 트리거에든 붙는다(예: 맑은 날이 아니면 차례마다 독기).
+  if (trig.whenWeather && !weatherAllows(trig.whenWeather, state.weather)) return false;
   switch (trig.type) {
     case "battle_start":
       return phase.kind === "battle_start";
@@ -42,14 +45,14 @@ function matches(state: BattleState, trig: Trigger, phase: EventPhase): boolean 
       if (phase.kind !== "turn_start") return false;
       if (trig.side && phase.side !== trig.side) return false;
       if (trig.turn !== undefined) return state.turn === trig.turn;
-      if (trig.every !== undefined) return state.turn % trig.every === 0;
+      if (trig.every !== undefined) return (state.turn - (trig.offset ?? 0)) % trig.every === 0;
       return true;
 
     case "turn_end":
       if (phase.kind !== "turn_end") return false;
       if (trig.side && phase.side !== trig.side) return false;
       if (trig.turn !== undefined) return state.turn === trig.turn;
-      if (trig.every !== undefined) return state.turn % trig.every === 0;
+      if (trig.every !== undefined) return (state.turn - (trig.offset ?? 0)) % trig.every === 0;
       return true;
 
     case "unit_reaches": {
@@ -205,6 +208,7 @@ export function applyAction(state: BattleState, action: Action): void {
             ...(spec.goalRegion !== undefined ? { goalRegion: spec.goalRegion } : {}),
             ...(spec.visionRange !== undefined ? { visionRange: spec.visionRange } : {}),
             ...(spec.patrolRoute !== undefined ? { patrolRoute: spec.patrolRoute } : {}),
+            ...(spec.followUnit !== undefined ? { followUnit: spec.followUnit } : {}),
           });
           state.add(u);
           occupied.set(key(c), u);
@@ -290,8 +294,12 @@ export function applyAction(state: BattleState, action: Action): void {
         // M-08 CONSTRUCT / flooding: the ground itself changes (a bridge over water, water over a field).
         if (action.terrain) tile.terrain = action.terrain;
         if (action.hazard) {
+          // 비가 오는 동안에는 불이 붙지 않는다.
+          if (action.hazard === "fire" && state.weather === "rain") continue;
           tile.hazard = action.hazard;
           tile.hazardTurns = action.duration ?? 3;
+          if (action.whenWeather) tile.hazardWhen = structuredClone(action.whenWeather);
+          else delete tile.hazardWhen;
         }
       }
       if (action.terrain) state.push({ t: "terrain", region: action.region, terrain: action.terrain });
@@ -328,9 +336,68 @@ export function applyAction(state: BattleState, action: Action): void {
       state.push({ t: "telegraph", id, cells, turns, ...(action.label ? { label: action.label } : {}), ...(action.magnitude === 0 ? { warning: true } : {}) });
       break;
     }
+    case "set_weather": {
+      if (!action.weather) break;
+      setWeather(state, action.weather);
+      break;
+    }
+
+    case "damage_region": {
+      // 영역 안에 선 부대만 맞는다(진영 전체가 아니라). 불·낙석·홍수 같은 지형 기믹.
+      if (!action.region) break;
+      const cells = state.map.regionCoords(action.region);
+      const hits: Array<{ unit: string; damage: number }> = [];
+      for (const c of cells) {
+        const u = state.unitAt(c);
+        if (!u?.alive) continue;
+        if (action.side && u.side !== action.side) continue;
+        let damage = Math.round(u.stats.maxHp * (action.ratio ?? 0));
+        if (action.nonLethal) damage = Math.min(damage, u.hp - 1);
+        damage = Math.max(0, damage);
+        u.hp -= damage;
+        hits.push({ unit: u.id, damage });
+        if (u.hp <= 0) state.retreat(u);
+        if (action.effect && u.alive) {
+          state.applyStatus(u, { kind: action.effect, turns: action.duration ?? 1, magnitude: action.magnitude ?? 1 });
+        }
+      }
+      state.push({ t: "strike", id: `${action.label ?? action.region}@${state.turn}`, cells: [...cells], hits, label: action.label ?? action.region });
+      break;
+    }
+
+    case "open_gate":
+    case "close_gate": {
+      if (!action.region) break;
+      const open = action.type === "open_gate";
+      for (const c of state.map.regionCoords(action.region)) {
+        const tile = state.map.tileAt(c);
+        if (open) delete tile.locked;
+        else tile.locked = true;
+      }
+      state.push({ t: "gate", region: action.region, open });
+      break;
+    }
+
     case "start_duel":
       // 연출 계층에서 처리. 코어는 상태만 관리한다.
       break;
+  }
+}
+
+/** 날씨를 바꾼다. 비가 오면 맵의 불길 칸이 모두 꺼진다. 같은 날씨면 아무 일도 없다. */
+export function setWeather(state: BattleState, weather: import("./types.ts").Weather): void {
+  if (state.weather === weather) return;
+  state.weather = weather;
+  state.push({ t: "weather", weather });
+  if (weather !== "rain") return;
+  for (let y = 0; y < state.map.height; y++) {
+    for (let x = 0; x < state.map.width; x++) {
+      const tile = state.map.tileAt({ x, y });
+      if (tile.hazard === "fire") {
+        tile.hazard = "none";
+        tile.hazardTurns = 0;
+      }
+    }
   }
 }
 

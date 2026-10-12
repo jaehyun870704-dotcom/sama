@@ -31,8 +31,10 @@ const batch:ZhugeBatch={
   ],
   rules:{
     'Z2-03':{foeEdge:{normal:0,extreme:25},sealNames:['독룡동 평정','신속한 평정','부대 보존'],weather:'무더위 · 독기 서린 골짜기',
+      // 날씨: 안개(독기)로 시작해 3턴마다 한 턴 갠다. 맑지 않은 날은 독 샘이 독하고 부대 공격이 약해진다. 은자에게 닿으면 하늘이 갠다.
+      weatherText:{fog:'≋ 독기 서린 안개 · 독 샘이 끓는다',clear:'☀ 갠 하늘 · 독 샘이 가라앉았다'},
       labels:[{region:'hermit',text:'만안계 은자'},{region:'springs',text:'독천'},{region:'cave',text:'독룡동'}],
-      phase:({state})=>state.scenarioPhase==='poison'?'독기 · 부대 공격 약화 — 총대장이 만안계 은자에게 닿으면 풀린다':'해독 · 독룡동의 만병 섬멸'},
+      phase:({state})=>state.scenarioPhase==='poison'?(state.weather==='clear'?'잠시 갠 날 · 독 샘이 잠잠하다 — 총대장을 만안계 은자에게':`독기 · 부대 공격 약화·독 샘 — 3턴마다 하늘이 갠다(지금 ${state.turn}턴) · 총대장이 만안계 은자에게 닿으면 풀린다`):'해독 · 독룡동의 만병 섬멸'},
     'Z2-04':{foeEdge:{normal:5,extreme:18},sealNames:['은갱동 평정','신속한 평정','부대 보존'],weather:'흐림 · 목록대왕이 부른 바람',
       labels:[{region:'fort',text:'은갱동'},{region:'wood_in',text:'목수 도착'}],
       phase:({state})=>state.scenarioPhase==='beasts'?`맹수의 포효 · 부대 사기 저하 — 목수가 3턴에 온다`:'목수의 불 · 맹수가 겁을 먹었다'},

@@ -28,6 +28,21 @@ export type TerrainKind =
 /** 타일 위에 얹히는 일시적 위험 지대 (M-19 HAZARD_FIELD). */
 export type HazardKind = "fire" | "trap" | "lightning" | "none";
 
+/** 전장의 날씨. 스테이지가 정하고(StageDef.weather), 이벤트(set_weather)가 바꾼다. 정하지 않으면 맑음. */
+export type Weather = "clear" | "cloudy" | "rain" | "fog" | "snow";
+export const WEATHERS: readonly Weather[] = ["clear", "cloudy", "rain", "fog", "snow"];
+/** 날씨 조건: is에 든 날씨이고(없으면 아무 날씨나) not에 든 날씨가 아닐 때 참. */
+export interface WeatherGate {
+  is?: Weather[];
+  not?: Weather[];
+}
+export function weatherAllows(gate: WeatherGate | undefined, weather: Weather): boolean {
+  if (!gate) return true;
+  if (gate.is && !gate.is.includes(weather)) return false;
+  if (gate.not && gate.not.includes(weather)) return false;
+  return true;
+}
+
 export interface Tile {
   /** Mutable only through the terrain_change action (bridges built, rivers flooding). */
   terrain: TerrainKind;
@@ -36,6 +51,10 @@ export interface Tile {
   hazard: HazardKind;
   /** hazard 잔여 턴. 0이면 소멸. */
   hazardTurns: number;
+  /** 이 날씨 조건일 때만 hazard가 해를 끼친다(예: 독 샘은 맑은 날이 아니면 독 · {not:["clear"]}). */
+  hazardWhen?: WeatherGate;
+  /** 닫힌 성문·막힌 길: 어느 병종도 들어설 수 없다(open_gate로 연다). */
+  locked?: boolean;
 }
 
 // ─────────────────────────────────────────────────────────── 병종
@@ -242,6 +261,8 @@ export interface Unit {
   patrolIndex?: number;
   /** 시야 범위 (M-02). 이 거리 안의 적대 유닛을 발각한다. */
   visionRange?: number;
+  /** behavior "follow": 매 차례 이 유닛 곁으로 다가간다. */
+  followUnit?: string;
 }
 
 export type AiBehavior =
@@ -252,6 +273,7 @@ export type AiBehavior =
   | "race"      // 목표 지점으로 직행 (M-07)
   | "flee"      // 출구로 도주 (M-21)
   | "patrol"    // 정해진 경로를 순찰 (M-02)
+  | "follow"    // 지정한 유닛(followUnit) 곁으로 다가간다 — 교전하지 않는다
   | "passive";  // 공격하지 않음
 
 // ─────────────────────────────────────────────────────────── 전투 결과

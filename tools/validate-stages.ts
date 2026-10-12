@@ -93,6 +93,25 @@ for (const f of stageFiles) {
     }
   }
 
+  // follow 부대가 따라갈 유닛이 이 스테이지에 실재하는가(출진 장수 또는 이벤트로 나오는 부대).
+  const unitIds = new Set<string>([...stage.deployment.forced, ...(stage.deployment.selectable ?? [])]);
+  for (const ev of stage.events ?? []) for (const a of ev.actions) for (const u of a.units ?? []) if (u.id) unitIds.add(u.id);
+  for (const ev of stage.events ?? []) for (const a of ev.actions) for (const u of a.units ?? []) {
+    if (u.followUnit && !unitIds.has(u.followUnit)) errors.push(`[${stage.id}] ${u.id ?? u.template}가 따라갈 유닛이 없음: "${u.followUnit}"`);
+  }
+
+  // 성문 여닫기는 성문(gate) 칸에만, 공성 끄기(siege:false)는 성문이 있는 맵에만 뜻이 있다.
+  if (map) {
+    for (const ev of stage.events ?? []) for (const a of ev.actions) {
+      if ((a.type === "open_gate" || a.type === "close_gate") && a.region && map.regions.has(a.region)) {
+        if (map.regionCoords(a.region).some((c) => map.tileAt(c).terrain !== "gate")) errors.push(`[${stage.id}] ${a.type}의 영역 "${a.region}"에 성문(gate)이 아닌 칸이 있음`);
+      }
+    }
+    let hasGate = false;
+    for (let y = 0; y < map.height && !hasGate; y++) for (let x = 0; x < map.width; x++) if (map.tileAt({ x, y }).terrain === "gate") { hasGate = true; break; }
+    if (stage.siege === false && !hasGate) errors.push(`[${stage.id}] siege:false인데 맵에 성문(gate) 칸이 없음`);
+  }
+
   // 대화 정의가 구조적으로 온전한가 (끊긴 링크 · 빈 선택지)
   let script: DialogueScript | null = null;
   try {

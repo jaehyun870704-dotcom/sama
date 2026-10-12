@@ -47,12 +47,12 @@
     {
       "slot": 2,
       "normal": "enemy_retreat_count:7",
-      "extreme": "enemy_retreat_count:7"
+      "extreme": "enemy_retreat_count:6"
     },
     {
       "slot": 3,
       "normal": "player_losses_lt:3",
-      "extreme": "player_losses_lt:2"
+      "extreme": "player_losses_lt:4"
     }
   ],
   "difficulty": {

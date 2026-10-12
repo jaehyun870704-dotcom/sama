@@ -39,13 +39,13 @@
     },
     {
       "slot": 2,
-      "normal": "player_losses_lt:1",
-      "extreme": "player_losses_lt:1"
+      "normal": "enemy_retreat_count:8",
+      "extreme": "enemy_retreat_count:8"
     },
     {
       "slot": 3,
-      "normal": "unit_survives",
-      "extreme": "unit_survives"
+      "normal": "player_losses_lt:2",
+      "extreme": "player_losses_lt:2"
     }
   ],
   "difficulty": {

@@ -33,7 +33,7 @@ const batch:ZhugeBatch={
     'Z1-02':{sealNames:['초가에 닿다','형제 무사','빠른 걸음'],weather:'맑음 · 융중의 산바람',labels:[{region:'objective',text:'융중 초가'},{region:'chief_camp',text:'도적 두목'}]},
     'Z1-03':{sealNames:['하후돈 격퇴','빠른 승리','적군 와해'],tough:[{unit:'z_xiahou_dun',hpScale:2.2,defense:4}],weather:'건조한 남풍 · 마른 갈대',labels:[{region:'mouth',text:'골짜기 어귀'},{region:'camp',text:'유비 본진'}],zones:[{region:'valley',color:0xff8a3d}],
       phase:({state})=>state.firedEvents.has('Z1-03/fire')?'골짜기에 불 · 하후돈을 물리쳐라':`조운이 적을 골짜기로 끈다 · 2턴에 불(지금 ${state.turn}턴)`},
-    'Z1-04':{sealNames:['신야 철수','백성 무사','빠른 철수'],weather:'가을 · 강한 서풍',protect:[{unit:'z4_people_a',hp:110,movement:4},{unit:'z4_people_b',hp:110,movement:4}],labels:[{region:'town',text:'신야성'},{region:'exit',text:'번성 가는 길'}],zones:[{region:'exit',color:0xffd27a}],
+    'Z1-04':{sealNames:['신야 철수','부대 보존','빠른 철수'],weather:'가을 · 강한 서풍',protect:[{unit:'z4_people_a',hp:110,movement:4},{unit:'z4_people_b',hp:110,movement:4}],labels:[{region:'town',text:'신야성'},{region:'exit',text:'번성 가는 길'}],zones:[{region:'exit',color:0xffd27a}],
       phase:({state})=>state.scenarioPhase==='evac'?'백성을 백하 건너로 · 빈 신야성에 적이 들면 불(늦어도 5턴)':state.scenarioPhase==='fire'?'신야성의 불 · 허저가 백하 물가에 닿으면 물(늦어도 7턴)':'남은 적을 물리쳐라'},
     'Z1-05':{sealNames:['강하 도착','부대 보존','빠른 물길'],weather:'흐림 · 한수의 물안개',protect:[{unit:'z5_ship',hp:170,movement:3}],labels:[{region:'objective',text:'강하 나루'},{region:'north_ford',text:'여울'}],zones:[{region:'objective',color:0xffd27a}],
       phase:({state})=>state.find('z_liu_qi')?.alive?'유기의 강하 수군 합류 · 배를 강하 나루까지':'배를 지켜 한수를 내려가라 · 4턴에 강하에서 원군'},
@@ -41,11 +41,10 @@ const batch:ZhugeBatch={
       phase:({state})=>state.turn<2?'동남풍이 분다 · 총대장은 나루로':'정봉·서성의 추격 · 총대장을 조운의 배까지'},
     'Z1-07':{sealNames:['화용도의 해후','빠른 매복','패잔병 소탕'],weather:'흐림 · 진흙길과 젖은 바람',tough:[{unit:'z_cao_cao',hpScale:2.5,defense:6}],
       labels:[{region:'huarong',text:'화용도'},{region:'wulin',text:'오림'}],zones:[{region:'huarong',color:0xffd27a}],
-      // 조조는 관우를 찾아 달린다: 관우 곁의 칸을 조조의 목표 지점으로 매번 고쳐 둔다.
-      tick:({state})=>{const g=state.find('z_guan_yu'),c=state.find('z_cao_cao');if(g?.alive&&c?.alive){const near=[[1,0],[-1,0],[0,1],[0,-1]].map(([dx,dy])=>({x:g.pos.x+dx!,y:g.pos.y+dy!})).filter(p=>state.map.inBounds(p)&&Number.isFinite(state.map.moveCost(c.unitClass,p)));if(near.length)state.map.regions.set('guan_side',near);}return undefined;},
+      // 조조는 관우를 찾아 달린다: 엔진의 따라가기(behavior 'follow' · followUnit 'z_guan_yu')가 매 차례 관우 곁으로 이끈다.
       phase:({state})=>state.find('z_cao_cao')?.alive?'조조가 화용도로 온다 · 쓰러뜨리지 말고 관우와 마주치게 하라':'패잔병을 치며 조조를 기다려라 · 3턴에 조조 등장',
       failure:({state})=>state.find('z_cao_cao')?.alive===false?'조조가 쓰러졌습니다. 화용도의 매듭은 놓아 주는 데 있었습니다.':undefined},
-    'Z1-08':{sealNames:['두 성 차지','빠른 점령','조인 퇴각'],tough:[{unit:'z_cao_ren',hpScale:2.2,defense:4}],weather:'늦겨울 · 맑음',labels:[{region:'nanjun_keep',text:'남군 안채'},{region:'xiangyang_keep',text:'양양 안채'}],zones:[{region:'nanjun_keep',color:0xffd27a},{region:'xiangyang_keep',color:0xffd27a}],
+    'Z1-08':{sealNames:['두 성 차지','빠른 점령','부대 보존'],tough:[{unit:'z_cao_ren',hpScale:2.2,defense:4}],weather:'늦겨울 · 맑음',labels:[{region:'nanjun_keep',text:'남군 안채'},{region:'xiangyang_keep',text:'양양 안채'}],zones:[{region:'nanjun_keep',color:0xffd27a},{region:'xiangyang_keep',color:0xffd27a}],
       phase:({state})=>state.captured.get('nanjun_keep')==='player'?'양양의 안채를 차지하라':'주유가 조인을 붙잡은 사이 남군의 안채를 차지하라'},
     'Z1-09':{sealNames:['네 고을 평정','빠른 평정','부대 보존'],weather:'봄 · 상강의 물안개',tough:[{unit:'z_huang_zhong',hpScale:1.5,defense:3}],
       labels:[{region:'lingling_keep',text:'영릉'},{region:'guiyang_keep',text:'계양'},{region:'wuling_keep',text:'무릉'},{region:'changsha_keep',text:'장사'}],

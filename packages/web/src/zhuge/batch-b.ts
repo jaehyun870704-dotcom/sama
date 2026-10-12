@@ -34,7 +34,7 @@ const batch:ZhugeBatch={
   ],
   rules:{
     'Z1-10':{foeEdge:{normal:5,extreme:25},sealNames:['엄안 사로잡기','신속한 입성','부대 보존'],weather:'맑음 · 강바람',labels:[{region:'keep',text:'강주성'},{region:'side_path',text:'샛길'}]},
-    'Z1-11':{foeEdge:{normal:-12,extreme:0},sealNames:['마초 격퇴','신속한 격퇴','서량군 격파'],weather:'밤 · 횃불과 모래바람',labels:[{region:'pass',text:'가맹관'}]},
+    'Z1-11':{foeEdge:{normal:-12,extreme:0},sealNames:['마초 격퇴','신속한 격퇴','부대 보존'],weather:'밤 · 횃불과 모래바람',labels:[{region:'pass',text:'가맹관'}]},
     'Z1-12':{foeEdge:{normal:-20,extreme:-14},sealNames:['하후연 격파','신속한 승리','하후상 사로잡기'],weather:'흐림 · 산바람',labels:[{region:'depot',text:'천탕산 군량고'},{region:'dingjun',text:'정군산'}],
       phase:({state})=>state.captured.get('depot')==='player'?'하후연 격파':'천탕산 군량고 점령'},
     'Z1-13':{foeEdge:{normal:0,extreme:40},tough:[{unit:'z_cao_cao_foe',hpScale:1.5}],sealNames:['조조 퇴각','신속한 승리','부대 보존'],weather:'맑음 · 한수의 북소리',labels:[{region:'cao_camp',text:'조조 본진'},{region:'yangping',text:'양평관'}]},

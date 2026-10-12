@@ -7,6 +7,7 @@
   "subtitle": "호로 모양의 골짜기",
   "synopsis": "오장원의 대치가 길어지자 제갈량은 상방곡에 군량을 쌓아 미끼로 삼는다. 사마의가 골짜기에 들어서면 불을 놓는다. 그러나 하늘은 늘 사람의 계산대로 움직이지 않는다. 사마의를 골짜기로 끌어들여 물러나게 하라.",
   "mapId": "z2-18-shangfang-valley",
+  "weather": "cloudy",
   "deployment": {
     "forced": [
       "z_liang",
@@ -39,8 +40,8 @@
     },
     {
       "slot": 2,
-      "normal": "unit_retreat:z_sima_shi",
-      "extreme": "unit_retreat:z_sima_shi"
+      "normal": "enemy_retreat_count:6",
+      "extreme": "enemy_retreat_count:6"
     },
     {
       "slot": 3,
@@ -187,13 +188,13 @@
       },
       "actions": [
         {
-          "type": "apply_effect",
-          "targets": [
-            "z_sima_yi"
-          ],
+          "type": "damage_region",
+          "region": "valley",
+          "side": "enemy",
+          "ratio": 0.45,
           "effect": "burn",
           "duration": 2,
-          "hpRatioDamage": 0.45
+          "label": "상방곡의 불"
         },
         {
           "type": "apply_effect",
@@ -233,9 +234,8 @@
       },
       "actions": [
         {
-          "type": "terrain_change",
-          "region": "valley",
-          "hazard": "none"
+          "type": "set_weather",
+          "weather": "rain"
         },
         {
           "type": "remove_effect",

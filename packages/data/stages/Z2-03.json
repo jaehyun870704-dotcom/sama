@@ -6,6 +6,8 @@
   "subtitle": "독룡동 · 네 개의 독천",
   "synopsis": "다섯 번째로 풀려난 맹획이 타사대왕의 독룡동으로 숨었다. 길목의 샘은 마시면 말을 잃고 몸이 무너지는 독천이다. 만안계의 은자에게서 해독의 물을 얻고, 동굴의 만병을 물리쳐라.",
   "mapId": "z2-03-dulong",
+  "goalMemory": true,
+  "weather": "fog",
   "initialPhase": "poison",
   "deployment": {
     "forced": [
@@ -45,7 +47,7 @@
     },
     {
       "slot": 2,
-      "normal": "turn_limit:12",
+      "normal": "turn_limit:10",
       "extreme": "turn_limit:12"
     },
     {
@@ -78,7 +80,12 @@
           "type": "terrain_change",
           "region": "springs",
           "hazard": "trap",
-          "duration": 99
+          "duration": 99,
+          "whenWeather": {
+            "not": [
+              "clear"
+            ]
+          }
         },
         {
           "type": "spawn_units",
@@ -185,12 +192,50 @@
       ]
     },
     {
+      "id": "Z2-03/clear-sky",
+      "phase": "poison",
+      "once": false,
+      "trigger": {
+        "type": "turn_start",
+        "side": "player",
+        "every": 3
+      },
+      "actions": [
+        {
+          "type": "set_weather",
+          "weather": "clear"
+        }
+      ]
+    },
+    {
+      "id": "Z2-03/fog-returns",
+      "phase": "poison",
+      "once": false,
+      "trigger": {
+        "type": "turn_start",
+        "side": "player",
+        "every": 3,
+        "offset": 1
+      },
+      "actions": [
+        {
+          "type": "set_weather",
+          "weather": "fog"
+        }
+      ]
+    },
+    {
       "id": "Z2-03/miasma",
       "phase": "poison",
       "once": false,
       "trigger": {
         "type": "turn_start",
-        "side": "player"
+        "side": "player",
+        "whenWeather": {
+          "not": [
+            "clear"
+          ]
+        }
       },
       "actions": [
         {
@@ -251,6 +296,10 @@
           "region": "springs",
           "hazard": "none",
           "duration": 1
+        },
+        {
+          "type": "set_weather",
+          "weather": "clear"
         },
         {
           "type": "apply_effect",

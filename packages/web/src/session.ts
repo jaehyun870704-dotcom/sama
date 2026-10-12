@@ -25,7 +25,7 @@ import tongguanStage from '../../data/stages/S1-06.json';
 import tongguanMap from '../../data/maps/tongguan-pass.json';
 import retreatStage from '../../data/stages/S1-05.json';
 import retreatMap from '../../data/maps/yangtze-retreat.json';
-import {stageRules,foeEdges,foeEdges6,foeEdges7,foeEdges8,foeEdgesWide,foeEdges13,toughWide,tough8,foeLevelCap6} from './stage-rules.ts';
+import {stageRules,weatherLine,foeEdges,foeEdges6,foeEdges7,foeEdges8,foeEdgesWide,foeEdges13,toughWide,tough8,foeLevelCap6} from './stage-rules.ts';
 import {campaignStage,addFortifications,addSiegeCompany,structureKind,encircled,encounterLevels} from './campaign-rules.ts';
 import {applyTreasure,equippedItems,treasureInfo,gearKey,validGearKey,type Deployment,OFFICERS,treasures} from './progression.ts';
 import { assemble, Battle, CONTROLLABLE, isHostile, key, manhattan, statsFor, familyOf, evolvedClass, evolveUnit, healAmount, strategyArea, evolveStrategy, syncTroopEffect, applyOfficerEffect, applySignature, applyFamedReach, topAbility, tierOf, classCanUseStrategy, fireScripted, currentClass } from '../../core/src/index.ts';
@@ -712,7 +712,7 @@ export class Session {
   get deadline(){return stageRules[this.state.stage.id]?.deadline??(this.chapter===0&&this.difficulty==='extreme'?this.escapeDeadline:undefined);}
   get somber(){return stageRules[this.state.stage.id]?.somber===true;}
   get canCalm(){return stageRules[this.state.stage.id]?.calm===true;}
-  get weather(){return this.chapter===4?'☾ 흉몽 · 짙은 안개':stageRules[this.state.stage.id]?.weather??'☀ 맑음 · 바람 약함';}
+  get weather(){return this.chapter===4?'☾ 흉몽 · 짙은 안개':weatherLine(this.state,stageRules[this.state.stage.id],'☀ 맑음 · 바람 약함');}
   get sealNames(){return sealNamesOf(this.chapter);}
   restorePhase(){if(this.phaseCheckpoint===null)return false;this.journal=this.journal.slice(0,this.phaseCheckpoint);this.checkpoints=this.checkpoints.filter(n=>n<this.journal.length);this.replay();return true;}
   tick(){

@@ -86,10 +86,10 @@ export function reinforceHistoric(state:BattleState,stageId:string,skip:Readonly
     const u=makeUnit({id:`hx_${n++}`,name:o.name,side:'enemy',unitClass:o.unitClass,level:o.level,pos:at,behavior:'hold'});
     state.add(u);added.push(u.id);
   };
-  const steady=enemies.filter(u=>!['race','flee','escortee','passive'].includes(u.behavior??'advance')&&!u.goalRegion);
+  const steady=enemies.filter(u=>!['race','flee','escortee','passive','follow'].includes(u.behavior??'advance')&&!u.goalRegion);
   const lead=steady.find(u=>romanceOf(u))??[...steady].sort((a,b)=>b.level-a.level)[0];
   // 병사: 이름 없는(연의 장수록에 없는) 부대를 절반만큼, 같은 병종·레벨로 곁에(rear면 우두머리 곁에).
-  const rank=enemies.filter(u=>!romanceOf(u)&&u.behavior!=='race'&&!u.goalRegion&&!skip.has(u.id)&&!/depot|convoy|decoy|target|boss|guard_post/.test(u.id));
+  const rank=enemies.filter(u=>!romanceOf(u)&&u.behavior!=='race'&&u.behavior!=='follow'&&!u.goalRegion&&!skip.has(u.id)&&!/depot|convoy|decoy|target|boss|guard_post/.test(u.id));
   const extra=Math.round(rank.length*SOLDIER_GROWTH);
   for(let i=0;i<extra;i++){const src=rank[i%rank.length]!;place(plan.rear&&lead?lead:src,{name:src.name,unitClass:src.unitClass,level:src.level});}
   // 장수: 병사 대열 사이사이에(대열이 없으면 우두머리 곁에). 우두머리 바로 곁에 세우면, 달아나는 우두머리를 쫓는 길을 막아 버린다.

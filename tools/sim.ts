@@ -31,7 +31,7 @@ const { isZhugeStage } = await load("/packages/web/src/zhuge-data.ts");
 const { award, deployment, equip, freshCampaign, treasures, OFFICERS } =
   await load("/packages/web/src/progression.ts");
 const { martialPower } = await load("/packages/web/src/officers.ts");
-const { CONTROLLABLE, decide, evaluate, key, manhattan } = await load("/packages/core/src/index.ts");
+const { CONTROLLABLE, decide, evaluate, rememberedGoal, key, manhattan } = await load("/packages/core/src/index.ts");
 
 type Difficulty = "normal" | "extreme";
 
@@ -70,7 +70,8 @@ function campaignAt(chapter: number, difficulty: Difficulty) {
  * 달릴 때가 아니다. (S1-04의 "세 대결 → 어전 접근"이 그렇다)
  */
 function isRacing(state: any, unit: any): boolean {
-  const unmet = (cond: any) => !evaluate(state, cond);
+  // 목표 기억을 켠 장(goalMemory)에서는 붙잡아 둔(이미 이룬) 차례 목표를 다시 채울 필요가 없다.
+  const unmet = (cond: any) => !evaluate(state, cond) && !rememberedGoal(state, cond);
   return state.victory.some((cond: any) => {
     if (cond.type !== "reach" || cond.unit !== unit.id || !unmet(cond)) return false;
     // 앞 단계가 "특정 적 격퇴"로 남아 있으면 지금은 달릴 때가 아니라 싸울 때다.
