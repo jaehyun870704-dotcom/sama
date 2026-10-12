@@ -96,9 +96,9 @@ async function runContest(host:ScenarioHost,state:ScenarioState,step:ScenarioSte
   const foeLv=step.kind==='story'?hero.level:enemyBase(state,hero.level,step);
   const stat=(n:string,lv:number)=>{const r=romanceByName(n);return (kind==='duel'?(r?.war??55):(r?.int??55))+lv;};
   // 병종을 아는 쪽은 전투 화면과 같은 모습으로 선다: 사마의·부대 장수, 가상 전장의 적장·우두머리.
-  const myClass:UnitClass|undefined=by==='사마의'?storyClassAt('sima_yi',hero.level):state.officers[by]?.unitClass;
+  const myClass:UnitClass|undefined=by==='사마의'?storyClassAt('sima_yi',hero.level):state.officers[by]?.unitClass??(romanceByName(by)?officerClass(by):undefined);
   const route=step.route?routeById(step.route):undefined;
-  const foeClass:UnitClass|undefined=step.tale?.target.name===foe?step.tale.target.unitClass:step.kind==='boss'&&route?.region.boss.name===foe?route.region.boss.unitClass:foeClassOf(foe);
+  const foeClass:UnitClass|undefined=step.tale?.target.name===foe?step.tale.target.unitClass:step.kind==='boss'&&route?.region.boss.name===foe?route.region.boss.unitClass:foeClassOf(foe)??(romanceByName(foe)?officerClass(foe):undefined);
   const model=(c:UnitClass|undefined,n:string,side:'player'|'enemy')=>c?host.unitModel?.(c,n,side,kind):undefined;
   const mine=model(myClass,by,'player'),theirs=model(foeClass,foe,'enemy');
   const r=await playContest(kind,{name:by,stat:stat(by,lvOf(by))},{name:foe,stat:stat(foe,foeLv)},{...(line?{acceptLine:line}:{}),seed:step.id+foe,done:'돌아가기',sound:c=>host.contestSound?.(kind,c),models:{...(mine?{player:mine}:{}),...(theirs?{enemy:theirs}:{})}});

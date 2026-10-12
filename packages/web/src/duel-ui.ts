@@ -192,6 +192,37 @@ export function animateDuel(root:ParentNode=document){
     ];
     el.animate(frames,{duration:total,easing:smooth});
   };
+  // 일기토: 몸(.duel-fighter)은 돌진하고, 그림(.duel-model)은 칼을 들어 올렸다가(뒤로 젖힘) 내리친다(앞으로 숙임).
+  // 맞은 쪽 그림은 그 순간 붉게 번쩍이며 비틀거린다.
+  const body=(el:HTMLElement)=>el.querySelector<HTMLElement>('.duel-model');
+  const swing=(el:HTMLElement,a:string,dir:1|-1)=>{const m=body(el);if(!m||!rush(a))return;
+    m.animate([{rotate:'0deg',offset:0},{rotate:`${-dir*9}deg`,offset:.3},{rotate:`${-dir*11}deg`,offset:hitAt-.04},{rotate:`${dir*12}deg`,offset:hitAt+.04},{rotate:`${dir*4}deg`,offset:.7},{rotate:'0deg',offset:1}],{duration:total,easing:'ease-in-out',composite:'add'});};
+  const stagger=(el:HTMLElement,dir:1|-1)=>{const m=body(el);if(!m)return;
+    m.animate([{filter:'none',scale:'1 1',offset:0},{filter:'none',scale:'1 1',offset:hitAt},{filter:'brightness(1.9) sepia(.6) hue-rotate(-30deg) saturate(3)',scale:'1.04 .94',offset:hitAt+.05},{filter:'none',scale:'.98 1.02',offset:hitAt+.16},{filter:'none',scale:'1 1',offset:1}],{duration:total,easing:'ease-out'});
+    void dir;};
+  // 설전: 다가서지 않고 제자리에서 부채·손을 휘두르며 말한다. 말이 먹글자가 되어 상대에게 날아가 꽂히고,
+  // 꽂힌 쪽은 움찔 물러서며 식은땀을 흘린다(논파당함). 막으면 같은 글자를 되받아친다.
+  const glyphs=['理','義','策','論','辯','證'];
+  const speak=(el:HTMLElement,a:string,dir:1|-1)=>{const m=body(el);if(!m||a==='guard')return;
+    const lean=a==='rally'?0:dir*10;
+    m.animate([{translate:'0 0',rotate:'0deg'},{translate:`${lean*.4}px -4px`,rotate:`${dir*-4}deg`,offset:.2},{translate:`${lean}px 0`,rotate:`${dir*5}deg`,offset:.36},{translate:`${lean*.6}px -3px`,rotate:`${dir*-3}deg`,offset:.5},{translate:`${lean}px 0`,rotate:`${dir*4}deg`,offset:.64},{translate:'0 0',rotate:'0deg'}],{duration:total,easing:'ease-in-out',composite:'add'});};
+  const fly=(from:HTMLElement,to:HTMLElement,n:number,delay:number,big:boolean)=>{
+    const view=stage.querySelector<HTMLElement>('.duel-view');if(!view)return;const vr=view.getBoundingClientRect(),fr=from.getBoundingClientRect(),tr=to.getBoundingClientRect();
+    for(let i=0;i<n;i++){const g=document.createElement('b');g.className='duel-glyph'+(big?' big':'');g.textContent=glyphs[(i*7+n)%glyphs.length]!;view.appendChild(g);
+      const x0=fr.left+fr.width*.5-vr.left,y0=fr.top+fr.height*(.32+i*.08)-vr.top,x1=tr.left+tr.width*.5-vr.left,y1=tr.top+tr.height*(.3+i*.1)-vr.top;
+      g.animate([{transform:`translate(${x0}px,${y0}px) scale(.4)`,opacity:0},{transform:`translate(${x0+(x1-x0)*.15}px,${y0-26}px) scale(1)`,opacity:1,offset:.25},{transform:`translate(${x1}px,${y1}px) scale(${big?1.6:1.2})`,opacity:1,offset:.85},{transform:`translate(${x1}px,${y1}px) scale(${big?2.2:1.6})`,opacity:0}],{duration:total*.5,delay:delay+i*90,easing:'cubic-bezier(.4,0,.6,1)',fill:'both'}).finished.then(()=>g.remove(),()=>g.remove());}};
+  const sweat=(el:HTMLElement)=>{const d=document.createElement('i');d.className='duel-sweat';d.textContent='💧';el.appendChild(d);window.setTimeout(()=>d.remove(),total);};
+  if(debate){
+    speak(p,pa,1);speak(e,ea,-1);
+    const big=(a:string)=>a==='special';
+    if(rush(pa)||pa==='rally')fly(p,e,big(pa)?3:2,total*.12,big(pa));
+    if(rush(ea)||ea==='rally')fly(e,p,big(ea)?3:2,total*.12,big(ea));
+    // 논파당한 쪽: 몸이 뒤로 물러서며 움찔(몸 전체는 아래 play가 밀어낸다) + 식은땀
+    for(const [el,hit,dir] of [[p,p.classList.contains('hit'),1],[e,e.classList.contains('hit'),-1]] as const){if(hit){stagger(el,dir);window.setTimeout(()=>sweat(el),Math.round(total*hitAt));}}
+  }else{
+    swing(p,pa,1);swing(e,ea,-1);
+    if(p.classList.contains('hit'))stagger(p,1);if(e.classList.contains('hit'))stagger(e,-1);
+  }
   play(p,pa,1,p.classList.contains('hit'));play(e,ea,-1,e.classList.contains('hit'));
   window.setTimeout(impact,Math.round(total*hitAt));
 }

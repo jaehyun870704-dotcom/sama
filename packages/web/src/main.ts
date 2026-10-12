@@ -181,8 +181,9 @@ function storyScene(chapter:number,beat=0,fromArt?:number,viewOnly=false){
     await playScenes(root,script.scenes,{heading,flags:()=>flags,
       onChoice:o=>{for(const e of o.effects??[]){picked.push(e);if(e.kind==='flag'&&!flags.includes(e.flag))flags.push(e.flag);}},
       onContest:async e=>{const by=e.by??'사마의',stat=(n:string)=>{const r=romanceByName(n);return (e.kind==='duel'?(r?.war??55):(r?.int??55))+hero;};
-        const mine=by==='사마의'?portraitFor({id:'contest',name:by,unitClass:storyClassAt('sima_yi',hero),side:'player'} as unknown as Unit,false,e.kind):undefined;
-        const r=await playContest(e.kind,{name:by,stat:stat(by)},{name:e.foe,stat:stat(e.foe)},{...(e.line?{acceptLine:e.line}:{}),seed:c.stage.id+e.foe,done:'돌아가기',sound:k=>sound.event({kind:'duel',critical:k,debate:e.kind==='debate'}),...(mine?{models:{player:mine}}:{})});
+        // 두 사람 모두 실제 장수 그림으로 마주 세운다(사마의는 지금 병종, 상대는 그 장수의 병종).
+        const model=(name:string,side:'player'|'enemy')=>portraitFor({id:name==='사마의'?'sima_yi':'contest_'+side,name,unitClass:name==='사마의'?storyClassAt('sima_yi',hero):officerClass(name),side} as unknown as Unit,false,e.kind);
+        const r=await playContest(e.kind,{name:by,stat:stat(by)},{name:e.foe,stat:stat(e.foe)},{...(e.line?{acceptLine:e.line}:{}),seed:c.stage.id+e.foe,done:'돌아가기',sound:k=>sound.event({kind:'duel',critical:k,debate:e.kind==='debate'}),models:{player:model(by,'player'),enemy:model(e.foe,'enemy')}});
         contest={kind:e.kind,result:r};return r;}});
     if(!viewOnly)saveYeonFlags(flags);
     // 이번 전투에 실을 효과: 고른 대사(사기·방어·책략 MP) + 이야기 속 대결의 승리.
@@ -202,7 +203,7 @@ function legacyStoryScene(chapter:number,beat=0,fromArt?:number,viewOnly=false){
   const backdrop=(index:number,extra='')=>`<div class="story-backdrop ${extra}" style="${storyBackdrop(index)}"></div>`;
   // 새 장소(또는 처음)면 두 사람이 걸어 들어오고, 같은 자리에서 이어지면 선 채로 이어 말한다.
   const prevLoc=beat>0?storyLocations[c.stage.id]![beat-1]:undefined,walkIn=fromArt===undefined||!prevLoc||prevLoc.art!==location.art||prevLoc.companion!==location.companion;
-  const heroName=chapter===2?'소년 사마의':'사마의';
+  const heroName='사마의';
   modal(`<div class="story-scene scene-${chapter}"><div class="eyebrow">${c.year} · 이야기 ${beat+1}/${beats.length}</div><h2>${stories[chapter]![0]}</h2>
   <div class="story-stage pose-${b.pose}" aria-label="${location.name} · 2D 장수 이야기 장면">
     ${previous?backdrop(previous.art,'outgoing'):''}${backdrop(location.art,'incoming')}
@@ -1181,5 +1182,5 @@ async function boot(){
   if(menuOpen&&document.getElementById('hub-training'))showMenu();
 }
 // ?dev only: a handle for QA scripts to inspect or nudge the running battle.
-if(devMode)Object.assign(window,{__sama:{get session(){return session;},get field(){return field;},render,start(chapter:number){session=new Session(chapter,'normal',215,'survival',RULES,{...deployment(campaign,true),wide:2});activate();},story(chapter:number){storyScene(chapter);},trial(id?:string){expeditionStory(id??expeditions.find(m=>canExpedition(campaign,m.id))!.id);},contest(kind:'duel'|'debate',foe=kind==='duel'?'여포':'제갈량'){menuOpen=true;modal('<div class="story-scene"><p>개발용 대결</p></div>',false);void playContest(kind,{name:'사마의',stat:90},{name:foe,stat:88},{acceptLine:kind==='duel'?'덤벼라!':'그 말, 내가 받아 주겠소.'});},run(floor:number,kind:'battle'|'elite'|'boss'|'tale',seed=7,route?:Record<number,string>,tale?:string){const r=newRun(seed,startingOfficers());r.floor=floor;if(route)r.route=route as {1?:string;2?:string;3?:string};runHost.startBattle({levels:{sima_yi:2+floor,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},run:battleRef(r,kind,tale),trial:1},seed);},brief(chapter:number){briefing(chapter);},get campaign(){return campaign;},act(cmd:Command){act(cmd);}}});
+if(devMode)Object.assign(window,{__sama:{get session(){return session;},get field(){return field;},render,start(chapter:number){session=new Session(chapter,'normal',215,'survival',RULES,{...deployment(campaign,true),wide:2});activate();},story(chapter:number){storyScene(chapter);},trial(id?:string){expeditionStory(id??expeditions.find(m=>canExpedition(campaign,m.id))!.id);},contest(kind:'duel'|'debate',foe=kind==='duel'?'여포':'제갈량',me='사마의'){menuOpen=true;modal('<div class="story-scene"><p>개발용 대결</p></div>',false);const mk=(name:string,side:'player'|'enemy')=>{const r=romanceByName(name);return portraitFor({id:name==='사마의'?'sima_yi':'dev_'+side,name,unitClass:name==='사마의'?storyClassAt('sima_yi',levelInfo(campaign.xp.sima_yi??0).level):officerClass(name),side,level:10} as unknown as Unit,false,kind)+(r?'':'');};void playContest(kind,{name:me,stat:90},{name:foe,stat:88},{acceptLine:kind==='duel'?'덤벼라!':'그 말, 내가 받아 주겠소.',models:{player:mk(me,'player'),enemy:mk(foe,'enemy')}});},run(floor:number,kind:'battle'|'elite'|'boss'|'tale',seed=7,route?:Record<number,string>,tale?:string){const r=newRun(seed,startingOfficers());r.floor=floor;if(route)r.route=route as {1?:string;2?:string;3?:string};runHost.startBattle({levels:{sima_yi:2+floor,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},run:battleRef(r,kind,tale),trial:1},seed);},brief(chapter:number){briefing(chapter);},get campaign(){return campaign;},act(cmd:Command){act(cmd);}}});
 void boot();

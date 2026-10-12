@@ -26,7 +26,7 @@ const troopFaces:Record<string,number>={'양앙':0,'성채 수비대장':0,'교�
 export function troopFaceRow(name:string){
   if(name in troopFaces)return troopFaces[name]!;
   if(/창병/.test(name))return 1;if(/궁병|노병/.test(name))return 2;if(/기병|전차/.test(name))return 3;
-  if(/피난민|민중|책사|사자|환영/.test(name))return 4;if(/병|대|장$/.test(name))return 0;
+  if(/피난민|민중|책사|사자|환영|백성|상인|하인|노인|학자|의원/.test(name))return 4;if(/병|대|장$|산적|도적|황건|적$|무사|장사|호위|자객/.test(name))return 0;
   return undefined;
 }
 /** Allegiance of the named officers drawn with a troop face, so a speaker's side reads at a glance. */

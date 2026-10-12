@@ -159,7 +159,7 @@ export const storyBeats:Record<string,StoryBeat[]>={
   ],
   'S1-01':[
     {speaker:'사마방',line:'북문은 내가 지키마. 중달아, 먼저 사람들을 창고로 데려가거라.',pose:'enter',actor:1},
-    {speaker:'소년 사마의',line:'제 손으로 칼을 들 수 없다면… 모두가 스스로를 지키게 하겠습니다.',pose:'speak',actor:4},
+    {speaker:'사마의',line:'제 손으로 칼을 들 수 없다면… 모두가 스스로를 지키게 하겠습니다.',pose:'speak',actor:4},
     {speaker:'사마랑',line:'내가 앞을 막겠다. 내 뒤에서 움직여라. 우리 셋 모두 살아남아야 한다.',pose:'resolve',actor:0},
   ],
   'S1-02':[

@@ -73,7 +73,7 @@ export async function loadFigures(){
   for(const s of Object.values(BY_LOOK)){want.set(atlasKey(s.url,s.rows),s);if(s.walk)want.set(atlasKey(s.walk.url,s.walk.rows),s.walk);}
   await Promise.all([
     ...[...want].map(async([k,s])=>{try{ready.set(k,await spriteAtlas(s.url,s.rows));}catch{/* 없는 그림은 건너뛴다 */}}),
-    ...officerManifest.filter(e=>e.story).map(e=>new Promise<void>(resolve=>{const url=`officers/${e.story}`,img=new Image();img.onload=()=>{storyReady.add(url);resolve();};img.onerror=()=>resolve();img.src=url;})),
+    ...officerManifest.filter(e=>e.story&&e.id!=='sima_yi_young').map(e=>new Promise<void>(resolve=>{const url=`officers/${e.story}`,img=new Image();img.onload=()=>{storyReady.add(url);resolve();};img.onerror=()=>resolve();img.src=url;})),
   ]);
 }
 export const figuresReady=()=>ready.has(atlasKey(OFFICERS.url,OFFICERS.rows));
