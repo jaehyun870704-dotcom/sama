@@ -3,7 +3,7 @@ import {DOCK_ICONS} from './dock-icons.ts';
 import {navalAtlas} from './naval-art.ts';
 import {evolutionChart,paintArmor,fitEvoSprites,type EvoGroup} from './troop-evolution.ts';
 import {troopAdvice,adviceFor,recommendExpeditionSupport,supportWarnings,physicalMatchup} from './troop-tactics.ts';
-import {officerLooks,officerLook,officerPortrait,dialogueCaption,splitSpokenLine,storyActorStyle,customFace} from './officer-art.ts';
+import {officerLooks,officerLook,officerPortrait,dialogueCaption,splitSpokenLine,customFace} from './officer-art.ts';
 import {troopRoles,supportOptions,visualClass,troopArt,troopSheets,basicReactionArt,evolutionLines,classSheets,loadClassSheets} from './troops.ts';
 import {growthMilestones} from './growth-milestones.ts';
 import {trialStory,trialTactics,layoutName} from './expedition-scenes.ts';
@@ -24,6 +24,7 @@ import {loadSettings,saveSettings,type Speed} from './settings.ts';
 import {SLOT_COUNT,slotKey,readSlot,slotLabel,readFull,snapshotKeys,restoreKeys,agoText,type FullSlot} from './save-slots.ts';
 import {encounterLevels,structureKind,structureFrame,raceGap} from './campaign-rules.ts';
 import {readCampaign,writeCampaign,mergeRunCampaign,xpAtLevel,deployment,levelInfo,award,equip,equipSlot,treasureInfo,gearKey,type GearSlot,treasures,OFFICERS} from './progression.ts';
+import {actorMarkup,playBeat} from './story-motion.ts';
 import {storyBeats,storyLocations,storyBackdrop,storyAftermath,acts,stories,epilogueLines} from './story.ts';
 import {showHub,showQuests,showTitle,showCollections,finishRunBattle,finishRunStory,RUN_CHAPTER,type RunHost} from './run-ui.ts';
 import {showScenario,campOf,finishIfBattle,finishStoryBattle,noteDefeatReason,type ScenarioHost} from './scenario-ui.ts';
@@ -153,6 +154,7 @@ function growRetinue(units:ReadonlyArray<{id:string;name:string;level?:number}>,
 }
 function saveCampaign(){try{writeCampaign(campaign);return true;}catch{toast('성장 기록을 저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.');return false;}}
 /** viewOnly: 「시나리오 보기」에서 연 이야기 — 끝나면 출진 대신 목록으로 돌아간다. */
+let stopStoryMotion:()=>void=()=>{};
 function storyScene(chapter:number,beat=0,fromArt?:number,viewOnly=false){
   setStoryEra(chapters[chapter]?.stage.id);
   if(!storyReady){menuOpen=true;modal(waitPanel('이야기 준비 중','인물과 배경 그림을 마저 받고 있습니다. 끝나면 바로 시작합니다.'),false);void storyArt.then(()=>storyScene(chapter,beat,fromArt,viewOnly));return;}
@@ -161,15 +163,19 @@ function storyScene(chapter:number,beat=0,fromArt?:number,viewOnly=false){
   const location=storyLocations[c.stage.id]![beat]!;
   const previous=fromArt===undefined?undefined:{art:fromArt};
   const backdrop=(index:number,extra='')=>`<div class="story-backdrop ${extra}" style="${storyBackdrop(index)}"></div>`;
-  const companion=location.actor??(b.actor===4?(chapter===1||chapter===5||chapter===6?3:0):b.actor);
+  // 새 장소(또는 처음)면 두 사람이 걸어 들어오고, 같은 자리에서 이어지면 선 채로 이어 말한다.
+  const prevLoc=beat>0?storyLocations[c.stage.id]![beat-1]:undefined,walkIn=fromArt===undefined||!prevLoc||prevLoc.art!==location.art||prevLoc.companion!==location.companion;
+  const heroName=chapter===2?'소년 사마의':'사마의';
   modal(`<div class="story-scene scene-${chapter}"><div class="eyebrow">${c.year} · 이야기 ${beat+1}/${beats.length}</div><h2>${stories[chapter]![0]}</h2>
   <div class="story-stage pose-${b.pose}" aria-label="${location.name} · 2D 장수 이야기 장면">
     ${previous?backdrop(previous.art,'outgoing'):''}${backdrop(location.art,'incoming')}
     <div class="story-light"></div><span class="story-location">${location.name}</span>
-    <div class="story-actor hero ${b.actor===4?'speaking':''}" style="${storyActorStyle(chapter===2?'소년 사마의':'사마의',4)}" role="img" aria-label="${chapter===2?'소년 사마의':'사마의'}"></div>
-    <div class="story-actor companion ${b.actor!==4?'speaking':''}" style="${storyActorStyle(location.companion,companion)}" role="img" aria-label="${location.companion}"></div>
+    ${actorMarkup(heroName,'hero',walkIn?'offstage':'')}${actorMarkup(location.companion,'companion',walkIn?'offstage':'')}
   </div>${dialogueCaption(b.speaker,b.line)}
   <div class="modal-actions"><button id="story-back" ${beat===0?'disabled':''}>← 이전 장면</button><button id="story-skip">${viewOnly?'목록으로':'군의로 건너뛰기'}</button><button class="primary" id="story-next">${beat===beats.length-1?(viewOnly?'다 보았다 · 목록으로':'출진 준비'):'다음 이야기'} →</button></div></div>`,false);
+  // 인물 연기: 걸어 들어오기 → 몸짓(읍·놀람·무릎) → 말하기 → 마무리 자세.
+  stopStoryMotion();const speaker=b.speaker==='해설'?'none':b.actor===4?'hero':'companion';
+  stopStoryMotion=playBeat($('.story-stage'),{speaker,line:b.line,pose:b.pose,walkIn,deferent:speaker!=='none'&&/주공|폐하|승상|전하|아버님|형님|장군님|대왕/.test(b.line)});
   $('#story-back').onclick=()=>{if(beat>0)storyScene(chapter,beat-1,location.art,viewOnly);};
   const end=()=>viewOnly?showStoryArchive(chapter):briefing(chapter);
   $('#story-skip').onclick=end;$('#story-next').onclick=()=>beat+1<beats.length?storyScene(chapter,beat+1,location.art,viewOnly):end();
@@ -579,7 +585,8 @@ function showExpeditions(tab:Expedition['kind']='challenge'){
  document.querySelectorAll<HTMLButtonElement>('[data-expedition]').forEach(el=>el.onclick=()=>expeditionStory(el.dataset.expedition!));$('#expedition-back').onclick=tab==='challenge'?showMenu:showTraining;
 }
 function expeditionStory(id:string,beat=0){const m=expeditions.find(x=>x.id===id);if(!m||!canExpedition(campaign,id))return;const scenes=trialStory(m.id,m.name,m.art,m.lines),scene=scenes[beat]!,spoken=splitSpokenLine(scene.line),heroSpeaking=spoken.speaker==='사마의',other=heroSpeaking?'조진':spoken.speaker;
- modal(`<div class="story-scene"><div class="eyebrow">${KIND_LABEL[m.kind]} · ${beat+1}/${scenes.length} · ${scene.place}</div><h2>${m.name}</h2><p class="trial-objective">${trialGoalText(id)}</p><div class="story-stage"><div class="story-backdrop incoming" style="${storyBackdrop(scene.art)}"></div><div class="story-actor hero ${heroSpeaking?'speaking':''}" style="${storyActorStyle('사마의',4)}"></div><div class="story-actor companion ${!heroSpeaking?'speaking':''}" style="${storyActorStyle(other,0)}"></div></div>${dialogueCaption(spoken.speaker,spoken.line)}<div class="modal-actions"><button id="expedition-cancel">의뢰 목록</button><button id="expedition-next" class="primary">${beat<scenes.length-1?'다음 이야기':'출진 정비'} →</button></div></div>`,false);
+ modal(`<div class="story-scene"><div class="eyebrow">${KIND_LABEL[m.kind]} · ${beat+1}/${scenes.length} · ${scene.place}</div><h2>${m.name}</h2><p class="trial-objective">${trialGoalText(id)}</p><div class="story-stage"><div class="story-backdrop incoming" style="${storyBackdrop(scene.art)}"></div>${actorMarkup('사마의','hero',beat===0?'offstage':'')}${actorMarkup(other,'companion',beat===0?'offstage':'')}</div>${dialogueCaption(spoken.speaker,spoken.line)}<div class="modal-actions"><button id="expedition-cancel">의뢰 목록</button><button id="expedition-next" class="primary">${beat<scenes.length-1?'다음 이야기':'출진 정비'} →</button></div></div>`,false);
+ stopStoryMotion();stopStoryMotion=playBeat($('.story-stage'),{speaker:spoken.speaker==='해설'?'none':heroSpeaking?'hero':'companion',line:spoken.line,pose:beat===scenes.length-1?'resolve':'speak',walkIn:beat===0,deferent:/주공|폐하|승상|전하|장군님/.test(spoken.line)});
  $('#expedition-cancel').onclick=()=>m.kind==='training'?showTraining():showExpeditions(m.kind);$('#expedition-next').onclick=()=>beat<scenes.length-1?expeditionStory(id,beat+1):briefing(7,id);
 }
 /** 연의 장수록: 별호 · 다섯 능력 · 고유능력. 연의에 없는 졸병은 표시하지 않는다. */
@@ -593,7 +600,7 @@ function milestoneMarkup(items:ReturnType<typeof growthMilestones>){return items
 function showExpeditionResult(){if(resultShown)return;resultShown=true;const run=session.deployment!.mission!,m=expeditions.find(x=>x.id===run.id)!,win=session.state.outcome==='victory';const before=structuredClone(campaign);
  const reward=expeditionReward(campaign,m.id,run.runId,win);saveCampaign();
  const milestones=growthMilestones(before,campaign);
- modal(`<div class="result"><div class="result-character">${win?'승':'련'}</div><h2>${win?'성장의 한 걸음':'다시 준비할 시간'}</h2><p>${m.name} · ${session.state.turn}턴</p>${win?`<div class="story-stage reward-scene"><div class="story-backdrop incoming" style="${storyBackdrop(m.art)}"></div><div class="story-actor hero speaking" style="${storyActorStyle('사마의',4)}"></div><div class="story-actor companion" style="${storyActorStyle('조진',0)}"></div></div>`:''}${win?dialogueCaption(splitSpokenLine(m.lines[2]!).speaker,splitSpokenLine(m.lines[2]!).line):`<p class="battle-aftermath">${esc(session.failure)}<br>패배해도 경험치와 보물은 잃지 않습니다. 정비 후 다시 도전하세요.</p>`}<p>${win&&!reward.xp?'이미 보상을 받은 전투입니다. · ':'경험치 +'+reward.xp+' · '}${growthText()}</p>${reward.items.length?`<p class="treasure-reward">보물 해금: ${reward.items.map(id=>treasures.find(t=>t.id===id)!.name).join(' · ')}</p>`:''}${milestoneMarkup(milestones)}<div class="modal-actions"><button id="expedition-again">${m.kind==='training'?'다시 수련':'다시 도전'}</button>${m.kind==='challenge'&&win&&m.step!<10?'<button id="expedition-next-step" class="primary">다음 단계 →</button>':''}<button id="expedition-list">연무장 목록</button><button id="expedition-menu">연의 회상</button></div></div>`,false);
+ modal(`<div class="result"><div class="result-character">${win?'승':'련'}</div><h2>${win?'성장의 한 걸음':'다시 준비할 시간'}</h2><p>${m.name} · ${session.state.turn}턴</p>${win?`<div class="story-stage reward-scene"><div class="story-backdrop incoming" style="${storyBackdrop(m.art)}"></div>${actorMarkup('사마의','hero')}${actorMarkup('조진','companion')}</div>`:''}${win?dialogueCaption(splitSpokenLine(m.lines[2]!).speaker,splitSpokenLine(m.lines[2]!).line):`<p class="battle-aftermath">${esc(session.failure)}<br>패배해도 경험치와 보물은 잃지 않습니다. 정비 후 다시 도전하세요.</p>`}<p>${win&&!reward.xp?'이미 보상을 받은 전투입니다. · ':'경험치 +'+reward.xp+' · '}${growthText()}</p>${reward.items.length?`<p class="treasure-reward">보물 해금: ${reward.items.map(id=>treasures.find(t=>t.id===id)!.name).join(' · ')}</p>`:''}${milestoneMarkup(milestones)}<div class="modal-actions"><button id="expedition-again">${m.kind==='training'?'다시 수련':'다시 도전'}</button>${m.kind==='challenge'&&win&&m.step!<10?'<button id="expedition-next-step" class="primary">다음 단계 →</button>':''}<button id="expedition-list">연무장 목록</button><button id="expedition-menu">연의 회상</button></div></div>`,false);
  $('#expedition-again').onclick=()=>briefing(7,m.id);const nextStep=document.getElementById('expedition-next-step');if(nextStep)nextStep.onclick=()=>expeditionStory('C'+String(m.step!+1).padStart(2,'0'));$('#expedition-list').onclick=()=>m.kind==='training'?showTraining():showExpeditions(m.kind);$('#expedition-menu').onclick=m.kind==='challenge'?showMenu:showTraining;
 }
 function activate(){
