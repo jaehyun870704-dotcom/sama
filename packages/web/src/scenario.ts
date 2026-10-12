@@ -261,13 +261,13 @@ export function floorFor(step:ScenarioStep,state:ScenarioState){
 
 /**
  * 가상 전장에 나가는 부대(사마의 + 장수들). heroLevel/heroXp는 연의 진행의 사마의.
- * picked를 주면 그 장수들 모두(출진 화면·수련은 스스로 인원을 정한다), 안 주면 체력·레벨이 높은 순으로 6명.
+ * picked를 주면 그 장수들 모두(출진 화면·수련은 스스로 인원을 정한다), 안 주면 체력·레벨이 높은 순으로 count명(기본 6).
  * 영입에는 상한이 없다: 부대는 계속 커지고, 싸움에 나가는 인원만 정해진다.
  */
-export function scenarioParty(state:ScenarioState,heroLevel:number,heroXp:number,picked?:string[]):RunUnit[]{
+export function scenarioParty(state:ScenarioState,heroLevel:number,heroXp:number,picked?:string[],count=6):RunUnit[]{
   const hp=(n:string)=>state.run?.hp[n]??1;
   const hero:RunUnit={id:'sima_yi',name:'사마의',unitClass:evolvedClass('strategist',heroLevel),level:heroLevel,xp:Math.min(XP_PER_LEVEL-1,heroXp),hp:hp('사마의'),hero:true};
-  const names=picked?[...new Set(picked)].filter(n=>state.officers[n]):Object.keys(state.officers).sort((a,b)=>hp(b)-hp(a)||state.officers[b]!.level-state.officers[a]!.level).slice(0,6);
+  const names=picked?[...new Set(picked)].filter(n=>state.officers[n]):Object.keys(state.officers).sort((a,b)=>hp(b)-hp(a)||state.officers[b]!.level-state.officers[a]!.level).slice(0,count);
   return [hero,...names.map((n,i)=>{const o=state.officers[n]!;return {id:'of'+(i+1),name:n,unitClass:evolvedClass(o.unitClass,o.level),level:o.level,xp:o.xp,hp:hp(n),officer:true as const};})];
 }
 

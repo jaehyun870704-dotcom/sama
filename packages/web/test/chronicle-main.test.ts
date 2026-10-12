@@ -65,11 +65,13 @@ describe('연의에 데려가는 등용 장수',()=>{
     expect(other.statuses.some(x=>x.kind==='rally'||x.kind==='guard')).toBe(false);
     expect(s.state.find('sima_yi')!.statuses.some(x=>x.kind==='rally')).toBe(true);
   });
-  it('저장·불러오기를 거쳐도 남고, 세 명 이상이면 기록을 거부한다',()=>{
+  it('저장·불러오기를 거쳐도 남고, 큰 부대(최대 16)는 받되 그보다 많으면 기록을 거부한다',()=>{
     const base={levels:{sima_yi:5,sima_lang:5,sima_fang:5,cao_zhen:5},equipped:{},retinue:[{id:'rt_0',name:'장합',unitClass:'cavalry',level:4,xp:0,hp:1}]};
     const s=new Session(campaignOrder[0]!,'normal',215,'survival',13,base as never);
     const data=JSON.parse(JSON.stringify(s.save()));expect(Session.load(data).state.find('rt_0')?.name).toBe('장합');
-    data.deployment.retinue=[0,1,2].map(i=>({id:'rt_'+i,name:'장합',unitClass:'cavalry',level:4,xp:0,hp:1}));
+    data.deployment.retinue=Array.from({length:6},(_,i)=>({id:'rt_'+i,name:'장합',unitClass:'cavalry',level:4,xp:0,hp:1}));
+    expect(()=>Session.load(structuredClone(data))).not.toThrow();
+    data.deployment.retinue=Array.from({length:17},(_,i)=>({id:'rt_'+i,name:'장합',unitClass:'cavalry',level:4,xp:0,hp:1}));
     expect(()=>Session.load(data)).toThrow();
   });
 });

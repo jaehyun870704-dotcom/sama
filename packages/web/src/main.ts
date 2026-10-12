@@ -34,7 +34,7 @@ import {showHub,showQuests,showTitle,showCollections,finishRunBattle,finishRunSt
 import {showScenario,campOf,finishIfBattle,finishStoryBattle,noteDefeatReason,type ScenarioHost} from './scenario-ui.ts';
 import {scriptOf,loadScenario,saveScenario,trainCompanions,currentStep,joinRecruits} from './scenario.ts';
 import {conditionsHtml,goalMarks,winText} from './battle-conditions.ts';
-import {optionalOfficers,soloStage,pickExtras,storySortieLimit,storyCostSheet,unitCost,storyClassAt} from './sortie.ts';
+import {optionalOfficers,soloStage,pickExtras,storySortieLimit,storyCostSheet,storyRetinueCap,unitCost,storyClassAt} from './sortie.ts';
 import {isoBackdrop,isoScene,loadIsoArt,loadPaintedScenes} from './story-iso.ts';
 import {loadFigures} from './story-figure.ts';
 import {registerCustoms} from './custom.ts';
@@ -417,15 +417,15 @@ function showChronicleMap(){
   // 고른 칸이 보이게 판을 굴린다.
   const el=document.querySelector<HTMLElement>('.ym-node.sel'),wrap=document.querySelector<HTMLElement>('.ym-board-wrap');if(el&&wrap){wrap.scrollTop=Math.max(0,el.offsetTop-wrap.clientHeight/2+NH/2);wrap.scrollLeft=Math.max(0,el.offsetLeft-wrap.clientWidth/2+NW/2);}
 }
-/** 가지(가상 전장) 출진 전: 서사와 함께 갈 장수. 연의 칸의 레벨로 나선다. */
-function branchParty(){
+/** 가지(가상 전장) 출진 전: 서사와 함께 갈 장수. 연의 칸의 레벨로 나선다. 등용 장수는 편이 깊을수록 더 많이(상편 2 · 중편 4 · 하편 6). */
+function branchParty(arc:1|2|3=1){
   const lv=levelInfo(campaign.xp.sima_yi??0).level;
   const mates=(['sima_lang','sima_fang','cao_zhen'] as const).map((id,k)=>{const l=levelInfo(campaign.xp[id]??0).level;return {id:'of'+(k+1),name:officerNames[id]!,unitClass:storyClassAt(id,l),level:l,xp:0,hp:1,officer:true as const};});
-  const rec=(loadMeta().recruited??[]).slice(0,2).map((name,k)=>({id:'of'+(k+4),name,unitClass:evolvedClass(officerClass(name),retinueLevel(name)),level:retinueLevel(name),xp:0,hp:1,officer:true as const}));
+  const rec=(loadMeta().recruited??[]).slice(0,2*arc).map((name,k)=>({id:'of'+(k+4),name,unitClass:evolvedClass(officerClass(name),retinueLevel(name)),level:retinueLevel(name),xp:0,hp:1,officer:true as const}));
   return [{id:'sima_yi',name:'사마의',unitClass:evolvedClass('strategist',lv),level:lv,xp:0,hp:1,hero:true as const},...mates,...rec];
 }
 function branchBriefing(n:MapNode){
-  const route=routeById(n.route)!,foe=n.kind==='tale'?n.tale!.target:route.region.boss,party=branchParty(),lvl=branchLevel(n,anchorLevel(n.arc));
+  const route=routeById(n.route)!,foe=n.kind==='tale'?n.tale!.target:route.region.boss,party=branchParty(n.arc),lvl=branchLevel(n,anchorLevel(n.arc));
   modal(`<div class="briefing branch-brief"><div class="eyebrow">선택분기 · ${esc(route.name)}</div><h2>${esc(n.title)}</h2>
   <div class="bb-foe"><span class="rc-face big">${cardFace(foe.name)}</span><div><b>적장 ${esc(foe.name)}</b><small>${esc(classNames[foe.unitClass]??foe.unitClass)} · 권장 Lv.${lvl}</small><p>${esc(n.kind==='tale'?n.tale!.intro:route.detail)}</p></div></div>
   <h3>함께 가는 장수 <small>연의에서 키운 레벨 그대로 · 등용 장수 최대 2명</small></h3><div class="bb-party">${party.map(u=>`<span class="rp-chip on"><span class="rc-face">${cardFace(u.name)}</span><span><strong>${esc(u.name)}</strong><small>Lv.${u.level} · ${esc(classNames[u.unitClass]??u.unitClass)}</small></span></span>`).join('')}</div>
@@ -508,7 +508,7 @@ function briefing(chapter:number,expeditionId?:string,scenario?:ScenarioDeployme
   // 연의(본편)에만: 등용한 장수를 데려간다(일반 2명 · 극한 1명). 사마의 레벨−1로 선다.
   let retinue:string[]=[];
   // 홀로 서는 장(꿈속 대결·건업 설전)에는 데려가지 못한다.
-  const retinueCap=()=>difficulty==='extreme'?1:2,retinueOk=!scenario&&!expedition&&!soloStage(c.stage);
+  const retinueCap=()=>storyRetinueCap(c.stage.id,difficulty),retinueOk=!scenario&&!expedition&&!soloStage(c.stage);
   const retinueCost=()=>retinueOk?retinueUnits().reduce((n,u)=>n+unitCost(u.unitClass),0):0;
   const retinueUnits=()=>retinue.slice(0,retinueCap()).map((name,i)=>({id:'rt_'+i,name,unitClass:evolvedClass(officerClass(name),retinueLevel(name)),level:retinueLevel(name),xp:0,hp:1,officer:true as const}));
   const dispatch=(preview=false)=>{const d=deployment(campaign,true);if(!expedition)d.wide=2;if(scenario)d.trial=1;if(scenario)d.scenario=structuredClone(scenario);if(retinueOk&&retinue.length)d.retinue=retinueUnits();if(storyMods&&!scenario&&!expedition)d.storyMods={...storyMods};

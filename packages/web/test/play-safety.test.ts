@@ -2,8 +2,10 @@
 import {describe,it,expect} from 'vitest';
 import {levelInfo,deployment,freshCampaign} from '../src/progression.ts';
 import {freshScenario,choose,undoChoice,readScenario,recruitOffer,recruitOfficer,joinCaptive,scenarioParty,type ScenarioState} from '../src/scenario.ts';
-import {grantXp,newRun,finishBattle,recruit,battleRef,sortieOf,PARTY_LIMIT,RUN_FLOORS,type Run} from '../src/roguelike.ts';
+import {grantXp,newRun,finishBattle,recruit,battleRef,sortieOf,sortieSize,RUN_FLOORS,type Run} from '../src/roguelike.ts';
 import type {ScenarioStep} from '../src/scenario-types.ts';
+import {Session} from '../src/session.ts';
+import {RUN_CHAPTER} from '../src/run-ui.ts';
 
 describe('저장·성장 상한',()=>{
  it('40레벨에서는 남는 경험치를 0으로 둔다(출진 기록이 저장 검사를 통과하게)',()=>{
@@ -55,14 +57,21 @@ describe('천명의 원정 마지막 층',()=>{
   finishBattle(run,{kind:'boss'} as Parameters<typeof finishBattle>[1],false,{});
   expect(run.floor).toBe(RUN_FLOORS);expect(run.status).toBe('map');
  });
- it('원정 영입에도 상한이 없고, 출진은 7명 · 본진 대기는 체력이 그대로다',()=>{
+ it('원정 영입에도 상한이 없고, 출진은 층이 깊을수록 늘며 본진 대기는 체력이 그대로다',()=>{
   const run:Run=newRun(11,['infantry','archer']);
-  for(let i=0;i<10;i++)expect(recruit(run,'infantry',3)).toBe(true);
-  expect(run.party.length).toBeGreaterThan(PARTY_LIMIT);
-  const ref=battleRef(run,'battle');expect(ref.party.length).toBe(PARTY_LIMIT);expect(ref.party.some(u=>u.hero)).toBe(true);
-  expect(sortieOf(run).length).toBe(PARTY_LIMIT);
+  for(let i=0;i<14;i++)expect(recruit(run,'infantry',3)).toBe(true);
+  expect(sortieSize(1)).toBe(7);expect(sortieSize(9)).toBe(9);expect(sortieSize(15)).toBe(11);expect(sortieSize(18,'boss')).toBe(12);
+  const ref=battleRef(run,'battle');expect(ref.party.length).toBe(7);expect(ref.party.some(u=>u.hero)).toBe(true);
+  expect(sortieOf(run).length).toBe(7);
   const bench=run.party.find(u=>!ref.party.some(r=>r.id===u.id))!;bench.hp=.8;
   run.status='map';finishBattle(run,{kind:'battle',label:'',detail:''},true,Object.fromEntries(ref.party.map(u=>[u.id,1])),{},ref.party.map(u=>u.id));
   expect(bench.hp).toBe(.8);expect(run.party.filter(u=>ref.party.some(r=>r.id===u.id)).every(u=>u.hp===1)).toBe(true);
+ });
+ it('하편 우두머리 전의 큰 부대(12명)도 모두 전장에 선다',()=>{
+  const run:Run=newRun(23,['infantry','archer']);
+  for(let i=0;i<14;i++)recruit(run,'infantry',12);
+  run.floor=18;const ref=battleRef(run,'boss');expect(ref.party.length).toBe(12);
+  const state=new Session(RUN_CHAPTER,'normal',run.seed,'survival',4,{levels:{sima_yi:run.party[0]!.level,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},run:ref}).state;
+  for(const u of ref.party)expect(state.find(u.id),u.name).toBeDefined();
  });
 });

@@ -18,8 +18,13 @@ import {을를} from './josa.ts';
 
 export const FLOORS_PER_ACT=6;
 export const RUN_FLOORS=18;
-/** 사마의를 포함해 한 싸움에 나가는 인원(출진 칸 7개). 영입에는 상한이 없다. */
-export const PARTY_LIMIT=7;
+/** 한 싸움에 설 수 있는 아군 장수 수의 상한(저장 검사용 · 사마의 포함). 영입에는 상한이 없다. */
+export const PARTY_LIMIT=16;
+/**
+ * 원정 한 싸움에 나가는 인원(사마의 포함): 뒤로 갈수록 적이 늘어나니 출진도 는다.
+ * 1~6층 7명 · 7~12층 9명 · 13~18층 11명, 우두머리 전 +1.
+ */
+export function sortieSize(floor:number,kind:NodeKind='battle'){return (floor<=6?7:floor<=12?9:11)+(kind==='boss'?1:0);}
 export const XP_PER_LEVEL=100;
 /** 쓰러진 부대가 돌아올 때의 체력(중상). 원정·본편 공통. */
 export const WOUNDED=.25;
@@ -414,8 +419,8 @@ export function runStage(run:Run,kind:NodeKind,map:MapFile,taleId?:string,opts:{
   const f=run.floor,r=rngFor(run,f*613+kind.length),region=regionFor(run,f),tale=kind==='tale'?taleById(taleId):undefined,mods=opts.mods??{};
   const base=opts.enemyBase??2+Math.round(f*1.05)+(f>FLOORS_PER_ACT*2&&kind!=='tale'?1:0)+(kind==='boss'?1:0);
   // 넓은 전장에는 적도 조금 더 많다. 우두머리 전은 호위를 예전 수준으로(우두머리 자체가 강하다).
-  // 동료를 잃어 넷 이하로 나선 부대에는 적도 한 부대 적게.
-  const count=Math.max(1,Math.min(12,(kind==='boss'?BOSS_ESCORT_OF()+Math.floor(f/4.5):4+Math.floor(f/5)+(kind==='elite'?1:kind==='tale'?-1:0))+(mods.bold?1:0)-(mods.scout?1:0)-(run.party.length<=4?1:0)));
+  // 동료를 잃어 넷 이하로 나선 부대에는 적도 한 부대 적게. 일곱을 넘는 큰 부대에는 둘마다 한 부대씩 더.
+  const count=Math.max(1,Math.min(12,(kind==='boss'?BOSS_ESCORT_OF()+Math.floor(f/4.5):4+Math.floor(f/5)+(kind==='elite'?1:kind==='tale'?-1:0))+(mods.bold?1:0)-(mods.scout?1:0)-(run.party.length<=4?1:0)+Math.max(0,Math.floor((run.party.length-7)/2))));
   const camp=(map.regions!.enemy_camp as Array<{x:number;y:number}>).slice();
   const enemies:UnitSpawnSpec[]=[];
   for(let i=0;i<count&&camp.length;i++){
@@ -446,8 +451,22 @@ export function runStage(run:Run,kind:NodeKind,map:MapFile,taleId?:string,opts:{
       {type:'spawn_units',side:'enemy',units:enemies}]}]} as StageDef;
 }
 
-/** 원정 전투에서 아군 부대가 서는 칸: 사마의 자리를 뺀 출진 칸과 그 옆 열. */
-export function partyStart(map:MapFile){return [...(map.regions!.player_start as Array<{x:number;y:number}>).slice(1),...[0,1,2,3].map(d=>({x:2,y:Math.floor(H/2)-2+d}))];}
+/**
+ * 원정 전투에서 아군 부대가 서는 칸: 사마의 자리를 뺀 출진 칸, 그 옆 열, 그리고 큰 부대를 위해 왼쪽 가장자리(0~4열)의 빈 뭍.
+ * 앞의 칸이 먼저 차고, 인원이 많을수록 뒤의 칸까지 쓴다(설 자리가 없어 빠지는 부대가 없게).
+ */
+const STANDABLE=new Set(['plain','road','fort','forest','hill','grass','bridge']);
+export function partyStart(map:MapFile){
+  const start=(map.regions!.player_start as Array<{x:number;y:number}>),mid=Math.floor(H/2);
+  const base=[...start.slice(1),...[0,1,2,3].map(d=>({x:2,y:mid-2+d}))];
+  const terrain=(x:number,y:number)=>map.legend[map.rows[y]?.[x]??'']??'';
+  const extra:Array<{x:number;y:number}>=[];
+  // 지원군 칸(aid_start: 3·4열 가운데 넷)은 비워 둔다.
+  for(let x=0;x<=4;x++)for(let y=0;y<H;y++)if(!(x>=3&&y>=mid-2&&y<=mid+1))extra.push({x,y});
+  extra.sort((a,b)=>(Math.abs(a.y-mid)+Math.abs(a.x-2))-(Math.abs(b.y-mid)+Math.abs(b.x-2))||a.x-b.x||a.y-b.y);
+  const seen=new Set(base.map(c=>c.x+','+c.y));if(start[0])seen.add(start[0].x+','+start[0].y);
+  return [...base,...extra.filter(c=>!seen.has(c.x+','+c.y)&&STANDABLE.has(terrain(c.x,c.y)))];
+}
 
 export function runBattle(run:Run,kind:NodeKind,taleId?:string,opts:{mods?:BattleMods;enemyBase?:number;scenario?:string}={}){
   const map=runMap(run,run.floor,kind,opts.scenario);
@@ -464,13 +483,13 @@ export const casts=(cls:UnitClass)=>profileOf(cls).canUseStrategy;
 export interface RunBattleRef {seed:number;floor:number;kind:NodeKind;party:RunUnit[];relics:string[];route?:Run['route'];tale?:string;
   /** 시나리오 모드: 대사 선택의 효과와 적 레벨 기준(부대 레벨에 맞춘다), 장 id */
   mods?:BattleMods;enemyBase?:number;scenario?:string}
-/** 이번 싸움에 나가는 부대: 사마의 + 체력·레벨이 높은 순으로 출진 칸(PARTY_LIMIT)만큼. 나머지는 본진에서 쉰다. */
-export function sortieOf(run:Run):RunUnit[]{
+/** 이번 싸움에 나가는 부대: 사마의 + 체력·레벨이 높은 순으로 출진 인원(sortieSize)만큼. 나머지는 본진에서 쉰다. */
+export function sortieOf(run:Run,kind:NodeKind='battle'):RunUnit[]{
   const hero=run.party.filter(u=>u.hero),rest=run.party.filter(u=>!u.hero).map((u,i)=>({u,i}))
-    .sort((a,b)=>b.u.hp-a.u.hp||b.u.level-a.u.level||a.i-b.i).slice(0,Math.max(0,PARTY_LIMIT-hero.length)).map(x=>x.u);
+    .sort((a,b)=>b.u.hp-a.u.hp||b.u.level-a.u.level||a.i-b.i).slice(0,Math.max(0,sortieSize(run.floor,kind)-hero.length)).map(x=>x.u);
   return run.party.filter(u=>hero.includes(u)||rest.includes(u));
 }
-export const battleRef=(run:Run,kind:NodeKind,tale?:string):RunBattleRef=>({seed:run.seed,floor:run.floor,kind,party:structuredClone(sortieOf(run)),relics:[...run.relics],...(run.route?{route:{...run.route}}:{}),...(tale?{tale}:{})});
+export const battleRef=(run:Run,kind:NodeKind,tale?:string):RunBattleRef=>({seed:run.seed,floor:run.floor,kind,party:structuredClone(sortieOf(run,kind)),relics:[...run.relics],...(run.route?{route:{...run.route}}:{}),...(tale?{tale}:{})});
 export function refBattle(ref:RunBattleRef){
   const run:Run={version:1,seed:ref.seed,floor:ref.floor,party:ref.party,relics:ref.relics,fallen:[],status:'map',nextId:0,news:[],...(ref.route?{route:ref.route}:{})};
   return runBattle(run,ref.kind,ref.tale,{...(ref.mods?{mods:ref.mods}:{}),...(ref.enemyBase!==undefined?{enemyBase:ref.enemyBase}:{}),...(ref.scenario?{scenario:ref.scenario}:{})});

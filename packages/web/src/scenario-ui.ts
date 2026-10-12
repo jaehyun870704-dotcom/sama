@@ -21,7 +21,7 @@ import {temperNames,type DuelKind} from './duel.ts';
 import {playContest} from './duel-ui.ts';
 import {cardFace} from './faces.ts';
 import {portraitImage} from './portrait-images.ts';
-import {taleSortieLimit,taleCostCap,unitCost,storyClassAt,soloStage} from './sortie.ts';
+import {taleSortieLimit,taleCostCap,marchSortieLimit,storyRetinueCap,unitCost,storyClassAt,soloStage} from './sortie.ts';
 import {classNames} from './troops.ts';
 import {classSprite} from './codex-ui.ts';
 import {nextEvolutionText,XP_PER_LEVEL,RELICS,survivorsOf,stageOfficerNames,type BattleMods,type RunBattleRef,type RunUnit} from './roguelike.ts';
@@ -248,7 +248,7 @@ export function prepare(host:ScenarioHost,step:ScenarioStep){
     const offer=omenOffer(state,step.id);
     return choiceScreen(host,`전황 · ${stepTitle(step,state)} — 싸우기 전에 하늘을 읽는다`,offer.map(o=>({title:(o.goal?'⚑ 도전 · ':'')+o.name,detail:o.text})),i=>{const st=loadScenario();chooseOmen(st,step.id,offer[i]!.id);saveScenario(st);prepare(host,step);},'천명의 길 · 전황 카드');
   }
-  if(step.kind==='story'){const run=state.run,hp=run?.hp['사마의'],h=host.hero(),taken=stageOfficerNames(chapters[chapterIndex(step.stage!)]!.stage),recruits=soloStage(chapters[chapterIndex(step.stage!)]!.stage)?[]:scenarioParty(state,h.level,h.xp,Object.keys(state.officers)).filter(u=>!u.hero&&!taken.has(u.name)).sort((a,b)=>b.level-a.level).slice(0,3).map(u=>({...u,id:'rc_'+u.id}));host.storyBriefing(chapterIndex(step.stage!),{chapter:step.id,mods:modsOf(state,step),...(run?.relics.length?{relics:[...run.relics]}:{}),...(hp!==undefined?{heroHp:hp}:{}),...(recruits.length?{recruits}:{})});return;}
+  if(step.kind==='story'){const run=state.run,hp=run?.hp['사마의'],h=host.hero(),taken=stageOfficerNames(chapters[chapterIndex(step.stage!)]!.stage),recruits=soloStage(chapters[chapterIndex(step.stage!)]!.stage)?[]:scenarioParty(state,h.level,h.xp,Object.keys(state.officers)).filter(u=>!u.hero&&!taken.has(u.name)).sort((a,b)=>b.level-a.level).slice(0,storyRetinueCap(step.stage!,'normal')+1).map(u=>({...u,id:'rc_'+u.id}));host.storyBriefing(chapterIndex(step.stage!),{chapter:step.id,mods:modsOf(state,step),...(run?.relics.length?{relics:[...run.relics]}:{}),...(hp!==undefined?{heroHp:hp}:{}),...(recruits.length?{recruits}:{})});return;}
   showIfPrep(host,state,step);
 }
 /** 대본에 갈림길 선택이 없을 때의 대비: 길 목록에서 고른다. */
@@ -293,7 +293,7 @@ export function showIfPrep(host:ScenarioHost,state:ScenarioState,step:ScenarioSt
   const hero=host.hero(),names=Object.keys(state.officers);
   // 필수 장수: 대본이 정한 사람 중 지금 부대에 있는 사람. 선택 장수: 난이도에 맞춘 인원 안에서.
   const required=(scriptOf(step.id)?.required??[]).filter(n=>state.officers[n]).slice(0,3);
-  const optional=names.filter(n=>!required.includes(n)),limit=Math.min(6-required.length,taleSortieLimit(step.act,step.kind==='boss',difficulty));
+  const optional=names.filter(n=>!required.includes(n)),limit=taleSortieLimit(step.act,step.kind==='boss',difficulty);
   const unitAt=(name:string)=>name==='사마의'?{unitClass:evolvedClass('strategist',hero.level),level:hero.level}:state.officers[name]!;
   // 극한: 인원 대신 출진 코스트(필수 장수 + 고른 장수의 병종 코스트 합)가 상한을 넘지 않게 고른다.
   const ext=difficulty==='extreme',cap=taleCostCap(step.act,step.kind==='boss'),costOf=(name:string)=>{const u=unitAt(name);return unitCost(evolvedClass(u.unitClass,u.level));};
@@ -482,7 +482,7 @@ function marchResult(host:ScenarioHost,label:string,news:string[]){
   document.getElementById('mr-list')!.onclick=()=>showScenario(host);document.getElementById('mr-next')!.onclick=()=>goNext(host);
 }
 function launchMarch(host:ScenarioHost,state:ScenarioState,after:string,kind:'battle'|'elite'|string){
-  const hero=host.hero(),next=currentStep(state)!,party=scenarioParty(state,hero.level,hero.xp);
+  const hero=host.hero(),next=currentStep(state)!,party=scenarioParty(state,hero.level,hero.xp,undefined,marchSortieLimit(next.act));
   const levels=party.map(u=>u.level),base=Math.max(1,Math.round(levels.reduce((a,b)=>a+b,0)/levels.length)+(kind==='elite'?1:0));
   const ref:RunBattleRef={seed:runSeed(state,'march:'+after),floor:marchFloor(state,next.act),kind:kind==='elite'?'elite':'battle',party,relics:[...state.run!.relics],route:{...state.route},enemyBase:base,scenario:'march:'+after};
   const loadouts=host.heroLoadout();

@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {Session,chapters} from '../src/session.ts';
-import {optionalOfficers,pickExtras,storySortieLimit,taleSortieLimit} from '../src/sortie.ts';
+import {optionalOfficers,pickExtras,storySortieLimit,taleSortieLimit,marchSortieLimit,storyRetinueCap} from '../src/sortie.ts';
 import {freshCampaign,deployment} from '../src/progression.ts';
 
 const withRoom=chapters.map((c,i)=>({c,i,...optionalOfficers(c.stage,c.map)})).filter(x=>x.allowed.length&&x.capacity>0);
@@ -25,7 +25,12 @@ describe('출진 편성',()=>{
   expect(Session.load(more.save()).state.snapshot()).toEqual(more.state.snapshot());
  });
  it('lets deeper what-if acts take more companions (extreme limits by cost instead)',()=>{
-  expect(taleSortieLimit(1,false,'normal')).toBe(3);expect(taleSortieLimit(2,false,'normal')).toBe(4);expect(taleSortieLimit(3,true,'normal')).toBe(6);
-  expect(taleSortieLimit(1,false,'extreme')).toBe(3);expect(taleSortieLimit(1,false,'extreme')).toBeGreaterThanOrEqual(1);
+  expect(taleSortieLimit(1,false,'normal')).toBe(4);expect(taleSortieLimit(2,false,'normal')).toBe(6);expect(taleSortieLimit(3,true,'normal')).toBe(10);
+  expect(taleSortieLimit(1,false,'extreme')).toBe(4);expect(taleSortieLimit(1,false,'extreme')).toBeGreaterThanOrEqual(1);
+  expect(marchSortieLimit(1)).toBe(5);expect(marchSortieLimit(3)).toBe(9);
+ });
+ it('뒤 편과 대규모 전투에는 등용 장수가 더 많이 함께 나선다',()=>{
+  expect(storyRetinueCap('S1-02','normal')).toBe(2);expect(storyRetinueCap('S2-05','normal')).toBe(4);expect(storyRetinueCap('S2-06','normal')).toBe(6);expect(storyRetinueCap('S3-01','normal')).toBe(8);
+  expect(storyRetinueCap('S1-02','extreme')).toBe(1);expect(storyRetinueCap('S3-01','extreme')).toBe(4);
  });
 });

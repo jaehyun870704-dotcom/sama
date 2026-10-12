@@ -3,8 +3,8 @@
  *
  * 연의 장: 스테이지가 정한 필수 장수(deployment.forced)에, 그 시기에 사마의 곁에 있을 수 있는
  * 장수를 더 데려갈 수 있다(출진 칸이 남을 때만).
- * 가상 전장: 대본이 정한 필수 장수(required)에, 편이 깊을수록 더 많이(상편 3 · 중편 4 · 하편 5,
- * 우두머리 전 +1) 데려간다.
+ * 가상 전장: 대본이 정한 필수 장수(required)에, 편이 깊을수록 더 많이(상편 4 · 중편 6 · 하편 8,
+ * 우두머리 전 +2) 데려간다. 뒤로 갈수록 적이 늘고 큰 싸움이 많아서다.
  *
  * 일반·극한 모두 인원 대신 '출진 코스트'로 제한한다: 병종마다 코스트(진화 단계가 높을수록, 기마는 +1)가 있고,
  * 출진하는 장수들의 코스트 합이 전장의 상한을 넘으면 더 데려갈 수 없다.
@@ -14,6 +14,7 @@
 import type {MapFile,StageDef,UnitClass} from '../../core/src/index.ts';
 import {evolvedClass,familyOf,tierOf} from '../../core/src/index.ts';
 import {campaignOrder,chapters} from './session.ts';
+import {LARGE_BATTLES} from './large-battle.ts';
 
 /** 연의 장에서 사마의 곁에 설 수 있는 시기(스테이지 id 범위, 연의 진행 순서 기준). */
 export const SORTIE_WINDOWS:Record<string,[string,string]>={sima_lang:['S1-01','S1-08'],sima_fang:['S1-01','S1-08'],cao_zhen:['S1-05','S2-09']};
@@ -30,9 +31,20 @@ const TIER_COST=[0,2,3,4,6] as const;
 const MOUNTED=new Set(['cavalry','heavyCav','horseArcher','elephant']);
 /** 병종 코스트: 1단 2 · 2단 3 · 3단 4 · 4단 6, 말·코끼리를 탄 병종 +1. */
 export function unitCost(c:UnitClass){return TIER_COST[Math.min(4,Math.max(1,tierOf(c)))]!+(MOUNTED.has(familyOf(c))?1:0);}
-/** 출진 코스트 상한: 일반은 편성 여유 +4, 극한은 정예 소수 편성을 요구한다. */
-export function storyCostCap(stageId:string,difficulty:'normal'|'extreme'='extreme'){const act=Number(/^S(\d)/.exec(stageId)?.[1]??1),base=act>=3?16:act===2?13:10;return base+(difficulty==='normal'?4:0);}
-export function taleCostCap(act:1|2|3,boss:boolean){return (act===3?18:act===2?15:12)+(boss?2:0);}
+const actOfStage=(stageId:string)=>Math.min(3,Math.max(1,Number(/^S(\d)/.exec(stageId)?.[1]??1))) as 1|2|3;
+/**
+ * 출진 코스트 상한. 극한은 정예 소수 편성을 요구하고, 일반은 편이 깊을수록(적이 늘어난다) 여유가 커진다:
+ * 상편 +4 · 중편 +8 · 하편 +12, 대규모 전투(LARGE_BATTLES)는 +4 더.
+ */
+export function storyCostCap(stageId:string,difficulty:'normal'|'extreme'='extreme'){const act=actOfStage(stageId),base=act>=3?16:act===2?13:10;return base+(difficulty==='normal'?4*act+(LARGE_BATTLES.has(stageId)?4:0):0);}
+/** 가상 전장의 극한 출진 코스트 상한(편이 깊을수록·우두머리 전에서 넓다). */
+export function taleCostCap(act:1|2|3,boss:boolean){return (act===3?24:act===2?18:13)+(boss?3:0);}
+/**
+ * 연의 장에 함께 나서는 등용 장수 수. 편이 깊을수록 많고, 연의·정사의 대규모 전투(LARGE_BATTLES)는 더 많다.
+ * 일반 상편 2 · 중편 4 · 하편 6(대규모 +2), 극한 1 · 2 · 3(대규모 +1). 실제로 몇 명이 서는지는 출진 코스트가 정한다.
+ */
+export function storyRetinueCap(stageId:string,difficulty:'normal'|'extreme'){const act=actOfStage(stageId),large=LARGE_BATTLES.has(stageId);
+  return difficulty==='extreme'?act+(large?1:0):2*act+(large?2:0);}
 /** 연의 장 장수의 본래 병종(레벨이 오르면 진화한다). */
 export const STORY_BASE_CLASS:Record<string,UnitClass>={sima_yi:'strategist',sima_lang:'infantry',cao_zhen:'heavyCav',sima_fang:'spearman'};
 export const storyClassAt=(id:string,level:number)=>evolvedClass(STORY_BASE_CLASS[id]??'infantry',level);
@@ -72,7 +84,9 @@ export function storyCostSheet(stage:StageDef,ids:readonly string[],levels:Reado
   return {cap,rows,used,left:Math.max(0,cap-used)};
 }
 
-/** 가상 전장에 고를 수 있는 장수 수(필수 장수 제외). */
+/** 가상 전장에 고를 수 있는 장수 수(필수 장수 제외): 상편 4 · 중편 6 · 하편 8, 우두머리 전 +2. */
 export function taleSortieLimit(act:1|2|3,boss:boolean,_difficulty:'normal'|'extreme'){
-  return Math.max(1,(act===1?3:act===2?4:5)+(boss?1:0));
+  return Math.max(1,(act===1?4:act===2?6:8)+(boss?2:0));
 }
+/** 천명의 길 행군 전투에 나서는 장수 수(사마의 제외): 상편 5 · 중편 7 · 하편 9. */
+export function marchSortieLimit(act:1|2|3){return act===1?5:act===2?7:9;}

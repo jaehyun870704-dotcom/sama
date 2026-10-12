@@ -9,8 +9,9 @@ describe('출진 코스트',()=>{
   expect(unitCost('infantry')).toBe(2);expect(unitCost('shieldGuard')).toBe(3);expect(unitCost('royalGuard')).toBe(4);expect(unitCost('ironInfantry')).toBe(6);
   expect(unitCost('cavalry')).toBe(3);expect(unitCost('heavyCav')).toBe(3);expect(unitCost('mastermind')).toBe(4);
   expect(storyCostCap('S1-02')).toBe(10);expect(storyCostCap('S2-05')).toBe(13);expect(storyCostCap('S3-01')).toBe(16);
-  expect(storyCostCap('S1-02','normal')).toBe(14);expect(storyCostCap('S2-05','normal')).toBe(17);
-  expect(taleCostCap(1,false)).toBe(12);expect(taleCostCap(3,true)).toBe(20);
+  // 일반은 편이 깊을수록 여유가 커지고(+4·+8·+12), 대규모 전투는 +4 더.
+  expect(storyCostCap('S1-02','normal')).toBe(14);expect(storyCostCap('S2-05','normal')).toBe(21);expect(storyCostCap('S2-06','normal')).toBe(25);expect(storyCostCap('S3-01','normal')).toBe(32);
+  expect(taleCostCap(1,false)).toBe(13);expect(taleCostCap(3,true)).toBe(27);
  });
  it('병종을 낮추지 않는다: 필수 장수는 제 병종 그대로, 상한이 차면 더 데려가지 않는다',()=>{
   const ch=chapters.find(c=>c.stage.id==='S1-05')!,stage=campaignStage(ch.stage);
