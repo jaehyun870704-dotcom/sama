@@ -465,6 +465,8 @@ export class Battlefield {
       for(const [id,actor] of this.actors)if(!state.find(id)?.alive){actor.piece.destroy({children:true});actor.name?.destroy();this.actors.delete(id);}
       // 탈출·도착해야 하는 장수: 이름표에 '탈출'·'도착'을 붙이고 발밑에 같은 색 고리를 둔다(누가 가야 하는지 늘 보이게).
       const carriers=new Map<string,string>();for(const m of goalMarks(state))for(const id of m.who)if(!carriers.has(id))carriers.set(id,m.kind);
+      // 붙어 있는 성문 칸들은 하나의 성문으로 그린다: 맨 아래(또는 오른쪽) 칸이 무리 전체를 대표해 큰 성문 하나와 합친 내구도를 보이고, 나머지 칸은 그림을 숨긴다.
+      const gateGroups=gateGroupsOf(state);
       for(const unit of state.living()){
         let actor=this.actors.get(unit.id);
         if(!actor){
@@ -476,7 +478,7 @@ export class Battlefield {
           // Troops first face the bulk of the opposing army; afterwards they turn as they move and strike.
           if(!structureKind(unit.id)){const foes=state.living().filter(o=>(o.side==='enemy')!==(unit.side==='enemy')&&!structureKind(o.id));const cx=foes.reduce((a,o)=>a+o.pos.x,0)/Math.max(1,foes.length);if(foes.length&&cx<unit.pos.x)sprite.scale.x*=-1;}
           // Dark-edged side disc under the feet: reads on grass, sand and water alike.
-          const base=new Graphics();base.ellipse(0,6,20,9).fill({color:0x0b1410,alpha:.5});base.ellipse(0,7,17,7).fill({color:sides[unit.side],alpha:.3}).stroke({color:0x0d1411,width:5});base.ellipse(0,7,17,7).stroke({color:sides[unit.side],width:2.5});piece.addChild(base,sprite);
+          const base=new Graphics();base.ellipse(0,6,20,9).fill({color:0x0b1410,alpha:.5});base.ellipse(0,7,17,7).fill({color:sides[unit.side],alpha:.3}).stroke({color:0x0d1411,width:5});base.ellipse(0,7,17,7).stroke({color:sides[unit.side],width:2.5});base.label='base';piece.addChild(base,sprite);
           // 이름 있는 장수는 발밑에 금빛 기운이 맴돌고, 서 있을 때도 숨을 쉰다.
           const officer=!structureKind(unit.id)&&this.isOfficer(unit);
           if(officer){const aura=new Graphics();aura.label='aura';aura.ellipse(0,7,25,11).stroke({color:0xf0cc70,width:2}).ellipse(0,7,29,13).stroke({color:0xf0cc70,width:1,alpha:.5});piece.addChildAt(aura,0);}
@@ -487,24 +489,26 @@ export class Battlefield {
         this.statusSeen.set(unit.id,now);
         actor.unit=unit;actor.piece.position.set((unit.pos.x+.5)*W,(unit.pos.y+.5)*H);actor.piece.zIndex=unit.pos.y;
         actor.sprite.texture=this.unitTexture(unit,this.facing.get(unit.id)??0);actor.sprite.alpha=1;actor.sprite.tint=unitTint(unit);
+        const gate=gateGroups.get(unit.id),hidden=!!gate&&gate.lead!==unit.id;actor.sprite.visible=!hidden;const base=actor.piece.children.find(c=>c.label==='base');if(base)base.visible=!gate;
+        if(gate&&!hidden){const k=gate.size;actor.sprite.width=gate.wide?Math.min(48*k+20,200):84;actor.sprite.height=gate.wide?92:98;actor.sprite.position.set(gate.dx,gate.dy+22);}else if(structureKind(unit.id)==='gate'){actor.sprite.width=64;actor.sprite.height=75;actor.sprite.position.set(0,8);}
         for(const child of actor.piece.children.filter(c=>c.label==='hud'))child.destroy();actor.name?.destroy();actor.name=undefined;
         const bar=new Graphics();if(unit.id===selected||unit.id==='rescue_target'||unit.id==='convoy_trial')bar.ellipse(0,7,22,10).stroke({color:0xffe9aa,width:2});
         const goalKind=carriers.get(unit.id);if(goalKind)bar.ellipse(0,7,26,12).stroke({color:goalColor(goalKind),width:2.5,alpha:.95});
         if(goalKind){const tag=new Text({text:goalKind==='escape'?'탈출':'도착',style:{fontFamily:'Malgun Gothic',fontSize:11,fontWeight:'800',fill:0x10180f,padding:2}});tag.anchor.set(.5,1);
           const chip=new Graphics().roundRect(-tag.width/2-5,-tag.height-2,tag.width+10,tag.height+3,6).fill({color:goalColor(goalKind),alpha:.95}).stroke({color:0x10180f,width:1.5});
           const badge=new Container();badge.addChild(chip,tag);badge.y=-60;badge.label='hud';actor.piece.addChild(badge);}
-        const ratio=Math.max(0,unit.hp/unit.stats.maxHp);this.hpShown.set(unit.id,ratio);bar.rect(-18,12,36,7).fill(0x0d1310).rect(-17,13,34,5).fill(0x40312a).rect(-17,13,Math.round(34*ratio),5).fill(ratio<.3?0xf06a4f:sides[unit.side]).rect(-17,13,Math.round(34*ratio),1).fill({color:0xffffff,alpha:.35});
+        const hpNow=gate?gate.hp:unit.hp,hpMax=gate?gate.maxHp:unit.stats.maxHp;const ratio=Math.max(0,hpNow/hpMax);this.hpShown.set(unit.id,unit.hp/unit.stats.maxHp);if(!hidden)bar.rect(-18,12,36,7).fill(0x0d1310).rect(-17,13,34,5).fill(0x40312a).rect(-17,13,Math.round(34*ratio),5).fill(ratio<.3?0xf06a4f:sides[unit.side]).rect(-17,13,Math.round(34*ratio),1).fill({color:0xffffff,alpha:.35});
         // Evolved troops (tier 2/3) wear gold rank diamonds beside the health bar.
         for(let t=1;t<tierOf(unit.unitClass);t++){const x=-25,y=15-(t-1)*8;bar.poly([x,y-4,x+3.5,y,x,y+4,x-3.5,y]).fill(0xe8c06a).stroke({color:0x2a1d0b,width:1.2});}
-        bar.label='hud';actor.piece.addChild(bar);
-        if(structureKind(unit.id)){const hp=new Text({text:unit.hp+'/'+unit.stats.maxHp,style:{fontFamily:'Malgun Gothic',fontSize:10,fontWeight:'700',fill:unit.hp<unit.stats.maxHp*.35?0xffa58a:0xfff1cf,stroke:{color:0x16130f,width:3}}});hp.anchor.set(.5,0);hp.y=20;hp.label='hud';actor.piece.addChild(hp);}
+        bar.label='hud';if(gate&&!hidden)bar.position.set(gate.dx,gate.dy+gate.half);actor.piece.addChild(bar);
+        if(structureKind(unit.id)){if(!hidden){const hp=new Text({text:hpNow+'/'+hpMax,style:{fontFamily:'Malgun Gothic',fontSize:10,fontWeight:'700',fill:hpNow<hpMax*.35?0xffa58a:0xfff1cf,stroke:{color:0x16130f,width:3}}});hp.anchor.set(.5,0);hp.position.set(gate?.dx??0,20+(gate?gate.dy+gate.half:0));hp.label='hud';actor.piece.addChild(hp);}}
         else if(goalKind){
           const name=new Text({text:unitName(unit),style:{fontFamily:'Malgun Gothic',fontSize:11,fontWeight:'800',fill:goalColor(goalKind),stroke:{color:0x0d1411,width:3}}});name.anchor.set(.5,0);name.position.set(actor.piece.x,actor.piece.y+20);actor.name=name;this.labels.addChild(name);
         }
-        else if(unit.id===selected||unit.side==='player'||['rescue_target','convoy_trial'].includes(unit.id)||isCommander(state,unit)){
-          // Named commanders (targets, protected officers) carry their name so they stand out from the rank and file.
-          const foe=unit.side==='enemy'&&unit.id!==selected;
-          const name=new Text({text:unitName(unit),style:{fontFamily:'Malgun Gothic',fontSize:11,fontWeight:'700',fill:foe?0xffc2a8:unit.side==='allyAi'?0xffe39a:0xfff4da,stroke:{color:foe?0x2a0d08:0x0d1411,width:3}}});
+        else{
+          // 모든 부대가 이름표를 단다(이름 없는 병사도 한 부대의 장수다). 적은 붉게, 우군은 노랗게, 지휘관·목표는 조금 크게.
+          const foe=unit.side==='enemy'&&unit.id!==selected,big=unit.id===selected||isCommander(state,unit);
+          const name=new Text({text:unitName(unit),style:{fontFamily:'Malgun Gothic',fontSize:big?13:12,fontWeight:'800',fill:foe?0xffb59a:unit.side==='allyAi'?0xffe39a:0xfff4da,stroke:{color:foe?0x2a0805:0x0d1411,width:4}}});
           // 바로 아래 칸에 부대가 서 있으면 이름표를 머리 위로 올린다 — 발밑에 두면 아래 부대의 머리를 덮는다.
           const below=state.unitAt({x:unit.pos.x,y:unit.pos.y+1});
           if(below?.alive){name.anchor.set(.5,1);name.position.set(actor.piece.x,actor.piece.y-50);}else{name.anchor.set(.5,0);name.position.set(actor.piece.x,actor.piece.y+20);}
@@ -856,4 +860,21 @@ export class Battlefield {
     if(this.reduced){setTimeout(()=>item.destroy({children:true}),600);return;}
     const born=performance.now();const tick=()=>{if(item.destroyed){this.app.ticker.remove(tick);return;}const age=(performance.now()-born)/900;item.y=p.y-20-age*35;item.alpha=1-age;g.scale.set(1+age*2);if(age>=1){this.app.ticker.remove(tick);item.destroy({children:true});}};this.app.ticker.add(tick);
   }
+}
+
+/** 서로 붙은 성문 칸(같은 편·살아 있음)을 무리로 묶는다. 무리의 대표 칸(맨 아래·오른쪽)에서 무리 가운데까지의 거리와 합친 내구도를 돌려준다. */
+interface GateGroup {lead:string;size:number;wide:boolean;dx:number;dy:number;half:number;hp:number;maxHp:number}
+function gateGroupsOf(state:BattleState):Map<string,GateGroup>{
+  const gates=state.living().filter(u=>structureKind(u.id)==='gate'),out=new Map<string,GateGroup>(),seen=new Set<string>();
+  for(const start of gates){
+    if(seen.has(start.id))continue;const group=[start];seen.add(start.id);
+    for(let i=0;i<group.length;i++){const g=group[i]!;for(const o of gates)if(!seen.has(o.id)&&o.side===g.side&&Math.abs(o.pos.x-g.pos.x)+Math.abs(o.pos.y-g.pos.y)===1){seen.add(o.id);group.push(o);}}
+    if(group.length<2)continue;
+    const lead=group.reduce((a,b)=>b.pos.y>a.pos.y||(b.pos.y===a.pos.y&&b.pos.x>a.pos.x)?b:a);
+    const xs=group.map(g=>g.pos.x),ys=group.map(g=>g.pos.y),cx=(Math.min(...xs)+Math.max(...xs))/2,cy=(Math.min(...ys)+Math.max(...ys))/2;
+    const wide=Math.max(...xs)-Math.min(...xs)>=Math.max(...ys)-Math.min(...ys);
+    const info:GateGroup={lead:lead.id,size:group.length,wide,dx:(cx-lead.pos.x)*W,dy:(cy-lead.pos.y)*H,half:(Math.max(...ys)-cy)*H,hp:group.reduce((a,g)=>a+g.hp,0),maxHp:group.reduce((a,g)=>a+g.stats.maxHp,0)};
+    for(const g of group)out.set(g.id,info);
+  }
+  return out;
 }

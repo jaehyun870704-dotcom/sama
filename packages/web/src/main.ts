@@ -95,7 +95,7 @@ const sideNames={player:'아군',ally:'편입 아군',enemy:'적군',allyAi:'우
 $('#app').innerHTML=`<header class="topbar"><button id="brand" class="brand" aria-label="본영"><span class="seal-logo">맹</span><span>${GAME_NAME}<small>${GAME_SERIES}</small></span></button><div class="chapter-breadcrumb" id="arc-crumb">상편 <span>/</span> 살아남는 자</div><nav><button id="sound-toggle" title="전체 소리 켜기/끄기">♪ <span>소리 켜짐</span></button><button id="help">도움말 <kbd>?</kbd></button><button id="settings" aria-label="설정">⚙</button><button id="topbar-save" title="저장 · 불러오기">💾 저장</button><button id="menu">본영</button></nav></header>
 <main class="layout"><aside class="left-panel" id="left-panel"><button id="left-close" class="left-close" aria-label="전황 닫기">닫기 ✕</button><div class="eyebrow" id="arc-eyebrow">제1편 <span>상편</span></div><h1 id="stage-title"></h1><p id="stage-subtitle" class="muted"></p><div class="rule"></div><section class="mission"><div class="section-label">전투 목표 <span>목표</span></div><div id="objectives"></div></section><section class="turn-card"><div class="turn-number"><span>차례</span><strong id="turn">01</strong><span id="turn-limit">/ 60</span></div><div id="phase" class="phase"></div><div class="phase-track"><i></i><i></i><i></i><i></i></div></section><section><div class="section-label">현재 차례 부대 <span id="unit-count"></span></div><div id="roster" class="roster"></div></section><p class="roster-note">파랑 · 아군(편입 아군 포함)<br>초록 · NPC 우군 &nbsp; 빨강 · 적군</p><div class="left-bottom"><span class="small-seal">인</span><p>칼을 거두고,<br>때를 기다린다.</p></div></aside>
 <section class="battle-panel"><div class="battle-heading"><div><span class="eyebrow" id="year"></span><h2 id="map-name"></h2></div><span class="weather">☀ &nbsp; 맑음 <span>·</span> 바람 약함</span></div><p id="compact-objective"></p><div id="map" class="map"><div class="map-vignette"></div><div id="map-objective" class="map-objective" aria-live="polite"></div><button id="left-toggle" class="left-toggle" aria-expanded="false" aria-controls="left-panel">☰ 전황</button><div class="compass"><span>북</span><b>✧</b></div><div class="map-controls"><button id="zoom-out" aria-label="축소">−</button><button id="zoom-reset" aria-label="고른 장수에게로">⌖</button><button id="zoom-in" aria-label="확대">＋</button></div><div class="map-legend"><i class="dot teal"></i> 이동 가능 <i class="dot red"></i> 적 시야 / 사거리 <i class="dot gold"></i> 목표</div><div id="unit-hud" class="unit-hud"></div><div id="action-dock" class="action-dock" hidden></div><div id="tile-info">장수를 선택해 첫 수를 두세요.</div><div id="phase-banner" aria-live="polite"></div><div id="battle-line" class="battle-line" aria-live="polite" hidden></div><div id="battle-relics" class="battle-relics" hidden></div><div id="encounter" class="encounter" role="dialog" hidden></div><div id="coach" class="coach" role="status" hidden><p></p><button id="coach-close" aria-label="안내 닫기">닫기</button></div></div><div class="battle-toolbar"><button id="undo">↶ <span>무르기</span> <kbd>Z</kbd></button><button id="threat" aria-pressed="false">◎ <span>위험 범위</span></button><button id="speed">▷ <span>1× 속도</span></button><button id="auto-battle" aria-pressed="false" title="아군을 대신 지휘한다(대사 선택·일기토 수락은 직접)">⟳ <span>자동 전투</span></button><span id="save-status" role="status">자동 저장 준비</span><button id="end-phase" class="primary">아군 턴 종료 <span>→</span></button></div><div class="dispatch"><span>군보</span><p id="latest-log" aria-live="polite">전장을 살피고 명령을 내려 주십시오.</p><button id="log-button">전투 기록 ↗</button></div></section>
-<aside class="right-panel"><div class="section-label">장수 정보 <span>장수</span></div><div id="unit-detail"></div><div class="section-label command-label">전술 명령 <span>명령</span></div><div id="commands" class="commands"></div><p id="command-hint" class="command-hint"></p><div class="tactic-note"><span>책</span><div><strong>전장을 읽는 법</strong><p id="tactical-tip"></p></div></div></aside></main><footer><span>삼국지 · 사마의전</span><span>상편·중편·하편 · 플레이 가능 전장 ${chapters.length}개</span><span>선택 → 이동 → 행동 → 턴 종료</span></footer>
+<aside class="right-panel"><div class="section-label">장수 정보 <span>장수</span></div><div id="unit-detail"></div><div class="section-label command-label">전술 명령 <span>명령</span></div><div id="commands" class="commands"></div><p id="command-hint" class="command-hint"></p><div class="tactic-note"><span>책</span><div><strong>전장을 읽는 법</strong><p id="tactical-tip"></p></div></div></aside></main><footer><span>${GAME_SERIES} ${GAME_NAME}</span><span>상편·중편·하편 · 플레이 가능 전장 ${chapters.length}개</span><span>선택 → 이동 → 행동 → 턴 종료</span></footer>
 <dialog id="modal"><div id="modal-content"></div></dialog><div id="toast" role="status"></div>`;
 
 /** 마지막으로 그린 승리 조건(바뀌면 알린다). */
@@ -877,6 +877,7 @@ function render(){
   $<HTMLButtonElement>('#end-phase').disabled=!CONTROLLABLE.has(s.currentSide)||s.outcome!=='ongoing'||field.busy||!!session.activeDuel;
   $<HTMLButtonElement>('#undo').disabled=!session.checkpoints.length||field.busy;
   $('#tactical-tip').textContent=session.revision>=4&&session.chapter===4?'여포는 물리 공격이 강합니다. 무력보다 지력 차이를 활용해 설전 승리와 혼란을 노리세요. 각 대결이 끝나면 체력·MP가 회복됩니다.':session.revision>=4?'일기토는 인접한 적, 설전은 3칸 이내 적을 선택합니다. 충차는 성문·감시탑에 피해 3배. 풍수사는 응급·치료로 아군을 치유하고, 상승 책략으로 북돋웁니다.':'목표와 승리 조건을 확인하세요. 본대 다음 편입 아군을 직접 지휘합니다.';
+  {const tu=session.state.find(selected),ct=tu&&tu.side==='player'&&tu.alive?contestTip(tu):'';if(ct)$('#tactical-tip').textContent=ct+' · '+$('#tactical-tip').textContent;}
   sound.scene=s.outcome!=='ongoing'?'result':session.chapter===4?'dream':s.living('player').some(u=>u.hp<u.stats.maxHp*.35)?'crisis':bossNear(s.living())?'boss':'battle';
   renderCoach();queueLines();stackOverlays();
   // 첫 차례(아직 아무도 움직이지 않음)에는 아군 전원을, 그 뒤에는 고른 장수를 상자 밖에 둔다. 대화 선택으로 합류한 장수도 포함된다.
@@ -1024,6 +1025,15 @@ function renderDock(buttons:DockBtn[],can:boolean,run:(id:string)=>void){
     if(g.one)run(g.one.id);else{dockOpen=dockOpen===g.key?'':g.key;render();}});
   dock.querySelectorAll<HTMLButtonElement>('[data-dock-cmd]').forEach(b=>b.onclick=e=>{e.stopPropagation();run(b.dataset.dockCmd!);});
 }
+/** 고른 장수가 겨룰 수 있는 이름있는 적장: 일기토(곁 8칸)·설전(3칸 안). 지금 닿는 상대는 「지금」으로 표시한다. */
+function contestTip(u:Unit){
+  const st=session.state,foes=st.living('enemy').filter(e=>!!romanceOf(e)&&!structureKind(e.id));if(!foes.length)return '';
+  const dist=(e:Unit)=>Math.max(Math.abs(e.pos.x-u.pos.x),Math.abs(e.pos.y-u.pos.y));
+  const list=(kind:'duel'|'debate',reach:number)=>foes.filter(e=>session.contestAllowed(u,e,kind)).sort((a,b)=>dist(a)-dist(b)).slice(0,4).map(e=>`${unitName(e)}${dist(e)<=reach?'(지금)':`(${dist(e)}칸)`}`);
+  const duel=list('duel',1),debate=list('debate',3);
+  if(!duel.length&&!debate.length)return `${unitName(u)}이(가) 겨룰 적장이 지금 전장에 없다.`;
+  return [duel.length?`일기토 상대: ${duel.join(' · ')}`:'',debate.length?`설전 상대: ${debate.join(' · ')}`:''].filter(Boolean).join(' / ');
+}
 function select(id:string){selected=id;const u=session.state.find(id);if(u)field.focusUnit(u.pos);mode=u?.hasMoved?'attack':'move';sound.select(u?.unitClass);if(objectiveBox.auto)setObjectiveOpen(false);render();keepUnitsClear(true);}
 /** S1-02 지참금 줄: 노잣돈을 내면 남는 돈과, 남문 통행료(1,000전)가 모자라게 되는지 미리 알려 준다. */
 function fundsNote(node:string){
@@ -1045,7 +1055,8 @@ function act(command:Command){
   const prev=session.state.currentSide,r=session.act(command);if(!r.ok){toast(r.error??'명령 실패');if(command.kind==='choose')render();return;}// 거절된 선택지: 대화창을 다시 띄운다(창만 닫히고 대화가 남아 모든 명령이 막히던 문제)
   if(command.kind==='item'&&['duel','debate'].includes(command.item)){duelPresented=false;if(session.lastRefusal){showRefusal();return;}}
   if(prev!==session.state.currentSide){const next=session.state.living(session.state.currentSide).find(u=>!u.hasActed);if(next){selected=next.id;field.focusUnit(next.pos);mode='move';}}
-  if(command.kind==='move')mode=session.state.find(selected)?.strategies[0]??'attack';
+  // 움직인 뒤에는 공격 대기: 책략은 플레이어가 책략 목록에서 고를 때만 쓴다(자동으로 책략을 고르지 않는다).
+  if(command.kind==='move')mode='attack';
   persist();render();pump();
 }
 /** AI pacing: a unit that does something gets its beat; one that only holds its ground

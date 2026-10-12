@@ -1,6 +1,6 @@
 /**
  * 전투 하단 정보창 — 조조전 온라인 화면처럼, 맵 아래 양쪽에 먹 붓 바탕의 장수 카드를 띄운다.
- * 왼쪽은 고른(또는 치는) 쪽, 오른쪽은 상대. 카드에는 초상·이름(자)·병종·레벨, 지형(平 100%),
+ * 왼쪽은 고른(또는 치는) 쪽, 오른쪽은 상대. 카드에는 초상·이름(자)·병종·레벨,
  * 체력·책략 막대가 있다. 공격을 겨눌 때는 깎일 체력을 막대 위에 미리 보이고,
  * 실제로 싸우면 막대가 앞의 체력에서 뒤의 체력으로 줄어든다.
  */
@@ -30,11 +30,9 @@ function bar(kind:'hp'|'mp',now:number,max:number,from?:number,preview=0){
 }
 /** 카드 한 장(HTML). side: 'left'면 초상이 왼쪽, 'right'면 오른쪽. */
 export function hudCard(u:Unit,state:BattleState,side:'left'|'right',o:CardOpts={}){
-  const t=state.map.tileAt(u.pos).terrain,aff=Math.round(state.map.terrainAffinity(u.unitClass,u.pos)*100);
   const team=u.side==='enemy'?'enemy':u.side==='allyAi'?'npc':'ally';
   const name=isOfficer(u)?displayName(u.name):classNames[u.name]??u.name;
   return `<div class="hud-card ${side} ${team}"><div class="hud-face">${cardFace(u.name)}</div><div class="hud-body">
-    <div class="hud-band"><span class="hud-glyph">${TERRAIN_GLYPH[t]}</span><span class="hud-aff">${aff}%</span></div>
     <div class="hud-name"><b>${esc(name)}</b><small>${esc(classNames[u.unitClass]??u.unitClass)} · Lv.${u.level}</small></div>
     ${bar('hp',u.hp,u.stats.maxHp,o.hpFrom,o.preview)}${bar('mp',u.mp,u.stats.maxMp)}
     ${o.note?`<div class="hud-note">${esc(o.note)}</div>`:''}</div></div>`;
