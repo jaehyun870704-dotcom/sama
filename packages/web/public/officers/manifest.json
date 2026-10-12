@@ -99,6 +99,7 @@
     {"id":"long_ju","name":"용저","aliases":["용저의 환영"],"battle":{"cavalry":{"sheet":"long_ju-battle-cavalry-v1.webp","cell":[280,224],"rows":1}}},
     {"id":"guan_ying","name":"관영","aliases":["관영의 환영"],"battle":{"cavalry":{"sheet":"guan_ying-battle-cavalry-v1.webp","cell":[280,224],"rows":1}}},
     {"id":"cao_shen","name":"조참","aliases":["조참의 환영"],"battle":{"infantry":{"sheet":"cao_shen-battle-infantry-v1.webp","cell":[280,224],"rows":1}}},
-    {"id":"cao_zhi","name":"조식","aliases":["조식의 환영"],"battle":{"strategist":{"sheet":"cao_zhi-battle-strategist-v1.webp","cell":[280,224],"rows":1}}}
+    {"id":"cao_zhi","name":"조식","aliases":["조식의 환영"],"battle":{"strategist":{"sheet":"cao_zhi-battle-strategist-v1.webp","cell":[280,224],"rows":1}}},
+    {"id":"wutugu","name":"올돌골","aliases":["올돌골의 환영"],"battle":{"infantry":{"sheet":"wutugu-battle-infantry-v1.webp","cell":[280,224],"rows":1}}}
   ]
 }
