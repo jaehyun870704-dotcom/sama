@@ -2083,6 +2083,7 @@ const pack:ScenarioPack={chapters:[
       {name:'사마의',look:'strategist',at:[32,62]},
       {name:'조예',look:'strategist',at:[72,54],face:'left'},
       {name:'금군 병사',look:'heavy',at:[84,60],face:'left'},
+      {name:'제갈량',look:'strategist',at:[24,56]},
       {name:'촉군 병사',look:'spear',at:[18,66]}],
     steps:[
       {move:'조예',to:[64,56]},

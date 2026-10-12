@@ -82,7 +82,9 @@ describe('시나리오 진행',()=>{
   const s=freshScenario();choose(s,scenarioPath(s).at(-1)!,'serve',[],3);finishStep(s,'fate:1');
   expect(readScenario(JSON.stringify(s))).toEqual(s);
   expect(readScenario(JSON.stringify({...s,route:{1:'serve',2:'wei'}})).route).toEqual({});
-  expect(readScenario('{"version":1,"officers":{"x":{"unitClass":"infantry","level":99,"xp":0}}}').officers).toEqual({});
+  // 60을 넘긴 장수는 버리지 않고 60에 맞춘다(예전에는 상한 없이 오른 장수가 통째로 사라졌다).
+  expect(readScenario('{"version":1,"officers":{"x":{"unitClass":"infantry","level":99,"xp":0}}}').officers).toEqual({x:{name:'x',unitClass:'infantry',level:60,xp:0}});
+  expect(readScenario('{"version":1,"officers":{"x":{"unitClass":"infantry","level":0,"xp":0}}}').officers).toEqual({});
   expect(readScenario('nonsense')).toEqual(freshScenario());
  });
 });

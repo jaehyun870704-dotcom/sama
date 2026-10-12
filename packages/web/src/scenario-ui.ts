@@ -3,7 +3,7 @@
  * 규칙은 scenario.ts, 무대 연출은 story-stage.ts. 연의 장의 정비·전투·보상은 main.ts의 기존 흐름을 쓴다.
  */
 import {loadScenario,saveScenario,scenarioPath,winOver,currentStep,scriptOf,choose,undoChoice,finishStep,fateChoices,floorFor,scenarioParty,rewardOfficers,endingNotes,routeTales,COMPANIONS,
-  ensureRun,joinRecruits,newScenarioRun,inWhatIf,joinCaptive,pendingMarch,marchNodes,recruitOffer,relicOffer,recruitOfficer,healAll,finishMarch,marchFloor,afterFight,loseFight,runMandate,omenOffer,omenOf,chooseOmen,omenReward,addRunBonus,EXTRA_TALES,type ScenarioState,type ScenarioStep,type MarchNode} from './scenario.ts';
+  ensureRun,joinRecruits,newScenarioRun,inWhatIf,joinCaptive,pendingMarch,marchNodes,recruitOffer,relicOffer,recruitOfficer,rosterFull,healAll,finishMarch,marchFloor,afterFight,loseFight,runMandate,omenOffer,omenOf,chooseOmen,omenReward,addRunBonus,EXTRA_TALES,type ScenarioState,type ScenarioStep,type MarchNode} from './scenario.ts';
 import {playScenes,playNarration,Stage} from './story-stage.ts';
 import {startPersuasion,speak,reaction,PITCH,GREETING,AGREE,REFUSE,APPROACH_NAMES,PERSUADE_GOAL,type Approach} from './persuade.ts';
 import {openCamp} from './story-camp.ts';
@@ -21,7 +21,7 @@ import {temperNames,type DuelKind} from './duel.ts';
 import {playContest} from './duel-ui.ts';
 import {cardFace} from './faces.ts';
 import {portraitImage} from './portrait-images.ts';
-import {taleSortieLimit,taleCostCap,unitCost,storyClassAt} from './sortie.ts';
+import {taleSortieLimit,taleCostCap,unitCost,storyClassAt,soloStage} from './sortie.ts';
 import {classNames} from './troops.ts';
 import {classSprite} from './codex-ui.ts';
 import {nextEvolutionText,XP_PER_LEVEL,RELICS,survivorsOf,stageOfficerNames,type BattleMods,type RunBattleRef,type RunUnit} from './roguelike.ts';
@@ -195,7 +195,9 @@ async function stage(host:ScenarioHost,state:ScenarioState,step:ScenarioStep,sce
   const root=document.querySelector<HTMLElement>('.ss-host')!;
   // 장을 여는 해설(역사·시나리오 배경)
   if(narration?.lines.length&&scenes[0])await playNarration(root,{heading,...narration,art:scenes[0].art,place:scenes[0].place});
-  await playScenes(root,scenes,{heading,flags:()=>state.flags,onChoice:(o)=>{if(choosing){choose(state,step,o.id,o.effects??[],host.hero().level);saveScenario(state);}},onContest:e=>runContest(host,state,step,e.kind,e.foe,e.by,e.line)});
+  // 다시 보기(choosing=false)에서는 대결을 치르지 않는다: 지금 회차의 체력·대결 표식이 바뀌지 않게.
+  const onContest:NonNullable<Parameters<typeof playScenes>[2]['onContest']>=e=>runContest(host,state,step,e.kind,e.foe,e.by,e.line);
+  await playScenes(root,scenes,{heading,flags:()=>state.flags,onChoice:(o)=>{if(choosing){choose(state,step,o.id,o.effects??[],host.hero().level);saveScenario(state);}},...(choosing?{onContest}:{})});
 }
 /** 지금 장에 들어간다: 이야기 장면부터. */
 export async function enter(host:ScenarioHost,step:ScenarioStep){
@@ -203,7 +205,10 @@ export async function enter(host:ScenarioHost,step:ScenarioStep){
   // 신세력 회차: 첫 갈림길에 '스스로 기치를 든다'가 더해진다.
   if(step.id==='fate:1'&&state.run?.faction){script=structuredClone(script);for(const sc of script.scenes)for(const st of sc.steps)if('choice' in st&&!st.options.some(o=>o.id==='np1'))st.options.unshift(foundingOption());}
   // 이 장을 다시 시작하면 전에 고른 답의 효과를 먼저 걷어 낸다(다른 답을 골라도 효과가 겹치지 않게).
-  undoChoice(state,step);saveScenario(state);
+  undoChoice(state,step);
+  // 앞서 치른 이 장의 대결 결과도 걷는다(다른 선택지를 골라도 이긴 대결의 보너스가 남거나, 진 대결을 다시 굴리지 않게).
+  if(!state.done.includes(step.id))state.flags=state.flags.filter(f=>!f.startsWith(`contest:${step.id}:`));
+  saveScenario(state);
   await stage(host,state,step,script.scenes,`${kindTag[step.kind]} · ${script.title}`,true,script.history?{year:script.year,title:script.title,lines:script.history}:undefined);
   if(step.kind==='fate'){
     if(!state.route[step.act])return showFateFallback(host,state,step);
@@ -243,7 +248,7 @@ export function prepare(host:ScenarioHost,step:ScenarioStep){
     const offer=omenOffer(state,step.id);
     return choiceScreen(host,`전황 · ${stepTitle(step,state)} — 싸우기 전에 하늘을 읽는다`,offer.map(o=>({title:(o.goal?'⚑ 도전 · ':'')+o.name,detail:o.text})),i=>{const st=loadScenario();chooseOmen(st,step.id,offer[i]!.id);saveScenario(st);prepare(host,step);},'천명의 길 · 전황 카드');
   }
-  if(step.kind==='story'){const run=state.run,hp=run?.hp['사마의'],h=host.hero(),taken=stageOfficerNames(chapters[chapterIndex(step.stage!)]!.stage),recruits=scenarioParty(state,h.level,h.xp).filter(u=>!u.hero&&!taken.has(u.name)).sort((a,b)=>b.level-a.level).slice(0,3).map(u=>({...u,id:'rc_'+u.id}));host.storyBriefing(chapterIndex(step.stage!),{chapter:step.id,mods:modsOf(state,step),...(run?.relics.length?{relics:[...run.relics]}:{}),...(hp!==undefined?{heroHp:hp}:{}),...(recruits.length?{recruits}:{})});return;}
+  if(step.kind==='story'){const run=state.run,hp=run?.hp['사마의'],h=host.hero(),taken=stageOfficerNames(chapters[chapterIndex(step.stage!)]!.stage),recruits=soloStage(chapters[chapterIndex(step.stage!)]!.stage)?[]:scenarioParty(state,h.level,h.xp).filter(u=>!u.hero&&!taken.has(u.name)).sort((a,b)=>b.level-a.level).slice(0,3).map(u=>({...u,id:'rc_'+u.id}));host.storyBriefing(chapterIndex(step.stage!),{chapter:step.id,mods:modsOf(state,step),...(run?.relics.length?{relics:[...run.relics]}:{}),...(hp!==undefined?{heroHp:hp}:{}),...(recruits.length?{recruits}:{})});return;}
   showIfPrep(host,state,step);
 }
 /** 대본에 갈림길 선택이 없을 때의 대비: 길 목록에서 고른다. */
@@ -442,7 +447,7 @@ function pickMarch(host:ScenarioHost,after:string,node:MarchNode){
   const done=(news:string[])=>{finishMarch(state,after);saveScenario(state);marchResult(host,node.label,news);};
   if(node.kind==='rest'){healAll(state,Math.min(1,(meta.unlocks.includes('field_medic')?1:.6)*restMult(meta)));return done(['의원에서 사마의와 장수들이 기운을 되찾았다.']);}
   if(node.kind==='training'){const party=scenarioParty(state,hero.level,hero.xp),news=rewardOfficers(state,party,{},100);news.push(...host.addHeroXp(80));return done(news);}
-  if(node.kind==='recruit'){const offer=recruitOffer(state,after);if(!offer.length)return done(['맞아들일 사람이 없었다.']);
+  if(node.kind==='recruit'){const offer=recruitOffer(state,after);if(!offer.length)return done([rosterFull(state)?'부대가 가득 차(8명) 더 맞아들일 수 없었다.':'맞아들일 사람이 없었다.']);
     return choiceScreen(host,inWhatIf(state)?'모병소 · 누구를 설득할까 (가상 시나리오 — 설득해야 합류)':'모병소 · 누구를 맞아들일까',offer.map(o=>({title:`${o.name} (${classNames[o.unitClass]??o.unitClass})`,detail:`${romanceStats(o.name)??''}${temperOf(o.name)?` · 성격 ${temperNames[temperOf(o.name)!]}`:''}`})),i=>{const o=offer[i]!;
       if(!inWhatIf(state)){recruitOfficer(state,o.name,hero.level+recruitBonus(meta),meta.unlocks.includes('elite_recruits'));return done([`${이가(o.name)} 사마의의 부대에 들어왔다.`]);}
       void persuadeOfficer(host,o.name,o.unitClass,run.seed^hashSeed(after)).then(ok=>{if(ok){recruitOfficer(state,o.name,hero.level+recruitBonus(meta),meta.unlocks.includes('elite_recruits'));done([`${이가(o.name)} 설득에 응해 사마의의 부대에 들어왔다.`]);}else done([`${은는(o.name)} 이번엔 거절하고 떠났다. 다른 길목에서 다시 만날 수 있다.`]);});});}

@@ -103,7 +103,7 @@ export function readScenario(raw:string|null):ScenarioState{
     for(const [k,v] of Object.entries(s.choices??{}))if(typeof v==='string')clean.choices[k]=v;
     for(const [k,v] of Object.entries(s.paths??{}))if(typeof v==='string'&&EXTRA_TALES.some(t=>t.id===v&&t.replaces===k))clean.paths[k]=v;
     const run=readRun(s.run);if(run)clean.run=run;
-    for(const [k,o] of Object.entries(s.officers??{}))if(o&&typeof o.unitClass==='string'&&Number.isInteger(o.level)&&o.level>=1&&o.level<=60&&Number.isInteger(o.xp)&&o.xp>=0&&o.xp<XP_PER_LEVEL)clean.officers[k]={name:k,unitClass:currentClass(o.unitClass),level:o.level,xp:o.xp};
+    for(const [k,o] of Object.entries(s.officers??{}))if(o&&typeof o.unitClass==='string'&&Number.isInteger(o.level)&&o.level>=1&&Number.isInteger(o.xp)&&o.xp>=0)clean.officers[k]={name:k,unitClass:currentClass(o.unitClass),level:Math.min(60,o.level),xp:o.level>=60?0:Math.min(o.xp,XP_PER_LEVEL-1)};
     return clean;
   }catch{return freshScenario();}
 }
@@ -171,19 +171,25 @@ export function fateChoices(state:ScenarioState,stepId:string):Route[]{
 
 /** 대사 선택을 기록하고 그 효과(표식·바꿔치기·영입)를 상태에 남긴다. 갈림길이면 루트를 고른다. */
 export function choose(state:ScenarioState,step:ScenarioStep,optionId:string,effects:ChoiceEffect[]=[],heroLevel=1){
+  if(step.kind==='fate'&&!fateChoices(state,step.id).some(r=>r.id===optionId))return false;
+  // 갈림길을 마치기 전에(다시 불러와) 다른 길을 고르면 앞서 고른 길로 합류한 동료를 먼저 돌려보낸다.
+  if(step.kind==='fate'&&!state.done.includes(step.id)){const pre=`joined:${step.id}:`;
+    for(const f of state.flags.filter(x=>x.startsWith(pre)))delete state.officers[f.slice(pre.length)];
+    state.flags=state.flags.filter(x=>!x.startsWith(pre));}
   state.choices[step.id]=optionId;
   if(step.kind==='fate'){
-    if(!fateChoices(state,step.id).some(r=>r.id===optionId))return false;
     state.route={...state.route,[step.act]:optionId};
     const route=routeById(optionId)!;
     // 가상으로 들어서면 사마의를 따르는 장수들이 모인다(그 길의 적은 빼고).
-    if(!route.history)joinCompanions(state,route,heroLevel);
+    if(!route.history){const before=new Set(Object.keys(state.officers));joinCompanions(state,route,heroLevel);
+      for(const name of Object.keys(state.officers))if(!before.has(name))state.flags.push(`joined:${step.id}:${name}`);}
     else for(const name of Object.keys(state.officers))if(foesOf(route).includes(name))delete state.officers[name];
   }
   for(const e of effects){
     if(e.kind==='flag'&&!state.flags.includes(e.flag))state.flags.push(e.flag);
     if(e.kind==='path'){const alt=EXTRA_TALES.find(t=>t.id===e.tale);if(alt)state.paths[alt.replaces]=alt.id;}
-    if(e.kind==='recruit'&&!state.officers[e.name])state.officers[e.name]={name:e.name,unitClass:landClass(e.unitClass),level:Math.max(1,heroLevel-1),xp:0};
+    // 이 선택으로 새로 들어온 장수만 표시해 둔다: 장을 다시 시작해 선택을 걷을 때 이미 있던 장수(등용·해금)를 지우지 않게.
+    if(e.kind==='recruit'&&!state.officers[e.name]){state.officers[e.name]={name:e.name,unitClass:landClass(e.unitClass),level:Math.max(1,heroLevel-1),xp:0};const mark=`joined:${step.id}:${e.name}`;if(!state.flags.includes(mark))state.flags.push(mark);}
   }
   return true;
 }
@@ -219,7 +225,7 @@ export function undoChoice(state:ScenarioState,step:ScenarioStep){
   for(const e of effects){
     if(e.kind==='flag'&&!elsewhere.has(e.flag))state.flags=state.flags.filter(f=>f!==e.flag);
     if(e.kind==='path'){const alt=EXTRA_TALES.find(t=>t.id===e.tale);if(alt&&state.paths[alt.replaces]===alt.id)delete state.paths[alt.replaces];}
-    if(e.kind==='recruit')delete state.officers[e.name];
+    if(e.kind==='recruit'){const mark=`joined:${step.id}:${e.name}`;if(state.flags.includes(mark)){delete state.officers[e.name];state.flags=state.flags.filter(f=>f!==mark);}}
   }
 }
 /** 그 길에서 적으로 만나는 사람. */
@@ -349,6 +355,8 @@ export function recruitPool(state:ScenarioState){
 }
 /** 모병소·전투 보상에 나오는 장수 둘. */
 export function recruitOffer(state:ScenarioState,after:string,n=2){
+  // 부대가 가득 차면(8명) 영입을 내밀지 않는다: 설득까지 마치고도 들어오지 못하던 문제.
+  if(rosterFull(state))return [];
   const r=new Rng((state.run!.seed^hashId(after+'#recruit'))>>>0||1),pool=recruitPool(state),out:typeof pool=[];
   while(out.length<n&&pool.length)out.push(pool.splice(r.int(0,pool.length-1),1)[0]!);return out;
 }
@@ -357,6 +365,7 @@ export function relicOffer(state:ScenarioState,after:string,n=3){
   const r=new Rng((state.run!.seed^hashId(after+'#relic'))>>>0||1),pool=RELICS.filter(x=>!state.run!.relics.includes(x.id)),out:typeof pool=[];
   while(out.length<n&&pool.length)out.push(pool.splice(r.int(0,pool.length-1),1)[0]!);return out;
 }
+export const rosterFull=(state:ScenarioState)=>Object.keys(state.officers).length>=8;
 export function recruitOfficer(state:ScenarioState,name:string,heroLevel:number,elite=false){
   const o=recruitPool(state).find(x=>x.name===name);if(!o||Object.keys(state.officers).length>=8)return false;
   state.officers[name]={name,unitClass:landClass(o.unitClass),level:Math.max(1,heroLevel-1+(elite?3:0)),xp:0};return true;

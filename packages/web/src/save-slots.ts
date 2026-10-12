@@ -24,8 +24,16 @@ export function snapshotKeys():Record<string,string>{
 }
 export function restoreKeys(keys:Record<string,string>){
   const old:string[]=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&OWN(k)&&k!=='sama-settings-v1')old.push(k);}
-  for(const k of old)localStorage.removeItem(k);
-  for(const [k,v] of Object.entries(keys))if(OWN(k))localStorage.setItem(k,v);
+  // 도중에 저장 공간이 모자라 실패하면 원래 기록으로 되돌린다(반쯤 지워진 진행을 남기지 않는다).
+  const backup:Record<string,string>={};for(const k of old){const v=localStorage.getItem(k);if(v!==null)backup[k]=v;}
+  try{
+    for(const k of old)localStorage.removeItem(k);
+    for(const [k,v] of Object.entries(keys))if(OWN(k))localStorage.setItem(k,v);
+  }catch(e){
+    for(const k of Object.keys(keys))if(OWN(k)&&!(k in backup))localStorage.removeItem(k);
+    for(const [k,v] of Object.entries(backup)){try{localStorage.setItem(k,v);}catch{/* 되돌리기도 못 하면 남은 대로 */}}
+    throw e;
+  }
 }
 export function readFull(raw:string|null):FullSlot|undefined{
   try{const v=raw?JSON.parse(raw) as FullSlot:undefined;return v&&v.full===1&&v.meta&&typeof v.meta.title==='string'&&v.keys&&typeof v.keys==='object'?v:undefined;}catch{return undefined;}

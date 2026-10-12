@@ -110,6 +110,12 @@
           "id": "pay_late",
           "text": "결국 노잣돈을 내민다.",
           "correct": true
+        },
+        {
+          "id": "draw_late",
+          "text": "노잣돈이 모자라다. 칼을 뽑는다.",
+          "correct": false,
+          "next": "fight_confirm"
         }
       ]
     },

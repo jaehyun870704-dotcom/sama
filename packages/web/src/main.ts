@@ -116,6 +116,8 @@ function modal(html:string,closable=true){
   const d=$<HTMLDialogElement>('#modal');$('#modal-content').innerHTML=(closable?'<button class="modal-close" data-close aria-label="닫기">×</button>':'')+html;
   if(!d.open)d.showModal();d.scrollTop=0;$('#modal-content [data-close]')?.addEventListener('click',closeModal);
   d.oncancel=e=>{if(!closable)e.preventDefault();else setTimeout(()=>pump(),0);};
+  // 닫을 수 없는 창(이야기·결과·보상 고르기): Esc를 연달아 눌러도 닫히지 않게 키 입력 단계에서 막는다(크롬은 두 번째 Esc의 cancel을 막지 못한다).
+  d.onkeydown=e=>{if(!closable&&e.key==='Escape')e.preventDefault();};
 }
 function closeModal(){$<HTMLDialogElement>('#modal').close();pump();}
 /**
@@ -264,7 +266,8 @@ const resumeSaved=()=>{try{const loaded=Session.load(JSON.parse(localStorage.get
   if(loaded.state.outcome!=='ongoing'){toast('마지막 전투는 이미 끝났습니다.');try{const l=lastBattle();if(l)localStorage.setItem(LAST_KEY,JSON.stringify({...l,ongoing:false}));}catch{/* optional */}return;}
   for(let i=0;i<4000;i++){const st=loaded.state;if(st.outcome!=='ongoing'||st.activeDialogue||loaded.activeDuel)break;if(CONTROLLABLE.has(st.currentSide)&&st.living(st.currentSide).some(u=>!u.hasActed))break;if(!loaded.tick())break;}
   session=loaded;activate();persist();toast(`마지막 전투 · ${session.state.turn}턴 · ${CONTROLLABLE.has(session.state.currentSide)?'내 차례부터 이어갑니다':'이어갑니다'}`);}
-  catch{toast('현재 버전의 저장 기록을 읽지 못했습니다.');}};
+  // 읽지 못한 기록은 다시 '이어하기'로 내밀지 않는다(단추가 계속 남아 같은 오류만 되풀이하던 문제).
+  catch{toast('현재 버전의 저장 기록을 읽지 못했습니다.');try{const l=lastBattle();if(l)localStorage.setItem(LAST_KEY,JSON.stringify({...l,ongoing:false}));}catch{/* optional */}}};
 const runHost:RunHost={modal:(html,closable)=>modal(html,closable),showMenu:()=>showMenu(),toast:t=>toast(t),startBattle:(dep,seed)=>{session=new Session(RUN_CHAPTER,'normal',seed,'survival',RULES,dep);activate();persist();},
   startStory:(chapter,dep,seed)=>{session=new Session(chapter,'normal',seed,'survival',RULES,dep);activate();persist();},
   showChronicle:()=>showChronicleLanding(),showChronicleNext:()=>showChronicleNext(),chronicleSummary:()=>chronicleSummary(),showScenario:()=>showScenario(scenarioHost),showTraining:()=>showTraining(),showStoryArchive:()=>showStoryArchive(),showRecruit:()=>showRecruit(),showExpeditions:(tab?:Expedition['kind'])=>showExpeditions(tab),showTroops:()=>showTroopGallery(),showSlots:(back?:()=>void)=>showSlots(back),
@@ -496,7 +499,8 @@ function showSlots(back:()=>void=showMenu){
 function briefing(chapter:number,expeditionId?:string,scenario?:ScenarioDeployment,storyMods?:BattleMods){
   const expedition=expeditions.find(m=>m.id===expeditionId);
   // 시나리오 모드의 연의 장은 이야기 다음에 반드시 이 정비를 거친다(회상 잠금과 무관).
-  if(!scenario&&(expedition?!canExpedition(campaign,expedition.id):!(replayable(chapter)||unlocked(chapter))))return;
+  // 아직 열리지 않은 장: 조용히 멈추면 이야기 무대가 그대로 남는다. 연의 목록으로 돌려보낸다.
+  if(!scenario&&(expedition?!canExpedition(campaign,expedition.id):!(replayable(chapter)||unlocked(chapter)))){toast('아직 열리지 않은 전장입니다.');showChronicle();return;}
   const c=expedition?{...chapters[7]!,year:'외전 · 권장 Lv.'+expedition.level,stage:{...chapters[7]!.stage,subtitle:expedition.name}}:chapters[chapter]!,intro=chapter===2,escape=chapter===0;
   let supports=[...supportOptions.slice(0,2)];
   const recommendation=expedition?recommendExpeditionSupport(expedition.id):undefined;
@@ -687,7 +691,7 @@ function showExpeditionResult(){if(resultShown)return;resultShown=true;const run
 function activate(){
   // 전장 그림이 아직이면 기다렸다가 시작한다(첫 화면을 빨리 띄우느라 그림은 뒤에서 준비한다).
   if(!fieldReady){startRest();modal(waitPanel('전장 준비 중','전장 그림을 마저 받고 있습니다. 끝나면 바로 시작합니다.'),false);void fieldInit?.then(activate,error=>{console.error(error);modal(`<div class="briefing"><h2>전장 그래픽 오류</h2><p class="render-error">전장 그래픽을 준비하지 못했습니다. 브라우저를 최신으로 올리거나, 다른 탭을 닫고 다시 시도해 주세요.</p><p class="muted">원인: ${String((error as Error)?.message??error).replace(/[<>&]/g,'').slice(0,160)}</p><div class="modal-actions"><button class="primary" id="field-retry">다시 시도</button></div></div>`,false);$('#field-retry').onclick=()=>location.reload();});return;}
-  hasStarted=true;menuOpen=false;resultShown=false;scored=false;duelPresented=false;mode='move';setAuto(false);
+  hasStarted=true;menuOpen=false;resultShown=false;scored=false;duelPresented=!session.activeDuel;mode='move';setAuto(false);
   selected=session.state.living(session.state.currentSide).find(u=>!u.hasActed)?.id??'sima_yi';
   setStoryEra(session.state.stage.id);
   preloadDuelArt([...session.state.units.values()].map(u=>officerDuelSheetUrl(u)));
@@ -960,7 +964,7 @@ function defeatCause(s:BattleState){
 function act(command:Command){
   if(field.busy){toast('동작이 끝나면 명령할 수 있습니다.');return;}
   if(menuOpen||$<HTMLDialogElement>('#modal').open&&command.kind!=='choose'&&!(command.kind==='item'&&command.item.startsWith('duel-round:')))return;
-  const prev=session.state.currentSide,r=session.act(command);if(!r.ok){toast(r.error??'명령 실패');return;}
+  const prev=session.state.currentSide,r=session.act(command);if(!r.ok){toast(r.error??'명령 실패');if(command.kind==='choose')render();return;}// 거절된 선택지: 대화창을 다시 띄운다(창만 닫히고 대화가 남아 모든 명령이 막히던 문제)
   if(command.kind==='item'&&['duel','debate'].includes(command.item)){duelPresented=false;if(session.lastRefusal){showRefusal();return;}}
   if(prev!==session.state.currentSide){const next=session.state.living(session.state.currentSide).find(u=>!u.hasActed);if(next){selected=next.id;field.focusUnit(next.pos);mode='move';}}
   if(command.kind==='move')mode=session.state.find(selected)?.strategies[0]??'attack';
@@ -986,7 +990,11 @@ function autoStep(){
   persist();render();pump();
 }
 function pump(){clearTimeout(aiTimer);if(menuOpen||field.busy||$<HTMLDialogElement>('#modal').open||session.state.outcome!=='ongoing'||session.activeDuel)return;if(autoBattle&&CONTROLLABLE.has(session.state.currentSide)&&!session.state.activeDialogue){aiTimer=setTimeout(autoStep,520/speed);return;}aiTimer=setTimeout(()=>{const side=session.state.currentSide,logged=session.state.log.length;if(session.tick()){quietTick=session.state.log.length===logged&&side===session.state.currentSide;if(side!==session.state.currentSide){const next=session.state.living(session.state.currentSide).find(u=>!u.hasActed);if(next){selected=next.id;mode='move';field.focusUnit(next.pos);}}persist();render();pump();}},quietTick?30:450/speed);}
-function undo(){if(field.busy)return;if(session.undo()){activate();persist();toast('직전 명령을 되돌렸습니다.');}}
+/** 무르기·목표 전환 되돌리기: 다시 짜다 기록이 어긋나 실패하면 마지막 자동 저장으로 돌아간다(반쯤 다시 짠 전투를 남기지 않게). */
+function rewind(f:()=>boolean,done?:string){if(field.busy)return;
+  try{if(f()){activate();persist();if(done)toast(done);}}
+  catch{try{session=Session.load(JSON.parse(localStorage.getItem(SAVE_KEY)??'null'));activate();}catch{/* 저장도 못 읽으면 그대로 */}toast('되돌리지 못해 마지막 자동 저장으로 돌아갔습니다.');}}
+function undo(){rewind(()=>session.undo(),'직전 명령을 되돌렸습니다.');}
 /** 도전을 거절당했을 때: 상대의 대답과 그 효과. */
 function showRefusal(){
   const r=session.lastRefusal;if(!r)return;session.lastRefusal=null;clearTimeout(aiTimer);
@@ -1022,7 +1030,9 @@ function showEncounter(u:Unit,e:Unit,d:number){
 let duelSplashSeen:object|undefined;
 function showDuel(){
   const d=session.activeDuel??session.lastDuel;if(!d)return;clearTimeout(aiTimer);
-  const a=session.state.get(d.player.id),b=session.state.get(d.enemy.id);
+  // 무르기·이어하기로 되살린 지난 대결의 상대가 이미 전장에서 사라졌으면(탈출·미끼 제거) 다시 보이지 않는다.
+  const a=session.state.find(d.player.id),b=session.state.find(d.enemy.id);
+  if(!a||!b){if(!session.activeDuel){session.lastDuel=null;duelPresented=true;}render();pump();return;}
   // 겨루기는 초상 카드가 아니라 실제 병종 전신 모델을 1:1로 맞세운다.
   const nameOf=(u:Unit)=>romanceOf(u)?.name??(u.id==='sima_yi'?'사마의':u.name.replace(/의?\s*환영$/,''));
   const models={player:duelModel(portraitFor(a,false,d.kind),'player',nameOf(a)),enemy:duelModel(portraitFor(b,false,d.kind),'enemy',nameOf(b))};
@@ -1046,7 +1056,9 @@ function markScored(){if(scored)return;scored=true;try{const l=lastBattle();if(l
 const rewarded=new WeakSet<Session>();
 function checkModal(){
   if(menuOpen||field.busy)return;const s=session.state;
-  if(session.activeDuel||session.lastDuel&&!duelPresented){showDuel();return;}
+  // 새 대결이 열리면 그 결과도 보여 줘야 한다(앞 대결에서 '돌아가기'를 눌러 둔 표시가 남아 결과창이 멈추던 문제).
+  if(session.activeDuel){duelPresented=false;showDuel();return;}
+  if(session.lastDuel&&!duelPresented){showDuel();return;}
   if(s.outcome!=='ongoing'&&session.deployment?.mission){showExpeditionResult();return;}
   if(s.outcome!=='ongoing'&&session.deployment?.branch){finishBranchBattle();return;}
   if(s.outcome!=='ongoing'&&session.deployment?.run&&session.deployment.scenario){
@@ -1094,16 +1106,19 @@ function checkModal(){
       const chapterId=session.deployment.scenario.chapter,hero=s.find('sima_yi'),heroHp=hero?.alive?Math.max(.05,hero.hp/hero.stats.maxHp):undefined;const rc=session.deployment.scenario.recruits,xp={...session.xpEarned};setTimeout(()=>{menuOpen=true;void finishStoryBattle(scenarioHost,chapterId,win,news,heroHp,s,rc,xp);},900);return;
     }
     const after=win?storyAftermath[s.stage.id]:undefined;
-    modal(`<div class="result">${after?`<div class="aftermath"><div class="aftermath-stage" style="${storyBackdrop(after.art)}"><span class="story-location">${after.name}</span></div><div id="aftermath-line">${dialogueCaption(after.beats[0]!.speaker,after.beats[0]!.line)}</div>${after.beats.length>1?'<button id="aftermath-next">다음 장면 →</button>':''}</div>`:''}<div class="result-character">${win?'승':'패'}</div><h2>${win?'판을 읽었다.':'아직, 끝이 아니다.'}</h2><p>${s.stage.subtitle} · ${s.turn}턴</p>${reward?.xp||fought?`<p class="growth-summary">${reward?.xp?`경험치 +${reward.xp} · `:''}${fought?`전투 경험치 +${fought} · `:''}${growthText()}</p>${treasures.some(t=>t.stage===s.stage.id)?`<p class="treasure-reward">보물: ${treasures.filter(t=>t.stage===s.stage.id).map(t=>t.name).join(' · ')}</p>`:''}`:''}${milestoneMarkup(growthMilestones(before,campaign))}<div class="seals">${session.sealNames.map((name,i)=>`<div class="${seals.includes(i+1)?'earned':''}"><b>◆</b><span>${name}</span></div>`).join('')}</div><p>${win?'전투 기록과 인장이 저장되었습니다.':esc(session.failure)}</p><div class="modal-actions"><button id="result-undo">↶ 마지막 수 무르기</button>${session.phaseCheckpoint!==null?'<button id="phase-restore">목표 전환 직전으로</button>':''}<button id="retry">다시 도전</button><button id="result-menu">연의 회상</button>${win&&session.chapter===campaignOrder.at(-1)?'<button id="epilogue" class="primary">에필로그 →</button>':''}${win&&campaignOrder.indexOf(session.chapter)<campaignOrder.length-1&&replayable(campaignOrder[campaignOrder.indexOf(session.chapter)+1]!)?'<button id="next-chapter" class="primary">다음 전장 →</button>':''}</div></div>`,false);
+    modal(`<div class="result">${after?`<div class="aftermath"><div class="aftermath-stage" style="${storyBackdrop(after.art)}"><span class="story-location">${after.name}</span></div><div id="aftermath-line">${dialogueCaption(after.beats[0]!.speaker,after.beats[0]!.line)}</div>${after.beats.length>1?'<button id="aftermath-next">다음 장면 →</button>':''}</div>`:''}<div class="result-character">${win?'승':'패'}</div><h2>${win?'판을 읽었다.':'아직, 끝이 아니다.'}</h2><p>${s.stage.subtitle} · ${s.turn}턴</p>${reward?.xp||fought?`<p class="growth-summary">${reward?.xp?`경험치 +${reward.xp} · `:''}${fought?`전투 경험치 +${fought} · `:''}${growthText()}</p>${treasures.some(t=>t.stage===s.stage.id)?`<p class="treasure-reward">보물: ${treasures.filter(t=>t.stage===s.stage.id).map(t=>t.name).join(' · ')}</p>`:''}`:''}${milestoneMarkup(growthMilestones(before,campaign))}<div class="seals">${session.sealNames.map((name,i)=>`<div class="${seals.includes(i+1)?'earned':''}"><b>◆</b><span>${name}</span></div>`).join('')}</div><p>${win?'전투 기록과 인장이 저장되었습니다.':esc(session.failure)}</p><div class="modal-actions"><button id="result-undo">↶ 마지막 수 무르기</button>${session.phaseCheckpoint!==null?'<button id="phase-restore">목표 전환 직전으로</button>':''}<button id="retry">다시 도전</button><button id="result-menu">연의 회상</button>${win&&session.chapter===campaignOrder.at(-1)?'<button id="epilogue" class="primary">에필로그 →</button>':''}${win&&campaignOrder.indexOf(session.chapter)<campaignOrder.length-1&&unlocked(campaignOrder[campaignOrder.indexOf(session.chapter)+1]!)?'<button id="next-chapter" class="primary">다음 전장 →</button>':''}</div></div>`,false);
     if(after){let k=0;$('#aftermath-next')?.addEventListener('click',e=>{k=(k+1)%after.beats.length;const b=after.beats[k]!;$('#aftermath-line').innerHTML=dialogueCaption(b.speaker,b.line);(e.currentTarget as HTMLButtonElement).textContent=k===after.beats.length-1?'↺ 처음 장면':'다음 장면 →';});}
     $('#result-undo').onclick=undo;$('#result-menu').onclick=showChronicle;
-    $('#phase-restore')?.addEventListener('click',()=>{if(session.restorePhase()){activate();persist();}});
+    $('#phase-restore')?.addEventListener('click',()=>rewind(()=>session.restorePhase()));
     $('#retry').onclick=()=>{session=new Session(session.chapter,session.difficulty,215,session.preparation,session.revision,session.deployment?{...deployment(campaign,true),...(session.wide?{wide:(session.deployment?.wide??1)}:{}),...(session.deployment.retinue?{retinue:structuredClone(session.deployment.retinue)}:{}),...(session.deployment.extraOfficers?{extraOfficers:[...session.deployment.extraOfficers]}:{})}:undefined);activate();persist();};
     $('#epilogue')?.addEventListener('click',()=>playYeonEnding());
     $('#next-chapter')?.addEventListener('click',()=>storyScene(campaignOrder[campaignOrder.indexOf(session.chapter)+1]!));return;
   }
   if(s.activeDialogue){const node=session.battle.dialogue.node(s.activeDialogue);{const who=node.speaker?s.find(node.speaker)?.name??node.speaker:'사마의',extra=`${session.chapter===0?fundsNote(s.activeDialogue):''}${session.chapter===10?'<p class="ink-extra">틀리면 신뢰가 깎이고 같은 물음을 다시 받습니다</p>':'<button id="dialogue-undo" class="ink-undo">직전 선택 무르기</button>'}`;
-    modal(`<div class="dialogue ink-mode"><div class="eyebrow">${session.chapter===10?'설전 · 건업 궁정':'전장의 갈림길'}</div>${inkChoice(who,node.text,node.options.map(o=>{const v=session.deployment?.scenario||session.deployment?.run||session.deployment?.runStory||session.deployment?.mission?0:choiceAmbition(s.stage.id,node.id,o.id);return {text:v?`${o.text} · ${v>0?'야망':'충의'} ${v>0?'+':'−'}${Math.abs(v)}`:o.text,id:o.id};}),{attr:'data-choice',extra,...(session.chapter===10?{gauge:{label:'신뢰',value:session.trust/Math.max(1,session.trustLimit)}}:{})})}</div>`,false);}$('#dialogue-undo')?.addEventListener('click',undo);document.querySelectorAll<HTMLButtonElement>('[data-choice]').forEach(b=>b.onclick=()=>{$<HTMLDialogElement>('#modal').close();act({kind:'choose',nodeId:node.id,optionId:b.dataset.choice!});const last=[...session.state.log].reverse().find(e=>e.t==='choice');if(last&&last.t==='choice'&&last.correct===false)toast(session.chapter===10?`설득이 먹히지 않았습니다. 신뢰 ${session.trust}/${session.trustLimit}`:'선택의 대가를 치렀습니다.');});}
+    modal(`<div class="dialogue ink-mode"><div class="eyebrow">${session.chapter===10?'설전 · 건업 궁정':'전장의 갈림길'}</div>${inkChoice(who,node.text,node.options.map(o=>{const v=session.deployment?.scenario||session.deployment?.run||session.deployment?.runStory||session.deployment?.mission?0:choiceAmbition(s.stage.id,node.id,o.id);const cost=s.stage.id==='S1-02'?((node.id==='bribe'&&o.id==='pay')||(node.id==='lie_failed'&&o.id==='pay_late')?(session.bribes===0?1000:1500):node.id==='gate_payment'?1000:0):0,
+      // 노잣돈·통행료: 얼마를 내고 얼마가 남는지 미리 보인다(남문 통행료 1,000전을 남겨야 성을 나갈 수 있다).
+      money=cost?` · ${cost.toLocaleString()}전 (남은 지참금 ${session.funds.toLocaleString()}전${session.funds<cost?' · 부족':node.id!=='gate_payment'&&session.funds-cost<1000?' · 남문 통행료 1,000전이 모자라게 된다':''})`:'';
+      return {text:(v?`${o.text} · ${v>0?'야망':'충의'} ${v>0?'+':'−'}${Math.abs(v)}`:o.text)+money,id:o.id};}),{attr:'data-choice',extra,...(session.chapter===10?{gauge:{label:'신뢰',value:session.trust/Math.max(1,session.trustLimit)}}:{})})}</div>`,false);}$('#dialogue-undo')?.addEventListener('click',undo);document.querySelectorAll<HTMLButtonElement>('[data-choice]').forEach(b=>b.onclick=()=>{$<HTMLDialogElement>('#modal').close();act({kind:'choose',nodeId:node.id,optionId:b.dataset.choice!});const last=[...session.state.log].reverse().find(e=>e.t==='choice');if(last&&last.t==='choice'&&last.correct===false)toast(session.chapter===10?`설득이 먹히지 않았습니다. 신뢰 ${session.trust}/${session.trustLimit}`:'선택의 대가를 치렀습니다.');});}
 }
 field.onSound=e=>sound.event(e);field.xpFor=e=>session.xpGains.get(e);field.weaponFor=u=>{const key=gearKey(u),id=session.deployment?.loadouts?.[key]?.weapon??session.deployment?.equipped[key];return id&&treasureInfo(id).slot==='weapon'?id:undefined;};field.onAnimationEnd=()=>{render();pump();setTimeout(()=>{hudLock=false;hudHover(hudAt);},900);};
 field.onCell=at=>{

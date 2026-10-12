@@ -27,7 +27,7 @@ import retreatMap from '../../data/maps/yangtze-retreat.json';
 import {stageRules,foeEdges,foeEdges6,foeEdges7,foeEdges8,foeEdgesWide,foeEdges13,toughWide,tough8,foeLevelCap6} from './stage-rules.ts';
 import {campaignStage,addFortifications,addSiegeCompany,structureKind,encircled,encounterLevels} from './campaign-rules.ts';
 import {applyTreasure,equippedItems,treasureInfo,gearKey,validGearKey,type Deployment,OFFICERS,treasures} from './progression.ts';
-import { assemble, Battle, CONTROLLABLE, isHostile, key, manhattan, statsFor, familyOf, evolvedClass, evolveUnit, healAmount, strategyArea, evolveStrategy, syncTroopEffect, applyOfficerEffect, applySignature, applyFamedReach, topAbility, tierOf, classCanUseStrategy, fireScripted } from '../../core/src/index.ts';
+import { assemble, Battle, CONTROLLABLE, isHostile, key, manhattan, statsFor, familyOf, evolvedClass, evolveUnit, healAmount, strategyArea, evolveStrategy, syncTroopEffect, applyOfficerEffect, applySignature, applyFamedReach, topAbility, tierOf, classCanUseStrategy, fireScripted, currentClass } from '../../core/src/index.ts';
 import type { BattleState, Command, Difficulty, MapFile, StageDef, StrategyDef, LogEntry, Unit } from '../../core/src/index.ts';
 import escapeStage from '../../data/stages/S1-02.json';
 import fortStage from '../../data/stages/S1-08.json';
@@ -674,7 +674,8 @@ export class Session {
       this.phase=s.activeDialogue?'수송로 선택':target==='south_exit'?'남쪽 강변 호위':'교량길 호위';
       if(s.outcome==='defeat'&&!s.living('allyAi').length)this.failure='수송대 두 부대가 모두 소실되었습니다.';
     }else if(!s.find('zhang_lu')?.alive)this.phase='본대로 성채 점령';
-    if(old!==this.phase)this.phaseCheckpoint=this.journal.length;
+    // 목표 문구 속 숫자(격퇴 n/7 · n턴 남음)만 바뀐 것은 목표 전환이 아니다: '목표 전환 직전으로'가 지난 턴으로만 돌아가던 문제.
+    if(old.replace(/\d+/g,'#')!==this.phase.replace(/\d+/g,'#'))this.phaseCheckpoint=this.journal.length;
     if(s.outcome==='defeat'&&(this.deployment?.mission?.version??1)>=3){
       const protectedUnit=s.find('convoy_trial')??s.find('rescue_target');
       if(protectedUnit&&!protectedUnit.alive)this.failure=protectedUnit.name+'의 안전을 지키지 못했습니다.';
@@ -723,9 +724,13 @@ export class Session {
   save():Save{return {version:2,revision:this.revision,chapter:this.chapter,difficulty:this.difficulty,seed:this.seed,preparation:this.preparation,...(this.deployment?{deployment:structuredClone(this.deployment)}:{}),journal:this.journal,checkpoints:this.checkpoints};}
   static load(raw:unknown){
     const data=raw as Save;
+    // 은퇴한 병종 이름으로 저장된 기록(병종 정리 이전)도 지금 이름으로 바꿔 읽는다.
+    {const d=(data as {deployment?:Deployment}|null)?.deployment as unknown as Record<string,unknown>|undefined;const fix=(xs:unknown)=>{if(Array.isArray(xs))for(const x of xs)if(x&&typeof x==='object'&&typeof (x as {unitClass?:unknown}).unitClass==='string')(x as {unitClass:string}).unitClass=currentClass((x as {unitClass:string}).unitClass);};
+      if(d&&typeof d==='object'){const run=d.run as Record<string,unknown>|undefined,sc=d.scenario as Record<string,unknown>|undefined;
+        fix(run?.party);fix((run?.mods as Record<string,unknown>|undefined)?.reinforce);fix((sc?.mods as Record<string,unknown>|undefined)?.reinforce);fix(sc?.recruits);fix(d.retinue);}}
     if(!data || data.version!==2 || !chapters[data.chapter] || !['survival','strategy','command'].includes(data.preparation) || !['normal','extreme'].includes(data.difficulty) || !Number.isSafeInteger(data.seed) || !Array.isArray(data.journal) || data.journal.length>20000 || !Array.isArray(data.checkpoints) || !data.checkpoints.every((n,i,a)=>Number.isInteger(n)&&n>=0&&n<data.journal.length&&(i===0||n>a[i-1]!))) throw new Error('저장 파일을 읽을 수 없습니다.');
     if(data.revision!==undefined&&data.revision!==2&&data.revision!==3&&data.revision!==4&&data.revision!==5&&data.revision!==6&&data.revision!==7&&data.revision!==8&&data.revision!==9&&data.revision!==10&&data.revision!==11&&data.revision!==12&&data.revision!==13)throw new Error('지원하지 않는 전장 버전입니다.');
-    if(data.deployment){const d=data.deployment;if(!d.levels||!d.equipped||!OFFICERS.every(id=>Number.isInteger(d.levels[id])&&d.levels[id]!>=1&&d.levels[id]!<=40)||Object.entries(d.equipped).some(([id,item])=>!OFFICERS.includes(id as typeof OFFICERS[number])||!treasures.some(t=>t.id===item))||(d.xp!==undefined&&(typeof d.xp!=='object'||Object.entries(d.xp).some(([id,n])=>!OFFICERS.includes(id as typeof OFFICERS[number])||!Number.isInteger(n)||n<0||n>=1000))))throw new Error('잘못된 출진 기록입니다.');}
+    if(data.deployment){const d=data.deployment;if(!d.levels||!d.equipped||!OFFICERS.every(id=>Number.isInteger(d.levels[id])&&d.levels[id]!>=1&&d.levels[id]!<=40)||Object.entries(d.equipped).some(([id,item])=>!OFFICERS.includes(id as typeof OFFICERS[number])||!treasures.some(t=>t.id===item))||(d.xp!==undefined&&(typeof d.xp!=='object'||Object.entries(d.xp).some(([id,n])=>!OFFICERS.includes(id as typeof OFFICERS[number])||!Number.isInteger(n)||n<0))))throw new Error('잘못된 출진 기록입니다.');}
     if(data.deployment?.run){const r=data.deployment.run;
       if(!Number.isInteger(r.floor)||r.floor<1||r.floor>RUN_FLOORS||!['battle','elite','boss','tale'].includes(r.kind)||(r.kind==='tale')!==!!taleById(r.tale)||(r.route!==undefined&&!validRoute(r.route))||!Number.isSafeInteger(r.seed)||!Array.isArray(r.party)||r.party.length<1||r.party.length>PARTY_LIMIT||!r.party.some(u=>u.hero)||!Array.isArray(r.relics)
         ||r.party.some(u=>typeof u.id!=='string'||!Number.isInteger(u.level)||u.level<1||u.level>60||!(u.hp>0&&u.hp<=1)))throw new Error('잘못된 원정 기록');

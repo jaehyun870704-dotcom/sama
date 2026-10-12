@@ -21,7 +21,10 @@ export function decide(state: BattleState, unit: Unit): Command[] {
   if (state.hasStatus(unit, "confusion")) return [{ kind: "wait", unit: unit.id }];
 
   const behavior = unit.behavior ?? "advance";
-  if (behavior === "passive") return [{ kind: "wait", unit: unit.id }];
+  // 가만히 있는 호송 대상이라도 "이 유닛이 어디에 닿아라"가 승리 조건이면 움직인다
+  // (자동 전투로 호송 임무를 맡기면 호송대가 한 칸도 움직이지 않아 60턴에 끝나던 문제).
+  const mustReach = state.victory.some((c) => c.type === "reach" && c.unit === unit.id);
+  if (behavior === "passive" && !mustReach) return [{ kind: "wait", unit: unit.id }];
 
   const reach = state.map.reachable(unit, state.occupancy(), ignoresRough(unit));
   // M-18: the player's side reads the warnings — never end a move on a cell a blow is due to land on.
@@ -260,7 +263,8 @@ function bestAction(
   const positions: Coord[] = [unit.pos, ...decodeAll(reach)];
   const usable = unit.strategies
     .map((id) => state.strategyFor(unit, id))
-    .filter((d): d is NonNullable<typeof d> => d !== undefined && d.mpCost <= unit.mp && !d.support);
+    // 봉인된 책사는 책략을 쓸 수 없다: 책략 자리로 걸어가 아무것도 못 하고 턴을 버리지 않게 거른다.
+    .filter((d): d is NonNullable<typeof d> => d !== undefined && d.mpCost <= unit.mp && !d.support && !state.hasStatus(unit, "seal"));
 
   let best: ActionPlan | null = null;
   const consider = (plan: ActionPlan) => {

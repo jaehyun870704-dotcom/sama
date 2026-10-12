@@ -265,10 +265,12 @@ export function grantXp(run:Run,amount:number,who=run.party){
   const ups:string[]=[];
   for(const u of who){
     u.xp+=amount;let leveled=false;
-    while(u.xp>=XP_PER_LEVEL){u.xp-=XP_PER_LEVEL;u.level++;leveled=true;
+    // 60레벨이 끝이다: 저장 검사(Session.load·readScenario)가 60을 넘는 장수를 거절해 기록이 통째로 사라졌다.
+    while(u.xp>=XP_PER_LEVEL&&u.level<60){u.xp-=XP_PER_LEVEL;u.level++;leveled=true;
       const to=evolvedClass(u.unitClass,u.level);
       if(to!==u.unitClass){const from=u.hero?'사마의':u.name;u.unitClass=to;if(!u.hero&&!u.officer)u.name=uniqueName(run,to,u);run.news.push(`진화! ${ga(from)} ${ro(unitName(to))} 거듭났다 (Lv.${u.level})${VARIANTS[to]?.bloom?` · 개화 「${VARIANTS[to]!.bloom!.name}」 ${VARIANTS[to]!.bloom!.description}`:''}`);}
     }
+    if(u.level>=60)u.xp=Math.min(u.xp,XP_PER_LEVEL-1);
     if(leveled)ups.push(`${u.hero?'사마의':u.name} ${u.level}`);
   }
   if(ups.length)run.news.push(`레벨 상승 · ${ups.join(' · ')}`);
@@ -304,6 +306,8 @@ function spendSecondChance(run:Run){
   if(!run.secondChance)return false;
   run.secondChance=false;const hero=run.party.find(u=>u.hero);if(hero)hero.hp=.3;
   run.news.push(`천명의 가호 — ${run.floor}층에서 패했지만 사마의가 살아남아 물러났다. (가호는 원정마다 한 번)`);
+  // 마지막 층(우두머리)에서 쓰면 다음 층이 없다: 그 자리에서 우두머리에게 다시 맞선다(19층으로 넘어가던 문제).
+  if(run.floor>=RUN_FLOORS){run.status='map';return true;}
   advance(run);return true;
 }
 

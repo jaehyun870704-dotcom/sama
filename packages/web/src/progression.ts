@@ -56,7 +56,8 @@ export function xpAtLevel(level:number){let t=0;for(let l=1;l<Math.min(40,level)
 export function levelInfo(total:number){
   let level=1,remaining=Math.max(0,Math.floor(total));
   while(level<40&&remaining>=100+(level-1)*20){remaining-=100+(level-1)*20;level++;}
-  return {level,xp:remaining,next:level===40?0:100+(level-1)*20};
+  // 40레벨(최고)에서 남는 경험치는 쓸 데가 없다: 0으로 둔다(출진 기록·저장 검사가 1000 미만을 기대한다).
+  return {level,xp:level===40?0:remaining,next:level===40?0:100+(level-1)*20};
 }
 export function deployment(c:Campaign,modern=false):Deployment{return {...(modern?{treasureRules:1 as const,growth:{storyWins:new Set(c.rewards.filter(r=>r.endsWith(':normal')).map(r=>r.split(':')[0])).size,trainingWins:c.trainingWins??0,questWins:c.quests?.length??0}}:{}),levels:Object.fromEntries(OFFICERS.map(id=>[id,levelInfo(c.xp[id]??0).level])),xp:Object.fromEntries(OFFICERS.map(id=>[id,levelInfo(c.xp[id]??0).xp])),equipped:{...c.equipped},...(c.loadouts?{loadouts:structuredClone(c.loadouts)}:{})};}
 export function award(c:Campaign,stage:string,difficulty:Difficulty,participants:string[],seals:number[]){
@@ -106,9 +107,9 @@ export function mergeRunCampaign(){
 export function readCampaign(key:string=CAMPAIGN_KEYS.main):Campaign{
   try{const value=JSON.parse(localStorage.getItem(key)??'null') as Campaign;
     if(value?.version!==1||!value.xp||!Array.isArray(value.rewards)||!Array.isArray(value.treasures)||!value.equipped)return freshCampaign();
-    if(Object.values(value.xp).some(n=>!Number.isFinite(n)||n<0)||value.rewards.some(n=>typeof n!=='string'))return freshCampaign();
-    const clean=freshCampaign();for(const id of OFFICERS)clean.xp[id]=Math.min(100000,Math.floor(value.xp[id]??clean.xp[id]!));
-    clean.rewards=[...new Set(value.rewards.filter(id=>/^S[123]-\d{2}:(normal|extreme)$/.test(id)))];clean.treasures=[...new Set(value.treasures.filter(id=>treasures.some(t=>t.id===id)))];
+    // 값 하나가 망가졌다고 진행 전체를 버리지 않는다: 망가진 칸만 기본값으로 둔다.
+    const clean=freshCampaign();for(const id of OFFICERS){const n=value.xp[id];if(typeof n==='number'&&Number.isFinite(n)&&n>=0)clean.xp[id]=Math.min(100000,Math.floor(n));}
+    clean.rewards=[...new Set(value.rewards.filter(id=>typeof id==='string'&&/^S[123]-\d{2}:(normal|extreme)$/.test(id)))];clean.treasures=[...new Set(value.treasures.filter(id=>treasures.some(t=>t.id===id)))];
     clean.completedRuns=Array.isArray(value.completedRuns)?[...new Set(value.completedRuns.filter(x=>typeof x==='string'&&x.length<100))]:[];clean.trainingWins=Number.isSafeInteger(value.trainingWins)?Math.max(0,value.trainingWins!):0;clean.quests=Array.isArray(value.quests)?[...new Set(value.quests.filter(x=>typeof x==='string'&&/^Q\d{2}$/.test(x)))]:[];clean.challenges=Array.isArray(value.challenges)?[...new Set(value.challenges.filter(x=>typeof x==='string'&&/^C\d{2}$/.test(x)))]:[];clean.bountyWins=Number.isSafeInteger(value.bountyWins)?Math.max(0,value.bountyWins!):0;if(value.retinueXp&&typeof value.retinueXp==='object'){const r:Record<string,number>={};for(const [k,v] of Object.entries(value.retinueXp).slice(0,80))if(k.length>0&&k.length<=12&&Number.isFinite(v)&&v>=0)r[k]=Math.min(100000,Math.floor(v));if(Object.keys(r).length)clean.retinueXp=r;}clean.sealRewards=Array.isArray(value.sealRewards)?[...new Set(value.sealRewards.filter(x=>typeof x==='string'&&/^S[123]:\d{1,3}$/.test(x)))]:[];
     for(const item of treasures)if(!item.quest&&clean.rewards.some(r=>r.startsWith(item.stage+':'))&&!clean.treasures.includes(item.id))clean.treasures.push(item.id);
     for(const id of OFFICERS)if(typeof value.equipped[id]==='string')equip(clean,id,value.equipped[id]!);
