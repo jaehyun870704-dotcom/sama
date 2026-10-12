@@ -138,6 +138,12 @@ export function officerDuelModel(u:OfficerLike){const e=officerEntry(u);return e
 const MOUNTED_DUEL=new Set(['ma_chao','lu_bu','xiang_yu','sima_shi','cao_cao','cao_pi','zhao_yun','sun_quan','lu_meng','gongsun_yuan','meng_yan','bi_yan','guan_yu','zhang_liao','zhang_he','xiahou_dun','jiang_wei','xiahou_yuan','xu_huang','cao_ren','liu_bei','cao_rui','yuan_tan','yuan_shang','zhang_ba','cao_xiu','cao_shuang']);
 export function officerDuelMounted(u:OfficerLike){const e=officerEntry(u);return !!e&&!!duelRows[e.id]&&MOUNTED_DUEL.has(e.id);}
 
+/** 병종별 일기토 대표 모델(1024×256, 4프레임). 개별 장수 모델이 없을 때의 전용 폴백 자산. */
+export const DUEL_CLASS_SHEETS=Object.freeze([
+  'infantry','spearman','cavalry','heavyCav','archer','crossbow','strategist','fengshui','ram','catapult','engineer','navy',
+  'warlock','priestess','stormSage','warriorMonk','outlaw','shaman','maiden','taoist','monk','horseArcher','bandit','assassin','elephant',
+] as const).map(unitClass=>({unitClass,sheet:`officers/duel-class-${unitClass}-v1.webp`,cell:[256,256] as const,rows:1}));
+
 /**
  * 대결 그림 맞춤: 시트마다 발끝 높이(256칸 기준)와 대기 자세 키가 달라(옛 시트 발끝 246~256, 새 시트 229~230 /
  * 기마 조운 135 ~ 여포 230) 같은 무대에서 발이 뜨거나 키가 들쭉날쭉했다. 발끝을 230에 맞추고, 도보는 키 182·기마는 205에
