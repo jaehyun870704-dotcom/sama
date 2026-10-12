@@ -357,16 +357,30 @@ export const storyAftermath:Record<string,{art:number;name:string;beats:Array<{s
 };
 
 /** The closing recap: what the player's seals say about how Sima Yi's long life was lived. */
-export function epilogueLines(p:Record<string,number[]>){
+/** 에필로그 회상 한 장면: 그 전장의 마지막 무대와, 인장으로 갈린 한 줄. */
+export interface EpilogueBeat {id:string;when:string;name:string;art:number;place:string;line:string;kept:boolean}
+const EPILOGUE:ReadonlyArray<{id:string;seal:number;when:string;name:string;art:number;place:string;kept:string;lost:string}>=[
+  {id:'S1-01',seal:2,when:'젊은 날',name:'하내의 불길',art:10,place:'하내 · 저택 동문',kept:'처음 가문을 지키던 밤, 그는 민중과 병사를 한 사람도 잃지 않았다.',lost:'처음 가문을 지키던 밤, 그는 지킬 수 있는 것만 지켰다.'},
+  {id:'S1-05',seal:2,when:'208년',name:'강변의 수레',art:15,place:'장강 · 교량 앞',kept:'장강의 진흙길에서 그는 두 수송대를 모두 데리고 나왔다.',lost:'장강의 진흙길에서 그는 수레 하나를 버리고 사람을 살렸다.'},
+  {id:'S2-05',seal:3,when:'228년',name:'여드레 천이백 리',art:8,place:'신성 · 성벽 아래',kept:'신성으로 가는 여드레의 행군은 오래도록 병법의 본보기로 남았다.',lost:'신성의 맹달은 꺾였으나, 그 행군은 오래 기억되지 않았다.'},
+  {id:'S2-06',seal:2,when:'228년',name:'물을 끊다',art:4,place:'가정 · 남산을 바라보는 고개',kept:'가정의 남산에서 무너진 촉군은 한 부대도 빠져나가지 못했다.',lost:'가정의 남산에서 그는 마속의 진을 무너뜨렸으나 남은 무리를 다 막지는 못했다.'},
+  {id:'S2-11',seal:2,when:'231년',name:'목문도의 화살',art:11,place:'목둔 · 돌아오는 길',kept:'장합을 잃은 골짜기에서도 남은 병사들은 모두 돌아왔다.',lost:'목둔의 골짜기에서 그는 장합과 함께 많은 병사를 잃었다.'},
+  {id:'S2-14',seal:3,when:'234년',name:'산 중달이 달아나다',art:4,place:'오장원 · 비어 가는 진영',kept:'오장원에서 달아날 때조차 그는 혼란에 빠진 병사를 하나도 버리지 않았다.',lost:'오장원에서 그는 살아서 돌아왔다. 사람들은 웃었고, 그는 개의치 않았다.'},
+  {id:'S3-01',seal:2,when:'238년',name:'깃발은 남쪽에',art:11,place:'요수 · 서쪽 강변',kept:'요수에서 그는 제갈량에게 당하던 기만을 처음으로 자기 손으로 썼다.',lost:'요수에서 그는 기만 없이 정면으로 강을 건넜다.'},
+  {id:'S3-06',seal:2,when:'249년',name:'쉰 해의 칼',art:12,place:'낙양 · 영녕궁 앞',kept:'고평릉의 날, 두 아들은 모두 살아서 성문을 닫았다.',lost:'고평릉의 날, 칼은 뽑혔지만 그 값은 가볍지 않았다.'},
+];
+/** 에필로그 회상: 여덟 전장을 그 전장에서 얻은 인장에 따라 다른 한 줄로 되돌아본다. */
+export function epilogueBeats(p:Record<string,number[]>):EpilogueBeat[]{
   const has=(id:string,seal:number)=>[...(p[id+':normal']??[]),...(p[id+':extreme']??[])].includes(seal);
-  return [
-    has('S1-01',2)?'처음 가문을 지키던 밤, 그는 민중과 병사를 한 사람도 잃지 않았다.':'처음 가문을 지키던 밤, 그는 지킬 수 있는 것만 지켰다.',
-    has('S1-05',2)?'장강의 진흙길에서 그는 두 수송대를 모두 데리고 나왔다.':'장강의 진흙길에서 그는 수레 하나를 버리고 사람을 살렸다.',
-    has('S2-05',3)?'신성으로 가는 여드레의 행군은 오래도록 병법의 본보기로 남았다.':'신성의 맹달은 꺾였으나, 그 행군은 오래 기억되지 않았다.',
-    has('S2-06',2)?'가정의 남산에서 무너진 촉군은 한 부대도 빠져나가지 못했다.':'가정의 남산에서 그는 마속의 진을 무너뜨렸으나 남은 무리를 다 막지는 못했다.',
-    has('S2-11',2)?'장합을 잃은 골짜기에서도 남은 병사들은 모두 돌아왔다.':'목둔의 골짜기에서 그는 장합과 함께 많은 병사를 잃었다.',
-    has('S2-14',3)?'오장원에서 달아날 때조차 그는 혼란에 빠진 병사를 하나도 버리지 않았다.':'오장원에서 그는 살아서 돌아왔다. 사람들은 웃었고, 그는 개의치 않았다.',
-    has('S3-01',2)?'요수에서 그는 제갈량에게 당하던 기만을 처음으로 자기 손으로 썼다.':'요수에서 그는 기만 없이 정면으로 강을 건넜다.',
-    has('S3-06',2)?'고평릉의 날, 두 아들은 모두 살아서 성문을 닫았다.':'고평릉의 날, 칼은 뽑혔지만 그 값은 가볍지 않았다.',
-  ];
+  return EPILOGUE.map(e=>{const kept=has(e.id,e.seal);return {id:e.id,when:e.when,name:e.name,art:e.art,place:e.place,line:kept?e.kept:e.lost,kept};});
 }
+export function epilogueLines(p:Record<string,number[]>){return epilogueBeats(p).map(b=>b.line);}
+/** 에필로그 연표: 사마의가 떠난 뒤 진이 천하를 하나로 묶기까지(정사). */
+export const epilogueYears:ReadonlyArray<{year:string;line:string;art:number;place:string}>=[
+  {year:'251년 가을',line:'사마의, 낙양의 집에서 숨을 거둔다. 무덤에 봉분을 쌓지 말고 나무도 심지 말라 일렀다.',art:12,place:'낙양 · 사마가의 침소'},
+  {year:'254년',line:'맏아들 사마사가 황제 조방을 폐하고 조모를 세운다. 이듬해 관구검의 난을 누르고 돌아오다 숨을 거둔다.',art:14,place:'낙양 · 태극전'},
+  {year:'260년',line:'황제 조모가 칼을 들고 사마소를 치러 나섰다가 거리에서 쓰러진다.',art:13,place:'낙양 · 궁 밖 거리'},
+  {year:'263년',line:'등애가 음평의 험한 길을 넘어 성도에 이르고, 유선이 항복한다. 촉이 망한다.',art:4,place:'음평 · 험한 산길'},
+  {year:'265년',line:'사마소가 세상을 떠난 해 겨울, 손자 사마염이 위의 선양을 받아 진을 세운다.',art:14,place:'낙양 · 선양의 단'},
+  {year:'280년',line:'오의 손호가 항복한다. 칼을 감춘 사람이 떠난 지 스물아홉 해, 천하는 다시 하나가 된다.',art:16,place:'건업 · 장강 나루'},
+];

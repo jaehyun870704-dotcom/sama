@@ -28,7 +28,8 @@ import {actorMarkup,playBeat} from './story-motion.ts';
 import {playScenes,playNarration,choiceFlags} from './story-stage.ts';
 import type {ChoiceEffect,Scene,Look} from './scenario-types.ts';
 import type {BattleMods} from './roguelike.ts';
-import {storyBeats,storyLocations,storyBackdrop,storyAftermath,acts,stories,epilogueLines} from './story.ts';
+import {storyBeats,storyLocations,storyBackdrop,storyAftermath,acts,stories,epilogueBeats,epilogueYears} from './story.ts';
+import {playEpilogue} from './epilogue.ts';
 import {showHub,showQuests,showTitle,showCollections,finishRunBattle,finishRunStory,RUN_CHAPTER,type RunHost} from './run-ui.ts';
 import {showScenario,campOf,finishIfBattle,finishStoryBattle,noteDefeatReason,type ScenarioHost} from './scenario-ui.ts';
 import {scriptOf,loadScenario,saveScenario,trainCompanions,currentStep,joinRecruits} from './scenario.ts';
@@ -141,7 +142,7 @@ function playYeonEnding(){
   const route={1:'refuse',2:'wei',3:'patience'},e=endingFor(route);
   const people=[{label:'함께한 사람들',names:[...new Set(['사마의','사마랑','사마방','조진','사마사','사마소',...(meta.recruited??[])])]}];
   modal('<div class="ss-host finale-host"></div>',false);const root=$('.finale-host');
-  void playEndingCutscene(root,finaleData(e,{route,people,seen:{count:meta.endings.length,total:ALL_ENDINGS.length}}),{id:'patience',flags:yeonFlags(),heading:'연의 · 결말'}).then(()=>{if(document.contains(root))showEpilogue();});
+  void playEndingCutscene(root,finaleData(e,{route,people,seen:{count:meta.endings.length,total:ALL_ENDINGS.length}}),{id:'patience',flags:yeonFlags(),heading:'연의 · 결말'}).then(()=>{if(document.contains(root))void showEpilogue(root,people[0]!.names.length);});
 }
 /** 본 결말 다시 보기(시나리오 보기 화면에서). */
 function replayEnding(id:string){
@@ -151,11 +152,18 @@ function replayEnding(id:string){
   modal('<div class="ss-host finale-host"></div>',false);const root=$('.finale-host');
   void playEndingCutscene(root,{...d,title:T(d.title),lines:d.lines.map(T),place:T(d.place),path:d.path.map(p=>({...p,name:T(p.name)}))},{id,flags:id==='patience'?yeonFlags():[],heading:'결말 다시 보기'}).then(()=>{if(document.contains(root))showStoryArchive();});
 }
-function showEpilogue(){
-  const p=progress(),total=campaignOrder.length*3;
+/** 연의 에필로그 컷신: 여덟 전장 회상(인장으로 갈린 한 줄) → 251년부터 280년까지의 연표 → 맺음과 이번 길의 기록. */
+async function showEpilogue(root:HTMLElement,people:number){
+  const p=progress(),total=campaignOrder.length*3,meta=loadMeta();
   const got=campaignOrder.reduce((n,i)=>{const id=chapters[i]!.stage.id;return n+new Set([...(p[id+':normal']??[]),...(p[id+':extreme']??[])]).size;},0);
-  modal(`<div class="briefing epilogue"><div class="eyebrow">에필로그 · 251년 가을</div><h2>칼을 감춘 사람</h2>${epilogueLines(p).map(l=>`<p>${l}</p>`).join('')}<p>그해 가을, 사마의는 낙양에서 숨을 거둔다. 열네 해 뒤 손자 사마염이 위의 선양을 받아 진을 세운다.</p><p class="muted">모은 인장 ${got} / ${total}</p><button id="epilogue-close" class="primary">연의 회상</button></div>`,false);
-  $('#epilogue-close').onclick=showChronicle;
+  const beats=epilogueBeats(p),kept=beats.filter(b=>b.kept).length;
+  await playEpilogue(root,{eyebrow:'에필로그 · 251년 가을',title:'칼을 감춘 사람',beats,years:epilogueYears,
+    closing:['그는 평생 칼을 감추고 때를 기다렸다. 칼은 아들들이 뽑았고, 천하는 손자의 것이 되었다.',
+      kept>=beats.length/2?'그가 지켜 낸 사람들은 그 세월을 끝까지 보았다.':'지키지 못한 이름들을, 그는 끝내 잊지 않았다.'],
+    stats:[{label:'모은 인장',value:`${got} / ${total}`},{label:'이긴 전장',value:`${campaignOrder.filter(cleared).length} / ${campaignOrder.length}`},
+      {label:'지켜 낸 회상',value:`${kept} / ${beats.length}`},{label:'함께한 사람',value:`${people}명`},{label:'본 결말',value:`${meta.endings.length} / ${ALL_ENDINGS.length}`}],
+    button:'연의 회상'});
+  if(document.contains(root))showChronicle();
 }
 function progress():Record<string,number[]>{try{return JSON.parse(localStorage.getItem(PROGRESS_KEY)??'{}') as Record<string,number[]>;}catch{return {};}}
 /** 이긴 적이 있는가: 일반·극한 어느 쪽이든 승리 기록이 남았거나(인장 조건과 무관), 천명의 길·원정에서 이긴 연의 전장. */
@@ -1205,5 +1213,5 @@ async function boot(){
   if(menuOpen&&document.getElementById('hub-training'))showMenu();
 }
 // ?dev only: a handle for QA scripts to inspect or nudge the running battle.
-if(devMode)Object.assign(window,{__sama:{get session(){return session;},get field(){return field;},render,start(chapter:number){session=new Session(chapter,'normal',215,'survival',RULES,{...deployment(campaign,true),wide:2});activate();},story(chapter:number){storyScene(chapter);},trial(id?:string){expeditionStory(id??expeditions.find(m=>canExpedition(campaign,m.id))!.id);},contest(kind:'duel'|'debate',foe=kind==='duel'?'여포':'제갈량',me='사마의'){menuOpen=true;modal('<div class="story-scene"><p>개발용 대결</p></div>',false);const mk=(name:string,side:'player'|'enemy')=>{const r=romanceByName(name);return portraitFor({id:name==='사마의'?'sima_yi':'dev_'+side,name,unitClass:name==='사마의'?storyClassAt('sima_yi',levelInfo(campaign.xp.sima_yi??0).level):officerClass(name),side,level:10} as unknown as Unit,false,kind)+(r?'':'');};void playContest(kind,{name:me,stat:90},{name:foe,stat:88},{acceptLine:kind==='duel'?'덤벼라!':'그 말, 내가 받아 주겠소.',models:{player:mk(me,'player'),enemy:mk(foe,'enemy')}});},run(floor:number,kind:'battle'|'elite'|'boss'|'tale',seed=7,route?:Record<number,string>,tale?:string){const r=newRun(seed,startingOfficers());r.floor=floor;if(route)r.route=route as {1?:string;2?:string;3?:string};runHost.startBattle({levels:{sima_yi:2+floor,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},run:battleRef(r,kind,tale),trial:1},seed);},brief(chapter:number){briefing(chapter);},backdrop(art:number,place:string){return isoScene(art,place).url;},ending(id:string){if(id==='patience')playYeonEnding();else replayEnding(id);},get campaign(){return campaign;},act(cmd:Command){act(cmd);}}});
+if(devMode)Object.assign(window,{__sama:{get session(){return session;},get field(){return field;},render,start(chapter:number){session=new Session(chapter,'normal',215,'survival',RULES,{...deployment(campaign,true),wide:2});activate();},story(chapter:number){storyScene(chapter);},trial(id?:string){expeditionStory(id??expeditions.find(m=>canExpedition(campaign,m.id))!.id);},contest(kind:'duel'|'debate',foe=kind==='duel'?'여포':'제갈량',me='사마의'){menuOpen=true;modal('<div class="story-scene"><p>개발용 대결</p></div>',false);const mk=(name:string,side:'player'|'enemy')=>{const r=romanceByName(name);return portraitFor({id:name==='사마의'?'sima_yi':'dev_'+side,name,unitClass:name==='사마의'?storyClassAt('sima_yi',levelInfo(campaign.xp.sima_yi??0).level):officerClass(name),side,level:10} as unknown as Unit,false,kind)+(r?'':'');};void playContest(kind,{name:me,stat:90},{name:foe,stat:88},{acceptLine:kind==='duel'?'덤벼라!':'그 말, 내가 받아 주겠소.',models:{player:mk(me,'player'),enemy:mk(foe,'enemy')}});},run(floor:number,kind:'battle'|'elite'|'boss'|'tale',seed=7,route?:Record<number,string>,tale?:string){const r=newRun(seed,startingOfficers());r.floor=floor;if(route)r.route=route as {1?:string;2?:string;3?:string};runHost.startBattle({levels:{sima_yi:2+floor,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},run:battleRef(r,kind,tale),trial:1},seed);},brief(chapter:number){briefing(chapter);},backdrop(art:number,place:string){return isoScene(art,place).url;},ending(id:string){if(id==='patience')playYeonEnding();else replayEnding(id);},epilogue(){menuOpen=true;modal('<div class="ss-host finale-host"></div>',false);void showEpilogue($('.finale-host'),9);},get campaign(){return campaign;},act(cmd:Command){act(cmd);}}});
 void boot();
