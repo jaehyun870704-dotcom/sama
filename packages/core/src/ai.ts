@@ -36,6 +36,22 @@ export function decide(state: BattleState, unit: Unit): Command[] {
     }
   }
   const hostiles = state.enemiesOf(unit.side);
+  // 스테이지 guardLeaders: 쓰러지면 패배인 장수(필수 생존)는 길목을 지키고 선 적(hold)이 한 번에 달려와 칠 수 있는 칸으로
+  // 걸어 들어가지 않는다 — 책략을 쏘러 다가갔다가 버티던 무리를 깨워 둘러싸이던 문제(Z2-02 제갈량).
+  // 안전한 칸이 하나도 없으면 그대로 둔다.
+  if ((unit.side === "player" || unit.side === "ally") && state.stage.guardLeaders === true &&
+      state.defeat.some((c) => c.type === "retreat" && c.unit === unit.id)) {
+    const threat = new Set<string>();
+    for (const h of hostiles) {
+      if (h.behavior !== "hold") continue;
+      const offsets = reachOffsets(h);
+      for (const c of decodeAll(state.map.reachable(h, state.occupancy(), ignoresRough(h)))) {
+        for (const o of offsets) threat.add(key({ x: c.x + o.x, y: c.y + o.y }));
+      }
+    }
+    const unsafe = decodeAll(reach).filter((c) => threat.has(key(c)) && !sameCoord(c, unit.pos));
+    if (unsafe.length < reach.size) for (const c of unsafe) reach.delete(key(c));
+  }
 
   // M-05 ESCORT — 보호 대상은 교전하지 않고 목적지로만 전진한다.
   // 공격하게 두면 적진에 스스로 걸어 들어가 호위가 성립하지 않는다.

@@ -185,6 +185,8 @@ export interface StageDef {
   weather?: Weather;
   /** true: 이미 이룬 차례 목표(order · stickyGoals 규칙)로 AI가 되돌아가지 않는다(목표 기억). 생략하면 예전처럼. */
   goalMemory?: boolean;
+  /** true: 쓰러지면 패배인 아군 장수는 길목을 지키는 적(hold)이 한 번에 달려와 칠 수 있는 칸으로 걸어 들어가지 않는다(자동 전투). */
+  guardLeaders?: boolean;
   /** false: 성벽·성문이 있어도 공성대(충차)·성문 방벽·감시탑을 자동으로 붙이지 않는다(성문은 이벤트로 연다). */
   siege?: boolean;
   arc: Arc;
@@ -280,6 +282,7 @@ function validateEngineFields(stage: StageDef): string[] {
   };
   if (stage.weather !== undefined && !known(stage.weather)) errors.push(`${tag} 알 수 없는 시작 날씨 "${String(stage.weather)}"`);
   if (stage.siege !== undefined && typeof stage.siege !== "boolean") errors.push(`${tag} siege는 true/false여야 함`);
+  if (stage.guardLeaders !== undefined && typeof stage.guardLeaders !== "boolean") errors.push(`${tag} guardLeaders는 true/false여야 함`);
   if (stage.goalMemory !== undefined) {
     if (typeof stage.goalMemory !== "boolean") errors.push(`${tag} goalMemory는 true/false여야 함`);
     const goalSets = [stage.victory, ...(stage.events ?? []).flatMap((ev) => ev.actions.filter((a) => a.type === "change_victory").map((a) => a.conditions ?? []))];

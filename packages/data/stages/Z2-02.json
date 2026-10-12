@@ -7,6 +7,7 @@
   "synopsis": "남만왕 맹획이 세 동주를 앞세워 촉군을 막는다. 제갈량은 이기는 것보다 마음을 얻는 것이 먼저라 한다. 세 동주를 치고 맹획을 진채 밖으로 끌어내 사로잡아라.",
   "mapId": "z2-02-mansong",
   "focusVictoryTargets": true,
+  "guardLeaders": true,
   "deployment": {
     "forced": [
       "z_liang",
