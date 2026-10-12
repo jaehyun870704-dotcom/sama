@@ -33,6 +33,7 @@ import {classTactics,evolvedClass,tierOf,familyOf,troopEffectOf,troopEffectText,
 import type {ChapterScript,ChoiceEffect,Look,Scene,Camp} from './scenario-types.ts';
 import {과와,으로,은는,을를,이가} from './josa.ts';
 import {setStoryEra} from './youth.ts';
+import {playFinale,finaleData} from './ending-finale.ts';
 
 export interface ScenarioHost {
   modal(html:string,closable?:boolean):void;
@@ -208,7 +209,7 @@ export async function enter(host:ScenarioHost,step:ScenarioStep){
     if(!state.route[step.act])return showFateFallback(host,state,step);
     return afterFate(host,state,step);
   }
-  if(step.kind==='ending')return showEnding(host,state,step);
+  if(step.kind==='ending')return void showEnding(host,state,step);
   showCampFor(host,step);
 }
 /** 장마다 진영에서 말을 건 사람(진영을 다시 열어도 유지). */
@@ -263,10 +264,15 @@ function afterFate(host:ScenarioHost,state:ScenarioState,step:ScenarioStep){
   document.getElementById('fate-next')!.onclick=()=>goNext(host);
   document.getElementById('fate-list')!.onclick=()=>showScenario(host);
 }
-function showEnding(host:ScenarioHost,state:ScenarioState,step:ScenarioStep){
+async function showEnding(host:ScenarioHost,state:ScenarioState,step:ScenarioStep){
   finishStep(state,step.id);if(state.run)state.run.status='complete';const gain=settleRun(state);saveScenario(state);
   const e0=endingFor(state.route),e={...e0,title:ft(state,e0.title),lines:e0.lines.map(l=>ft(state,l))},notes=endingNotes(state);
   const meta=loadMeta();if(!meta.endings.includes(e.id)){meta.endings.push(e.id);saveMeta(meta);}
+  // 결말 장면 다음 종막: 제목 · 후일담 · 걸어온 길과 함께한 사람들 · 끝.
+  host.modal('<div class="ss-host finale-host"></div>',false);
+  const root=document.querySelector<HTMLElement>('.finale-host');
+  const mates=Object.keys(state.officers).filter(n=>n!=='사마의');
+  if(root)await playFinale(root,finaleData(e0,{route:state.route,notes,people:[{label:'함께한 사람들',names:['사마의',...mates]}],seen:{count:meta.endings.length,total:ALL_ENDINGS.length},text:t=>ft(state,t)}));
   host.modal(`<div class="briefing run-screen"><div class="eyebrow">결말 · ${e.history?'정사':'가상'}</div><div class="ending-card ${e.history?'history':'what-if'}"><h3>${esc(e.title)}</h3>${e.lines.map(l=>`<p>${esc(l)}</p>`).join('')}${notes.map(l=>`<p class="ending-note">${esc(l)}</p>`).join('')}</div>
   <p class="muted">본 결말 ${meta.endings.length}/${ALL_ENDINGS.length} · 이번 회차 천명 +${gain}. 새 회차를 시작해 다른 갈림길을 고르면 다른 이야기와 결말이 펼쳐진다.</p>
   <div class="run-actions"><button class="primary" id="end-list">회차 정산 ▶</button><button id="end-menu">← 본영</button></div></div>`,false);

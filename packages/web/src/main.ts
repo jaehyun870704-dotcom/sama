@@ -50,7 +50,8 @@ void loadPortraitImages('');
 const scenarioYear=(id:string)=>scriptOf(id)?.year??'';
 import type {ScenarioDeployment,Deployment} from './progression.ts';
 import {loadMeta,saveMeta,recordStory} from './meta.ts';
-import {ALL_ENDINGS,endingFor} from './fate.ts';
+import {ALL_ENDINGS,endingFor,factionText} from './fate.ts';
+import {playEndingCutscene,finaleData,replayData} from './ending-finale.ts';
 import {LINEAGES,condMet,condText,recruitStatus,previousOf,storyRecruits,type RecruitContext} from './recruit.ts';
 import {officerClass} from './officer-perks.ts';
 import {RUN_FLOORS,RELICS,newRun,startingOfficers,battleRef,stageOfficerNames,type RunBattleRef} from './roguelike.ts';
@@ -129,6 +130,27 @@ function fitModal(){fitQueued=false;const d=$<HTMLDialogElement>('#modal'),c=$('
   let z=Math.max(.8,avail/need);c.style.zoom=String(z);need=d.scrollHeight;if(need>avail+2){z=Math.max(.8,z*avail/need);c.style.zoom=String(z);}}
 function queueFit(){if(fitQueued)return;fitQueued=true;requestAnimationFrame(()=>requestAnimationFrame(fitModal));}
 {const c=document.querySelector('#modal-content');if(c){new MutationObserver(queueFit).observe(c,{childList:true,subtree:true,characterData:true});c.addEventListener('load',queueFit,true);addEventListener('resize',queueFit);document.fonts?.ready.then(queueFit);}}
+/**
+ * 연의 완주: 정사 결말 「진의 기틀」 컷신(해설 → 사마가의 침소·새 왕조의 궁정 → 종막) 뒤 에필로그.
+ * 연의에서 고른 선택(표식)이 결말 대사를 바꾼다. 정사 결말을 본 결말로 남긴다.
+ */
+function playYeonEnding(){
+  if(!storyReady){menuOpen=true;modal(waitPanel('결말 준비 중','인물과 배경 그림을 마저 받고 있습니다. 끝나면 바로 시작합니다.'),false);void storyArt.then(()=>playYeonEnding());return;}
+  menuOpen=true;sound.scene='camp';void sound.start().then(updateSound);
+  const meta=loadMeta();if(!meta.endings.includes('patience')){meta.endings.push('patience');saveMeta(meta);}
+  const route={1:'refuse',2:'wei',3:'patience'},e=endingFor(route);
+  const people=[{label:'함께한 사람들',names:[...new Set(['사마의','사마랑','사마방','조진','사마사','사마소',...(meta.recruited??[])])]}];
+  modal('<div class="ss-host finale-host"></div>',false);const root=$('.finale-host');
+  void playEndingCutscene(root,finaleData(e,{route,people,seen:{count:meta.endings.length,total:ALL_ENDINGS.length}}),{id:'patience',flags:yeonFlags(),heading:'연의 · 결말'}).then(()=>{if(document.contains(root))showEpilogue();});
+}
+/** 본 결말 다시 보기(시나리오 보기 화면에서). */
+function replayEnding(id:string){
+  if(!storyReady){menuOpen=true;modal(waitPanel('결말 준비 중','인물과 배경 그림을 마저 받고 있습니다. 끝나면 바로 시작합니다.'),false);void storyArt.then(()=>replayEnding(id));return;}
+  menuOpen=true;const meta=loadMeta(),faction=loadScenario().run?.faction?.name;
+  const d=replayData(id,{count:meta.endings.length,total:ALL_ENDINGS.length}),T=(t:string)=>factionText(t,faction);
+  modal('<div class="ss-host finale-host"></div>',false);const root=$('.finale-host');
+  void playEndingCutscene(root,{...d,title:T(d.title),lines:d.lines.map(T),place:T(d.place),path:d.path.map(p=>({...p,name:T(p.name)}))},{id,flags:id==='patience'?yeonFlags():[],heading:'결말 다시 보기'}).then(()=>{if(document.contains(root))showStoryArchive();});
+}
 function showEpilogue(){
   const p=progress(),total=campaignOrder.length*3;
   const got=campaignOrder.reduce((n,i)=>{const id=chapters[i]!.stage.id;return n+new Set([...(p[id+':normal']??[]),...(p[id+':extreme']??[])]).size;},0);
@@ -283,9 +305,10 @@ function showStoryArchive(focus?:number){
   <p class="muted">닿은 장은 싸우지 않고 이야기만 다시 볼 수 있다. 이긴 장은 「다시 싸우기」로 일반·극한을 다시 치른다. 아직 닿지 않은 장은 제목도 가려 둔다.</p>
   ${arcs.map(([pre,arc,sub])=>{const list=campaignOrder.filter(i=>chapters[i]!.stage.id.startsWith(pre));const won=list.filter(cleared).length;
     return `<section class="sa-arc"><h3>${arc} <small>${sub} · 이김 ${won}/${list.length}</small></h3><ol class="sa-list">${list.map(row).join('')}</ol></section>`;}).join('')}
-  <section class="sa-arc"><h3>본 결말 <small>${seenEnd.length}/${ALL_ENDINGS.length}</small></h3><div class="chronicle-list">${ALL_ENDINGS.map(id=>{const e=endingFor({3:id}),seen=meta.endings.includes(id);return `<span class="${seen?'done':''}">${seen?'◆ '+esc(e.title):'· 아직 보지 못한 결말'}</span>`;}).join('')}</div></section>
+  <section class="sa-arc"><h3>본 결말 <small>${seenEnd.length}/${ALL_ENDINGS.length}</small></h3><div class="chronicle-list">${ALL_ENDINGS.map(id=>{const e=endingFor({3:id}),seen=meta.endings.includes(id);return seen?`<button type="button" class="done end-replay" data-end-replay="${id}" title="결말 다시 보기">◆ ${esc(factionText(e.title,loadScenario().run?.faction?.name))} ▶</button>`:'<span>· 아직 보지 못한 결말</span>';}).join('')}</div></section>
   <div class="modal-actions"><button id="sa-back">← 본영</button></div></div>`,false);
   document.querySelectorAll<HTMLButtonElement>('[data-sa-read]').forEach(b=>b.onclick=()=>storyScene(Number(b.dataset.saRead),0,undefined,true));
+  document.querySelectorAll<HTMLButtonElement>('[data-end-replay]').forEach(b=>b.onclick=()=>replayEnding(b.dataset.endReplay!));
   document.querySelectorAll<HTMLButtonElement>('[data-sa-fight]').forEach(b=>b.onclick=()=>storyScene(Number(b.dataset.saFight)));
   $('#sa-back').onclick=showMenu;
   if(focus!==undefined)document.querySelector('.sa-row.focus')?.scrollIntoView({block:'center'});
@@ -1068,7 +1091,7 @@ function checkModal(){
     $('#result-undo').onclick=undo;$('#result-menu').onclick=showChronicle;
     $('#phase-restore')?.addEventListener('click',()=>{if(session.restorePhase()){activate();persist();}});
     $('#retry').onclick=()=>{session=new Session(session.chapter,session.difficulty,215,session.preparation,session.revision,session.deployment?{...deployment(campaign,true),...(session.wide?{wide:(session.deployment?.wide??1)}:{}),...(session.deployment.retinue?{retinue:structuredClone(session.deployment.retinue)}:{}),...(session.deployment.extraOfficers?{extraOfficers:[...session.deployment.extraOfficers]}:{})}:undefined);activate();persist();};
-    $('#epilogue')?.addEventListener('click',showEpilogue);
+    $('#epilogue')?.addEventListener('click',()=>playYeonEnding());
     $('#next-chapter')?.addEventListener('click',()=>storyScene(campaignOrder[campaignOrder.indexOf(session.chapter)+1]!));return;
   }
   if(s.activeDialogue){const node=session.battle.dialogue.node(s.activeDialogue);{const who=node.speaker?s.find(node.speaker)?.name??node.speaker:'사마의',extra=`${session.chapter===0?fundsNote(s.activeDialogue):''}${session.chapter===10?'<p class="ink-extra">틀리면 신뢰가 깎이고 같은 물음을 다시 받습니다</p>':'<button id="dialogue-undo" class="ink-undo">직전 선택 무르기</button>'}`;
@@ -1182,5 +1205,5 @@ async function boot(){
   if(menuOpen&&document.getElementById('hub-training'))showMenu();
 }
 // ?dev only: a handle for QA scripts to inspect or nudge the running battle.
-if(devMode)Object.assign(window,{__sama:{get session(){return session;},get field(){return field;},render,start(chapter:number){session=new Session(chapter,'normal',215,'survival',RULES,{...deployment(campaign,true),wide:2});activate();},story(chapter:number){storyScene(chapter);},trial(id?:string){expeditionStory(id??expeditions.find(m=>canExpedition(campaign,m.id))!.id);},contest(kind:'duel'|'debate',foe=kind==='duel'?'여포':'제갈량',me='사마의'){menuOpen=true;modal('<div class="story-scene"><p>개발용 대결</p></div>',false);const mk=(name:string,side:'player'|'enemy')=>{const r=romanceByName(name);return portraitFor({id:name==='사마의'?'sima_yi':'dev_'+side,name,unitClass:name==='사마의'?storyClassAt('sima_yi',levelInfo(campaign.xp.sima_yi??0).level):officerClass(name),side,level:10} as unknown as Unit,false,kind)+(r?'':'');};void playContest(kind,{name:me,stat:90},{name:foe,stat:88},{acceptLine:kind==='duel'?'덤벼라!':'그 말, 내가 받아 주겠소.',models:{player:mk(me,'player'),enemy:mk(foe,'enemy')}});},run(floor:number,kind:'battle'|'elite'|'boss'|'tale',seed=7,route?:Record<number,string>,tale?:string){const r=newRun(seed,startingOfficers());r.floor=floor;if(route)r.route=route as {1?:string;2?:string;3?:string};runHost.startBattle({levels:{sima_yi:2+floor,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},run:battleRef(r,kind,tale),trial:1},seed);},brief(chapter:number){briefing(chapter);},backdrop(art:number,place:string){return isoScene(art,place).url;},get campaign(){return campaign;},act(cmd:Command){act(cmd);}}});
+if(devMode)Object.assign(window,{__sama:{get session(){return session;},get field(){return field;},render,start(chapter:number){session=new Session(chapter,'normal',215,'survival',RULES,{...deployment(campaign,true),wide:2});activate();},story(chapter:number){storyScene(chapter);},trial(id?:string){expeditionStory(id??expeditions.find(m=>canExpedition(campaign,m.id))!.id);},contest(kind:'duel'|'debate',foe=kind==='duel'?'여포':'제갈량',me='사마의'){menuOpen=true;modal('<div class="story-scene"><p>개발용 대결</p></div>',false);const mk=(name:string,side:'player'|'enemy')=>{const r=romanceByName(name);return portraitFor({id:name==='사마의'?'sima_yi':'dev_'+side,name,unitClass:name==='사마의'?storyClassAt('sima_yi',levelInfo(campaign.xp.sima_yi??0).level):officerClass(name),side,level:10} as unknown as Unit,false,kind)+(r?'':'');};void playContest(kind,{name:me,stat:90},{name:foe,stat:88},{acceptLine:kind==='duel'?'덤벼라!':'그 말, 내가 받아 주겠소.',models:{player:mk(me,'player'),enemy:mk(foe,'enemy')}});},run(floor:number,kind:'battle'|'elite'|'boss'|'tale',seed=7,route?:Record<number,string>,tale?:string){const r=newRun(seed,startingOfficers());r.floor=floor;if(route)r.route=route as {1?:string;2?:string;3?:string};runHost.startBattle({levels:{sima_yi:2+floor,sima_lang:1,sima_fang:1,cao_zhen:1},equipped:{},run:battleRef(r,kind,tale),trial:1},seed);},brief(chapter:number){briefing(chapter);},backdrop(art:number,place:string){return isoScene(art,place).url;},ending(id:string){if(id==='patience')playYeonEnding();else replayEnding(id);},get campaign(){return campaign;},act(cmd:Command){act(cmd);}}});
 void boot();

@@ -30,6 +30,8 @@ export interface RunNode {kind:NodeKind;label:string;detail:string;/** 연의 �
 export interface Relic {id:string;name:string;effect:string}
 export interface Run {
   version:1;seed:number;floor:number;party:RunUnit[];relics:string[];fallen:string[];
+  /** 완주 결말 컷신을 이미 보았나(다시 열어도 되풀이하지 않게). */
+  endingShown?:boolean;
   status:'map'|'reward'|'won'|'lost';nextId:number;
   /** 지금 치르는 전투(끝나기 전에 다른 갈림길로 빠질 수 없다) */
   active?:NodeKind;

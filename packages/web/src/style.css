@@ -2140,3 +2140,51 @@ dialog:has(.title-screen),dialog:has(.lobby){width:min(1240px,calc(100vw - 24px)
 
 /* 칼끝 궤적은 휘두르는 동안(충돌 전) 보여야 한다. */
 .duel-stage.pre-impact .fx.fx-arc{display:block!important}
+
+/* ─────────────── 결말 컷신 · 종막 (ending-finale.ts) ─────────────── */
+.finale{position:relative;width:100%;aspect-ratio:16/9;max-height:calc(100dvh - 80px);overflow:hidden;border-radius:6px;background:#0b0806;color:#efe4cc;cursor:pointer;isolation:isolate}
+.fn-bg{position:absolute;inset:-4%;background:#1a120c center/cover no-repeat;filter:saturate(.5) brightness(.72) blur(1.2px);transform:scale(1.04);animation:fn-drift 40s linear infinite alternate}
+@keyframes fn-drift{to{transform:scale(1.12) translate(-1.5%,-1%)}}
+.fn-veil{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,rgba(10,6,4,.25),rgba(10,6,4,.88) 75%),linear-gradient(transparent 55%,rgba(10,6,4,.7));pointer-events:none}
+.fn-skip{position:absolute;top:12px;right:12px;z-index:5;background:rgba(20,14,10,.6);color:#d8c8a8;border:1px solid rgba(216,200,168,.35);padding:6px 12px;border-radius:4px;font-size:13px}
+.finale section{position:absolute;left:0;right:0;z-index:2;text-align:center;opacity:0;transition:opacity .9s ease,transform .9s ease}
+.fn-title{top:16%;transform:translateY(8px)}
+.fn-eyebrow{display:flex;gap:12px;justify-content:center;font-size:14px;letter-spacing:3px;color:#c9b48a}
+.fn-kind{padding:2px 10px;border:1px solid currentColor;border-radius:2px}
+.fn-kind.history{color:#e0c27a}.fn-kind.what-if{color:#9cc3d8}
+.fn-title h2{margin:14px auto 0;font:900 clamp(34px,6vw,72px)/1.15 'LocalSerif','Batang',serif;letter-spacing:.08em;color:#f6ead0;text-shadow:0 2px 18px rgba(0,0,0,.8),0 0 2px #000}
+.fn-title h2 span{display:inline-block;clip-path:inset(0 100% 0 0);transition:clip-path 2.2s cubic-bezier(.6,.1,.3,1)}
+.fn-lines{top:44%;padding:0 10%;display:grid;gap:10px}
+.fn-lines p{margin:0;font:500 clamp(14px,1.55vw,19px)/1.7 'LocalSerif','Batang',serif;color:#eadcbd;opacity:0;transform:translateY(10px);transition:opacity 1.1s ease,transform 1.1s ease;text-shadow:0 1px 6px #000}
+.fn-lines p.on{opacity:1;transform:none}
+.fn-lines .fn-note{font-size:clamp(12px,1.25vw,15px);color:#c9b48a;font-style:italic}
+.fn-roll{inset:0;overflow:hidden;mask-image:linear-gradient(transparent 4%,#000 22%,#000 78%,transparent 96%)}
+.fn-roll-inner{position:absolute;left:0;right:0;top:100%;padding:0 12%}
+.fn-roll h3{margin:34px 0 8px;font:700 15px/1 'LocalSerif','Batang',serif;letter-spacing:6px;color:#c9a24a}
+.fn-roll p{margin:6px 0;font:500 clamp(14px,1.5vw,18px)/1.6 'LocalSerif','Batang',serif;color:#efe4cc}
+.fn-roll p small{display:inline-block;width:4em;margin-right:12px;color:#a8977a;font-size:.8em;letter-spacing:2px}
+.fn-roll .fn-names{max-width:44em;margin-inline:auto}
+.fn-end{top:30%;display:grid;justify-items:center;gap:14px}
+.fn-seal{width:clamp(84px,10vw,120px);aspect-ratio:1;display:grid;place-items:center;border-radius:10px;background:radial-gradient(circle at 35% 30%,#c8341f,#8c1a10);color:#f8e8d0;font:900 clamp(44px,5.4vw,66px)/1 'LocalSerif','Batang',serif;box-shadow:0 0 0 3px #f1d9b0 inset,0 6px 26px rgba(0,0,0,.6);transform:scale(1.6) rotate(-8deg);opacity:0;transition:transform .5s cubic-bezier(.2,1.6,.4,1),opacity .3s}
+.fn-end p{margin:0;color:#c9b48a;font-size:14px;letter-spacing:2px}
+.fn-go{pointer-events:none}
+/* 단계 */
+.finale.phase-title .fn-title{opacity:1;transform:none}
+.finale.phase-title .fn-title h2 span{clip-path:inset(0 0 0 0)}
+.finale.phase-lines .fn-title{top:9%;transition:top 1.2s ease,opacity .9s}
+.finale.phase-lines .fn-lines{opacity:1}
+.finale.phase-roll .fn-title,.finale.phase-roll .fn-lines{opacity:0}
+.finale.phase-roll .fn-roll{opacity:1}
+.finale.phase-roll .fn-roll-inner{animation:fn-roll var(--roll-ms,9000ms) linear forwards}
+@keyframes fn-roll{to{transform:translateY(calc(-100% - 100cqh - 40px))}}
+.finale{container-type:size}
+.finale.phase-end .fn-roll{opacity:0}
+.finale.phase-end .fn-end{opacity:1}
+.finale.phase-end .fn-seal{transform:none;opacity:1}
+.finale.phase-end .fn-go{pointer-events:auto}
+.finale.phase-end{cursor:default}
+.finale.still *{transition:none!important;animation:none!important}
+@media (prefers-reduced-motion:reduce){.fn-bg{animation:none}}
+@media (max-height:520px){.fn-title{top:10%}.fn-lines{top:36%;gap:4px}.fn-lines p{line-height:1.45}.finale.phase-lines .fn-title{top:4%}.fn-title h2{font-size:clamp(26px,5vw,44px)}}
+.chronicle-list .end-replay{font:inherit;color:inherit;background:transparent;border:1px solid currentColor;border-radius:3px;padding:2px 8px;cursor:pointer}
+.chronicle-list .end-replay:hover{background:rgba(201,162,74,.15)}

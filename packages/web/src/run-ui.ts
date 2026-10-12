@@ -21,6 +21,7 @@ import {freshCampaign,award,deployment as campaignDeployment} from './progressio
 import {tierOf,currentClass,type UnitClass,type BattleState} from '../../core/src/index.ts';
 import type {Deployment} from './progression.ts';
 import {을를} from './josa.ts';
+import {playEndingCutscene,finaleData} from './ending-finale.ts';
 
 export interface RunHost {
   modal(html:string,closable?:boolean):void;
@@ -332,6 +333,13 @@ function showReward(host:RunHost,run:Run){
 }
 
 function showEnd(host:RunHost,run:Run){
+  // 완주: 결말 컷신(결말 장면 → 종막)을 먼저 본다. 컷신은 한 번만(끝나면 원정 기록을 비운다).
+  if(run.status==='won'&&!run.endingShown){run.endingShown=true;saveRun(run);
+    host.modal('<div class="ss-host finale-host"></div>',false);const root=document.querySelector<HTMLElement>('.finale-host');
+    const e=endingFor(run.route),seenNow=loadMeta().endings.length+(loadMeta().endings.includes(e.id)?0:1);
+    const people=[{label:'끝까지 함께한 부대',names:run.party.map(u=>u.name)},{label:'먼저 쓰러진 사람들',names:run.fallen}];
+    if(root){void playEndingCutscene(root,finaleData(e,{route:run.route??{},people,seen:{count:seenNow,total:ALL_ENDINGS.length}}),{id:e.id,heading:`천명의 원정 · ${e.title}`}).then(()=>showEnd(host,run));return;}
+  }
   const meta=loadMeta(),gain=settleRun(meta,run);saveMeta(meta);
   const won=run.status==='won',reached=won?RUN_FLOORS:run.floor;
   host.modal(`<div class="briefing run-screen"><div class="eyebrow">천명의 원정 · ${won?'완주':'원정 종료'}</div><h2>${won?'천명을 거머쥐다':'원정이 끝났다'}</h2>${news(run)}
