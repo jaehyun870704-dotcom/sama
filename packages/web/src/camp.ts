@@ -2,7 +2,7 @@ import {adviceFor} from './troop-tactics.ts';
 import {troopRoles} from './troops.ts';
 import type {Unit} from '../../core/src/index.ts';
 import {treasures,treasureInfo,gearNames,equippedItems,deployment,gearKey,gearName,gearLevel,gearEffectText,canWear,maxLevelOf,type Campaign,type GearSlot} from './progression.ts';
-import {gearDef,gearNextExp,GEAR_KINDS,familyOf} from '../../core/src/index.ts';
+import {gearDef,gearNextExp,GEAR_KINDS} from '../../core/src/index.ts';
 import {treasureSource} from './treasure-codex.ts';
 import {officerFeatures,allStrategies,strategyHint,talentTree,martialPower} from './officers.ts';
 import {classNames,unitName} from './battlefield.ts';
