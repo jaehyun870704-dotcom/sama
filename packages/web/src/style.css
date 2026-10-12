@@ -2268,3 +2268,5 @@ dialog:has(.title-screen),dialog:has(.lobby){width:min(1240px,calc(100vw - 24px)
 .zg-sortie{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
 @media(max-width:700px){.story-pick-grid{grid-template-columns:1fr}.zg-row{grid-template-columns:36px 1fr;}.zg-seal,.zg-row button,.zg-row em{grid-column:2}}
 .zg-gear{display:flex;flex-direction:column;gap:6px;margin:10px 0}.zg-gear-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;font-size:calc(13.5px*var(--fs,1))}.zg-gear-row strong{min-width:4.5em;color:#f0d79c}.zg-gear-row label{display:inline-flex;align-items:center;gap:6px}.zg-gear-row select{max-width:16em}
+/* 이야기 무대의 겹(장소 이름·눈발·대화창)은 무대 안에서만 겹친다 — 그 위에 뜨는 일기토·설전 화면을 뚫고 나오지 않게. */
+.ss-stage{isolation:isolate}

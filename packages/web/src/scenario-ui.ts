@@ -102,7 +102,7 @@ async function runContest(host:ScenarioHost,state:ScenarioState,step:ScenarioSte
   const foeClass:UnitClass|undefined=step.tale?.target.name===foe?step.tale.target.unitClass:step.kind==='boss'&&route?.region.boss.name===foe?route.region.boss.unitClass:foeClassOf(foe)??(romanceByName(foe)?officerClass(foe):undefined);
   const model=(c:UnitClass|undefined,n:string,side:'player'|'enemy')=>c?host.unitModel?.(c,n,side,kind):undefined;
   const mine=model(myClass,by,'player'),theirs=model(foeClass,foe,'enemy');
-  const r=await playContest(kind,{name:by,stat:stat(by,lvOf(by))},{name:foe,stat:stat(foe,foeLv)},{...(line?{acceptLine:line}:{}),seed:step.id+foe,done:'돌아가기',sound:c=>host.contestSound?.(kind,c),models:{...(mine?{player:mine}:{}),...(theirs?{enemy:theirs}:{})}});
+  const r=await playContest(kind,{name:by,stat:stat(by,lvOf(by))},{name:foe,stat:stat(foe,foeLv)},{...(line?{acceptLine:line}:{}),seed:step.id+foe,done:'돌아가기',...(kind==='duel'&&step.kind==='story'?{reward:'이기면 이번 전투 아군 사기 상승 · 첫 턴 방어 태세.'}:{}),sound:c=>host.contestSound?.(kind,c),models:{...(mine?{player:mine}:{}),...(theirs?{enemy:theirs}:{})}});
   state.flags=state.flags.filter(f=>!f.startsWith(`contest:${step.id}:`));state.flags.push(`contest:${step.id}:${kind}:${r}`);
   if(r==='lose'&&by==='사마의'&&state.run)state.run.hp['사마의']=Math.min(state.run.hp['사마의']??1,.7);
   saveScenario(state);return r;

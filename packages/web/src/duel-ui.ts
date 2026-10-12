@@ -235,14 +235,16 @@ export function playContest(kind:DuelKind,me:{name:string;stat:number},foe:{name
   /** 효과음(전투 중 겨루기와 같은 소리): 선포 화면은 critical, 겨루기는 필살·논파만 critical. */
   sound?:(critical:boolean)=>void;
   /** 병종을 아는 쪽의 전신 모델(없으면 일기토 검객·설전 책사). */
-  models?:{player?:string;enemy?:string}}={}):Promise<'win'|'lose'|'draw'>{
+  models?:{player?:string;enemy?:string};
+  /** 이겼을 때 얻는 것(화면 아래 안내). 없으면 가상 전장 기준(일기토: 적 기세 꺾임 · 설전: 사마의 책략 MP). */
+  reward?:string}={}):Promise<'win'|'lose'|'draw'>{
   const d=newDuel(kind,{id:'me',...me},{id:'foe',...foe});
   const el=document.createElement('div');el.className='contest-overlay';
   // 열린 dialog(최상위 층) 안에 붙여야 그 위로 보인다.
   (document.querySelector('dialog[open]')??document.body).appendChild(el);
   const models={player:o.models?.player?duelModel(o.models.player,'player',me.name):contestModel(kind,'player',me.name),enemy:o.models?.enemy?duelModel(o.models.enemy,'enemy',foe.name):contestModel(kind,'enemy',foe.name)};
   return new Promise(resolve=>{
-    const arena=()=>{el.innerHTML=`<div class="contest-box">${duelArena(d,{models,backdrop:duelBackdrop(kind,o.seed??foe.name,o.indoor),...(o.acceptLine?{openingLine:o.acceptLine}:{})}).replace('전장으로 돌아가기',esc(o.done??'이야기로 돌아가기')).replace(/전투 체력: 승자 15% · 패자 45% · 무승부 양쪽 25% 피해\(최소 1\)\. 패자는 2턴 [^<]*/,kind==='duel'?'이기면 이번 전투 아군 사기 상승 · 적의 기세가 꺾인다.':'이기면 이번 전투 아군 사기 상승 · 사마의 책략 MP +15.')}</div>`;
+    const arena=()=>{el.innerHTML=`<div class="contest-box">${duelArena(d,{models,backdrop:duelBackdrop(kind,o.seed??foe.name,o.indoor),...(o.acceptLine?{openingLine:o.acceptLine}:{})}).replace('전장으로 돌아가기',esc(o.done??'이야기로 돌아가기')).replace(/전투 체력: 승자 15% · 패자 45% · 무승부 양쪽 25% 피해\(최소 1\)\. 패자는 2턴 [^<]*/,(r=>d.result==='win'?r.replace(/^이기면 /,''):r)(esc(o.reward??(kind==='duel'?'이기면 이번 전투 아군 사기 상승 · 적의 기세가 꺾인다.':'이기면 이번 전투 아군 사기 상승 · 사마의 책략 MP +15.'))))}</div>`;
       animateDuel(el);
       el.querySelectorAll<HTMLButtonElement>('[data-duel-action]').forEach(b=>b.onclick=()=>{if(duelRound(d,b.dataset.duelAction as DuelAction)){o.sound?.(b.dataset.duelAction==='special');arena();}});
       el.querySelector<HTMLButtonElement>('#duel-return')?.addEventListener('click',()=>{el.remove();resolve(d.result??'draw');});};

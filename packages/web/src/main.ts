@@ -218,7 +218,7 @@ function storyScene(chapter:number,beat=0,fromArt?:number,viewOnly=false){
   if(!storyReady){menuOpen=true;modal(waitPanel('이야기 준비 중','인물과 배경 그림을 마저 받고 있습니다. 끝나면 바로 시작합니다.'),false);void storyArt.then(()=>storyScene(chapter,beat,fromArt,viewOnly));return;}
   menuOpen=true;clearTimeout(aiTimer);sound.scene=chapter===4?'dream':'camp';void sound.start().then(updateSound);
   modal('<div class="ss-host yeon-host"></div>',false);
-  const zh=isZhugeStage(c.stage.id),root=$('.ss-host'),heading=`${zh?'제갈량전':'연의'} · ${script.title}`,own=choiceFlags(script.scenes),flags=yeonFlags().filter(f=>!own.has(f)),picked:ChoiceEffect[]=[];let contest:{kind:'duel'|'debate';result:string}|undefined;
+  const zh=isZhugeStage(c.stage.id),root=$('.ss-host'),heading=`${zh?'제갈량전':'연의'} · ${script.title}`,own=choiceFlags(script.scenes),flags=yeonFlags().filter(f=>!own.has(f)&&!f.startsWith(`contest:${c.stage.id}:`)),picked:ChoiceEffect[]=[];let contest:{kind:'duel'|'debate';result:string}|undefined;
   const heroName=zh?'제갈량':'사마의',hero=zh?zhugeLevel(campaign,heroName,c.stage,'normal'):levelInfo(campaign.xp.sima_yi??0).level;
   void (async()=>{
     if(script.history?.length&&script.scenes[0])await playNarration(root,{heading,year:script.year,title:script.title,lines:script.history,art:script.scenes[0].art,place:script.scenes[0].place});
@@ -227,8 +227,9 @@ function storyScene(chapter:number,beat=0,fromArt?:number,viewOnly=false){
       onContest:async e=>{const by=e.by??heroName,stat=(n:string)=>{const r=romanceByName(n);return (e.kind==='duel'?(r?.war??55):(r?.int??55))+hero;};
         // 두 사람 모두 실제 장수 그림으로 마주 세운다(사마의는 지금 병종, 상대는 그 장수의 병종).
         const model=(name:string,side:'player'|'enemy')=>portraitFor({id:name==='사마의'&&!zh?'sima_yi':'contest_'+side,name,unitClass:name==='사마의'&&!zh?storyClassAt('sima_yi',hero):officerClass(name),side} as unknown as Unit,false,e.kind);
-        const r=await playContest(e.kind,{name:by,stat:stat(by)},{name:e.foe,stat:stat(e.foe)},{...(e.line?{acceptLine:e.line}:{}),seed:c.stage.id+e.foe,done:'돌아가기',sound:k=>sound.event({kind:'duel',critical:k,debate:e.kind==='debate'}),models:{player:model(by,'player'),enemy:model(e.foe,'enemy')}});
-        contest={kind:e.kind,result:r};return r;}});
+        const r=await playContest(e.kind,{name:by,stat:stat(by)},{name:e.foe,stat:stat(e.foe)},{...(e.line?{acceptLine:e.line}:{}),seed:c.stage.id+e.foe,done:'돌아가기',reward:`이기면 이번 전투 아군 사기 상승 · ${e.kind==='duel'?'첫 턴 방어 태세':`${heroName} 책략 MP +15`}.`,sound:k=>sound.event({kind:'duel',critical:k,debate:e.kind==='debate'}),models:{player:model(by,'player'),enemy:model(e.foe,'enemy')}});
+        // 대결 결과도 표식으로 남긴다(뒤 장면이 when/unless로 이긴 경우·진 경우를 가른다) — 시나리오 모드와 같은 꼴.
+        flags.push(`contest:${c.stage.id}:${e.kind}:${r}`);contest={kind:e.kind,result:r};return r;}});
     if(!viewOnly)saveYeonFlags(flags);
     // 이번 전투에 실을 효과: 고른 대사(사기·방어·책략 MP) + 이야기 속 대결의 승리.
     const mods:BattleMods={};for(const e of picked)if(e.kind==='rally'||e.kind==='guard'||e.kind==='insight')mods[e.kind]=true;

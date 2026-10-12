@@ -336,7 +336,7 @@ const pack:ScenarioPack={
                 effects:[{kind:'guard'},{kind:'flag',flag:'z216_lure'}]},
               {id:'duel_zhanghe',text:'위연에게 장합과 일기토를 청하게 한다',
                 reply:'장합의 발을 묶어 두시오. 칼끝이 부딪는 사이 골짜기가 그를 삼킬 것이오.',
-                note:'일기토(위연 대 장합) · 이기면 사기 상승',
+                note:'일기토(위연 대 장합) · 이기면 사기 상승·방어 태세',
                 effects:[{kind:'duel',foe:'장합',by:'위연',line:'촉의 위연인가. 물러가는 군의 칼이 얼마나 무거운지 보자.'}]},
             ]},
           ]},
@@ -383,7 +383,7 @@ const pack:ScenarioPack={
             {choice:'제갈량',options:[
               {id:'duel_guohuai',text:'강유에게 곽회와 일기토를 청하게 한다',
                 reply:'백약, 그대의 고향 땅이오. 그 땅을 지키는 자에게 그대의 칼을 보이시오.',
-                note:'일기토(강유 대 곽회) · 이기면 사기 상승',
+                note:'일기토(강유 대 곽회) · 이기면 사기 상승·방어 태세',
                 effects:[{kind:'duel',foe:'곽회',by:'강유',line:'천수의 기린아인가. 옹주의 늙은 장수가 상대해 주마.'}]},
               {id:'feint',text:'동쪽 여울에 거짓 깃발을 세워 적을 흔든다',
                 reply:'곽회는 신중한 자요. 신중한 자는 두 곳을 다 지키려다 둘 다 얇아지오.',
