@@ -110,6 +110,7 @@
     {"id":"pang_de","name":"방덕","aliases":["방덕의 환영"],"battle":{"cavalry":{"sheet":"pang_de-battle-cavalry-v1.webp","cell":[280,224],"rows":1}}},
     {"id":"li_dian","name":"이전","aliases":["이전의 환영"],"battle":{"cavalry":{"sheet":"li_dian-battle-cavalry-v1.webp","cell":[280,224],"rows":1}}},
     {"id":"fa_zheng","name":"법정","aliases":["법정의 환영"],"battle":{"strategist":{"sheet":"fa_zheng-battle-strategist-v1.webp","cell":[280,224],"rows":1}}},
-    {"id":"ma_liang","name":"마량","aliases":["마량의 환영"],"battle":{"strategist":{"sheet":"ma_liang-battle-strategist-v1.webp","cell":[280,224],"rows":1}}}
+    {"id":"ma_liang","name":"마량","aliases":["마량의 환영"],"battle":{"strategist":{"sheet":"ma_liang-battle-strategist-v1.webp","cell":[280,224],"rows":1}}},
+    {"id":"guan_xing","name":"관흥","aliases":["관흥의 환영"],"battle":{"cavalry":{"sheet":"guan_xing-battle-cavalry-v1.webp","cell":[280,224],"rows":1}}}
   ]
 }
