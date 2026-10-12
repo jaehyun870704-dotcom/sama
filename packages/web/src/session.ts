@@ -12,6 +12,7 @@ import './scenario.ts';
 import {battleConditions,type BattleConditions} from './battle-conditions.ts';
 import {trialGoalText} from './expedition-objectives.ts';
 import {pickExtras,soloStage,unitCost} from './sortie.ts';
+import {SUPPORT_OFFICERS,ledSupport} from './support-officers.ts';
 import {applyRomance,temperOf,romanceOf} from './romance.ts';
 import {applyCC} from './cc-apply.ts';
 import {expeditionBattle,expeditions,missionEnemyScale} from './expeditions.ts';
@@ -231,6 +232,8 @@ export class Session {
       // 제갈량전 장수(그 장의 필수 출진에 있을 때만 전장에 선다).
       ...ZHUGE_ROSTER.map(o=>({id:o.id,name:o.name,unitClass:zhugeClass(entry.stage.id,o.id)!,level,...(o.strategies?{strategies:o.strategies}:{})})),
     ]});
+    // 연의 장의 편입 부대는 그 무렵의 위군 장수가 이끈다(이름 없는 병종 부대를 데려가지 않는다 · support-officers.ts).
+    if(this.deployment&&!this.deployment.run&&!this.deployment.mission){const names=SUPPORT_OFFICERS[entry.stage.id]??[];let i=0;for(const u of state.units.values())if(u.side==='ally'&&ledSupport(u.id,u.unitClass)){const n=names[i++];if(n)(u as {name:string}).name=n;}}
     // 균형 규칙 6: 이룬 차례 목표는 그대로 남는다(한 번 남문에 닿았으면 자리를 떠도 된다).
     if(this.revision>=6)state.stickyGoals=true;
     // 제갈량전의 피난민 장수(싸울 수 없는 형제 등): 자동 전투는 길목을 지키는 적의 손이 닿는 칸을 피해 목적지로 간다.

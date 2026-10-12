@@ -34,7 +34,7 @@ import {playEpilogue} from './epilogue.ts';
 import {showHub,showQuests,showTitle,showCollections,showStoryPick,finishRunBattle,finishRunStory,RUN_CHAPTER,type RunHost} from './run-ui.ts';
 import {showScenario,campOf,finishIfBattle,finishStoryBattle,noteDefeatReason,type ScenarioHost} from './scenario-ui.ts';
 import {scriptOf,loadScenario,saveScenario,trainCompanions,currentStep,joinRecruits} from './scenario.ts';
-import {isZhugeStage} from './zhuge-data.ts';
+import {isZhugeStage,zhugeName} from './zhuge-data.ts';
 import {zhugeDeployment,zhugeLevel,zhugeBase,growZhuge} from './zhuge.ts';
 import {conditionsHtml,goalMarks,winText} from './battle-conditions.ts';
 import {optionalOfficers,soloStage,pickExtras,storySortieLimit,storyCostSheet,storyRetinueCap,unitCost,storyClassAt} from './sortie.ts';
@@ -279,24 +279,31 @@ function showZhuge(){
   document.querySelectorAll<HTMLButtonElement>('[data-zg]').forEach(b=>b.onclick=()=>storyScene(Number(b.dataset.zg)));
   $('#zg-back').onclick=()=>showStoryPick(runHost,showMenu);
 }
-/** 보물 장착 칸의 주인 이름(사마의전 본대는 id로, 나머지는 이름으로 기록된다). */
-const GEAR_OWNER:Record<string,string>={sima_yi:'사마의',sima_lang:'사마랑',sima_fang:'사마방',cao_zhen:'조진'};
+/** 제갈량전 출진 전 정비: 사마의전 연의 정비와 같은 틀(작전 · 천명 조건 · 출진 부대 · 보물 · 준비 · 난이도). */
 function zhugeBriefing(chapter:number,storyMods?:BattleMods){
   const c=chapters[chapter]!;if(!zhugeUnlocked(chapter)){toast('아직 열리지 않은 전장입니다.');showZhuge();return;}
-  let difficulty:'normal'|'extreme'='normal';
-  const dispatch=()=>({...zhugeDeployment(campaign,c.stage,difficulty),...(storyMods?{storyMods}:{})});
+  let difficulty:'normal'|'extreme'='normal',prep:Preparation='survival',officer='',filter='weapon',inspect=campaign.treasures[0]??treasures[0]!.id;
+  const normalDone=Array.isArray(progress()[c.stage.id+':normal']);
+  const dispatch=(preview=false)=>{const d={...zhugeDeployment(campaign,c.stage,difficulty),...(storyMods?{storyMods:{...storyMods}}:{})};
+    // 연구(천명으로 여는 영구 강화)는 두 이야기 어디서든 함께 간다.
+    if(!preview){const m=loadMeta(),names=c.stage.deployment.forced.map(id=>zhugeName(id)).filter((n):n is string=>!!n),p=deploymentPerks(m,[...names,...Object.keys(m.officerPerks??{})]);if(p)d.perks=p;}return d;};
+  const hero=()=>zhugeLevel(campaign,'제갈량',c.stage,difficulty);
   const draw=()=>{
-    const preview=new Session(chapter,difficulty,215,'survival',RULES,dispatch()),units=preview.state.living('player');
-    modal(`<div class="briefing camp-screen"><div class="prep-backdrop" style="${isoBackdrop(16)}"></div><div class="eyebrow">${esc(c.year)} · 출진 전 정비</div><h2>${esc(c.stage.subtitle??c.stage.title)}</h2><p class="camp-mission">${esc(c.stage.synopsis??'')}</p>${conditionsHtml(preview.conditions)}
-      <fieldset class="zg-diff"><legend>난이도</legend><label><input type="radio" name="zg-diff" value="normal" ${difficulty==='normal'?'checked':''}> 일반</label><label><input type="radio" name="zg-diff" value="extreme" ${difficulty==='extreme'?'checked':''}> 극한 <small>적·아군 기본 레벨 +2 · 극한 천명 조건</small></label></fieldset>
-      <div class="zg-sortie"><b>출진 부대</b>${units.map(u=>`<span class="sortie-chip forced"><span><strong>${esc(u.name)}</strong><small>Lv.${u.level} · ${esc(classNames[u.unitClass]??u.unitClass)}</small><em>필수 출진</em></span></span>`).join('')}</div>
-      <div class="zg-gear"><b>보물</b>${units.map(u=>{const key=gearKey(u),gear=campaign.loadouts?.[key]??{};return `<div class="zg-gear-row"><strong>${esc(u.name)}</strong>${(Object.keys(gearNames) as GearSlot[]).map(slot=>{const owned=treasures.filter(t=>campaign.treasures.includes(t.id)&&treasureInfo(t.id).slot===slot);return `<label>${gearNames[slot]}<select data-zg-gear="${esc(key)}" data-slot="${slot}" ${owned.length?'':'disabled'}><option value="">${owned.length?'없음':'가진 보물 없음'}</option>${owned.map(t=>{const who=Object.entries(campaign.loadouts??{}).find(([k,g])=>k!==key&&Object.values(g??{}).includes(t.id))?.[0];return `<option value="${t.id}" ${gear[slot]===t.id?'selected':''}>${esc(t.name)}${who?` (${esc(GEAR_OWNER[who]??who)} 장착 중)`:''}</option>`;}).join('')}</select></label>`;}).join('')}</div>`;}).join('')}<small class="muted">보물은 두 이야기가 함께 씁니다. 다른 장수가 입은 보물을 고르면 이 장수에게 옮겨 갑니다.</small></div>
-      <p class="muted">장수 레벨은 인물마다 기억된다. 다른 이야기에서 키운 장수도 내 편으로 나오면 그 레벨로 선다.</p>
-      <div class="modal-actions"><button id="zg-brief-back">← 장 목록</button><button id="zg-deploy" class="primary">출진 →</button></div></div>`,false);
-    document.querySelectorAll<HTMLInputElement>('[name=zg-diff]').forEach(el=>el.onchange=()=>{difficulty=el.value as 'normal'|'extreme';draw();});
-    document.querySelectorAll<HTMLSelectElement>('[data-zg-gear]').forEach(el=>el.onchange=()=>{if(equipSlot(campaign,el.dataset.zgGear!,el.dataset.slot as GearSlot,el.value)){saveCampaign();sound.sfx('select');}draw();});
-    $('#zg-brief-back').onclick=showZhuge;
-    $('#zg-deploy').onclick=()=>{session=new Session(chapter,difficulty,215,'survival',RULES,dispatch());activate();persist();};
+    const previousScroll=$('#modal-content .camp-screen')?$<HTMLDialogElement>('#modal').scrollTop:0;
+    const preview=new Session(chapter,difficulty,215,prep,RULES,dispatch(true)),units=preview.state.living().filter(u=>u.side==='player'||u.side==='ally');
+    if(!units.some(u=>gearKey(u)===officer))officer=gearKey(units.find(u=>u.side==='player')??units[0]!);
+    modal(`<div class="briefing camp-screen"><div class="prep-backdrop" style="${isoBackdrop(16)}"></div><div class="eyebrow">${esc(c.year)} · 출진 전 정비</div><h2>${esc(c.stage.subtitle??c.stage.title)}</h2><p class="camp-mission">${esc(c.stage.synopsis??'')}</p>${conditionsHtml(preview.conditions)}${campMarkup(campaign,units,officer,filter,inspect,faceFor,[],c.stage.deployment.forced)}<details><summary>작전·지형 정보</summary><p>${esc(c.label)} · ${preview.state.map.width}×${preview.state.map.height} 전장. 장수 레벨은 인물마다 기억된다. 다른 이야기에서 키운 장수도 내 편으로 나오면 그 레벨로 서고, 처음 나서는 장수는 이 장의 기본 레벨(Lv.${zhugeBase(c.stage,difficulty)})로 선다. 보물·연구는 두 이야기가 함께 쓴다.</p></details><div class="preparations">${[['survival','생존','체력 +25'],['strategy','책략','MP +18'],['command','지휘','이동 +1']].map(([id,name,desc])=>`<label><input type="radio" name="preparation" value="${id}" ${prep===id?'checked':''}>${name} · ${desc}</label>`).join('')}</div><div class="difficulty"><label><input type="radio" name="difficulty" value="normal" ${difficulty==='normal'?'checked':''}> 일반</label><label><input type="radio" name="difficulty" value="extreme" ${difficulty==='extreme'?'checked':''} ${normalDone?'':'disabled'}> 극한 · 일반 완료 후</label></div><div class="modal-actions"><button id="brief-back">← 장 목록</button><span>구급약 ${preview.medicine} · 제갈량 Lv.${hero()}</span><button id="deploy" class="primary">출진한다 →</button></div></div>`,false);
+    document.querySelectorAll<HTMLButtonElement>('[data-officer]').forEach(b=>b.onclick=()=>{officer=b.dataset.officer!;draw();});
+    document.querySelectorAll<HTMLButtonElement>('[data-gear-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.gearFilter!;draw();});
+    document.querySelectorAll<HTMLButtonElement>('[data-treasure]').forEach(b=>b.onclick=()=>{inspect=b.dataset.treasure!;draw();});
+    $('#equip-treasure')?.addEventListener('click',()=>{if(equipSlot(campaign,officer,treasureInfo(inspect).slot,inspect)){saveCampaign();draw();}});
+    document.querySelectorAll<HTMLButtonElement>('[data-equip-id]').forEach(b=>b.onclick=()=>{const id=b.dataset.equipId!;inspect=id;if(equipSlot(campaign,officer,treasureInfo(id).slot,id)){saveCampaign();toast(`${treasures.find(t=>t.id===id)?.name??'보물'} 장착`);}draw();});
+    document.querySelectorAll<HTMLButtonElement>('[data-unequip]').forEach(b=>b.onclick=()=>{if(equipSlot(campaign,officer,b.dataset.unequip as GearSlot,'')){saveCampaign();draw();}});
+    document.querySelectorAll<HTMLInputElement>('[name=preparation]').forEach(el=>el.onchange=()=>{prep=el.value as Preparation;draw();});
+    document.querySelectorAll<HTMLInputElement>('[name=difficulty]').forEach(el=>el.onchange=()=>{difficulty=el.value as 'normal'|'extreme';draw();});
+    $('#brief-back').onclick=showZhuge;
+    $('#deploy').onclick=()=>{session=new Session(chapter,difficulty,215,prep,RULES,dispatch());activate();persist();};
+    $<HTMLDialogElement>('#modal').scrollTop=previousScroll;
   };draw();
 }
 /** 제갈량전 전투가 끝났을 때: 천명 조건·천명·장수 성장(이름별) → 전투 뒤 장면 → 결과. */

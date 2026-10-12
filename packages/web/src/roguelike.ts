@@ -15,6 +15,7 @@ import {availableStrategies,strategiesFor} from './officers.ts';
 import {ROUTES,routeById,routesFor,fatePoint,type Tale} from './fate.ts';
 import {romanceOf,romanceStats} from './romance.ts';
 import {을를} from './josa.ts';
+import {SUPPORT_OFFICERS} from './support-officers.ts';
 
 export const FLOORS_PER_ACT=6;
 export const RUN_FLOORS=18;
@@ -535,6 +536,7 @@ const STAGE_OFFICER_NAMES:Record<string,string>={sima_yi:'사마의',sima_lang:'
 export function stageOfficerNames(stage:StageDef):Set<string>{
   const names=new Set<string>((stage.deployment.forced??[]).map(id=>STAGE_OFFICER_NAMES[id]??id));
   for(const ev of stage.events??[])for(const a of ev.actions)if(a.type==='spawn_units')for(const u of a.units??[])if(u.name)names.add(u.name);
+  for(const n of SUPPORT_OFFICERS[stage.id]??[])names.add(n);
   return names;
 }
 export function addRecruits(state:BattleState,recruits:RunUnit[],rev=12){
