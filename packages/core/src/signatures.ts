@@ -10,80 +10,14 @@ import type { Unit, UnitClass, StatusKind } from "./types.ts";
 import { defineTrait, fieldOf, combine, type DamageContext, type TraitHooks } from "./traits.ts";
 import { familyOf } from "./classes.ts";
 import { engageDistance } from "./reach.ts";
-
-const TIER_MUL = [1, 1.3, 1.6, 2] as const;
-/** 병종 단계 → 수치 배율 */
-export const sigMul = (tier: number) => TIER_MUL[Math.max(1, Math.min(4, Math.round(tier || 1))) - 1]!;
-const pct = (x: number, k: number) => Math.round(x * k);
-
-const MOUNTED = new Set<string>(["cavalry", "heavyCav", "horseArcher"]);
-const RANGED = new Set<string>(["archer", "crossbow", "horseArcher", "catapult", "navy"]);
-const FOOT = new Set<string>(["infantry", "spearman"]);
-const fam = (c: UnitClass) => familyOf(c) as string;
-const mounted = (u: Unit) => MOUNTED.has(fam(u.unitClass));
-const ranged = (u: Unit) => RANGED.has(fam(u.unitClass));
-const foot = (u: Unit) => FOOT.has(fam(u.unitClass));
-const caster = (u: Unit) => u.stats.maxMp > 0 && u.strategies.length > 0;
-const friends = (a: Unit, b: Unit) => (a.side === "enemy") === (b.side === "enemy");
-/** 이름있는 장수(고유특성이나 이름난 장수 표식이 있는 부대) */
-export const isNamedOfficer = (u: Unit) => u.famedReach === true || u.traits.some((t) => t.startsWith("sig:"));
-
-function around(self: Unit, r: number, pick: "friend" | "foe"): Unit[] {
-  const f = fieldOf(self);
-  if (!f) return [];
-  const out: Unit[] = [];
-  for (const u of f.units.values()) {
-    if (!u.alive || u === self) continue;
-    if ((pick === "friend") !== friends(self, u)) continue;
-    if (engageDistance(self.pos, u.pos) <= r) out.push(u);
-  }
-  return out;
-}
-function terrainOf(u: Unit): string | undefined {
-  const f = fieldOf(u);
-  return f && f.map.inBounds(u.pos) ? f.map.tileAt(u.pos).terrain : undefined;
-}
-const WET = new Set(["water", "ford", "rapids"]);
-/** 물 칸 위나 물 칸 바로 옆 */
-function byWater(u: Unit): boolean {
-  const f = fieldOf(u);
-  if (!f) return false;
-  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-    const c = { x: u.pos.x + dx, y: u.pos.y + dy };
-    if (f.map.inBounds(c) && WET.has(f.map.tileAt(c).terrain)) return true;
-  }
-  return false;
-}
-const turnOf = (u: Unit) => fieldOf(u)?.turn ?? 1;
-const hpRate = (u: Unit) => u.hp / Math.max(1, u.stats.maxHp);
-const phys = (ctx: DamageContext) => ctx.kind === "physical";
-const strat = (ctx: DamageContext) => ctx.kind === "strategy";
-function give(self: Unit, target: Unit, kind: StatusKind, turns: number, magnitude = 1) {
-  fieldOf(self)?.applyStatus(target, { kind, turns, magnitude });
-}
-function heal(u: Unit, rate: number) {
-  if (u.hp >= u.stats.maxHp) return;
-  u.hp = Math.min(u.stats.maxHp, u.hp + Math.max(1, Math.round(u.stats.maxHp * rate)));
-}
-const NEGATIVE: StatusKind[] = ["confusion", "immobile", "bound", "bleed", "burn", "shock", "seal", "weaken", "breach", "slow", "sluggish", "dispirit"];
-function cleanse(u: Unit, kinds: readonly StatusKind[] = NEGATIVE) {
-  u.statuses = u.statuses.filter((s) => !kinds.includes(s.kind));
-}
-/** 전투당 한 번: 장수의 traitParams에 표시해 둔다. */
-function once(u: Unit, key: string): boolean {
-  const k = `once:${key}`;
-  if (u.traitParams[k]) return false;
-  u.traitParams[k] = 1;
-  return true;
-}
-
-export interface Signature {
-  /** 고유특성 이름 */
-  readonly name: string;
-  /** 지금 단계의 설명 */
-  text(tier?: number): string;
-  readonly hooks: TraitHooks;
-}
+import { TIER_MUL, sigMul, pct, MOUNTED, RANGED, FOOT, fam, mounted, ranged, foot, caster, friends, isNamedOfficer, around, terrainOf, WET, byWater, turnOf, hpRate, phys, strat, give, heal, NEGATIVE, cleanse, once, N, P, always, atk, def, crit, aim, dodge, pierce, turn, both, fire, onTerrain, fort, near, sig2, T, early } from "./signature-kit.ts";
+import type { Signature, Cond } from "./signature-kit.ts";
+export type { Signature } from "./signature-kit.ts";
+export { sigMul, isNamedOfficer } from "./signature-kit.ts";
+import extraA from "./signatures-a.ts";
+import extraB from "./signatures-b.ts";
+import extraC from "./signatures-c.ts";
+import extraD from "./signatures-d.ts";
 
 const S: Record<string, Signature> = {
   // ── 위·진
@@ -312,39 +246,6 @@ const S: Record<string, Signature> = {
     hooks: { onAttack(ctx, s, p) { if (s.movedThisTurn) ctx.attackMul *= 1 + pct(15, sigMul(p)) / 100; } } },
 };
 
-// ─────────────────────────────────────────── 둘째·셋째 고유특성(병종 진화로 하나씩 해금)
-
-const N = (x: number, p: number) => pct(x, sigMul(p));
-const P = (x: number, p: number) => N(x, p) / 100;
-type Cond = (ctx: DamageContext, self: Unit) => boolean;
-const always: Cond = () => true;
-/** 조건이 맞으면 주는 피해 x% 증가 */
-const atk = (x: number, c: Cond = always): TraitHooks => ({ onAttack(ctx, s, p) { if (c(ctx, s)) ctx.attackMul *= 1 + P(x, p); } });
-/** 조건이 맞으면 받는 피해 x% 감소 */
-const def = (x: number, c: Cond = always): TraitHooks => ({ onDefend(ctx, s, p) { if (c(ctx, s)) ctx.reduction = combine(ctx.reduction, P(x, p)); } });
-const crit = (x: number, c: Cond = always): TraitHooks => ({ onAttack(ctx, s, p) { if (c(ctx, s)) ctx.criticalChance += N(x, p); } });
-const aim = (x: number, c: Cond = always): TraitHooks => ({ onAttack(ctx, s, p) { if (c(ctx, s)) ctx.accuracyMod += N(x, p); } });
-const dodge = (x: number, c: Cond = always): TraitHooks => ({ onDefend(ctx, s, p) { if (c(ctx, s)) ctx.accuracyMod -= N(x, p); } });
-const pierce = (x: number, c: Cond = always): TraitHooks => ({ onAttack(ctx, s, p) { if (c(ctx, s)) ctx.defenseIgnore = Math.max(ctx.defenseIgnore, P(x, p)); } });
-const turn = (f: (u: Unit, p: number) => void): TraitHooks => ({ onTurnStart: f });
-/** 훅 여러 개를 하나로 */
-function both(...hs: TraitHooks[]): TraitHooks {
-  const out: TraitHooks = {};
-  for (const k of ["onAttack", "onDefend", "onTurnStart", "onAllyAttack", "onAllyDefend"] as const) {
-    const fs = hs.map((h) => h[k]).filter(Boolean) as Array<(...a: unknown[]) => void>;
-    if (fs.length) (out as Record<string, unknown>)[k] = (...a: unknown[]) => { for (const f of fs) f(...a); };
-  }
-  for (const h of hs) { if (h.redirectsAdjacentDamage) out.redirectsAdjacentDamage = true; if (h.ignoresRoughTerrain) out.ignoresRoughTerrain = true; if (h.alwaysDouble) out.alwaysDouble = true; }
-  return out;
-}
-const fire = (ctx: DamageContext) => ctx.kind === "strategy" && ctx.element === "fire";
-const onTerrain = (u: Unit, ...t: string[]) => t.includes(terrainOf(u) ?? "");
-const fort = (u: Unit) => onTerrain(u, "fort", "gate");
-const near = (u: Unit, name: string, r = 2) => around(u, r, "friend").some((a) => a.name === name);
-const sig2 = (name: string, text: (t?: number) => string, hooks: TraitHooks): Signature => ({ name, text, hooks });
-const T = (t: number | undefined, x: number) => pct(x, sigMul(t ?? 1));
-const early = (n: number) => (u: Unit) => { if (turnOf(u) <= n) give(u, u, "haste", 1, 2); };
-
 const MORE: Record<string, [Signature, Signature]> = {
   사마의: [sig2("은인자중", (t) => `받는 물리 피해 ${T(t, 15)}% 감소, 체력 절반 이하에서는 ${T(t, 25)}% 감소.`, { onDefend(ctx, s, p) { if (phys(ctx)) ctx.reduction = combine(ctx.reduction, P(hpRate(s) <= .5 ? 25 : 15, p)); } }),
     sig2("고평릉의 결단", (t) => `체력이 절반 이하인 적에게 책략 피해 ${T(t, 25)}% 증가.`, atk(25, (c) => strat(c) && hpRate(c.defender) <= .5))],
@@ -540,6 +441,12 @@ const MORE: Record<string, [Signature, Signature]> = {
   문흠: [sig2("관구검과 함께", (t) => `체력 절반 이하에서 주는 피해 ${T(t, 18)}% 증가.`, atk(18, (_c, s) => hpRate(s) <= .5)),
     sig2("오로 달아나다", (t) => `이번 차례 움직였다면 회피 +${T(t, 12)}%p, 받는 물리 피해 ${T(t, 8)}% 감소.`, both(dodge(12, (_c, s) => !!s.movedThisTurn), def(8, (c, s) => phys(c) && !!s.movedThisTurn)))],
 };
+
+// 장수 묶음 파일(signatures-a~d.ts): 제갈량전과 사마의전 편입 장수 등 나중에 더한 이름있는 장수의 고유특성 셋.
+for (const extra of [extraA, extraB, extraC, extraD]) for (const [who, [first, second, third]] of Object.entries(extra)) {
+  if (S[who]) throw new Error(`고유특성 중복: ${who}`);
+  S[who] = first; MORE[who] = [second, third];
+}
 
 /** 고유특성이 있는 이름있는 장수 이름(게임에 나오는 장수만). */
 export const SIGNATURE_NAMES: readonly string[] = Object.keys(S);
