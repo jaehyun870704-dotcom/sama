@@ -19,6 +19,13 @@ export const officerLooks=[
  {id:'sima_zhao',name:'사마소',title:'자상 · 사마의의 둘째 아들',slot:13},
  {id:'zhang_he',name:'장합',title:'준예 · 노련한 선봉',slot:14},
  {id:'guo_huai',name:'곽회',title:'백제 · 서방의 수문장',slot:15},
+ {id:'sima_fu',name:'사마부',title:'숙달 · 사마씨의 중신',slot:16},
+ {id:'zhuge_liang',name:'제갈량',title:'공명 · 촉한의 승상',slot:17},
+ {id:'sun_quan',name:'손권',title:'중모 · 강동의 군주',slot:18},
+ {id:'meng_da',name:'맹달',title:'자경 · 상용의 장수',slot:19},
+ {id:'hu_zun',name:'호준',title:'위의 노련한 장수',slot:20},
+ {id:'deng_ai',name:'등애',title:'사재 · 험로의 명장',slot:21},
+ {id:'zhong_hui',name:'종회',title:'사계 · 젊은 책사',slot:22},
 ] as const;
 const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 export function officerLook(name:string){name=artKey(name);return officerLooks.find(p=>p.id===name||p.name===name);}
