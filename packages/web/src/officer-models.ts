@@ -28,7 +28,7 @@ export const officerManifest:OfficerEntry[]=[
   E('cao_pi','조비',c('cao_pi','lord',1,350,280),{story:'cao_pi-story-v1.webp',bust:'cao_pi-bust-v1.webp',duel:'officers/cao_pi-duel-v1.webp'}),
   E('cao_rui','조예',c('cao_rui','lord',1,350,280),{duel:'officers/cao_rui-duel-v1.webp'}),
   E('xu_chu','허저',c('xu_chu','infantry'),{story:'xu_chu-story-v1.webp',bust:'xu_chu-bust-v1.webp',duel:'officer-battle-wei-v2.webp'}),
-  E('ma_chao','마초',{...c('ma_chao','cavalry'),...c('ma_chao','heavyCav',1,350,280)},{story:'ma_chao-story-v1.webp',bust:'ma_chao-bust-v1.webp',duel:'officer-battle-rivals-v2.webp'}),
+  E('ma_chao','마초',{heavyCav:['ma_chao-battle-heavyCav-style-v2.webp',350,280,1],cavalry:['ma_chao-battle-cavalry-style-v2.webp',280,224,1]},{story:'ma_chao-story-v1.webp',bust:'ma_chao-bust-v1.webp',duel:'officer-battle-rivals-v2.webp'}),
   E('lu_bu','여포',{...c('lu_bu','cavalry'),...c('lu_bu','heavyCav',1,350,280)},{story:'lu_bu-story-v1.webp',bust:'lu_bu-bust-v1.webp',duel:'officers/lu_bu-duel-v2.webp'}),
   E('xiang_yu','항우',c('xiang_yu','lord',1,350,280),{duel:'officers/xiang_yu-duel-v1.webp'}),
   E('chen_gong','진궁',c('chen_gong','strategist'),{story:'chen_gong-story-v1.webp',bust:'chen_gong-bust-v1.webp',duel:'officer-battle-rivals-v2.webp'}),
