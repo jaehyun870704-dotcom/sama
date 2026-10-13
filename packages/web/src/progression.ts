@@ -30,7 +30,9 @@ export interface Deployment {scenario?:ScenarioDeployment;/** 연의 이야기�
   /** 출진 순간의 부대 보관함 소모품(전투 중 「도구」로 꺼내 쓴다). */
   supplies?:Record<string,number>;
   /** 새 장비 체계(고유 보물 50 · 상점 장비 · 장비 레벨)로 만든 출진. 없으면 그 전의 저장이다. */
-  gearRules?:2}
+  gearRules?:2;
+  /** 극한 다시 맞춤(2026-10-13) 뒤에 만든 출진: 사마의전 극한의 적이 더 세다(`foeEdgesExtreme`). 없으면 그 전의 저장이다. */
+  extremeRules?:1}
 export type GearSlot=CoreGearSlot;
 /** 고유 보물(이름 있는 보물) 한 점: 도감·정비·상점이 보는 꼴. */
 export interface Treasure {id:string;name:string;
@@ -87,7 +89,7 @@ export function gearDeployment(c:Campaign):Pick<Deployment,'gearLevels'|'supplie
   const supplies:Record<string,number>={};for(const [k,n] of Object.entries(c.supplies??{}))if(n>0&&consumable(k))supplies[k]=n;
   return {...(Object.keys(gearLevels).length?{gearLevels}:{}),...(Object.keys(supplies).length?{supplies}:{})};
 }
-export function deployment(c:Campaign,modern=false):Deployment{return {...(modern?{treasureRules:1 as const,growth:{storyWins:new Set(c.rewards.filter(r=>r.endsWith(':normal')).map(r=>r.split(':')[0])).size,trainingWins:c.trainingWins??0,questWins:c.quests?.length??0}}:{}),levels:Object.fromEntries(OFFICERS.map(id=>[id,levelInfo(c.xp[id]??0).level])),xp:Object.fromEntries(OFFICERS.map(id=>[id,levelInfo(c.xp[id]??0).xp])),equipped:{...c.equipped},...(c.loadouts?{loadouts:structuredClone(c.loadouts)}:{}),...(modern?gearDeployment(c):{}),gearRules:2};}
+export function deployment(c:Campaign,modern=false):Deployment{return {...(modern?{treasureRules:1 as const,extremeRules:1 as const,growth:{storyWins:new Set(c.rewards.filter(r=>r.endsWith(':normal')).map(r=>r.split(':')[0])).size,trainingWins:c.trainingWins??0,questWins:c.quests?.length??0}}:{}),levels:Object.fromEntries(OFFICERS.map(id=>[id,levelInfo(c.xp[id]??0).level])),xp:Object.fromEntries(OFFICERS.map(id=>[id,levelInfo(c.xp[id]??0).xp])),equipped:{...c.equipped},...(c.loadouts?{loadouts:structuredClone(c.loadouts)}:{}),...(modern?gearDeployment(c):{}),gearRules:2};}
 /** 고유 보물을 보관함에 넣는다(이미 있으면 그대로). 넣었으면 true. */
 export function grantTreasure(c:Campaign,id:string){if(!isNamedGear(id)||c.treasures.includes(id))return false;c.treasures.push(id);return true;}
 export function award(c:Campaign,stage:string,difficulty:Difficulty,participants:string[],seals:number[]){
