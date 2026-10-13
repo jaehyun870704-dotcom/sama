@@ -483,6 +483,26 @@ export const turnLimitsExtreme:Record<string,number>={
   'S2-11':8,'S3-01':10,'S3-06':9,'S3-07':9,
 };
 
+/**
+ * 제갈량전 극한 다시 맞춤(2026-10-13): 새로 시작한 제갈량전 본편 극한 전투(출진 기록 `extremeRules`)의 적 보정(%)과 턴 제한.
+ * 사마의전 표와 따로 둔다. 표에 없는 장은 보정 0·턴 제한 없음(그대로). 갈림길(ZB)은 일반만 있어 받지 않는다.
+ * 목표: 장비를 단 극한 70~85%, 장비 없는 극한 65% 이상(자동 플레이 40판). 근거는 docs/tech/지속개발-현황.md 「제갈량전 극한 턴 제한·보정」.
+ */
+export const foeEdgesExtremeZ:Record<string,number>={
+  // 70~85%에 맞춘 장(장비 단 쪽이 같거나 늦게 이기는 장은 아래 턴 제한과 함께).
+  'Z1-03':50,'Z1-06':25,'Z1-08':10,'Z1-12':10,'Z1-13':15,'Z2-08':30,'Z2-16':80,'Z2-19':50,
+  // 장비 없는 쪽이 70% 언저리로 내려오기 전까지만 누른 장(장비 단 쪽은 85%를 조금 넘는다).
+  'Z1-04':60,'Z1-07':30,'Z2-06':10,
+};
+export const turnLimitsExtremeZ:Record<string,number>={
+  // 장비를 단 쪽이 같거나 늦게 이기는 장만. 턴 수는 장비 없는 자동 플레이가 이긴 평균 턴 이상.
+  'Z1-02':16,'Z1-03':5,'Z1-05':8,'Z1-08':9,'Z1-12':9,'Z2-06':9,'Z2-08':8,'Z2-16':6,'Z2-19':7,
+};
+/** 새 극한 전투의 장별 적 보정(%): 사마의전은 표에 없으면 EXTREME_EDGE, 제갈량전은 0. */
+export const extremeEdge=(id:string)=>id.startsWith('Z')?foeEdgesExtremeZ[id]??0:foeEdgesExtreme[id]??EXTREME_EDGE;
+/** 새 극한 전투의 장별 턴 제한(없으면 undefined). */
+export const extremeTurnLimit=(id:string):number|undefined=>id.startsWith('Z')?turnLimitsExtremeZ[id]:turnLimitsExtreme[id];
+
 /** 규칙판 9: 넓은 전장에서 지켜야 할 장수를 그만큼 더 단단하게(적 보정이 바닥 -85%에 닿은 장). */
 export const toughWide:Record<string,Array<{unit:string;hpScale:number;defense?:number}>>={
   'S1-02':[{unit:'sima_lang',hpScale:1.3,defense:4},{unit:'sima_yi',hpScale:1.25,defense:4}],

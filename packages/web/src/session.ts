@@ -26,7 +26,7 @@ import tongguanStage from '../../data/stages/S1-06.json';
 import tongguanMap from '../../data/maps/tongguan-pass.json';
 import retreatStage from '../../data/stages/S1-05.json';
 import retreatMap from '../../data/maps/yangtze-retreat.json';
-import {stageRules,weatherLine,foeEdges,foeEdges6,foeEdges7,foeEdges8,foeEdgesWide,foeEdges13,EXTREME_EDGE,foeEdgesExtreme,turnLimitsExtreme,toughWide,tough8,foeLevelCap6} from './stage-rules.ts';
+import {stageRules,weatherLine,foeEdges,foeEdges6,foeEdges7,foeEdges8,foeEdgesWide,foeEdges13,extremeEdge,extremeTurnLimit,toughWide,tough8,foeLevelCap6} from './stage-rules.ts';
 import {campaignStage,addFortifications,addSiegeCompany,structureKind,encircled,encounterLevels} from './campaign-rules.ts';
 import {applyTreasure,equippedItems,treasureInfo,gearKey,validGearKey,type Deployment,OFFICERS} from './progression.ts';
 import {legacyGear} from './gear-migration.ts';
@@ -229,8 +229,9 @@ export class Session {
     this.large=large;
     this.wide=wide;
     this.historic=wide&&this.deployment?.wide===2&&this.revision>=13&&!!HISTORIC_BATTLES[entry.stage.id];
-    // 극한 다시 맞춤: 새로 시작한 사마의전 극한(넓은 전장 · 출진 기록 extremeRules)만 적을 더 세게 한다.
-    this.hardened=this.difficulty==='extreme'&&this.revision>=13&&this.deployment?.extremeRules===1&&this.deployment.wide===2&&!this.deployment.run&&!this.deployment.mission&&/^S\d/.test(entry.stage.id);
+    // 극한 다시 맞춤: 새로 시작한 사마의전·제갈량전 본편 극한(넓은 전장 · 출진 기록 extremeRules)만 적을 더 세게 하고 턴 제한을 건다.
+    // 제갈량전 갈림길(ZB)은 일반만 있어 빠진다. 두 이야기는 표가 따로다(foeEdgesExtreme·turnLimitsExtreme / …Z).
+    this.hardened=this.difficulty==='extreme'&&this.revision>=13&&this.deployment?.extremeRules===1&&this.deployment.wide===2&&!this.deployment.run&&!this.deployment.mission&&/^[SZ]\d/.test(entry.stage.id);
     const level=entry.stage.difficulty[this.difficulty].recommendedLevel;
     const state=assemble({stage:entry.stage,map:entry.map,difficulty:this.difficulty,seed:this.seed,roster:[
       {id:'sima_yi',name:'사마의',unitClass:'strategist',level,strategies:['windDragon','fire'],traits:['alwaysHit']},
@@ -529,7 +530,7 @@ export class Session {
     if(this.revision<4)return;
     // 꿈속의 환영과 호위 대상(일부러 맞춘 체력·이동)은 연의 능력을 입히지 않는다.
     const escorts=new Set([...(stageRules[state.stage.id]?.protect??[]).map(p=>p.unit),...(this.chapter===8||this.chapter===9?['cao_cao']:[])]);
-    const edge=Math.max(-85,((stageRules[state.stage.id]?.foeEdge??foeEdges[state.stage.id])?.[this.difficulty]??0)+(this.revision>=6?foeEdges6[state.stage.id]?.[this.difficulty]??0:0)+(this.revision>=7?foeEdges7[state.stage.id]?.[this.difficulty]??0:0)+(this.revision>=8?foeEdges8[state.stage.id]?.[this.difficulty]??0:0)+(this.revision>=9&&this.deployment?.wide?foeEdgesWide[state.stage.id]?.[this.difficulty]??0:0)+(this.historic?HISTORIC_EDGE[state.stage.id]?.[this.difficulty]??0:0)+(this.revision>=13?foeEdges13[state.stage.id]?.[this.difficulty]??0:0)+(this.hardened?foeEdgesExtreme[state.stage.id]??EXTREME_EDGE:0));
+    const edge=Math.max(-85,((stageRules[state.stage.id]?.foeEdge??foeEdges[state.stage.id])?.[this.difficulty]??0)+(this.revision>=6?foeEdges6[state.stage.id]?.[this.difficulty]??0:0)+(this.revision>=7?foeEdges7[state.stage.id]?.[this.difficulty]??0:0)+(this.revision>=8?foeEdges8[state.stage.id]?.[this.difficulty]??0:0)+(this.revision>=9&&this.deployment?.wide?foeEdgesWide[state.stage.id]?.[this.difficulty]??0:0)+(this.historic?HISTORIC_EDGE[state.stage.id]?.[this.difficulty]??0:0)+(this.revision>=13?foeEdges13[state.stage.id]?.[this.difficulty]??0:0)+(this.hardened?extremeEdge(state.stage.id):0));
     const cap6=this.revision>=6?foeLevelCap6[state.stage.id]?.[this.difficulty]:undefined,top=Math.max(1,...state.living('player').map(u=>u.level));
     for(const u of state.living())if(!this.romanced.has(u.id)){this.romanced.add(u.id);u.classTactics=true;if(cap6!==undefined&&u.side==='enemy'&&u.level>top+cap6&&!/^(gate|tower)_/.test(u.id))u.level=top+cap6;if(this.revision>=5){const fixed=escorts.has(u.id)||!!structureKind(u.id);if(this.revision<8&&!u.name.endsWith('환영')&&!escorts.has(u.id))applyRomance(u,false);if(this.revision>=6)u.ratioRules=true;applyCC(u,fixed);}else if(!u.name.endsWith('환영')&&!escorts.has(u.id))applyRomance(u);
       // 규칙판 6부터는 망루도 같은 보정을 받는다(성문은 공격하지 않으므로 제외).
@@ -732,7 +733,7 @@ export class Session {
   /** 규칙판 6은 비율 피해라 성 안 적을 베어 나가는 데 턴이 더 든다. */
   get escapeDeadline(){return this.revision>=6?ESCAPE_DEADLINE_6:ESCAPE_DEADLINE;}
   /** 극한 턴 제한(새 극한 전투만): 이 턴 안에 이기지 못하면 패배. */
-  get extremeLimit(){return this.hardened?turnLimitsExtreme[this.state.stage.id]:undefined;}
+  get extremeLimit(){return this.hardened?extremeTurnLimit(this.state.stage.id):undefined;}
   get deadline(){const base=stageRules[this.state.stage.id]?.deadline??(this.chapter===0&&this.difficulty==='extreme'?this.escapeDeadline:undefined),x=this.extremeLimit;return x!==undefined&&(base===undefined||x<base)?x:base;}
   get somber(){return stageRules[this.state.stage.id]?.somber===true;}
   get canCalm(){return stageRules[this.state.stage.id]?.calm===true;}

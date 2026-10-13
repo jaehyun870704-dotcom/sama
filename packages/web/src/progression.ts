@@ -31,7 +31,7 @@ export interface Deployment {scenario?:ScenarioDeployment;/** 연의 이야기�
   supplies?:Record<string,number>;
   /** 새 장비 체계(고유 보물 50 · 상점 장비 · 장비 레벨)로 만든 출진. 없으면 그 전의 저장이다. */
   gearRules?:2;
-  /** 극한 다시 맞춤(2026-10-13) 뒤에 만든 출진: 사마의전 극한의 적이 더 세다(`foeEdgesExtreme`). 없으면 그 전의 저장이다. */
+  /** 극한 다시 맞춤(2026-10-13) 뒤에 만든 출진: 사마의전·제갈량전 본편 극한의 적이 더 세고 턴 제한이 걸린다(`foeEdgesExtreme`·`turnLimitsExtreme`, 제갈량전은 …Z 표). 없으면 그 전의 저장이다. */
   extremeRules?:1}
 export type GearSlot=CoreGearSlot;
 /** 고유 보물(이름 있는 보물) 한 점: 도감·정비·상점이 보는 꼴. */
