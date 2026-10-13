@@ -124,6 +124,8 @@ function runTitleShowcase(){
   const restart=()=>{clearInterval(timer);if(!reduce)timer=window.setInterval(()=>{if(!root.isConnected){clearInterval(timer);return;}show(at+1);},2000);};
   dots.forEach((d,j)=>d.onclick=()=>{show(j);restart();});restart();
 }
+/** 배포 판 번호(Vercel 커밋 앞 7자리, 로컬은 'local') — 휴대폰이 옛 화면을 들고 있는지 알아보는 표시. */
+const BUILD=((import.meta as {env?:Record<string,string|undefined>}).env?.VITE_BUILD??'').slice(0,7)||'local';
 export function showTitle(host:RunHost){
   const c=host.chronicleSummary(),resume=host.resumeSaved,last=host.lastBattle();
   const item=(id:string,label:string,sub:string,cls='')=>`<button id="${id}" class="${cls}"><span>${label}</span><small>${sub}</small></button>`;
@@ -133,7 +135,7 @@ export function showTitle(host:RunHost){
     <div class="tm-group">${item('title-start','시작','사마의전 · 제갈량전 가운데 고른다','primary')}${resume&&last?item('title-resume','이어하기',`${esc(last.where)}${last.turn?` · ${last.turn}턴`:''} · 내 차례부터`):''}${item('title-load','불러오기','저장 칸에서 기록을 불러온다')}</div>
     <div class="tm-group">${item('title-recruit',`등용${(()=>{const n=host.recruitReady?.()??0;return n?` <b class="rc-dot">${n}</b>`:'';})()}`,'연의 합류 · 격파 귀순 · 공훈 등용 — 모은 장수를 연의에 데려간다')}${item('title-codex','도감 보기','인물 · 장수 · 병종 · 책략 · 보물 · 갈림길')}${item('title-lobby','본영','수련장 · 도전 · 연구')}</div>
   </nav>
-  <p class="title-note">비상업 팬 창작 게임 · 등장인물은 『삼국지연의』와 정사를 바탕으로 새로 그렸다</p></div></div>`,false);
+  <p class="title-note">비상업 팬 창작 게임 · 등장인물은 『삼국지연의』와 정사를 바탕으로 새로 그렸다 · 판 ${esc(BUILD)}</p></div></div>`,false);
   runTitleShowcase();
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
   on('title-start',()=>showStoryPick(host,()=>showTitle(host)));on('title-resume',()=>host.resumeSaved?.());on('title-load',()=>host.showSlots(()=>showTitle(host)));
@@ -192,8 +194,8 @@ export function showCollections(host:RunHost,back?:()=>void){
   host.modal(`<div class="briefing collections-screen"><div class="eyebrow">도감</div><h2>도감</h2><p class="screen-lede">모은 보물과 알게 된 인물·병종·책략·갈림길을 본다.</p>
   <div class="codex-cards">
     ${card('col-people','인','인물 열전','연의·정사의 장수 · 능력 · 고유특성 · 열전',`${codexNames().length}명`)}
+    ${card('col-officers','장','장수','SD 전투 모습 · 병종 · 고유특성 — 위 · 촉 · 오 · 군웅 · 초 · 한',`${namedOfficerCount()}명`)}
     ${card('col-classes','병','병종','병종마다 무기·상성·부대효과',`${Object.keys(classNames).length}종`)}
-    ${card('col-officers','장','장수','위 · 촉 · 오 · 군웅 · 초 · 한 장수의 전투 모습 · 고유특성',`${namedOfficerCount()}명`)}
     ${card('col-evolution','진','병종 진화표','레벨이 오르면 어떻게 강해지는가','4단계 진화')}
     ${card('col-strategies','책','책략','속성 단계 · 상승 · 감소 · 보급 · 사신',`${allStrategies.length}종`)}
     ${card('col-treasures','보','보물','고유 보물 50점 · 얻는 곳 · 고유 기능',`${t.owned}/${t.total} · 회차 ${t.relics}/${t.relicTotal}`)}
