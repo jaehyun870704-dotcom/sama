@@ -187,10 +187,10 @@ function figureFit(src:HTMLCanvasElement,sw:number,sh:number){
  * 윗줄 인물의 발끝이 아랫줄 칸 맨 위로 넘어온 시트가 있다(칸 경계를 넘겨 그린 원화).
  * 칸마다 위 5% 안에서 처음 비는 가로줄을 찾아, 그 위에 걸친 조각을 지운다. 빈 줄이 없으면(머리 장식이 칸 끝에 닿음) 두지 않는다.
  */
-function trimBleed(src:HTMLCanvasElement,sw:number,sh:number){
+function trimBleed(src:HTMLCanvasElement,sw:number,sh:number,cols=8){
   const out=canvas(src.width,src.height),g=out.getContext('2d')!;g.drawImage(src,0,0);
   const band=Math.max(2,Math.round(sh*0.05));
-  for(let row=1;row<PX_ROWS;row++)for(let col=0;col<8;col++){
+  for(let row=1;row<PX_ROWS;row++)for(let col=0;col<cols;col++){
     const x0=Math.round(col*sw),y0=Math.round(row*sh),w=Math.round(sw),d=g.getImageData(x0,y0,w,band).data;
     let clearTo=-1;
     for(let y=0;y<band;y++){let any=false;for(let x=0;x<w;x++)if(d[(y*w+x)*4+3]!>40){any=true;break;}if(!any){clearTo=y;break;}}
@@ -204,7 +204,7 @@ function paintedStorySheet(url:string,src:HTMLCanvasElement){
   // 칸을 꽉 채워 그린 시트(인물 키가 칸의 90% 넘게)는 기존 시트처럼 키 86%·발끝 94%로 줄여 담는다.
   // 그대로 담으면 다른 장수보다 머리 하나쯤 커 보이고, 발끝·창끝이 칸 가장자리에서 잘린다.
   const fit=figureFit(src,sw,sh),dw=FIG_W*fit.scale,dh=FIG_H*fit.scale,dx=(FIG_W-dw)/2,dy=fit.dy;
-  src=trimBleed(src,sw,sh);
+  src=trimBleed(src,sw,sh,sourceCols);
   for(let row=0;row<PX_ROWS;row++){
     for(let col=0;col<8;col++)g.drawImage(src,col*sw,row*sh,sw,sh,col*FIG_W+dx,row*FIG_H+dy,dw,dh);
     // 아홉째 칸 원화가 들어오면 그것을 쓰고, 기존 8열 시트는 실제로 그린

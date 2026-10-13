@@ -18,11 +18,15 @@ export interface GroundOpts {snow?:boolean;camp?:boolean}
 type Cell='grass'|'dirt'|'water'|'stone'|'wall'|'gate'|'bridge'|'block'|'pool'|'crop'|'scree';
 type Ctx=CanvasRenderingContext2D;
 type Light='day'|'night'|'dawn'|'dusk';
-interface Prop {armed?:boolean;kind:'tree'|'pine'|'autumn'|'willow'|'house'|'hall'|'tent'|'tower'|'rock'|'bush'|'jar'|'bench'|'fence'|'lantern'|'well'|'fire'|'banner'|'flowers'|'reeds'|'boat'|'crate'|'fenceV'|'rack'|'dummy'|'target'|'stele'|'statue'|'mound'|'trough'|'rockery'|'pavilion'|'stall'|'stump'|'ruin'|'deadtree'|'haystack'|'ruintower'|'stepstone';x:number;y:number;s:number;flip?:boolean;color?:string}
+interface Prop {armed?:boolean;kind:'tree'|'pine'|'autumn'|'willow'|'house'|'hall'|'tent'|'tower'|'rock'|'bush'|'jar'|'bench'|'fence'|'lantern'|'well'|'fire'|'banner'|'flowers'|'reeds'|'boat'|'crate'|'fenceV'|'rack'|'dummy'|'target'|'stele'|'statue'|'mound'|'trough'|'rockery'|'pavilion'|'stall'|'stump'|'ruin'|'deadtree'|'haystack'|'ruintower'|'stepstone'|'horse';x:number;y:number;s:number;flip?:boolean;color?:string}
 
 let meadow:HTMLCanvasElement|undefined,atlas:Texture|undefined,noiseA:Float32Array|undefined;
+/** 마장 말 소품(public/story-props/horse-idle-v1.webp, 1024×1024 투명 배경, 오른쪽을 본다). 없으면 말 없이 그린다. */
+let horse:HTMLImageElement|undefined;
+const HORSE={url:'story-props/horse-idle-v1.webp',foot:.89,width:170};
 export async function loadGroundArt(){
   if(typeof document==='undefined'||(meadow&&atlas))return;
+  if(!horse)try{const img=new Image();img.src=new URL(HORSE.url,document.baseURI).href;await img.decode();horse=img;}catch{/* 말 없이 그린다 */}
   try{
     const [m,s]=await Promise.all(['textures/meadow.webp','scenery-v3.webp'].map(async u=>{const img=new Image();img.src=new URL(u,document.baseURI).href;await img.decode();return img;}));
     const w=m!.naturalWidth,h=m!.naturalHeight,c=document.createElement('canvas');c.width=w*2;c.height=h*2;const g=c.getContext('2d')!;
@@ -191,6 +195,8 @@ function layout(kind:GroundKind,R:()=>number,opts:GroundOpts={}){
       place({kind:'house',x:2,y:3.2,s:.85,flip:false},3,2);
       for(const [x,y] of [[6.2,5],[13.6,7.4],[GW-4.4,4.6]] as const)place({kind:'haystack',x,y,s:.95});
       for(const [x,y] of [[9.4,5.6],[11.6,7.8]] as const)place({kind:'trough',x,y,s:1});
+      // 울타리 안에서 쉬는 말 두 마리(그림이 있을 때만 그려진다)
+      for(const [x,y,flip] of [[8,7.2,false],[14.6,5.2,true]] as const)place({kind:'horse',x,y,s:1,flip},2,1);
       props.push({kind:'crate',x:2.6,y:5.2,s:.9},{kind:'jar',x:3.2,y:5.4,s:.8},{kind:'banner',x:fx0+.6,y:fy0-.2,s:.8,color:'#1f3f8a'});
       clump(GW-1,6.6,2,.8,true);clump(.8,GH-1.6,2,.7);bushes(3);flowers(10);break;}
     case 'desert':{
@@ -400,6 +406,8 @@ function drawProp(g:Ctx,p:Prop,R:()=>number){
     case 'statue':PP.statue(g,x,y,s,R,!!p.flip,!!p.armed);break;
     case 'mound':PP.mound(g,x,y,s,R);break;
     case 'trough':PP.trough(g,x,y,s,R);break;
+    case 'horse':{if(!horse)break;const w=HORSE.width*s,h=w*horse.naturalHeight/horse.naturalWidth;shadow(g,x,y-4,w*.42,w*.1,.45);
+      g.save();g.translate(x,y-h*HORSE.foot);if(p.flip)g.scale(-1,1);g.drawImage(horse,-w/2,0,w,h);g.restore();break;}
   }
 }
 

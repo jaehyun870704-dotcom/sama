@@ -78,6 +78,9 @@ const PLACE_RULES:Array<[RegExp,Kind]>=[
   [/황야|사막|모래 벌판|서량 벌판/,'field'],
   [/알현|어전|옥좌|용상|천자|황제|폐하|즉위|선양|조회/,'throne'],
   [/전장|싸움터|격전|결전|진 앞|진두|양군|대치|전투|맞선|적진|포위망/,'battlefield'],
+  // 실내 원화(옥사·연회장)가 있는 곳은 군막·창고보다 먼저 본다(잔치를 연 군막도 연회장으로).
+  [/옥사|감옥|옥중|뇌옥/,'store'],
+  [/연회|잔치|주연|술자리/,'hall'],
   [/군막|막사|장막|군의|천막/,'tent'],
   [/서재|서고|서방|글방/,'study'],
   [/회랑|복도/,'corridor'],
@@ -86,7 +89,7 @@ const PLACE_RULES:Array<[RegExp,Kind]>=[
   [/누선|배 위|갑판|선단|함선|전선 위|배들|뱃머리|선상/,'deck'],
   [/불타|불길(?!을 기다)|불탄 (?!부교)|화공|잿더미|타오르|타고 남은/,'fire'],
   [/침전|침소|침실|내실|규방|병상|누운|방 안|안방|사랑|자택|의 집$|집 안|초막|오두막|방$/,'home'],
-  [/객사|빈소|사당|관청|부중|사공부|의정|중서성(?! 뒤뜰)|집무|암자|객관|실$/,'hall'],
+  [/객사|빈소|사당|관청|부중|사공부|의정|중서성(?! 뒤뜰)|집무|암자|객관|실$|관아|태수부|도독부|승상부$/,'hall'],
   [/(전|궁) 앞|뒤뜰|앞뜰|바깥뜰|앞마당|뜰|마당|정원|후원/,'court'],
   [/조회|궁정|대전|어전|정전|궁중|조정|왕좌|옥좌|궁 안/,'palace'],
   [/진영|군영|본진|야영|영채|진채|주둔|집결/,'camp'],
@@ -1077,7 +1080,9 @@ interface Painted {url:string;w:number;h:number;cropTop:number;kinds:Kind[];
   back:[number,number];right:[number,number];
   floor:Array<[number,number]>;blocks:Array<Array<[number,number]>>;
   /** 이 원화에서 인물 크기 배율. */
-  figScale:number}
+  figScale:number;
+  /** 실내 원화: 장소 이름이 맞으면 밤·비 원화보다 먼저 쓴다. */
+  room?:boolean}
 /**
  * 옆에서 본 채색 원화(story-backgrounds-1·2, 3×3 판 두 장)를 이야기 무대에 깐다. 무대는 2:1이라 그림의 아래쪽
  * (바닥이 있는 쪽)을 보여 주고, 바닥이 시작되는 높이(yTop)부터 아래를 사람이 설 수 있는 바닥으로 삼는다.
@@ -1094,6 +1099,21 @@ function storyVariant(url:string,kinds:Kind[],variant:'day'|'night'|'rain',yTop:
   return {url,w:1600,h:900,cropTop:0,kinds,variant,lit:true,back:[800,yTop],right:[1560,yTop+190],figScale,
     floor:[[45,yTop],[1555,yTop],[1600,900],[0,900]],blocks:[]};
 }
+/**
+ * 실내 원화 4종(1600×900, 2026-10-13 납품): 군의실·연회장·옥사·관아. 장소 이름이 맞을 때만 쓰고, 같은 종류의 밤·비 원화보다 먼저 쓴다.
+ * 낮 그림이라 밤·새벽·노을은 색을 입힌다(lit 없음). floor는 사람이 설 바닥, blocks는 상·기둥처럼 못 서는 곳(원화 좌표).
+ */
+function storyRoom(url:string,kinds:Kind[],places:RegExp,yTop:number,o:{figScale?:number;floor?:Array<[number,number]>;blocks?:Array<Array<[number,number]>>}={}):Painted{
+  return {url,w:1600,h:900,cropTop:0,kinds,places,room:true,back:[800,yTop],right:[1560,yTop+190],figScale:o.figScale??1.08,
+    floor:o.floor??[[45,yTop],[1555,yTop],[1600,900],[0,900]],blocks:o.blocks??[]};
+}
+const ROOMS:Painted[]=[
+  storyRoom('story-council-day-v1.webp',['tent','hall'],/군의|작전 회의|군략 회의/,360,{floor:[[60,360],[1430,360],[1560,900],[40,900]]}),
+  storyRoom('story-banquet-day-v1.webp',['hall','palace','home','tent'],/연회|잔치|주연|술자리/,300,{floor:[[330,300],[1250,300],[1600,900],[0,900]],
+    blocks:[[[0,270],[310,270],[310,590],[0,590]],[[1190,260],[1600,260],[1600,570],[1190,570]]]}),
+  storyRoom('story-prison-day-v1.webp',['store','hall','home'],/옥사|감옥|옥중|뇌옥/,440,{figScale:1.02}),
+  storyRoom('story-office-day-v1.webp',['hall','study'],/관아|태수부|도독부|승상부|집무/,460,{figScale:1.04,floor:[[330,460],[1390,460],[1450,860],[110,860]]}),
+];
 /** 3번째 3×3 판: 지역 전용 5장 + 강가/성 밖 진영의 밤·비 4장. */
 function specialPanel(idx:number,kinds:Kind[],yTop:number,o:{variant?:'night'|'rain';places:RegExp;inset?:[number,number];fig?:number}):Painted{
   const edges=[0,340,682,1024],row=Math.floor(idx/3),w=508,h=edges[row+1]!-edges[row]!-4,cropTop=Math.max(0,Math.min(h-254,yTop-150)),[l,r]=o.inset??[8,8];
@@ -1120,6 +1140,7 @@ export function specialBackdropCell(art:number,place:string){
     ??SPECIAL_PANELS.find(s=>s.kinds.includes(kind)&&!s.variant&&s.places.test(place))?.idx;
 }
 const PAINTED:Painted[]=[
+  ...ROOMS,
   // 레퍼런스 전투 화면과 같은 낮은 디테일 밀도·넓은 인물 배치 공간의 지역 전용 배경.
   ...SPECIAL_PANELS.map(s=>specialPanel(s.idx,s.kinds,s.yTop,{places:s.places,...(s.variant?{variant:s.variant}:{}),...(s.inset?{inset:s.inset}:{}),...(s.fig!==undefined?{fig:s.fig}:{})})),
   storyVariant('story-tent-day-v1.webp',['tent'],'day',350),
@@ -1149,8 +1170,10 @@ export async function loadPaintedScenes(){
   cache.clear();
 }
 const inPoly=(x:number,y:number,poly:ReadonlyArray<readonly [number,number]>)=>{let inside=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const [xi,yi]=poly[i]!,[xj,yj]=poly[j]!;if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)inside=!inside;}return inside;};
+/** 장소 이름이 가리키는 실내 원화(군의실·연회장·옥사·관아). */
+function roomFor(kind:Kind,place:string){return ROOMS.find(p=>p.kinds.includes(kind)&&paintedImg.has(p.url)&&p.places!.test(place));}
 function paintedFor(kind:Kind,art=-1,place='',variantOnly=false,placeOnly=false){
-  const ok=PAINTED.filter(p=>p.kinds.includes(kind)&&paintedImg.has(p.url)),mood=moodOf(place,kind);
+  const ok=PAINTED.filter(p=>!p.room&&p.kinds.includes(kind)&&paintedImg.has(p.url)),mood=moodOf(place,kind);
   const variant=mood.weather==='rain'?'rain':mood.light==='night'?'night':mood.light==='day'?'day':undefined;
   if(variant){const themed=ok.find(p=>p.variant===variant&&p.places?.test(place))??ok.find(p=>p.variant===variant&&!p.places);if(themed)return themed;}
   if(variantOnly)return undefined;
@@ -1224,6 +1247,8 @@ function groundScene(kind:Kind,seed:number,place:string,clearPct:readonly At[]):
 
 // ─────────────────────────────────────────────── 장면 조립
 function build(kind:Kind,seed:number,place='',clear:Set<string>=new Set(),artNo=-1):IsoScene{
+  // 장소가 정확히 지정된 실내 원화(군의실·연회장·옥사·관아)를 가장 먼저 쓴다.
+  const room=roomFor(kind,place);if(room)return buildPainted(room,kind,place);
   // 반복이 많은 군막·야외 진영·대전은 밤/비 전용 원화를 먼저 쓴다.
   const themed=paintedFor(kind,artNo,place,true);if(themed)return buildPainted(themed,kind,place);
   // 지역 이름이 지정된 신규 원화(남만·초원·설성·잔도·갑판)는 절차식 야외 지도보다 먼저 쓴다.

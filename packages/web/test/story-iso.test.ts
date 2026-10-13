@@ -39,6 +39,10 @@ describe('장소 이름에 맞는 배경',()=>{
   expect(kindFor(5,'허창 · 천자를 알현하다')).toBe('throne');
   expect(kindFor(16,'허창 앞 · 양군이 맞선 들판')).toBe('battlefield');
   expect(kindFor(12,'낙양 · 병을 핑계로 누운 집')).toBe('home');
+  // 실내 원화(군의실·연회장·옥사·관아)로 가는 장소
+  expect(kindFor(14,'장안 · 출격 군의')).toBe('tent');expect(kindFor(14,'한수 · 잔치의 군막')).toBe('hall');
+  expect(kindFor(12,'성도 · 승상부')).toBe('hall');expect(kindFor(0,'업성 · 승상부 뒤뜰')).toBe('court');expect(kindFor(12,'허창 · 승상부 회랑')).toBe('corridor');
+  expect(kindFor(12,'낙양 · 어두운 옥사')).toBe('store');expect(kindFor(5,'낙양 · 옥좌 앞')).not.toBe('store');
  });
  it('is not fooled by region names and falls back to the backdrop number',()=>{
   expect(kindFor(7,'맹진 · 물러가는 배들')).toBe('deck');
