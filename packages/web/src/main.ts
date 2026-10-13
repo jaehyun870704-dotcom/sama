@@ -75,7 +75,7 @@ import { Session, chapters, campaignOrder, sealNamesOf, type Preparation ,zhugeO
 import {sealTiers,sealRewardText,sealClaimed,claimSealTier,zhugeSealTiers,claimZhugeSealTier} from './seal-rewards.ts';
 import {zhugeChoiceLog,zhugeTally,zhugeEndingId,zhugeEndingFlag,zhugeEndingNotes,zhugeAxisBeats,ZHUGE_AXIS,ZHUGE_BRANCHES,ZHUGE_ENDINGS,ZHUGE_ENDING_TEXT,ZHUGE_TEMPER_NOTE,ZHUGE_YEARS,type ZhugeBranch} from './zhuge-ending.ts';
 import {arcMap,arcRoutes,branchLevel,branchFloor,branchWins,recordBranchWin,nodeStats,countSortie,FORK_ANCHOR,type MapNode} from './chronicle-map.ts';
-import {treasureIcon} from './treasure-art.ts';
+import {supplyIcon,treasureIcon} from './treasure-art.ts';
 import {revealAfterResult} from './treasure-reveal.ts';
 import {ambition,ambitionOk,ambitionRule,ambitionPercent,recordStageChoices,choiceAmbition} from './ambition.ts';
 import {FATE_POINTS,routeById} from './fate.ts';
@@ -129,7 +129,8 @@ function setObjectiveOpen(open:boolean,autoCloseMs?:number){
   if(open&&autoCloseMs)objectiveBox.timer=setTimeout(()=>setObjectiveOpen(false),autoCloseMs);
   stackOverlays();keepUnitsClear(false);
 }
-function toast(text:string){$('#toast').textContent=text;$('#toast').classList.add('visible');setTimeout(()=>$('#toast').classList.remove('visible'),2800);}
+/** 짧은 알림. icon(그림 HTML)을 주면 글 앞에 붙인다(전장에서 주운 도구). */
+function toast(text:string,icon=''){const el=$('#toast');if(icon){el.innerHTML=`${icon}<span>${esc(text)}</span>`;el.classList.add('with-icon');}else{el.textContent=text;el.classList.remove('with-icon');}$('#toast').classList.add('visible');setTimeout(()=>$('#toast').classList.remove('visible'),2800);}
 // 저장이 실패하면(저장 공간 가득 참·저장 차단) 알린다. 같은 알림은 20초에 한 번만.
 guardStorage();{let lastWarn=0;window.addEventListener(STORAGE_FAIL,e=>{const f=(e as CustomEvent<StorageFail>).detail,now=Date.now();
   const status=document.getElementById('save-status');if(status)status.textContent=f.quota?'⚠ 저장 공간 가득 참':'⚠ 저장 막힘';
@@ -1010,7 +1011,7 @@ function describe(e:LogEntry){const name=(id:string)=>session.state.find(id)?.na
   case 'convert':return `${name(e.unit)} · 인수로 병종이 올랐다`;
   default:return '';
 }}
-function consumeLog(){const logs=session.state.log.slice(lastLog);lastLog=session.state.log.length;if(logs.some(e=>e.t==='terrain'||e.t==='gate'))field.repaintTerrain();field.play(logs);hudFight(logs);for(const e of logs){const line=describe(e);if(line)$('#latest-log').textContent=line;if(e.t==='pickup')toast(line);if(e.t==='turnStart'){const banner=$('#phase-banner');banner.textContent=`${sideNames[e.side]}의 차례`;banner.classList.add('show');setTimeout(()=>banner.classList.remove('show'),1300);sound.event({kind:'turn',side:e.side});if(e.side!=='player')sound.focus=undefined;}}}
+function consumeLog(){const logs=session.state.log.slice(lastLog);lastLog=session.state.log.length;if(logs.some(e=>e.t==='terrain'||e.t==='gate'))field.repaintTerrain();field.play(logs);hudFight(logs);for(const e of logs){const line=describe(e);if(line)$('#latest-log').textContent=line;if(e.t==='pickup')toast(line,supplyIcon(e.item,consumable(e.item)?.name??e.item));if(e.t==='turnStart'){const banner=$('#phase-banner');banner.textContent=`${sideNames[e.side]}의 차례`;banner.classList.add('show');setTimeout(()=>banner.classList.remove('show'),1300);sound.event({kind:'turn',side:e.side});if(e.side!=='player')sound.focus=undefined;}}}
 function portraitFor(u:Unit,reaction=false,contestKind?:DuelKind):string{
   // 설전은 궁정·군막에서 말없이 논하는 장면이다. 기마 장수의 전용 일기토 시트 대신
   // 같은 비율의 도보 책사 모델을 세워 마초 같은 장수가 말을 탄 채 궁정에 들어오지 않게 한다.
@@ -1211,7 +1212,7 @@ function renderUnit(u:Unit|undefined){
   if(session.revision>=4&&!['civilian','ram','catapult'].includes(familyOf(u.unitClass))&&!structureKind(u.id))buttons.push({id:'duel',name:'일기토',icon:'겨',meta:session.contestKinds(u).has('duel')?'5합':'무력형만',disabled:!session.contestKinds(u).has('duel')},{id:'debate',name:'설전',icon:'논',meta:session.contestKinds(u).has('debate')?'5합':'지력형만',disabled:!session.contestKinds(u).has('debate')});
   if(session.canCalm)buttons.push({id:'calm',name:'진정',icon:'진',meta:String(session.medicine),disabled:!session.medicine});
   // 도구(소모품): 부대 공용 보관함에 있는 것만. 자신 또는 상하좌우로 붙은 아군에게 쓴다.
-  for(const d of CONSUMABLES){const n=s.inventory[d.id]??0;if(n>0&&u.canUseItems&&u.unitClass!=='civilian')buttons.push({id:'use:'+d.id,name:d.name,icon:d.name.slice(0,1),meta:n+'개',disabled:false});}
+  for(const d of CONSUMABLES){const n=s.inventory[d.id]??0;if(n>0&&u.canUseItems&&u.unitClass!=='civilian')buttons.push({id:'use:'+d.id,name:d.name,icon:supplyIcon(d.id,d.name),meta:n+'개',disabled:false});}
   buttons.push({id:'scout',name:'살피기',icon:'살',meta:'행동',disabled:session.scouted},{id:'medicine',name:'구급약',icon:'약',meta:String(session.medicine),disabled:!u.canUseItems||u.unitClass==='civilian'||!session.medicine||u.hp===u.stats.maxHp});
   const region=[...s.map.regions].find(([name,coords])=>s.victory.some(v=>v.type==='capture'&&v.target===name)&&coords.some(c=>c.x===u.pos.x&&c.y===u.pos.y));
   if(region&&u.side==='player')buttons.push({id:'capture',name:'거점 확보',icon:'⚑',meta:'',disabled:session.chapter===6&&!!s.find('ma_chao')?.alive});

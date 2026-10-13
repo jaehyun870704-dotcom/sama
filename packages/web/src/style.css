@@ -2371,3 +2371,12 @@ dialog.treasure-reveal::backdrop{background:#05090cc4;backdrop-filter:blur(3px)}
 @media (orientation:landscape) and (max-width:850px){.battle-toolbar #speed{display:inline-flex;align-items:center}}
 /* 가로 휴대폰: 모든 창을 화면 가득(margin 0)으로 펴는 규칙이 작은 「보물 획득」 창까지 왼쪽 위에 붙여 아래가 비어 보였다 — 그 창만 가운데에 */
 @media (orientation:landscape) and (max-height:520px){dialog.treasure-reveal{width:min(560px,calc(100vw - 24px))!important;max-height:calc(100dvh - 16px)!important;margin:auto!important;border-radius:4px!important}}
+/* 소모품(도구) 그림: 상점 그림판의 소모품 칸. 명령 단추·도구 목록·줍기 알림에서는 작게 */
+.supply-icon{border-radius:6px;background-color:#03120d}
+#commands button span .supply-icon{display:inline-block;width:22px;height:22px;vertical-align:middle;border-radius:4px}
+.dock-pop button i .supply-icon{display:block;width:30px;height:30px}
+#toast.with-icon{display:flex;align-items:center;gap:10px;padding:8px 18px 8px 10px}#toast.with-icon .supply-icon{width:34px;height:34px;flex:none}
+/* 표지 그림(조조·유비·손권·여포 SD, 바탕을 뺀 그림): 제목 글씨가 왼쪽이라 오른쪽 가운데에 세운다 */
+.title-hero{top:50%;bottom:auto;right:2%;height:auto;width:min(54%,700px);max-width:none;object-fit:contain;transform:translateY(-48%);-webkit-mask-image:none;mask-image:none;filter:drop-shadow(0 10px 22px #000c)}
+@media (orientation:landscape) and (max-height:520px){.title-hero{width:min(48%,430px);right:1%;opacity:1}}
+@media (max-width:600px) and (orientation:portrait){.title-hero{width:94%;right:3%;top:auto;bottom:2%;transform:none;opacity:.35}}

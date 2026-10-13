@@ -8,7 +8,7 @@
  */
 import {GEAR_KINDS,SHOP_GEAR,SHOP_KINDS,CONSUMABLES,gearDef,maxLevelOf,type GearKind,type UnitClass} from '../../core/src/index.ts';
 import {buyGear,sellGear,buySupply,sellSupply,sellPrice,goldOf,supplyCount,equipSlot,equippedItems,canWear,gearName,gearLevel,gearEffectText,treasureInfo,tierThresholds,tierUnlocked,gearNames,type Campaign,type GearSlot,type Story} from './progression.ts';
-import {treasureIcon} from './treasure-art.ts';
+import {supplyIcon,treasureIcon} from './treasure-art.ts';
 import {SHOP_KIND_TEXT,CONSUMABLE_TEXT} from './treasure-catalogue.ts';
 import {classNames} from './troops.ts';
 
@@ -37,7 +37,7 @@ export function shopMarkup(c:Campaign,st:ShopState,units:readonly ShopUnit[],pro
   const fit=(id:string)=>unit?canWear(unit.key,id,unit.unitClass):{ok:true};
   let body='';
   if(st.tab==='supply'){
-    body=`<div class="sh-list">${CONSUMABLES.map(d=>{const n=supplyCount(c,d.id);return `<div class="sh-row supply"><div class="sh-name"><b>${esc(d.name)}</b><small>${esc(CONSUMABLE_TEXT[d.id]??'')}</small></div><span class="sh-have">보관 ${n}개</span>${d.price?`<button data-shop-buy-supply="${d.id}" ${gold>=d.price?'':'disabled'}>사기 · ${d.price.toLocaleString()}금</button>`:'<span class="muted">팔지 않음</span>'}<button data-shop-sell-supply="${d.id}" ${n>0?'':'disabled'}>팔기 · ${Math.floor((d.price||100)/2)}금</button></div>`;}).join('')}</div>
+    body=`<div class="sh-list">${CONSUMABLES.map(d=>{const n=supplyCount(c,d.id);return `<div class="sh-row supply">${supplyIcon(d.id,d.name)}<div class="sh-name"><b>${esc(d.name)}</b><small>${esc(CONSUMABLE_TEXT[d.id]??'')}</small></div><span class="sh-have">보관 ${n}개</span>${d.price?`<button data-shop-buy-supply="${d.id}" ${gold>=d.price?'':'disabled'}>사기 · ${d.price.toLocaleString()}금</button>`:'<span class="muted">팔지 않음</span>'}<button data-shop-sell-supply="${d.id}" ${n>0?'':'disabled'}>팔기 · ${Math.floor((d.price||100)/2)}금</button></div>`;}).join('')}</div>
       <p class="muted">도구는 전투 중 「도구」 명령으로 자신 또는 상하좌우로 붙은 아군에게 쓴다. 부대가 함께 쓰는 보관함에서 꺼낸다.</p>`;
   }else{
     const kinds=SHOP_KINDS.filter(k=>GEAR_KINDS[k].slot===st.tab);
