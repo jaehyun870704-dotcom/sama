@@ -103,6 +103,8 @@ let session=new Session(),selected='sima_yi',mode='move',threat=false,speed=1,me
 let saveAvailable=false,hasStarted=false;
 try{saveAvailable=!!localStorage.getItem(SAVE_KEY);}catch{/* Private browsing may disable storage. */}
 const sideNames={player:'아군',ally:'편입 아군',enemy:'적군',allyAi:'우군'};
+/** 화면에 보이는 장 번호: 'S1-01' 같은 내부 id 대신 '상편 1장'(사마의전 상·중·하편 · 제갈량전 상·하편). */
+const stageNo=(id:string)=>{const m=/^([SZ])(\d)-(\d\d)$/.exec(id);if(!m)return id;const arc=(m[1]==='S'?['상','중','하']:['상','하'])[Number(m[2])-1]??'';return `${arc}편 ${Number(m[3])}장`;};
 
 $('#app').innerHTML=`<header class="topbar"><button id="brand" class="brand" aria-label="본영"><span class="seal-logo">맹</span><span>${GAME_NAME}<small>${GAME_SERIES}</small></span></button><div class="chapter-breadcrumb" id="arc-crumb">상편 <span>/</span> 살아남는 자</div><nav><button id="sound-toggle" title="전체 소리 켜기/끄기">♪ <span>소리 켜짐</span></button><button id="help">도움말 <kbd>?</kbd></button><button id="settings" aria-label="설정">⚙</button><button id="topbar-save" title="저장 · 불러오기">💾 저장</button><button id="menu">본영</button></nav></header>
 <main class="layout"><aside class="left-panel" id="left-panel"><button id="left-close" class="left-close" aria-label="전황 닫기">닫기 ✕</button><div class="eyebrow" id="arc-eyebrow">제1편 <span>상편</span></div><h1 id="stage-title"></h1><p id="stage-subtitle" class="muted"></p><div class="rule"></div><section class="mission"><div class="section-label">전투 목표 <span>목표</span></div><div id="objectives"></div></section><section class="turn-card"><div class="turn-number"><span>차례</span><strong id="turn">01</strong><span id="turn-limit">/ 60</span></div><div id="phase" class="phase"></div><div class="phase-track"><i></i><i></i><i></i><i></i></div></section><section><div class="section-label">현재 차례 부대 <span id="unit-count"></span></div><div id="roster" class="roster"></div></section><p class="roster-note">파랑 · 아군(편입 아군 포함)<br>초록 · NPC 우군 &nbsp; 빨강 · 적군</p><div class="left-bottom"><span class="small-seal">인</span><p>칼을 거두고,<br>때를 기다린다.</p></div></aside>
@@ -444,7 +446,7 @@ function showZhugeRecap(){
   const flags=yeonFlags(),has=new Set(flags),picks=zhugePicks(flags),t=zhugeTally(flags,picks),axis=new Map(ZHUGE_AXIS.map(a=>[a.stage,a])),arcs=zhugeArcs();
   const cs=picks.flatMap(p=>p.contest?[p.contest]:[]),lean:Record<string,string>={guard:'굳힘',rally:'나섬',insight:'책략'},res:Record<string,string>={win:'승리',lose:'패배',draw:'무승부'};
   const rows=picks.map(p=>{const a=axis.get(p.id),side=a?(has.has(a.heart)?'heart':has.has(a.law)?'law':''):'';
-    return `<li class="${side}"><span class="zr-no">${p.id}</span><div class="zr-text"><b>${esc(p.title)}</b> <small>${esc(p.year)}</small><p>${p.option?esc(p.option.text):'<small>고른 기록이 없다</small>'}</p></div><span class="zr-tags">${side?`<i class="${side}">${side==='heart'?'마음':'법'}</i>`:''}${p.option?.lean&&lean[p.option.lean]?`<i>${lean[p.option.lean]}</i>`:''}${p.contest?`<i class="${p.contest.result}">${p.contest.kind==='duel'?'일기토':'설전'} ${esc(p.contest.by)} 대 ${esc(p.contest.foe)} · ${res[p.contest.result]}</i>`:''}<i>천명 ${zhugeSeals(p.id)}/6</i></span></li>`;}).join('');
+    return `<li class="${side}"><span class="zr-no">${stageNo(p.id)}</span><div class="zr-text"><b>${esc(p.title)}</b> <small>${esc(p.year)}</small><p>${p.option?esc(p.option.text):'<small>고른 기록이 없다</small>'}</p></div><span class="zr-tags">${side?`<i class="${side}">${side==='heart'?'마음':'법'}</i>`:''}${p.option?.lean&&lean[p.option.lean]?`<i>${lean[p.option.lean]}</i>`:''}${p.contest?`<i class="${p.contest.result}">${p.contest.kind==='duel'?'일기토':'설전'} ${esc(p.contest.by)} 대 ${esc(p.contest.foe)} · ${res[p.contest.result]}</i>`:''}<i>천명 ${zhugeSeals(p.id)}/6</i></span></li>`;}).join('');
   modal(`<div class="briefing zg-recap"><div class="eyebrow">제갈량전 · 회고</div><h2>내가 한 선택</h2><p class="screen-lede">와룡에서 오장원까지, 장마다 고른 말과 겨룸의 결과. 다시 출진해 다른 답을 고르면 결말이 바뀐다.</p>
   <div class="zr-head"><span>결말 갈래 「${esc(ZHUGE_ENDING_TEXT[t.branch].title)}」</span><span>마음 ${t.heart} · 법 ${t.law}</span><span>굳힘 ${t.guard} · 나섬 ${t.rally}</span><span>대결 ${cs.filter(c=>c.result==='win').length}승 / ${cs.length}</span><span>연의 천명 ${arcs.reduce((n,a)=>n+a.have,0)}/${arcs.reduce((n,a)=>n+a.stages*6,0)}</span></div>
   <ol class="zr-list">${rows}</ol><div class="modal-actions"><button id="zr-list" class="primary">장 목록</button></div></div>`,false);
@@ -470,7 +472,7 @@ function zhugeBriefing(chapter:number,storyMods?:BattleMods){
     document.querySelectorAll<HTMLButtonElement>('[data-gear-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.gearFilter!;draw();});
     document.querySelectorAll<HTMLButtonElement>('[data-treasure]').forEach(b=>b.onclick=()=>{inspect=b.dataset.treasure!;draw();});
     const cls=()=>units.find(u=>gearKey(u)===officer)?.unitClass;
-    $('#equip-treasure')?.addEventListener('click',()=>{if(equipSlot(campaign,officer,treasureInfo(inspect).slot,inspect,cls())){saveCampaign();draw();}});
+    $('#equip-treasure')?.addEventListener('click',e=>{const id=(e.currentTarget as HTMLElement).dataset.item||inspect;if(equipSlot(campaign,officer,treasureInfo(id).slot,id,cls())){inspect=id;saveCampaign();draw();}});
     document.querySelectorAll<HTMLButtonElement>('[data-equip-id]').forEach(b=>b.onclick=()=>{const id=b.dataset.equipId!;inspect=id;if(equipSlot(campaign,officer,treasureInfo(id).slot,id,cls())){saveCampaign();toast(`${gearName(id)} 장착`);}draw();});
     $('#brief-shop')?.addEventListener('click',()=>openShop('Z',draw,units.map(u=>({key:gearKey(u),name:u.name,unitClass:u.unitClass,level:u.level}))));
     document.querySelectorAll<HTMLButtonElement>('[data-unequip]').forEach(b=>b.onclick=()=>{if(equipSlot(campaign,officer,b.dataset.unequip as GearSlot,'')){saveCampaign();draw();}});
@@ -524,7 +526,7 @@ let menuArc=1,menuStage='';
 const LAST_KEY='sama-last-battle-v1';
 interface LastBattle {where:string;turn:number;ongoing:boolean;at:number}
 function lastBattle():LastBattle|undefined{try{const v=JSON.parse(localStorage.getItem(LAST_KEY)??'null') as LastBattle|null;if(v&&typeof v.where==='string'&&Number.isInteger(v.turn))return v;return saveAvailable?{where:'저장된 전투',turn:0,ongoing:true,at:0}:undefined;}catch{return undefined;}}
-function battleWhere(){const st=session.state.stage,cat=catalogue.find(c=>c.id===st.id);return session.deployment?.branch?`선택분기 · ${st.title.replace(/^가상 전장 · /,'')}`:session.deployment?.mission?`외전 · ${expeditions.find(m=>m.id===session.deployment!.mission!.id)?.name??'수련'}`:session.deployment?.run&&!session.deployment.scenario?`천명의 원정 · ${session.deployment.run.floor}층`:cat?`${cat.id} ${cat.name}`:st.title;}
+function battleWhere(){const st=session.state.stage,cat=catalogue.find(c=>c.id===st.id);return session.deployment?.branch?`선택분기 · ${st.title.replace(/^가상 전장 · /,'')}`:session.deployment?.mission?`외전 · ${expeditions.find(m=>m.id===session.deployment!.mission!.id)?.name??'수련'}`:session.deployment?.run&&!session.deployment.scenario?`천명의 원정 · ${session.deployment.run.floor}층`:cat?`${stageNo(cat.id)} ${cat.name}`:st.title;}
 /**
  * 이어하기: 가장 마지막에 하던 전투를 '내 차례'에서 다시 잡는다.
  * 적·우군 차례 도중에 저장됐으면 그 차례를 화면 없이 끝까지 돌려, 아군 차례가 막 시작된 자리에서 넘겨준다.
@@ -567,7 +569,7 @@ const nextChronicle=()=>campaignOrder.find(i=>!cleared(i));
 /** 연의 진행 요약: 첫 화면·본영에 쓴다. 인장은 장마다 일반 3 + 극한 3. */
 function chronicleSummary(){
   const p=progress(),n=nextChronicle(),seals=campaignOrder.reduce((t,i)=>{const id=chapters[i]!.stage.id;return t+new Set(p[id+':normal']??[]).size+new Set(p[id+':extreme']??[]).size;},0);
-  return {...(n!==undefined?{next:`${chapters[n]!.stage.id} ${catalogue.find(c=>c.id===chapters[n]!.stage.id)?.name??stories[n]?.[0]??''}`}:{}),won:campaignOrder.filter(cleared).length,total:campaignOrder.length,seals,sealMax:campaignOrder.length*6};
+  return {...(n!==undefined?{next:`${stageNo(chapters[n]!.stage.id)} ${catalogue.find(c=>c.id===chapters[n]!.stage.id)?.name??stories[n]?.[0]??''}`}:{}),won:campaignOrder.filter(cleared).length,total:campaignOrder.length,seals,sealMax:campaignOrder.length*6};
 }
 /** 연의 이어하기: 다음 장이 있는 편의 진군 경로를 그 장을 고른 채로 연다. */
 function showChronicleNext(){const n=nextChronicle();if(n===undefined){showChronicleLanding();return;}const id=chapters[n]!.stage.id;menuArc=Number(id[1]);menuStage=id;showChronicle();}
@@ -823,7 +825,7 @@ function briefing(chapter:number,expeditionId?:string,scenario?:ScenarioDeployme
     document.querySelectorAll<HTMLButtonElement>('[data-gear-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.gearFilter!;draw();});
     document.querySelectorAll<HTMLButtonElement>('[data-treasure]').forEach(b=>b.onclick=()=>{inspect=b.dataset.treasure!;draw();});
     const cls=()=>units.find(u=>gearKey(u)===officer)?.unitClass;
-    $('#equip-treasure')?.addEventListener('click',()=>{if(equipSlot(campaign,officer,treasureInfo(inspect).slot,inspect,cls())){saveCampaign();draw();}});
+    $('#equip-treasure')?.addEventListener('click',e=>{const id=(e.currentTarget as HTMLElement).dataset.item||inspect;if(equipSlot(campaign,officer,treasureInfo(id).slot,id,cls())){inspect=id;saveCampaign();draw();}});
     document.querySelectorAll<HTMLButtonElement>('[data-equip-id]').forEach(b=>b.onclick=()=>{const id=b.dataset.equipId!;inspect=id;if(equipSlot(campaign,officer,treasureInfo(id).slot,id,cls())){saveCampaign();toast(`${gearName(id)} 장착`);}draw();});
     $('#brief-shop')?.addEventListener('click',()=>openShop('S',draw,units.map(u=>({key:gearKey(u),name:u.name,unitClass:u.unitClass,level:u.level}))));
     document.querySelectorAll<HTMLButtonElement>('[data-unequip]').forEach(b=>b.onclick=()=>{if(equipSlot(campaign,officer,b.dataset.unequip as GearSlot,'')){saveCampaign();draw();}});
@@ -867,7 +869,7 @@ function showTraining(){
   const nextIdx=campaignOrder.find(i=>!cleared(i)),hero=levelInfo(campaign.xp.sima_yi??0).level;
   const mates=OFFICERS.filter(id=>id!=='sima_yi').map(id=>({name:officerNames[id]??id,level:levelInfo(campaign.xp[id]??0).level}));
   const target=nextIdx!==undefined?encounterLevels[chapters[nextIdx]!.stage.id]:undefined;
-  const stepName=nextIdx!==undefined?`${chapters[nextIdx]!.stage.id} ${catalogue.find(c=>c.id===chapters[nextIdx]!.stage.id)?.name??stories[nextIdx]?.[0]??''}`:'연의 32장을 모두 이겼다';
+  const stepName=nextIdx!==undefined?`${stageNo(chapters[nextIdx]!.stage.id)} ${catalogue.find(c=>c.id===chapters[nextIdx]!.stage.id)?.name??stories[nextIdx]?.[0]??''}`:'연의 32장을 모두 이겼다';
   const step=nextIdx!==undefined;
   const grounds=expeditions.filter(m=>m.kind==='training');
   const pick=grounds.filter(m=>canExpedition(campaign,m.id)&&m.level<=hero+1).at(-1)??grounds[0]!;
@@ -937,7 +939,7 @@ function showExpeditions(tab:Expedition['kind']='challenge'){
   ['training','반복 수련','승리마다 경험치와 금을 얻고, 수련장마다 첫 승리에 도구를 줍니다.'],
  ];
  const [,title,note]=sections.find(x=>x[0]===tab)!;
- modal(`<div class="briefing expedition-hub"><div class="eyebrow">본영 · 연무장</div><h2>연무장</h2><p>${growthText()} · 도전 ${cleared}/10 · 보물 사냥 ${campaign.bountyWins??0}승 · 보물 외전 ${campaign.quests?.length??0}/11 · 수련 ${campaign.trainingWins??0}승</p><div class="expedition-tabs" role="tablist">${sections.map(([kind,label])=>`<button role="tab" data-exp-tab="${kind}" class="${kind===tab?'on':''}" aria-selected="${kind===tab}">${label.split(' · ')[0]}</button>`).join('')}</div><h3>${title}</h3>${note?`<p class="muted">${note}</p>`:''}<div class="expedition-grid${tab==='challenge'?' challenge-ladder':''}">${expeditions.filter(m=>m.kind===tab).map(card).join('')}</div><p class="muted">권장 레벨보다 4레벨 이상 높으면 수련 경험치가 단계적으로 줄어듭니다. 보물 외전과 도전의 경험치·보물은 첫 승리 보상입니다.</p><button id="expedition-back">← 반복 퀘스트</button></div>`,false);
+ modal(`<div class="briefing expedition-hub"><div class="eyebrow">본영 · 연무장</div><h2>연무장</h2><p>${growthText()} · 도전 ${cleared}/10 · 보물 사냥 ${campaign.bountyWins??0}승 · 보물 외전 ${campaign.quests?.length??0}/11 · 수련 ${campaign.trainingWins??0}승</p><div class="expedition-tabs" role="tablist">${sections.map(([kind,label])=>`<button role="tab" data-exp-tab="${kind}" class="${kind===tab?'on':''}" aria-selected="${kind===tab}">${label.split(' · ')[0]}</button>`).join('')}</div><h3>${title}</h3>${note?`<p class="muted">${note}</p>`:''}<div class="expedition-grid${tab==='challenge'?' challenge-ladder':''}">${expeditions.filter(m=>m.kind===tab).map(card).join('')}</div><p class="muted">권장 레벨보다 4레벨 이상 높으면 수련 경험치가 단계적으로 줄어듭니다. 보물 외전과 도전의 경험치·보물은 첫 승리 보상입니다.</p><div class="modal-actions"><button id="expedition-back">${tab==='challenge'?'← 본영':'← 수련장'}</button></div></div>`,false);
  document.querySelectorAll<HTMLButtonElement>('[data-exp-tab]').forEach(el=>el.onclick=()=>showExpeditions(el.dataset.expTab as Expedition['kind']));
  document.querySelectorAll<HTMLButtonElement>('[data-expedition]').forEach(el=>el.onclick=()=>expeditionStory(el.dataset.expedition!));$('#expedition-back').onclick=tab==='challenge'?showMenu:showTraining;
 }
