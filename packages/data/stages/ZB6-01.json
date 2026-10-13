@@ -1,0 +1,179 @@
+{
+  "id": "ZB6-01",
+  "arc": "lower",
+  "order": 215,
+  "title": "길목에 친 진",
+  "subtitle": "산이 아니라 길에",
+  "synopsis": "제갈량이 몸소 가정에 왔다. 마속은 산 위에 진을 치자 했으나, 왕평의 말대로 물이 있는 길목에 목책을 세웠다. 장합의 선봉이 온다. 일곱 턴을 버티면 위군의 기세가 꺾인다.",
+  "mapId": "jieting-hill",
+  "focusVictoryTargets": true,
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_ma_su",
+      "z_wang_ping",
+      "z_jiang_wei",
+      "z_wei_yan",
+      "z_ma_dai"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "survive_turns",
+      "n": 7
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    },
+    {
+      "type": "retreat",
+      "unit": "z_ma_su"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "unit_retreat:zb6_dai_ling",
+      "extreme": "unit_retreat:zb6_dai_ling"
+    },
+    {
+      "slot": 3,
+      "normal": "player_losses_lt:1",
+      "extreme": "player_losses_lt:1"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 26,
+      "recommendedLevel": 26,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 28,
+      "recommendedLevel": 28,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "ZB6-01/van",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb6_dai_ling",
+              "name": "대릉",
+              "template": "infantry",
+              "level": 27,
+              "region": "zhang_he_start",
+              "behavior": "advance"
+            },
+            {
+              "id": "zb6_van",
+              "name": "위군 선봉 기병",
+              "template": "cavalry",
+              "level": 26,
+              "region": "zhang_he_start",
+              "behavior": "advance",
+              "count": 2
+            },
+            {
+              "id": "zb6_van_b",
+              "name": "위군 선봉 궁병",
+              "template": "archer",
+              "level": 26,
+              "region": "zhang_he_start",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ZB6-01/west",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 2
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb6_west",
+              "name": "서쪽 길 위군",
+              "template": "infantry",
+              "level": 26,
+              "region": "west_road",
+              "behavior": "advance",
+              "count": 2
+            },
+            {
+              "id": "zb6_west_b",
+              "name": "서쪽 길 궁병",
+              "template": "archer",
+              "level": 26,
+              "region": "west_road",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ZB6-01/second",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 4
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb6_second",
+              "name": "장합의 둘째 진",
+              "template": "spearman",
+              "level": 26,
+              "region": "zhang_he_start",
+              "behavior": "advance",
+              "count": 2
+            },
+            {
+              "id": "zb6_second_b",
+              "name": "장합의 둘째 진",
+              "template": "cavalry",
+              "level": 26,
+              "region": "zhang_he_start",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

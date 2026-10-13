@@ -93,7 +93,7 @@ import shouchunMap from '../../data/maps/shouchun-waterway.json';
 import legacyFortMap from './legacy/hanzhong-map-v2.json';
 import legacyFortStage from './legacy/hanzhong-stage-v2.json';
 import { makeUnit, awardedSeals } from '../../core/src/index.ts';
-import {ZHUGE_CHAPTERS,ZHUGE_ROSTER,zhugeClass,isZhugeStage} from './zhuge-data.ts';
+import {ZHUGE_CHAPTERS,ZHUGE_ROSTER,zhugeClass,isZhugeStage,isZhugeBranch} from './zhuge-data.ts';
 
 export const chapters = [
   {stage: escapeStage as StageDef, map: escapeMap as MapFile, year:'초평 원년 · 190년', label:'잠입과 선택', quote:'칼을 숨겨라. 살아남는 자만이 다음 수를 둘 수 있다.'},
@@ -135,6 +135,8 @@ export const chapters = [
 export const campaignOrder=[2,0,3,4,5,6,7,1,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31];
 /** 제갈량전의 장 순서(chapters의 번호). */
 export const zhugeOrder=chapters.map((c,i)=>isZhugeStage(c.stage.id)?i:-1).filter(i=>i>=0);
+/** 제갈량전 선택분기 가상 전장(ZB…)의 chapters 번호. */
+export const zhugeBranchOrder=chapters.map((c,i)=>isZhugeBranch(c.stage.id)?i:-1).filter(i=>i>=0);
 export type Preparation='survival'|'strategy'|'command';
 export const strategies: StrategyDef[] = [
   {id:'windDragon',name:'풍룡',element:'wind',shape:'spread',range:4,radius:1,mpCost:18,power:130,targetSides:['enemy']},

@@ -1,0 +1,192 @@
+{
+  "id": "ZB1-02",
+  "arc": "upper",
+  "order": 201,
+  "title": "양양 성문",
+  "subtitle": "형주의 북쪽 문",
+  "synopsis": "단계를 건넌 유비에게 이적이 와서 말했다. \"채모가 양양을 쥐는 한 형주는 공의 것이 아닙니다.\" 문빙이 지키는 양양 안채를 차지하라.",
+  "mapId": "xiangyang-walls",
+  "focusVictoryTargets": true,
+  "deployment": {
+    "forced": [
+      "z_liu_bei",
+      "z_guan_yu",
+      "z_zhang_fei",
+      "z_zhao_yun",
+      "z_liang",
+      "z_yi_ji"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "capture",
+      "target": "xiangyang"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "unit_retreat:zb1_wen_pin",
+      "extreme": "unit_retreat:zb1_wen_pin"
+    },
+    {
+      "slot": 3,
+      "normal": "turn_limit:9",
+      "extreme": "turn_limit:10"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 6,
+      "recommendedLevel": 6,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 8,
+      "recommendedLevel": 8,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "ZB1-02/garrison",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb1_wen_pin",
+              "name": "문빙",
+              "template": "spearman",
+              "level": 7,
+              "region": "xiangyang",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb1_keep",
+              "name": "양양 친위",
+              "template": "spearman",
+              "level": 6,
+              "region": "xiangyang",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb1_wall_a",
+              "name": "양양 창병",
+              "template": "spearman",
+              "level": 6,
+              "at": {
+                "x": 3,
+                "y": 5
+              },
+              "behavior": "hold"
+            },
+            {
+              "id": "zb1_wall_b",
+              "name": "양양 궁병",
+              "template": "archer",
+              "level": 6,
+              "at": {
+                "x": 6,
+                "y": 5
+              },
+              "behavior": "hold"
+            },
+            {
+              "id": "zb1_wall_c",
+              "name": "양양 보병",
+              "template": "infantry",
+              "level": 6,
+              "at": {
+                "x": 3,
+                "y": 7
+              },
+              "behavior": "hold"
+            },
+            {
+              "id": "zb1_land",
+              "name": "강가 궁병",
+              "template": "archer",
+              "level": 6,
+              "region": "river_landing",
+              "behavior": "hold",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ZB1-02/east",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 2
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb1_east",
+              "name": "채모의 기병",
+              "template": "cavalry",
+              "level": 6,
+              "region": "east_road",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ZB1-02/south",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 4
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb1_south",
+              "name": "채모의 보병",
+              "template": "infantry",
+              "level": 6,
+              "region": "south_forest",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

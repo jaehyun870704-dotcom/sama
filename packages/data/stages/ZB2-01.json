@@ -1,0 +1,199 @@
+{
+  "id": "ZB2-01",
+  "arc": "upper",
+  "order": 203,
+  "title": "한수의 나루",
+  "subtitle": "악진의 다리목",
+  "synopsis": "남군을 얻은 기세로 북쪽을 친다. 한수를 건너는 나루는 악진이 지킨다. 다리목의 악진을 물리치면 양양 북쪽 길이 열린다.",
+  "mapId": "hanzhong-hanshui-bridge",
+  "focusVictoryTargets": true,
+  "deployment": {
+    "forced": [
+      "z_guan_yu",
+      "z_zhang_fei",
+      "z_zhao_yun",
+      "z_liang",
+      "z_guan_ping"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "zb2_yue_jin"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "player_losses_lt:1",
+      "extreme": "player_losses_lt:1"
+    },
+    {
+      "slot": 3,
+      "normal": "turn_limit:9",
+      "extreme": "turn_limit:10"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 10,
+      "recommendedLevel": 10,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 12,
+      "recommendedLevel": 12,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "ZB2-01/garrison",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb2_yue_jin",
+              "name": "악진",
+              "template": "infantry",
+              "level": 11,
+              "at": {
+                "x": 20,
+                "y": 6
+              },
+              "behavior": "hold"
+            },
+            {
+              "id": "zb2_yj_g",
+              "name": "악진의 친위",
+              "template": "spearman",
+              "level": 10,
+              "at": {
+                "x": 19,
+                "y": 7
+              },
+              "behavior": "hold"
+            },
+            {
+              "id": "zb2_bank",
+              "name": "다리목 창병",
+              "template": "spearman",
+              "level": 10,
+              "at": {
+                "x": 14,
+                "y": 8
+              },
+              "behavior": "hold"
+            },
+            {
+              "id": "zb2_bank_b",
+              "name": "다리목 창병",
+              "template": "spearman",
+              "level": 10,
+              "region": "bridge_bank",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb2_hill",
+              "name": "둔덕 궁병",
+              "template": "archer",
+              "level": 10,
+              "at": {
+                "x": 19,
+                "y": 3
+              },
+              "behavior": "hold"
+            },
+            {
+              "id": "zb2_hill_b",
+              "name": "둔덕 궁병",
+              "template": "archer",
+              "level": 10,
+              "at": {
+                "x": 22,
+                "y": 10
+              },
+              "behavior": "hold"
+            },
+            {
+              "id": "zb2_cav",
+              "name": "위군 기병",
+              "template": "cavalry",
+              "level": 10,
+              "region": "objective",
+              "behavior": "hold",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ZB2-01/pontoon",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 2,
+        "side": "player"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "terrain_change",
+          "region": "bridge_span",
+          "terrain": "bridge"
+        },
+        {
+          "type": "set_phase",
+          "phase": "부교가 놓였다 · 악진을 쳐라"
+        }
+      ]
+    },
+    {
+      "id": "ZB2-01/rear",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 5
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb2_rear",
+              "name": "악진의 원군 기병",
+              "template": "cavalry",
+              "level": 10,
+              "region": "objective",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

@@ -1,0 +1,160 @@
+{
+  "id": "ZB5-03",
+  "arc": "lower",
+  "order": 214,
+  "title": "일곱 번째 마음",
+  "subtitle": "맹획과 마지막으로",
+  "synopsis": "아우와 아내가 모두 촉군 진에서 돌아왔다. 맹획은 독룡동 깊은 동굴 앞에 마지막 군사를 모았다. 이번에 꺾으면, 그는 다시 일어나지 않겠다고 했다.",
+  "mapId": "z2-03-dulong",
+  "focusVictoryTargets": true,
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_zhao_yun",
+      "z_wei_yan",
+      "z_wang_ping",
+      "z_ma_dai",
+      "z_guan_suo"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "zb5_meng_huo"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "player_losses_lt:1",
+      "extreme": "player_losses_lt:1"
+    },
+    {
+      "slot": 3,
+      "normal": "turn_limit:12",
+      "extreme": "turn_limit:13"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 21,
+      "recommendedLevel": 21,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 23,
+      "recommendedLevel": 23,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "ZB5-03/cave",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb5_meng_huo",
+              "name": "맹획",
+              "template": "infantry",
+              "level": 22,
+              "region": "cave",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb5_cf",
+              "name": "동굴 앞 만병",
+              "template": "nanmanFoot",
+              "level": 21,
+              "region": "cave_front",
+              "behavior": "hold",
+              "count": 2
+            },
+            {
+              "id": "zb5_cf_b",
+              "name": "동굴 앞 등갑병",
+              "template": "rattan",
+              "level": 21,
+              "region": "cave_front",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb5_c",
+              "name": "가운데 만병",
+              "template": "nanmanFoot",
+              "level": 21,
+              "region": "center_band",
+              "behavior": "advance",
+              "count": 2
+            },
+            {
+              "id": "zb5_ew",
+              "name": "숲 궁수",
+              "template": "archer",
+              "level": 21,
+              "region": "east_wood",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb5_nc",
+              "name": "북쪽 진채 기마",
+              "template": "nanmanRider",
+              "level": 21,
+              "region": "north_camp",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ZB5-03/raid",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb5_raid",
+              "name": "남쪽 습격대",
+              "template": "nanmanRider",
+              "level": 21,
+              "region": "south_raid",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

@@ -19,6 +19,8 @@ export const ZHUGE_CHAPTERS:ZhugeChapter[]=[
 ].sort((x,y)=>x.stage.id<y.stage.id?-1:x.stage.id>y.stage.id?1:0);
 export const ZHUGE_IDS=ZHUGE_CHAPTERS.map(c=>c.stage.id);
 export const isZhugeStage=(id:string|undefined)=>!!id&&/^Z[12]-\d\d$/.test(id);
+/** 제갈량전 선택분기의 가상 전장(ZB1-01…): 본편 순서(zhugeOrder)에는 들지 않고 연의 지도의 갈림길로만 연다. */
+export {isZhugeBranch} from './zhuge/branches.ts';
 
 /** 제갈량전에서 직접 지휘하는 장수(출진 명부). 병종은 장마다 바뀔 수 있다(아래 stageClass). */
 export interface ZhugeOfficer {id:string;name:string;unitClass:UnitClass;strategies?:string[]}

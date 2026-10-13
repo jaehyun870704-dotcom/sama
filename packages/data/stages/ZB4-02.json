@@ -1,0 +1,165 @@
+{
+  "id": "ZB4-02",
+  "arc": "upper",
+  "order": 210,
+  "title": "강북의 길",
+  "subtitle": "황권을 데려온다",
+  "synopsis": "이릉에서 강 북쪽에 남겨진 황권이 길을 찾아 돌아왔다. 오군 한당이 강가 길의 동쪽 나루를 막고 있다. 조운이 먼저 동쪽 나루에 닿아 배를 붙잡아라.",
+  "mapId": "z1-15-nanan",
+  "focusVictoryTargets": true,
+  "guardLeaders": true,
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_zhao_yun",
+      "z_guan_xing",
+      "z_zhang_bao",
+      "z_li_yan",
+      "z_huang_quan"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "reach",
+      "unit": "z_zhao_yun",
+      "target": "exit"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    },
+    {
+      "type": "retreat",
+      "unit": "z_zhao_yun"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "unit_retreat:zb4_han_dang",
+      "extreme": "unit_retreat:zb4_han_dang"
+    },
+    {
+      "slot": 3,
+      "normal": "turn_limit:9",
+      "extreme": "turn_limit:10"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 17,
+      "recommendedLevel": 17,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 19,
+      "recommendedLevel": 19,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "ZB4-02/bridge",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb4_han_dang",
+              "name": "한당",
+              "template": "infantry",
+              "level": 18,
+              "region": "rebel_east",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb4_br",
+              "name": "나루 창병",
+              "template": "spearman",
+              "level": 17,
+              "region": "rebel_east",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb4_br_b",
+              "name": "나루 궁병",
+              "template": "archer",
+              "level": 17,
+              "region": "rebel_east",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb4_mid",
+              "name": "강가 길 오군",
+              "template": "infantry",
+              "level": 17,
+              "region": "rebel_mid",
+              "behavior": "hold",
+              "count": 2
+            },
+            {
+              "id": "zb4_screen",
+              "name": "오군 궁병",
+              "template": "archer",
+              "level": 17,
+              "region": "screen",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb4_west",
+              "name": "서쪽 길 오군",
+              "template": "cavalry",
+              "level": 17,
+              "region": "rebel_west",
+              "behavior": "hold",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ZB4-02/more",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb4_more",
+              "name": "나루의 오군 원군",
+              "template": "infantry",
+              "level": 17,
+              "region": "exit",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

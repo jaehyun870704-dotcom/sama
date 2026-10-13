@@ -1,0 +1,197 @@
+{
+  "id": "ZB3-03",
+  "arc": "upper",
+  "order": 208,
+  "title": "맥성의 새벽",
+  "subtitle": "여몽을 꺾고 길을 연다",
+  "synopsis": "맥성에 닿았다. 관우와 관평이 성 안에서 맞는다. 성을 둘러싼 오군의 우두머리는 여몽이다. 여몽을 꺾으면 포위가 풀리고 형주로 돌아갈 길이 열린다. 관우를 잃어서는 안 된다.",
+  "mapId": "wuwei-citadel",
+  "focusVictoryTargets": true,
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_zhao_yun",
+      "z_huang_zhong",
+      "z_wei_yan",
+      "z_ma_liang",
+      "z_liao_hua",
+      "z_guan_yu",
+      "z_guan_ping"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "zb3_lu_meng"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    },
+    {
+      "type": "retreat",
+      "unit": "z_guan_yu"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "unit_retreat:zb3_pan_zhang",
+      "extreme": "unit_retreat:zb3_pan_zhang"
+    },
+    {
+      "slot": 3,
+      "normal": "player_losses_lt:1",
+      "extreme": "player_losses_lt:1"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 18,
+      "recommendedLevel": 18,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 20,
+      "recommendedLevel": 20,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "ZB3-03/siege",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb3_lu_meng",
+              "name": "여몽",
+              "template": "spearman",
+              "level": 19,
+              "region": "east_rebels",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb3_guard",
+              "name": "여몽의 친위",
+              "template": "spearman",
+              "level": 18,
+              "at": {
+                "x": 19,
+                "y": 11
+              },
+              "behavior": "hold"
+            },
+            {
+              "id": "zb3_guard_b",
+              "name": "여몽의 궁병",
+              "template": "archer",
+              "level": 18,
+              "at": {
+                "x": 20,
+                "y": 10
+              },
+              "behavior": "hold"
+            },
+            {
+              "id": "zb3_pan_zhang",
+              "name": "반장",
+              "template": "infantry",
+              "level": 19,
+              "region": "north_rebels",
+              "behavior": "advance"
+            },
+            {
+              "id": "zb3_north",
+              "name": "반장의 보병",
+              "template": "infantry",
+              "level": 18,
+              "region": "north_rebels",
+              "behavior": "advance",
+              "count": 2
+            },
+            {
+              "id": "zb3_wall",
+              "name": "오군 궁병",
+              "template": "archer",
+              "level": 18,
+              "at": {
+                "x": 10,
+                "y": 4
+              },
+              "behavior": "hold"
+            },
+            {
+              "id": "zb3_wall_b",
+              "name": "오군 창병",
+              "template": "spearman",
+              "level": 18,
+              "at": {
+                "x": 11,
+                "y": 9
+              },
+              "behavior": "hold"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ZB3-03/zhu-ran",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb3_zhu_ran",
+              "name": "주연",
+              "template": "spearman",
+              "level": 18,
+              "at": {
+                "x": 14,
+                "y": 12
+              },
+              "behavior": "advance"
+            },
+            {
+              "id": "zb3_zr",
+              "name": "주연의 보병",
+              "template": "infantry",
+              "level": 18,
+              "at": {
+                "x": 15,
+                "y": 12
+              },
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

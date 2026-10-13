@@ -1,0 +1,174 @@
+{
+  "id": "ZB1-03",
+  "arc": "upper",
+  "order": 202,
+  "title": "형주의 주인",
+  "subtitle": "강릉의 채모",
+  "synopsis": "양양을 잃은 채모가 강릉으로 물러나 형주 수군을 모았다. 유종을 앞세워 항복 문서를 조조에게 보내려 한다. 문서가 떠나기 전에 채모를 꺾어라.",
+  "mapId": "z1-08-nanjun",
+  "focusVictoryTargets": true,
+  "siege": false,
+  "deployment": {
+    "forced": [
+      "z_liu_bei",
+      "z_guan_yu",
+      "z_zhang_fei",
+      "z_zhao_yun",
+      "z_liang",
+      "z_yi_ji"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "zb1_cai_mao_boss"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "turn_limit:12",
+      "extreme": "turn_limit:13"
+    },
+    {
+      "slot": 3,
+      "normal": "player_losses_lt:1",
+      "extreme": "player_losses_lt:1"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 8,
+      "recommendedLevel": 8,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 10,
+      "recommendedLevel": 10,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "ZB1-03/garrison",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb1_cai_mao_boss",
+              "name": "채모",
+              "template": "spearman",
+              "level": 9,
+              "region": "nanjun_keep",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb1_yard",
+              "name": "강릉 위사",
+              "template": "infantry",
+              "level": 8,
+              "region": "nanjun_yard",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb1_yard_b",
+              "name": "강릉 궁병",
+              "template": "archer",
+              "level": 8,
+              "region": "nanjun_yard",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb1_yard_c",
+              "name": "강릉 창병",
+              "template": "spearman",
+              "level": 8,
+              "region": "nanjun_yard",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb1_navy",
+              "name": "형주 수군 보병",
+              "template": "infantry",
+              "level": 8,
+              "region": "cao_ren_camp",
+              "behavior": "advance",
+              "count": 2
+            },
+            {
+              "id": "zb1_navy_b",
+              "name": "형주 수군 궁병",
+              "template": "archer",
+              "level": 8,
+              "region": "cao_ren_camp",
+              "behavior": "advance"
+            },
+            {
+              "id": "zb1_navy_c",
+              "name": "형주 수군 기병",
+              "template": "cavalry",
+              "level": 8,
+              "region": "cao_ren_camp",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ZB1-03/west",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb1_west",
+              "name": "채모의 친위",
+              "template": "spearman",
+              "level": 8,
+              "region": "west_road",
+              "behavior": "advance"
+            },
+            {
+              "id": "zb1_west_b",
+              "name": "채모의 친위",
+              "template": "cavalry",
+              "level": 8,
+              "region": "west_road",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

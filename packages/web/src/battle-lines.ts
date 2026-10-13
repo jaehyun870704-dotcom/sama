@@ -1,5 +1,6 @@
 import type {BattleState} from '../../core/src/index.ts';
 import {raceGap} from './campaign-rules.ts';
+import {BRANCH_LINES} from './zhuge/branches.ts';
 
 /** Non-blocking battle chatter: short lines with a portrait that float over the map
  * when the board reaches a moment, the way the classic games keep the story moving
@@ -222,6 +223,8 @@ for(let f=1;f<=18;f++){const [speaker,text]=RUN_OPENING[Math.min(2,Math.floor((f
     {id:'boss-down',when:{retreat:'boss'},speaker:'사마의',text:'우두머리가 물러났다. 이 길은 우리 것이다.'},
     {id:'target-down',when:{retreat:'target'},speaker:'사마의',text:'적장이 물러났다. 역사는 이제 다른 길로 흐른다.'},
   ];}
+/** 제갈량전 선택분기 가상 전장의 대사. */
+Object.assign(battleLines,BRANCH_LINES);
 /** Lines whose moment has come and that have not been shown yet, in script order. */
 export function dueLines(stageId:string,state:BattleState,seen:ReadonlySet<string>){
   return (battleLines[stageId]??[]).filter(l=>!seen.has(l.id)&&met(state,l.when));

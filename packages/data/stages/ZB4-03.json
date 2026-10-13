@@ -1,0 +1,173 @@
+{
+  "id": "ZB4-03",
+  "arc": "upper",
+  "order": 211,
+  "title": "이릉의 설욕",
+  "subtitle": "협석의 육손",
+  "synopsis": "오군이 흩어진 틈에 제갈량은 강을 거슬러 육손의 본진을 찾았다. 골짜기 끝에 육손이 진을 쳤다. 불을 쓰는 자에게 불을 돌려주지는 못해도, 그의 진은 꺾을 수 있다.",
+  "mapId": "shiting-gorge",
+  "focusVictoryTargets": true,
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_zhao_yun",
+      "z_guan_xing",
+      "z_zhang_bao",
+      "z_li_yan",
+      "z_huang_quan"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "zb4_lu_xun"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "player_losses_lt:1",
+      "extreme": "player_losses_lt:1"
+    },
+    {
+      "slot": 3,
+      "normal": "turn_limit:12",
+      "extreme": "turn_limit:13"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 19,
+      "recommendedLevel": 19,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 21,
+      "recommendedLevel": 21,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "ZB4-03/camp",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb4_lu_xun",
+              "name": "육손",
+              "template": "strategist",
+              "level": 20,
+              "region": "objective",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb4_lx_g",
+              "name": "육손의 친위",
+              "template": "spearman",
+              "level": 19,
+              "at": {
+                "x": 19,
+                "y": 6
+              },
+              "behavior": "hold"
+            },
+            {
+              "id": "zb4_lx_g2",
+              "name": "육손의 궁병",
+              "template": "archer",
+              "level": 19,
+              "at": {
+                "x": 19,
+                "y": 8
+              },
+              "behavior": "hold"
+            },
+            {
+              "id": "zb4_ridge",
+              "name": "능선 궁병",
+              "template": "archer",
+              "level": 19,
+              "region": "ridge",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb4_slope",
+              "name": "비탈 노병",
+              "template": "crossbow",
+              "level": 19,
+              "region": "slope",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb4_wn",
+              "name": "오군 보병",
+              "template": "infantry",
+              "level": 19,
+              "region": "wu_north",
+              "behavior": "advance",
+              "count": 2
+            },
+            {
+              "id": "zb4_ws",
+              "name": "오군 창병",
+              "template": "spearman",
+              "level": 19,
+              "region": "wu_south",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ZB4-03/front",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb4_front",
+              "name": "오군 기병",
+              "template": "cavalry",
+              "level": 19,
+              "region": "wu_camp_front",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}
