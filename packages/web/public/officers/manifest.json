@@ -82,7 +82,7 @@
     {"id":"xu_sheng","name":"서성","aliases":["서성의 환영"],"battle":{"sd":{"sheet":"xu_sheng-sd-v1.webp","cell":[350,280],"rows":1},"spearman":{"sheet":"xu_sheng-battle-spearman-v1.webp","cell":[280,224],"rows":1}},"duel":"xu_sheng-duel-v2.webp"},
     {"id":"ding_feng","name":"정봉","aliases":["정봉의 환영"],"battle":{"sd":{"sheet":"ding_feng-sd-v1.webp","cell":[350,280],"rows":1},"infantry":{"sheet":"ding_feng-battle-infantry-v1.webp","cell":[280,224],"rows":1}},"duel":"ding_feng-duel-v2.webp"},
     {"id":"yan_liang","name":"안량","aliases":["안량의 환영"],"battle":{"sd":{"sheet":"yan_liang-sd-v1.webp","cell":[350,280],"rows":1},"cavalry":{"sheet":"yan_liang-battle-cavalry-v1.webp","cell":[280,224],"rows":1}},"duel":"yan_liang-duel-v2.webp"},
-    {"id":"wen_chou","name":"문추","aliases":["문추의 환영"],"battle":{"cavalry":{"sheet":"wen_chou-battle-cavalry-v1.webp","cell":[280,224],"rows":1}}},
+    {"id":"wen_chou","name":"문추","aliases":["문추의 환영"],"battle":{"sd":{"sheet":"wen_chou-sd-v1.webp","cell":[350,280],"rows":1},"cavalry":{"sheet":"wen_chou-battle-cavalry-v1.webp","cell":[280,224],"rows":1}},"duel":"wen_chou-duel-v2.webp"},
     {"id":"ju_shou","name":"저수","aliases":["저수의 환영"],"battle":{"strategist":{"sheet":"ju_shou-battle-strategist-v1.webp","cell":[280,224],"rows":1}}},
     {"id":"tian_feng","name":"전풍","aliases":["전풍의 환영"],"battle":{"strategist":{"sheet":"tian_feng-battle-strategist-v1.webp","cell":[280,224],"rows":1}}},
     {"id":"shen_pei","name":"심배","aliases":["심배의 환영"],"battle":{"strategist":{"sheet":"shen_pei-battle-strategist-v1.webp","cell":[280,224],"rows":1}}},
