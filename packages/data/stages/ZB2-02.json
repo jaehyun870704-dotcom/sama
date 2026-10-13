@@ -1,0 +1,175 @@
+{
+  "id": "ZB2-02",
+  "arc": "upper",
+  "order": 204,
+  "title": "번성의 포위",
+  "subtitle": "만총의 성",
+  "synopsis": "한수를 건너자 번성이 앞을 막는다. 성을 지키는 만총은 물러설 줄 모르는 사람이다. 성 밖의 포진을 뚫고 안채를 차지하라.",
+  "mapId": "fancheng-relief",
+  "focusVictoryTargets": true,
+  "deployment": {
+    "forced": [
+      "z_guan_yu",
+      "z_zhang_fei",
+      "z_zhao_yun",
+      "z_liang",
+      "z_guan_ping",
+      "z_ma_liang"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "capture",
+      "target": "keep"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "unit_retreat:zb2_man_chong",
+      "extreme": "unit_retreat:zb2_man_chong"
+    },
+    {
+      "slot": 3,
+      "normal": "turn_limit:11",
+      "extreme": "turn_limit:12"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 11,
+      "recommendedLevel": 11,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 13,
+      "recommendedLevel": 13,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "ZB2-02/garrison",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb2_man_chong",
+              "name": "만총",
+              "template": "infantry",
+              "level": 12,
+              "region": "keep",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb2_fort_a",
+              "name": "번성 궁병",
+              "template": "archer",
+              "level": 11,
+              "at": {
+                "x": 10,
+                "y": 3
+              },
+              "behavior": "hold"
+            },
+            {
+              "id": "zb2_fort_b",
+              "name": "번성 궁병",
+              "template": "archer",
+              "level": 11,
+              "at": {
+                "x": 14,
+                "y": 3
+              },
+              "behavior": "hold"
+            },
+            {
+              "id": "zb2_fort_c",
+              "name": "번성 창병",
+              "template": "spearman",
+              "level": 11,
+              "at": {
+                "x": 12,
+                "y": 4
+              },
+              "behavior": "hold"
+            },
+            {
+              "id": "zb2_ring",
+              "name": "성 밖 보병",
+              "template": "infantry",
+              "level": 11,
+              "region": "siege_ring",
+              "behavior": "hold",
+              "count": 2
+            },
+            {
+              "id": "zb2_ring_b",
+              "name": "성 밖 창병",
+              "template": "spearman",
+              "level": 11,
+              "region": "siege_ring",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb2_cata",
+              "name": "번성 투석기",
+              "template": "catapult",
+              "level": 11,
+              "region": "catapults",
+              "behavior": "hold"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ZB2-02/landing",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb2_land",
+              "name": "강을 건너온 기병",
+              "template": "cavalry",
+              "level": 11,
+              "region": "landing",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

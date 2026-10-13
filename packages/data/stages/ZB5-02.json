@@ -1,0 +1,159 @@
+{
+  "id": "ZB5-02",
+  "arc": "lower",
+  "order": 213,
+  "title": "축융의 비도",
+  "subtitle": "불의 여인",
+  "synopsis": "관색이 남쪽 길에서 합류했다. 아우를 잃은 맹획 대신 그 아내 축융이 비도를 들고 나섰다. 맹수를 앞세운 은갱동 어귀에서 축융을 물리쳐라.",
+  "mapId": "z2-04-yinkeng",
+  "focusVictoryTargets": true,
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_zhao_yun",
+      "z_wei_yan",
+      "z_wang_ping",
+      "z_ma_dai",
+      "z_guan_suo"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "zb5_zhu_rong"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "player_losses_lt:1",
+      "extreme": "player_losses_lt:1"
+    },
+    {
+      "slot": 3,
+      "normal": "turn_limit:11",
+      "extreme": "turn_limit:12"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 19,
+      "recommendedLevel": 19,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 21,
+      "recommendedLevel": 21,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "ZB5-02/fort",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb5_zhu_rong",
+              "name": "축융",
+              "template": "javelin",
+              "level": 20,
+              "region": "fort",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb5_fort",
+              "name": "축융의 만병",
+              "template": "nanmanFoot",
+              "level": 19,
+              "region": "fort",
+              "behavior": "hold",
+              "count": 2
+            },
+            {
+              "id": "zb5_front",
+              "name": "어귀 만병",
+              "template": "nanmanFoot",
+              "level": 19,
+              "region": "fort_front",
+              "behavior": "hold",
+              "count": 2
+            },
+            {
+              "id": "zb5_beast",
+              "name": "은갱동 맹수",
+              "template": "nanmanBeast",
+              "level": 19,
+              "region": "beast_mid",
+              "behavior": "advance",
+              "count": 2
+            },
+            {
+              "id": "zb5_band",
+              "name": "축융의 기마",
+              "template": "nanmanRider",
+              "level": 19,
+              "region": "zhurong_band",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ZB5-02/north",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb5_north",
+              "name": "북쪽 숲 맹수",
+              "template": "nanmanBeast",
+              "level": 19,
+              "region": "beast_north",
+              "behavior": "advance"
+            },
+            {
+              "id": "zb5_north_b",
+              "name": "북쪽 숲 만병",
+              "template": "nanmanFoot",
+              "level": 19,
+              "region": "beast_north",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

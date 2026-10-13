@@ -1,0 +1,164 @@
+{
+  "id": "ZB1-01",
+  "arc": "upper",
+  "order": 200,
+  "title": "단계를 건너라",
+  "subtitle": "양양 연회의 칼",
+  "synopsis": "유표가 형주를 맡기겠다고 하자, 채모가 연회 자리에서 유비를 해치려 군사를 숨겼다. 성 밖으로 빠져나와 서쪽 단계 나루까지 유비를 데려가라.",
+  "mapId": "z1-04-xinye",
+  "focusVictoryTargets": true,
+  "guardLeaders": true,
+  "deployment": {
+    "forced": [
+      "z_liu_bei",
+      "z_guan_yu",
+      "z_zhang_fei",
+      "z_zhao_yun",
+      "z_liang"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "reach",
+      "unit": "z_liu_bei",
+      "target": "west_road"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liu_bei"
+    },
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "unit_retreat:zb1_cai_mao",
+      "extreme": "unit_retreat:zb1_cai_mao"
+    },
+    {
+      "slot": 3,
+      "normal": "turn_limit:8",
+      "extreme": "turn_limit:9"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 5,
+      "recommendedLevel": 5,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 7,
+      "recommendedLevel": 7,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "ZB1-01/garrison",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb1_cai_mao",
+              "name": "채모",
+              "template": "spearman",
+              "level": 6,
+              "region": "town",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb1_town",
+              "name": "채모의 위사",
+              "template": "infantry",
+              "level": 5,
+              "region": "town",
+              "behavior": "hold",
+              "count": 2
+            },
+            {
+              "id": "zb1_town_b",
+              "name": "채모의 궁병",
+              "template": "archer",
+              "level": 5,
+              "region": "town",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb1_nw",
+              "name": "단계 길목 궁병",
+              "template": "archer",
+              "level": 5,
+              "region": "northwest",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb1_nw_s",
+              "name": "단계 길목 창병",
+              "template": "spearman",
+              "level": 5,
+              "region": "northwest",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb1_chase",
+              "name": "채모의 추격 기병",
+              "template": "cavalry",
+              "level": 5,
+              "region": "crossing",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ZB1-01/chase",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 4
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb1_chase2",
+              "name": "채모의 추격 기병",
+              "template": "cavalry",
+              "level": 5,
+              "region": "exit",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

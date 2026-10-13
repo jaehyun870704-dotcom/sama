@@ -38,7 +38,9 @@ import {playEpilogue} from './epilogue.ts';
 import {showHub,showQuests,showTitle,showCollections,showStoryPick,finishRunBattle,finishRunStory,RUN_CHAPTER,type RunHost} from './run-ui.ts';
 import {showScenario,campOf,finishIfBattle,finishStoryBattle,noteDefeatReason,type ScenarioHost} from './scenario-ui.ts';
 import {scriptOf,loadScenario,saveScenario,trainCompanions,currentStep,joinRecruits} from './scenario.ts';
-import {isZhugeStage,zhugeName} from './zhuge-data.ts';
+import {isZhugeStage,isZhugeBranch,zhugeName} from './zhuge-data.ts';
+import {zhugeMapNodes,zhugeNodeState,zhugeLockText,rewardParts,replayGold,grantBranchReward,ARC_GAP,type ZMapNode} from './zhuge-map.ts';
+import {branchNode,forkOf} from './zhuge/branches.ts';
 import {zhugeDeployment,zhugeLevel,zhugeBase,growZhuge,zhugeMilestones} from './zhuge.ts';
 import {conditionsHtml,goalMarks,winText} from './battle-conditions.ts';
 import {optionalOfficers,soloStage,pickExtras,storySortieLimit,storyCostSheet,storyRetinueCap,unitCost,storyClassAt} from './sortie.ts';
@@ -304,15 +306,67 @@ function zhugeSeals(id:string){const p=progress();return new Set(p[id+':normal']
 function zhugeCleared(i:number){const id=chapters[i]!.stage.id,p=progress();return Array.isArray(p[`${id}:normal`])||Array.isArray(p[`${id}:extreme`]);}
 /** 처음 장은 언제나 열려 있다(사마의전을 하지 않아도 고를 수 있다). 그 뒤는 앞 장을 이기면 열린다. */
 function zhugeUnlocked(i:number){const k=zhugeOrder.indexOf(i);return k===0||zhugeCleared(i)||(k>0&&zhugeCleared(zhugeOrder[k-1]!));}
+/** 제갈량전 칸(본편 장 · 가지 칸)을 이겼나: 일반·극한 어느 쪽이든 기록이 있으면. */
+function zhugeWon(id:string){const p=progress();return Array.isArray(p[`${id}:normal`])||Array.isArray(p[`${id}:extreme`]);}
+/** 가지 칸의 chapters 번호. */
+const zhugeIndex=(id:string)=>chapters.findIndex(c=>c.stage.id===id);
+/** 가지 칸이 열렸나(갈림 장을 이기고 앞 칸을 이겼다). */
+function branchOpen(id:string){const n=zhugeMap().find(x=>x.id===id);return !!n&&zhugeNodeState(n,zhugeWon,zid=>zhugeUnlocked(zhugeIndex(zid))).open;}
+let zgMap:ZMapNode[]|undefined;
+function zhugeMap(){return zgMap??=zhugeMapNodes(zhugeOrder.map(i=>{const id=chapters[i]!.stage.id;return {id,title:scriptOf(id)?.title??chapters[i]!.stage.title};}));}
+let zgStage='';
+/**
+ * 제갈량전 연의 지도: 사마의전 연의 지도와 같은 판(줄기 · 갈림길 · 가지)과 오른쪽 정보 칸.
+ * 줄기는 본편 34장, 갈림 장 오른쪽으로 선택분기(가상 전장 둘 + 우두머리)가 뻗는다.
+ */
 function showZhuge(){
   menuOpen=true;clearTimeout(aiTimer);sound.scene='title';sound.combat=false;resetStoryEra();
-  const rows=zhugeOrder.map((i,k)=>{const c=chapters[i]!,sc=scriptOf(c.stage.id),open=zhugeUnlocked(i),done=zhugeCleared(i);
-    return `<li class="zg-row ${done?'done':open?'open':'locked'}"><span class="zg-no">${k+1}</span><div class="zg-text"><b>${esc(sc?.title??c.stage.title)}</b><small>${esc(c.year)} · ${esc(c.label)}</small>${open?`<p>${esc(sc?.synopsis??c.stage.synopsis??'')}</p>`:''}</div><span class="zg-seal">연의 천명 ${zhugeSeals(c.stage.id)}/6</span>${open?`<button data-zg="${i}" class="${done?'':'primary'}">${done?'다시 출진':'이야기 시작'} →</button>`:'<em>앞 장을 이기면 열린다</em>'}</li>`;}).join('');
+  const p=progress(),stats=nodeStats(),nodes=zhugeMap(),byId=new Map(nodes.map(n=>[n.id,n]));
+  const st=(n:ZMapNode)=>zhugeNodeState(n,zhugeWon,id=>zhugeUnlocked(zhugeIndex(id)));
+  const first=nodes.find(n=>n.kind==='story'&&st(n).open&&!st(n).won)??nodes.filter(n=>n.kind==='story'&&st(n).open).at(-1)??nodes[0]!;
+  const sel=byId.get(zgStage)??first;zgStage=sel.id;
+  const CW=176,RH=128,NW=150,NH=104,PAD=34;
+  const xOf=(n:ZMapNode)=>PAD+n.col*CW,yOf=(n:ZMapNode)=>PAD+n.row*RH;
+  const W=Math.max(...nodes.map(xOf))+NW+PAD,H=Math.max(...nodes.map(yOf))+NH+PAD;
+  const artOf=(id:string)=>scriptOf(id)?.scenes[0]?.art;
+  const art=(n:ZMapNode):number=>n.kind==='story'?artOf(n.stage!)??(zhugeIndex(n.stage!)%18):n.kind==='fork'?artOf(forkOf(n.fork)!.anchor)??3:((n.id.charCodeAt(2)*7+n.id.charCodeAt(5)*3)%18);
+  const lines=nodes.filter(n=>n.prev&&byId.has(n.prev)).map(n=>{const a=byId.get(n.prev!)!,x1=xOf(a)+NW/2,y1=yOf(a)+NH/2,x2=xOf(n)+NW/2,y2=yOf(n)+NH/2,on=st(a).won&&st(n).open;
+    const d=Math.abs(x1-x2)<4||a.row===n.row?`M${x1},${y1} L${x2},${y2}`:`M${x1},${y1} L${x1},${(y1+y2)/2} L${x2},${(y1+y2)/2} L${x2},${y2}`;
+    return `<path class="ym-line ${n.line} ${on?'on':''}" d="${d}"/>`;}).join('');
+  const foeOf=(n:ZMapNode)=>n.kind==='tale'||n.kind==='boss'?branchNode(n.id)?.foe:undefined;
+  const nodeHtml=(n:ZMapNode)=>{const s=st(n),a=new Set(p[n.id+':normal']??[]),b=new Set(p[n.id+':extreme']??[]);
+    const pips=n.kind==='story'?[1,2,3].map(k=>`<i class="${a.has(k)?'n':''}${b.has(k)?' x':''}"></i>`).join(''):n.kind==='fork'?'':[1,2,3].map(k=>`<i class="${a.has(k)?'n':''}"></i>`).join('');
+    const foe=foeOf(n),label=n.kind==='fork'?`갈림길 · ${n.title}`:n.kind==='boss'?`★ ${n.title}`:n.title;
+    return `<button class="ym-node ${n.kind} ${n.line} ${s.won?'won':''} ${s.open?'':'locked'} ${n.id===sel.id?'sel':''}" data-zg-node="${esc(n.id)}" style="left:${xOf(n)}px;top:${yOf(n)}px"><span class="ym-pips">${pips}</span><span class="ym-thumb" style="${storyBackdrop(art(n))}">${foe?`<span class="ym-foe">${cardFace(foe.name)}</span>`:''}${n.kind==='fork'?'<b class="ym-fork-mark">갈림</b>':''}</span><span class="ym-plate">${esc(label)}</span>${s.open?'':'<span class="ym-chain" aria-label="잠김"></span>'}</button>`;};
+  const arcHead=(arc:1|2,text:string)=>{const top=nodes.find(n=>n.kind==='story'&&n.arc===arc);return top?`<span class="zg-arc-head" style="top:${yOf(top)-(arc===2?RH*ARC_GAP*0.62:PAD*0.9)}px">${text}</span>`:'';};
+  // 오른쪽: 고른 칸
+  const ss=st(sel),[w,t]=stats[sel.id]??[0,0],idx=sel.stage?zhugeIndex(sel.stage):-1,c=idx>=0?chapters[idx]:undefined;
+  // 제갈량의 기록 레벨(처음이면 장마다 권장 레벨로 선다 · zhuge.ts).
+  const heroXp=campaign.retinueXp?.['제갈량'],hero=heroXp!==undefined?levelInfo(heroXp).level:0;
+  let year='',lvl=0,minutes=20,story='',rewards='',lock='',extra='',enter='';
+  if(sel.kind==='story'){const sc=scriptOf(sel.stage!);year=c!.year;lvl=zhugeBase(c!.stage,'normal');minutes=Math.max(15,Math.min(60,Math.round(c!.map.rows.length*(c!.map.rows[0]?.length??20)/22)));
+    story=sc?.synopsis??c!.stage.synopsis??'';const items=treasures.filter(x=>x.zstage===sel.stage);
+    rewards=`${items.map(x=>`<span class="ym-item" title="${esc(x.name)} · 첫 승리">${treasureIcon(x.id)}</span>`).join('')}<span class="ym-item text">경험치</span><span class="ym-item text">금</span><span class="ym-item text">연의 천명 ×3</span>`;
+    const names=sealNamesOf(idx),a=new Set(p[sel.id+':normal']??[]),b=new Set(p[sel.id+':extreme']??[]);
+    extra=`<div class="stage-seals"><span>천명 조건 <small>일반 ${a.size}/3 · 극한 ${b.size}/3</small></span><ol>${names.map((nm,k)=>`<li><b>${esc(nm)}</b><i class="${a.has(k+1)?'earned':''}" title="일반">◆</i><i class="x ${b.has(k+1)?'earned':''}" title="극한">◆</i></li>`).join('')}</ol></div>`;
+    lock=ss.open?'':'앞 장을 이기면 열린다.';enter=ss.won?'다시 출진':'이야기 시작';}
+  else if(sel.kind==='fork'){const f=forkOf(sel.fork)!;year=f.year;story=f.prompt;
+    extra=`<p class="zg-history"><b>정사에서는</b> ${esc(f.history)}</p><div class="ym-choices"><span>갈라지는 길</span><button class="ym-route" data-zg-first="${esc(f.nodes[0]!)}"><b>${esc(f.choice)}</b><small>${esc(f.name)} · ${esc(f.detail)}</small></button><p class="muted">본편 줄기(붉은 선)는 연의대로 이어진다. 가지(푸른 선)는 가상 전장 둘과 우두머리로 끝난다.</p></div>`;
+    lock=ss.open?'':`본편 「${esc(scriptOf(f.anchor)?.title??f.anchor)}」을(를) 이기면 갈림길이 열린다.`;}
+  else{const f=forkOf(sel.fork)!,b=branchNode(sel.id)!,r=rewardParts(b.reward);year=f.name;lvl=zhugeBase(c!.stage,'normal');minutes=sel.kind==='boss'?30:20;story=b.intro;
+    const replay=ss.won;
+    rewards=`<span class="ym-item" title="${esc(r.gear)} · 첫 승리">${treasureIcon(b.reward.gear)}</span><span class="ym-item text gold">${esc(replay?`금 +${replayGold(b.reward).toLocaleString()}`:r.gold)}</span>${replay?'':r.supplies.map(x=>`<span class="ym-item text">${esc(x)}</span>`).join('')}<span class="ym-item text">경험치</span><span class="ym-item face" title="적장 ${esc(b.foe.name)}">${cardFace(b.foe.name)}</span>`;
+    const forced=c!.stage.deployment.forced,prevStage=sel.prev&&sel.prev!==f.id?chapters[zhugeIndex(sel.prev)]?.stage.deployment.forced??[]:forced,joined=forced.filter(id=>!prevStage.includes(id));
+    extra=`<div class="zg-party"><span>함께 가는 장수</span>${forced.map(id=>`<em class="${joined.includes(id)?'join':''}">${esc(zhugeName(id)??id)}${joined.includes(id)?' · 합류':''}</em>`).join('')}</div><p class="zg-reward-note">${replay?'이미 이긴 칸 · 다시 이기면 금만 셋에 하나':`처음 이기면 ${esc(r.gear)} · ${esc(r.gold)}${r.supplies.length?' · '+esc(r.supplies.join(' · ')):''}`}</p>`;
+    lock=ss.open?'':zhugeLockText(sel,zhugeWon,id=>scriptOf(id)?.title??id);enter=ss.won?'다시 출진':'출진 정비';}
+  const trunkWon=nodes.filter(n=>n.kind==='story'&&st(n).won).length,trunkAll=nodes.filter(n=>n.kind==='story').length;
+  const branchAll=nodes.filter(n=>n.kind==='tale'||n.kind==='boss'),branchWon=branchAll.filter(n=>st(n).won).length;
+  const seals=zhugeOrder.reduce((t2,i)=>t2+zhugeSeals(chapters[i]!.stage.id),0);
   // 천명 보상: 사마의전과 같은 틀 — 편(상·하)마다 모은 연의 천명이 1/3 · 2/3 · 전부를 넘으면 받는다.
   const arcs=zhugeArcs(),tiers=arcs.flatMap(a=>zhugeSealTiers(a.arc-1,a.stages).map(t=>({...t,have:a.have})));
   const have=arcs.reduce((t,a)=>t+a.have,0),max=arcs.reduce((t,a)=>t+a.stages*6,0);
   const next=tiers.find(x=>!sealClaimed(campaign,x.key)),ready=tiers.find(x=>!sealClaimed(campaign,x.key)&&x.have>=x.need);
-  const seals=`<div class="zg-seals"><span class="ym-seal-head">모은 연의 천명</span><i class="sr-meter"><i style="width:${max?Math.round(have/max*100):0}%"></i></i><b>${have}/${max}</b>
+  const sealBar=`<div class="zg-seals"><span class="ym-seal-head">모은 연의 천명</span><i class="sr-meter"><i style="width:${max?Math.round(have/max*100):0}%"></i></i><b>${have}/${max}</b>
     <details class="ym-reward-list"><summary>보상 목록</summary><div>${tiers.map(x=>`<p class="${sealClaimed(campaign,x.key)?'got':x.have>=x.need?'ready':''}"><b>${x.arc} ${x.need}개</b> 경험치 +${x.xp} · ${esc(sealRewardText(x))}${sealClaimed(campaign,x.key)?' ✓':''}</p>`).join('')}</div></details>
     <span class="zg-next">${next?`다음 보상 ${next.arc} ${next.have}/${next.need} · ${esc(sealRewardText(next))}`:'모든 보상을 받았다'}</span>
     <button id="zg-claim" class="${ready?'ready':''}" ${ready?'':'disabled'}>받기</button>
@@ -320,13 +374,33 @@ function showZhuge(){
   // 본 결말: 오장원을 넘으면 열린다. 본 갈래는 다시 볼 수 있다.
   const meta=loadMeta(),seen=ZHUGE_BRANCHES.filter(b=>meta.endings.includes(zhugeEndingId(b)));
   const endings=`<section class="zg-endings"><h3>결말 <small>본 결말 ${seen.length}/${ZHUGE_ENDINGS.length}</small></h3><div class="chronicle-list">${ZHUGE_BRANCHES.map(b=>seen.includes(b)?`<button type="button" class="done end-replay" data-zg-end="${b}" title="결말 다시 보기">◆ ${esc(ZHUGE_ENDING_TEXT[b].title)} ▶</button>`:'<span>· 아직 보지 못한 결말</span>').join('')}${seen.length?'<button type="button" class="end-replay" id="zg-recap">내가 한 선택 ▶</button>':''}</div>${seen.length?'':'<p class="muted">오장원(마지막 장)을 이기면 결말이 열린다. 결말은 이야기 속 선택에 따라 갈린다.</p>'}</section>`;
-  modal(`<div class="briefing zhuge-list"><div class="eyebrow">제갈량전 · 와룡에서 오장원까지</div><h2>장 목록</h2><p class="screen-lede">피난길의 소년이 와룡이 되기까지. 장을 이기면 다음 장이 열린다. 보물·연구와 장수마다 쌓은 레벨은 다른 이야기와 함께 쓴다.</p>${seals}<ol class="zg-list">${rows}</ol>${endings}<div class="modal-actions"><button id="zg-back">← 이야기 고르기</button></div></div>`,false);
-  document.querySelectorAll<HTMLButtonElement>('[data-zg]').forEach(b=>b.onclick=()=>storyScene(Number(b.dataset.zg)));
+  modal(`<div class="yeon-map zhuge-map">
+  <header class="ym-top"><button id="zg-back" class="ym-backbtn">← 이야기 고르기</button>
+    <div class="ym-arcs"><b class="ym-story-name">제갈량전</b></div>
+    <div class="zg-progress"><small>본편 <b>${trunkWon}/${trunkAll}</b> · 분기 <b>${branchWon}/${branchAll.length}</b> · 연의 천명 <b>${seals}/${trunkAll*6}</b></small><i class="sr-meter"><i style="width:${Math.round((trunkWon+branchWon)/(trunkAll+branchAll.length)*100)}%"></i></i></div>
+    <span class="ym-hero">${hero?`제갈량 Lv.${hero} · `:''}금 ${(campaign.gold?.Z??1000).toLocaleString()}</span></header>
+  <div class="ym-body">
+    <section class="ym-board-wrap"><div class="ym-board" style="width:${W}px;height:${H}px">${arcHead(1,'상편 · 와룡')}${arcHead(2,'하편 · 출사표')}
+      <svg class="ym-lines" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true">${lines}</svg>${nodes.map(nodeHtml).join('')}</div></section>
+    <aside class="ym-detail ${sel.line}"><h2 class="ym-vtitle">${esc(sel.kind==='fork'?forkOf(sel.fork)!.title:sel.title)}</h2><div class="ym-info">
+      <div class="ym-info-head"><strong>${esc(year)}</strong>${sel.kind!=='fork'?`<span class="ym-diff">${sel.kind==='story'?'일반 · 극한':sel.kind==='boss'?'가상 · 우두머리':'가상'}</span>`:''}</div>
+      ${sel.kind!=='fork'?`<div class="ym-stat"><span class="ym-shot" style="${storyBackdrop(art(sel))}"></span><dl><div><dt>승리/출진</dt><dd>${w}/${w+t}</dd></div><div><dt>권장 LV</dt><dd>${lvl}${hero&&hero<lvl?` <small class="warn">(제갈량 ${hero} → ${lvl}로 선다)</small>`:''}</dd></div><div><dt>소요시간</dt><dd>약 ${minutes}분</dd></div></dl></div>
+      <h3 class="ym-h">입수 가능 보상 목록</h3><div class="ym-items">${rewards}</div>`:''}
+      <p class="ym-story">${esc(story)}</p>${extra}
+      <div class="ym-go">${ss.open&&sel.kind!=='fork'?`<button id="zg-enter" class="primary">${enter} →</button>`:lock?`<div class="ym-lock">🔒 ${lock}</div>`:''}</div>
+      <div class="zg-meta">${sealBar}${endings}</div>
+    </div></aside></div>
+  <footer class="ym-foot"><button id="zg-home">본영</button><button id="zg-shop">상점</button>${lastBattle()?.ongoing?'<button id="resume" class="primary">전투 이어하기 →</button>':''}${hasStarted?'<button id="back-battle">현재 전장</button>':''}<button id="save-slots">저장 칸</button></footer></div>`,false);
+  document.querySelectorAll<HTMLButtonElement>('[data-zg-node]').forEach(b=>b.onclick=()=>{zgStage=b.dataset.zgNode!;showZhuge();});
+  document.querySelectorAll<HTMLButtonElement>('[data-zg-first]').forEach(b=>b.onclick=()=>{zgStage=b.dataset.zgFirst!;showZhuge();});
+  $('#zg-back').onclick=()=>showStoryPick(runHost,showMenu);$('#zg-home').onclick=showMenu;$('#zg-shop').onclick=()=>openShop('Z',showZhuge,undefined,true);
+  $('#save-slots').onclick=()=>showSlots(showZhuge);$('#back-battle')?.addEventListener('click',()=>{menuOpen=false;closeModal();});$('#resume')?.addEventListener('click',resumeSaved);
+  document.getElementById('zg-enter')?.addEventListener('click',()=>{if(sel.kind==='story')storyScene(idx);else zhugeBriefing(idx);});
+  const el=document.querySelector<HTMLElement>('.ym-node.sel'),wrap=document.querySelector<HTMLElement>('.ym-board-wrap');if(el&&wrap){wrap.scrollTop=Math.max(0,el.offsetTop-wrap.clientHeight/2+NH/2);wrap.scrollLeft=Math.max(0,el.offsetLeft-wrap.clientWidth/2+NW/2);}
   document.querySelectorAll<HTMLButtonElement>('[data-zg-end]').forEach(b=>b.onclick=()=>playZhugeEnding(b.dataset.zgEnd as ZhugeBranch));
   document.getElementById('zg-recap')?.addEventListener('click',()=>showZhugeRecap());
-  $('#zg-claim').onclick=()=>{if(!ready)return;const got=claimZhugeSealTier(campaign,ready,ready.have,zhugeNames());if(!got)return;saveCampaign();sound.event({kind:'victory'});
+  document.getElementById('zg-claim')!.onclick=()=>{if(!ready)return;const got=claimZhugeSealTier(campaign,ready,ready.have,zhugeNames());if(!got)return;saveCampaign();sound.event({kind:'victory'});
     toast(`천명 보상 · 제갈량전 장수 경험치 +${got.xp} · ${got.text}`);showZhuge();};
-  $('#zg-back').onclick=()=>showStoryPick(runHost,showMenu);
 }
 /** 제갈량전 편(상 Z1 · 하 Z2)마다 장 수와 모은 연의 천명. */
 function zhugeArcs(){return ([1,2] as const).map(arc=>{const list=zhugeOrder.filter(i=>chapters[i]!.stage.id.startsWith(`Z${arc}-`));
@@ -377,9 +451,11 @@ function showZhugeRecap(){
 }
 /** 제갈량전 출진 전 정비: 사마의전 연의 정비와 같은 틀(작전 · 천명 조건 · 출진 부대 · 보물 · 준비 · 난이도). */
 function zhugeBriefing(chapter:number,storyMods?:BattleMods){
-  const c=chapters[chapter]!;if(!zhugeUnlocked(chapter)){toast('아직 열리지 않은 전장입니다.');showZhuge();return;}
+  const c=chapters[chapter]!,branch=isZhugeBranch(c.stage.id),bn=branch?branchNode(c.stage.id):undefined;
+  if(branch?!branchOpen(c.stage.id):!zhugeUnlocked(chapter)){toast('아직 열리지 않은 전장입니다.');showZhuge();return;}
+  zgStage=c.stage.id;
   let difficulty:'normal'|'extreme'='normal',prep:Preparation='survival',officer='',filter='weapon',inspect=campaign.treasures[0]??treasures[0]!.id;
-  const normalDone=Array.isArray(progress()[c.stage.id+':normal']);
+  const normalDone=!branch&&Array.isArray(progress()[c.stage.id+':normal']);
   const dispatch=(preview=false)=>{const d={...zhugeDeployment(campaign,c.stage,difficulty),...(storyMods?{storyMods:{...storyMods}}:{})};
     // 연구(천명으로 여는 영구 강화)는 두 이야기 어디서든 함께 간다.
     if(!preview){const m=loadMeta(),names=c.stage.deployment.forced.map(id=>zhugeName(id)).filter((n):n is string=>!!n),p=deploymentPerks(m,[...names,...Object.keys(m.officerPerks??{})]);if(p)d.perks=p;}return d;};
@@ -388,7 +464,7 @@ function zhugeBriefing(chapter:number,storyMods?:BattleMods){
     const previousScroll=$('#modal-content .camp-screen')?$<HTMLDialogElement>('#modal').scrollTop:0;
     const preview=new Session(chapter,difficulty,215,prep,RULES,dispatch(true)),units=preview.state.living().filter(u=>u.side==='player'||u.side==='ally');
     if(!units.some(u=>gearKey(u)===officer))officer=gearKey(units.find(u=>u.side==='player')??units[0]!);
-    modal(`<div class="briefing camp-screen"><div class="prep-backdrop" style="${isoBackdrop(16)}"></div><div class="eyebrow">${esc(c.year)} · 출진 전 정비</div><h2>${esc(c.stage.subtitle??c.stage.title)}</h2><p class="camp-mission">${esc(c.stage.synopsis??'')}</p>${conditionsHtml(preview.conditions)}${campMarkup(campaign,units,officer,filter,inspect,faceFor,[],c.stage.deployment.forced)}<details><summary>작전·지형 정보</summary><p>${esc(c.label)} · ${preview.state.map.width}×${preview.state.map.height} 전장. 장수 레벨은 인물마다 기억된다. 다른 이야기에서 키운 장수도 내 편으로 나오면 그 레벨로 서고, 처음 나서는 장수는 이 장의 기본 레벨(Lv.${zhugeBase(c.stage,difficulty)})로 선다. 보물·연구는 두 이야기가 함께 쓴다.</p></details><div class="preparations">${[['survival','생존','체력 +25'],['strategy','책략','MP +18'],['command','지휘','이동 +1']].map(([id,name,desc])=>`<label><input type="radio" name="preparation" value="${id}" ${prep===id?'checked':''}>${name} · ${desc}</label>`).join('')}</div><div class="difficulty"><label><input type="radio" name="difficulty" value="normal" ${difficulty==='normal'?'checked':''}> 일반</label><label><input type="radio" name="difficulty" value="extreme" ${difficulty==='extreme'?'checked':''} ${normalDone?'':'disabled'}> 극한 · 일반 완료 후</label></div><div class="modal-actions"><button id="brief-back">← 장 목록</button><button id="brief-shop">상점</button><span>구급약 ${preview.medicine} · 제갈량 Lv.${hero()}</span><button id="deploy" class="primary">출진한다 →</button></div></div>`,false);
+    modal(`<div class="briefing camp-screen"><div class="prep-backdrop" style="${isoBackdrop(16)}"></div><div class="eyebrow">${branch?`선택분기 · ${esc(forkOf(c.stage.id)?.name??'')} · `:''}${esc(c.year)} · 출진 전 정비</div><h2>${esc(branch?c.stage.title:c.stage.subtitle??c.stage.title)}</h2>${bn?`<div class="bb-foe"><span class="rc-face big">${cardFace(bn.foe.name)}</span><div><b>적장 ${esc(bn.foe.name)}</b><small>${esc(classNames[bn.foe.unitClass]??bn.foe.unitClass)}${bn.boss?' · 갈래 끝 우두머리':''}</small><p>${esc(bn.intro)}</p></div></div>`:''}<p class="camp-mission">${esc(c.stage.synopsis??'')}</p>${conditionsHtml(preview.conditions)}${campMarkup(campaign,units,officer,filter,inspect,faceFor,[],c.stage.deployment.forced)}<details><summary>작전·지형 정보</summary><p>${esc(c.label)} · ${preview.state.map.width}×${preview.state.map.height} 전장. 장수 레벨은 인물마다 기억된다. 다른 이야기에서 키운 장수도 내 편으로 나오면 그 레벨로 서고, 처음 나서는 장수는 이 장의 기본 레벨(Lv.${zhugeBase(c.stage,difficulty)})로 선다. 보물·연구는 두 이야기가 함께 쓴다.</p></details><div class="preparations">${[['survival','생존','체력 +25'],['strategy','책략','MP +18'],['command','지휘','이동 +1']].map(([id,name,desc])=>`<label><input type="radio" name="preparation" value="${id}" ${prep===id?'checked':''}>${name} · ${desc}</label>`).join('')}</div><div class="difficulty">${branch?'<label><input type="radio" name="difficulty" value="normal" checked> 가상 전장 · 일반만</label>':`<label><input type="radio" name="difficulty" value="normal" ${difficulty==='normal'?'checked':''}> 일반</label><label><input type="radio" name="difficulty" value="extreme" ${difficulty==='extreme'?'checked':''} ${normalDone?'':'disabled'}> 극한 · 일반 완료 후</label>`}</div><div class="modal-actions"><button id="brief-back">← 연의 지도</button><button id="brief-shop">상점</button><span>구급약 ${preview.medicine} · 제갈량 Lv.${hero()}</span><button id="deploy" class="primary">출진한다 →</button></div></div>`,false);
     document.querySelectorAll<HTMLButtonElement>('[data-officer]').forEach(b=>b.onclick=()=>{officer=b.dataset.officer!;draw();});
     document.querySelectorAll<HTMLButtonElement>('[data-gear-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.gearFilter!;draw();});
     document.querySelectorAll<HTMLButtonElement>('[data-treasure]').forEach(b=>b.onclick=()=>{inspect=b.dataset.treasure!;draw();});
@@ -410,24 +486,29 @@ function finishZhuge(){
   const again=session.rewarded;session.rewarded=true;persist();
   sound.sfx(win?'victory':'defeat');
   const news:string[]=[];let growth:ReturnType<typeof zhugeMilestones>=[];let gotTreasures:string[]=[];
-  const firstZ=!Array.isArray(progress()[id+':'+difficulty]);
+  const firstZ=!Array.isArray(progress()[id+':'+difficulty]),branch=isZhugeBranch(id),bn=branchNode(id);
+  if(!again)countSortie(id,win);
   if(win){
-    const got=awardZhugeTreasures(campaign,id);gotTreasures=got.map(t=>t.id);if(got.length)news.push(`보물 ${got.map(t=>`「${t.name}」`).join(' · ')} 얻었다`);
-    if(!again){const g=winGold('Z',id,firstZ);if(g)news.push(`금 +${g.toLocaleString()} (제갈량전)`);}
+    // 선택분기 가상 전장: 처음 이기면 금 · 상점 장비 · 소모품, 다시 이기면 금 1/3(zhuge-map.ts).
+    if(branch){if(!again)news.push(...grantBranchReward(campaign,id,firstZ));}
+    else{const got=awardZhugeTreasures(campaign,id);gotTreasures=got.map(t=>t.id);if(got.length)news.push(`보물 ${got.map(t=>`「${t.name}」`).join(' · ')} 얻었다`);
+      if(!again){const g=winGold('Z',id,firstZ);if(g)news.push(`금 +${g.toLocaleString()} (제갈량전)`);}}
     saveCampaign();
     try{const p=progress(),k=id+':'+difficulty;p[k]=[...new Set([...(p[k]??[]),...seals])];localStorage.setItem(PROGRESS_KEY,JSON.stringify(p));}catch{/* optional persistence */}
-    const m=loadMeta();recordStory(m,id);const sealGain=paySeals(m,progress(),[id]);let winGain=0;
-    if(!again){winGain=difficulty==='extreme'?2:1;m.mandate+=winGain;m.earned+=winGain;}saveMeta(m);
+    const m=loadMeta();let sealGain=0,winGain=0;
+    if(branch){if(!again&&firstZ){winGain=1;m.mandate+=1;m.earned+=1;}}
+    else{recordStory(m,id);sealGain=paySeals(m,progress(),[id]);if(!again){winGain=difficulty==='extreme'?2:1;m.mandate+=winGain;m.earned+=winGain;}}
+    saveMeta(m);
     if(winGain+sealGain)news.push(mandateText(winGain,sealGain));
     if(!again){const before={...campaign.retinueXp};growZhuge(campaign,s.living('player'),session.xpEarned,40+zhugeBase(s.stage,'normal')*10);growth=zhugeMilestones(campaign,before,s.living('player'));saveCampaign();}
   }
   if(!again){news.push(...gearNews(settleGear(campaign,s,session.deployment,session.xpEarned)));saveCampaign();}
-  const k=zhugeOrder.indexOf(chapter),next=zhugeOrder[k+1],sc=scriptOf(id),xp={...session.xpEarned};
+  const k=zhugeOrder.indexOf(chapter),fk=forkOf(id),nextBranch=fk?fk.nodes[fk.nodes.indexOf(id)+1]:undefined,next=branch?(nextBranch?zhugeIndex(nextBranch):undefined):zhugeOrder[k+1],sc=scriptOf(id),xp={...session.xpEarned};
   const result=()=>{menuOpen=true;
-    modal(`<div class="result"><div class="result-character">${win?'승':'패'}</div><h2>${win?'살아서 다음 길로.':'아직, 끝이 아니다.'}</h2><p>${esc(s.stage.title)} · ${s.turn}턴</p>${news.length?`<div class="run-news">${news.map(x=>`<p>${esc(x)}</p>`).join('')}</div>`:''}${growth.map(x=>`<div class="growth-summary"><b>${esc(x.name)}${x.to>x.from?` · Lv.${x.from} → ${x.to}`:''}</b>${x.evolution?`<p class="evo-news">병종 진화: ${esc(x.evolution.from)} → <b>${esc(x.evolution.to)}</b>${x.evolution.bloom?` · 개화 「${esc(x.evolution.bloom.name)}」 ${esc(x.evolution.bloom.description)}`:''}</p>`:''}${x.signatures.length?`<p>고유특성 해금: ${x.signatures.map(n=>`「${esc(n)}」`).join(' · ')}</p>`:''}</div>`).join('')}<div class="seals">${session.sealNames.map((name,i)=>`<div class="${seals.includes(i+1)?'earned':''}"><b>◆</b><span>${esc(name)}</span></div>`).join('')}</div><p>${win?'전투 기록과 천명이 저장되었습니다.':esc(session.failure)}</p><div class="modal-actions"><button id="zg-retry">다시 도전</button><button id="zg-list">장 목록</button>${win?(next!==undefined?'<button id="zg-next" class="primary">다음 장 →</button>':'<button id="zg-ending" class="primary">결말 보기 →</button>'):''}</div></div>`,false);
-    $('#zg-retry').onclick=()=>zhugeBriefing(chapter);$('#zg-list').onclick=showZhuge;
+    modal(`<div class="result"><div class="result-character">${win?'승':'패'}</div><h2>${branch?(win?'갈림길 너머를 보았다':'아직 이 길은 멀다'):win?'살아서 다음 길로.':'아직, 끝이 아니다.'}</h2><p>${branch?'선택분기 · ':''}${esc(s.stage.title)} · ${s.turn}턴</p>${branch&&win&&bn?`<p class="zg-outro">${esc(bn.outro)}</p>`:''}${news.length?`<div class="run-news">${news.map(x=>`<p>${esc(x)}</p>`).join('')}</div>`:''}${growth.map(x=>`<div class="growth-summary"><b>${esc(x.name)}${x.to>x.from?` · Lv.${x.from} → ${x.to}`:''}</b>${x.evolution?`<p class="evo-news">병종 진화: ${esc(x.evolution.from)} → <b>${esc(x.evolution.to)}</b>${x.evolution.bloom?` · 개화 「${esc(x.evolution.bloom.name)}」 ${esc(x.evolution.bloom.description)}`:''}</p>`:''}${x.signatures.length?`<p>고유특성 해금: ${x.signatures.map(n=>`「${esc(n)}」`).join(' · ')}</p>`:''}</div>`).join('')}<div class="seals">${session.sealNames.map((name,i)=>`<div class="${seals.includes(i+1)?'earned':''}"><b>◆</b><span>${esc(name)}</span></div>`).join('')}</div><p>${win?'전투 기록과 천명이 저장되었습니다.':esc(session.failure)}</p><div class="modal-actions"><button id="zg-retry">다시 도전</button><button id="zg-list">연의 지도</button>${win?(next!==undefined?`<button id="zg-next" class="primary">${branch?'다음 칸 →':'다음 장 →'}</button>`:branch?'':'<button id="zg-ending" class="primary">결말 보기 →</button>'):''}</div></div>`,false);
+    $('#zg-retry').onclick=()=>zhugeBriefing(chapter);$('#zg-list').onclick=()=>{if(branch&&win&&nextBranch)zgStage=nextBranch;showZhuge();};
+    document.getElementById('zg-next')?.addEventListener('click',()=>{if(branch)zhugeBriefing(next!);else storyScene(next!);});
     revealAfterResult(gotTreasures,'Z',document.querySelector('#modal .result'));
-    document.getElementById('zg-next')?.addEventListener('click',()=>storyScene(next!));
     document.getElementById('zg-ending')?.addEventListener('click',()=>playZhugeEnding());
   };
   void xp;
@@ -594,7 +675,7 @@ function showChronicleMap(){
       <svg class="ym-lines" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true">${lines}</svg>${nodes.map(nodeHtml).join('')}</div></section>
     <aside class="ym-detail ${sel.line}"><h2 class="ym-vtitle">${esc(title)}</h2><div class="ym-info">
       <div class="ym-info-head"><strong>${esc(year)}</strong>${sel.kind!=='fork'?`<span class="ym-diff">${sel.kind==='story'?'일반 · 극한':'가상'}</span>`:''}</div>
-      ${sel.kind!=='fork'?`<div class="ym-stat"><span class="ym-shot" style="${storyBackdrop(art(sel))}"></span><dl><div><dt>승리/출진</dt><dd>${w}/${w+t}</dd></div><div><dt>권장 LV</dt><dd>${lvl}${hero<lvl?` <small class="warn">(지금 ${hero})</small>`:''}</dd></div><div><dt>소요시간</dt><dd>약 ${minutes}분</dd></div></dl></div>
+      ${sel.kind!=='fork'?`<div class="ym-stat"><span class="ym-shot" style="${storyBackdrop(art(sel))}"></span><dl><div><dt>승리/출진</dt><dd>${w}/${w+t}</dd></div><div><dt>권장 LV</dt><dd>${lvl}${hero&&hero<lvl?` <small class="warn">(제갈량 ${hero} → ${lvl}로 선다)</small>`:''}</dd></div><div><dt>소요시간</dt><dd>약 ${minutes}분</dd></div></dl></div>
       <h3 class="ym-h">입수 가능 보상 목록</h3><div class="ym-items">${rewards}</div>`:''}
       <p class="ym-story">${esc(story)}</p>${extra}
       <div class="ym-go">${ss.open&&sel.kind!=='fork'?`<button id="ym-enter" class="primary">${sel.kind==='story'?(ss.won?'입장 · 다시 치르기':'입장'):(ss.won?'입장 · 다시 치르기':'입장')}</button>`:lock?`<div class="ym-lock">🔒 ${lock}</div>`:''}</div>
@@ -976,9 +1057,10 @@ function render(){
   // 지금 실려 있는 회차 보물: 얻자마자 전장에서도 보인다.
   {const d=session.deployment,ids=d?.run?.relics??d?.runStory?.relics??d?.scenario?.relics??[],el=$('#battle-relics');el.innerHTML=(d?.trial?'<span class="trial" title="로그라이크 난이도: 적 체력 +20% · 공격 +12% · 방어 +10%. 연구로 이겨낸다.">⚠ 천명의 시련</span>':'')+ids.map(id=>RELICS.find(r=>r.id===id)).filter(Boolean).map(r=>`<span title="${r!.effect}">◈ ${r!.name}</span>`).join('');el.hidden=!ids.length&&!d?.trial;}
   if(isZhugeStage(session.state.stage.id)){const k=zhugeOrder.indexOf(session.chapter)+1;$('#arc-crumb').innerHTML=`제갈량전 <span>/</span> ${esc(chapters[session.chapter]?.year??'')}`;$('#arc-eyebrow').innerHTML=`제갈량전 <span>${k}장</span>`;}
+  else if(isZhugeBranch(session.state.stage.id)){$('#arc-crumb').innerHTML=`제갈량전 <span>/</span> 선택분기`;$('#arc-eyebrow').innerHTML=`제갈량전 <span>${esc(forkOf(session.state.stage.id)?.name??'')}</span>`;}
   else{const [no,arc,name]=session.deployment?.branch?['∞','연의','선택분기']:session.deployment?.run?['∞','원정','천명의 길']:ARCS[(session.state.stage as {arc?:string}).arc??'upper']??ARCS.upper!;$('#arc-crumb').innerHTML=`${arc} <span>/</span> ${name}`;$('#arc-eyebrow').innerHTML=`제${({'Ⅰ':1,'Ⅱ':2,'Ⅲ':3} as Record<string,number>)[no]??''}편 <span>${arc}</span>`;}
   const s=session.state,c=session.deployment?.run?{...chapters[session.chapter]!,stage:s.stage,year:session.deployment.scenario?`시나리오 · ${scenarioYear(session.deployment.scenario.chapter)}`:session.deployment.branch?`연의 · 선택분기 · ${routeById(session.deployment.run.route?.[3]??session.deployment.run.route?.[2]??session.deployment.run.route?.[1])?.name??''}`:`천명의 원정 · ${session.deployment.run.floor}층`}:session.deployment?.mission?{...chapters[session.chapter]!,stage:s.stage,year:'외전 · 수련과 인연'}:chapters[session.chapter]!;
-  $('#stage-title').textContent=c.stage.title;$('#stage-subtitle').textContent=session.deployment?.scenario?(session.deployment.run?'시나리오 · 가상 전장':`시나리오 · 연의 · ${s.difficulty==='normal'?'일반':'극한'}`):session.deployment?.branch?'연의 · 선택분기 가상 전장':session.deployment?.run?`천명의 원정 · ${session.deployment.run.floor}/${RUN_FLOORS}층`:session.deployment?.runStory?`천명의 원정 · ${session.deployment.runStory.floor}/${RUN_FLOORS}층 · 연의 전장`:isZhugeStage(c.stage.id)?`제갈량전 제 ${zhugeOrder.indexOf(session.chapter)+1}장 · ${s.difficulty==='normal'?'일반':'극한'}`:`제 ${c.stage.order}장 · ${s.difficulty==='normal'?'일반':'극한'}`;
+  $('#stage-title').textContent=c.stage.title;$('#stage-subtitle').textContent=session.deployment?.scenario?(session.deployment.run?'시나리오 · 가상 전장':`시나리오 · 연의 · ${s.difficulty==='normal'?'일반':'극한'}`):session.deployment?.branch?'연의 · 선택분기 가상 전장':session.deployment?.run?`천명의 원정 · ${session.deployment.run.floor}/${RUN_FLOORS}층`:session.deployment?.runStory?`천명의 원정 · ${session.deployment.runStory.floor}/${RUN_FLOORS}층 · 연의 전장`:isZhugeBranch(c.stage.id)?'제갈량전 · 선택분기 가상 전장':isZhugeStage(c.stage.id)?`제갈량전 제 ${zhugeOrder.indexOf(session.chapter)+1}장 · ${s.difficulty==='normal'?'일반':'극한'}`:`제 ${c.stage.order}장 · ${s.difficulty==='normal'?'일반':'극한'}`;
   $('#map-name').textContent=c.stage.subtitle??c.stage.title;$('#year').textContent=`${c.year} · ${s.map.width}×${s.map.height}`;
   document.body.classList.toggle('nightmare',session.chapter===4);
   $('.weather').textContent=session.weather;
@@ -1295,7 +1377,7 @@ function checkModal(){
     if(resultShown)return;resultShown=true;sound.sfx(s.outcome==='victory'?(session.somber?'somber':'victory'):'defeat');
     const dep=session.deployment;{const xp={...session.xpEarned};scorePending=true;setTimeout(()=>{scorePending=false;markScored();finishRunStory(runHost,s,dep,xp);},900);};return;
   }
-  if(s.outcome!=='ongoing'&&isZhugeStage(s.stage.id)){if(resultShown)return;resultShown=true;finishZhuge();return;}
+  if(s.outcome!=='ongoing'&&(isZhugeStage(s.stage.id)||isZhugeBranch(s.stage.id))){if(resultShown)return;resultShown=true;finishZhuge();return;}
   if(s.outcome!=='ongoing'){
     if(resultShown)return;resultShown=true;const win=s.outcome==='victory',seals=session.seals;
     // 결과 화면의 '무르기'로 되돌렸다 다시 이긴 전투는 싸워 번 경험치·등용 성장·천명·출진 횟수를 한 번만 친다.

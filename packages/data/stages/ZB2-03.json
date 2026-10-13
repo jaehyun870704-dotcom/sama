@@ -1,0 +1,200 @@
+{
+  "id": "ZB2-03",
+  "arc": "upper",
+  "order": 205,
+  "title": "완성의 조인",
+  "subtitle": "형주 북쪽의 끝",
+  "synopsis": "번성이 떨어지자 조인이 완성에 들어앉았다. 이 성을 넘으면 허도로 가는 길이 보인다. 성 안 깊숙이 버티는 조인을 물리쳐라.",
+  "mapId": "xincheng-fort",
+  "focusVictoryTargets": true,
+  "siege": false,
+  "deployment": {
+    "forced": [
+      "z_guan_yu",
+      "z_zhang_fei",
+      "z_zhao_yun",
+      "z_liang",
+      "z_guan_ping",
+      "z_ma_liang"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "zb2_cao_ren"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "unit_retreat:zb2_cao_hong",
+      "extreme": "unit_retreat:zb2_cao_hong"
+    },
+    {
+      "slot": 3,
+      "normal": "turn_limit:12",
+      "extreme": "turn_limit:13"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 13,
+      "recommendedLevel": 13,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 15,
+      "recommendedLevel": 15,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "ZB2-03/garrison",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb2_cao_ren",
+              "name": "조인",
+              "template": "spearman",
+              "level": 14,
+              "region": "objective",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb2_cao_hong",
+              "name": "조홍",
+              "template": "infantry",
+              "level": 14,
+              "at": {
+                "x": 13,
+                "y": 7
+              },
+              "behavior": "hold"
+            },
+            {
+              "id": "zb2_in_a",
+              "name": "완성 궁병",
+              "template": "archer",
+              "level": 13,
+              "at": {
+                "x": 13,
+                "y": 5
+              },
+              "behavior": "hold"
+            },
+            {
+              "id": "zb2_in_b",
+              "name": "완성 궁병",
+              "template": "archer",
+              "level": 13,
+              "at": {
+                "x": 13,
+                "y": 9
+              },
+              "behavior": "hold"
+            },
+            {
+              "id": "zb2_in_c",
+              "name": "완성 창병",
+              "template": "spearman",
+              "level": 13,
+              "at": {
+                "x": 16,
+                "y": 6
+              },
+              "behavior": "hold"
+            },
+            {
+              "id": "zb2_in_d",
+              "name": "완성 보병",
+              "template": "infantry",
+              "level": 13,
+              "at": {
+                "x": 16,
+                "y": 8
+              },
+              "behavior": "hold"
+            },
+            {
+              "id": "zb2_out",
+              "name": "성 밖 기병",
+              "template": "cavalry",
+              "level": 13,
+              "at": {
+                "x": 9,
+                "y": 7
+              },
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ZB2-03/relief",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb2_relief",
+              "name": "완성 구원군",
+              "template": "cavalry",
+              "level": 13,
+              "region": "wu_relief",
+              "behavior": "advance"
+            },
+            {
+              "id": "zb2_relief_b",
+              "name": "완성 구원군",
+              "template": "spearman",
+              "level": 13,
+              "region": "wu_relief",
+              "behavior": "advance"
+            },
+            {
+              "id": "zb2_relief_c",
+              "name": "완성 구원군",
+              "template": "archer",
+              "level": 13,
+              "region": "wu_relief",
+              "behavior": "advance"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

@@ -1,0 +1,160 @@
+{
+  "id": "ZB5-01",
+  "arc": "lower",
+  "order": 212,
+  "title": "대래동의 맹우",
+  "subtitle": "아우를 먼저",
+  "synopsis": "마속의 말이 남았다. \"성을 치는 것은 하책이요, 마음을 치는 것이 상책입니다.\" 맹획보다 먼저 그 아우 맹우를 꺾어 남만의 세 동을 흔든다.",
+  "mapId": "z2-02-mansong",
+  "focusVictoryTargets": true,
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_zhao_yun",
+      "z_wei_yan",
+      "z_wang_ping",
+      "z_ma_dai"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "zb5_meng_you"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "player_losses_lt:1",
+      "extreme": "player_losses_lt:1"
+    },
+    {
+      "slot": 3,
+      "normal": "turn_limit:10",
+      "extreme": "turn_limit:11"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 18,
+      "recommendedLevel": 18,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 20,
+      "recommendedLevel": 20,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "ZB5-01/dong",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb5_meng_you",
+              "name": "맹우",
+              "template": "infantry",
+              "level": 19,
+              "region": "meng_camp",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb5_mg",
+              "name": "맹우의 만병",
+              "template": "nanmanFoot",
+              "level": 18,
+              "region": "meng_camp",
+              "behavior": "hold",
+              "count": 3
+            },
+            {
+              "id": "zb5_mg_b",
+              "name": "맹우의 등갑병",
+              "template": "rattan",
+              "level": 18,
+              "region": "meng_camp",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb5_w",
+              "name": "서쪽 동 만병",
+              "template": "nanmanFoot",
+              "level": 18,
+              "region": "west_dong",
+              "behavior": "hold",
+              "count": 2
+            },
+            {
+              "id": "zb5_m",
+              "name": "가운데 동 만병",
+              "template": "nanmanFoot",
+              "level": 18,
+              "region": "mid_dong",
+              "behavior": "advance",
+              "count": 2
+            },
+            {
+              "id": "zb5_e",
+              "name": "동쪽 동 기마",
+              "template": "nanmanRider",
+              "level": 18,
+              "region": "east_dong",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ZB5-01/wood",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb5_wood",
+              "name": "숲의 만병",
+              "template": "nanmanFoot",
+              "level": 18,
+              "region": "south_wood",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

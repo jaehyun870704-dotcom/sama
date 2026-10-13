@@ -1,0 +1,183 @@
+{
+  "id": "ZB4-01",
+  "arc": "upper",
+  "order": 209,
+  "title": "돌무더기 팔진",
+  "subtitle": "어복포의 미로",
+  "synopsis": "이릉에서 이긴 육손의 선봉 주연이 어복포까지 쫓아왔다. 제갈량이 강가에 쌓아 둔 돌무더기가 진이 되어 길을 잃게 한다. 미로에 든 오군이 흔들릴 때 골짜기 어귀의 주연을 쳐라.",
+  "mapId": "mumen-gorge",
+  "focusVictoryTargets": true,
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_zhao_yun",
+      "z_guan_xing",
+      "z_zhang_bao",
+      "z_li_yan"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "zb4_zhu_ran"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "player_losses_lt:1",
+      "extreme": "player_losses_lt:1"
+    },
+    {
+      "slot": 3,
+      "normal": "turn_limit:9",
+      "extreme": "turn_limit:10"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 16,
+      "recommendedLevel": 16,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 18,
+      "recommendedLevel": 18,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "ZB4-01/van",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb4_zhu_ran",
+              "name": "주연",
+              "template": "spearman",
+              "level": 17,
+              "region": "gorge_mouth",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb4_zr_g",
+              "name": "주연의 친위",
+              "template": "spearman",
+              "level": 16,
+              "region": "gorge_mouth",
+              "behavior": "hold",
+              "count": 2
+            },
+            {
+              "id": "zb4_van",
+              "name": "오군 선봉 보병",
+              "template": "infantry",
+              "level": 16,
+              "region": "join",
+              "behavior": "advance",
+              "count": 2
+            },
+            {
+              "id": "zb4_van_b",
+              "name": "오군 선봉 궁병",
+              "template": "archer",
+              "level": 16,
+              "region": "join",
+              "behavior": "advance"
+            },
+            {
+              "id": "zb4_van_c",
+              "name": "오군 선봉 기병",
+              "template": "cavalry",
+              "level": 16,
+              "region": "join",
+              "behavior": "advance"
+            },
+            {
+              "id": "zb4_nest",
+              "name": "벼랑 궁병",
+              "template": "archer",
+              "level": 16,
+              "region": "cliff_nests",
+              "behavior": "hold",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ZB4-01/maze",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 2,
+        "side": "player"
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "damage_region",
+          "region": "join",
+          "side": "enemy",
+          "ratio": 0.25,
+          "nonLethal": true,
+          "effect": "confusion",
+          "duration": 2
+        },
+        {
+          "type": "set_phase",
+          "phase": "돌무더기 진 · 오군이 길을 잃었다"
+        }
+      ]
+    },
+    {
+      "id": "ZB4-01/rear",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 4
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb4_rear",
+              "name": "뒤따른 오군",
+              "template": "infantry",
+              "level": 16,
+              "region": "pursuers",
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

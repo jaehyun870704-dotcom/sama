@@ -1,0 +1,178 @@
+{
+  "id": "ZB6-03",
+  "arc": "lower",
+  "order": 217,
+  "title": "가정의 장합",
+  "subtitle": "낙곡에서 맞선 두 장수",
+  "synopsis": "곽회가 물러나자 고상이 성문을 열고 나왔다. 길이 막힌 장합은 낙곡으로 돌아 들어가 촉군의 등을 노린다. 골짜기의 산채에 버틴 장합을 꺾으면 가정의 싸움이 끝난다.",
+  "mapId": "luogu-valley",
+  "focusVictoryTargets": true,
+  "deployment": {
+    "forced": [
+      "z_liang",
+      "z_ma_su",
+      "z_wang_ping",
+      "z_jiang_wei",
+      "z_wei_yan",
+      "z_gao_xiang"
+    ],
+    "selectable": [],
+    "slots": 0
+  },
+  "victory": [
+    {
+      "type": "retreat",
+      "unit": "zb6_zhang_he"
+    }
+  ],
+  "defeat": [
+    {
+      "type": "retreat",
+      "unit": "z_liang"
+    }
+  ],
+  "seals": [
+    {
+      "slot": 1,
+      "normal": "clear",
+      "extreme": "clear"
+    },
+    {
+      "slot": 2,
+      "normal": "player_losses_lt:1",
+      "extreme": "player_losses_lt:1"
+    },
+    {
+      "slot": 3,
+      "normal": "turn_limit:12",
+      "extreme": "turn_limit:13"
+    }
+  ],
+  "difficulty": {
+    "normal": {
+      "minEnemyLevel": 29,
+      "recommendedLevel": 29,
+      "targetClearRate": 0.9
+    },
+    "extreme": {
+      "minEnemyLevel": 31,
+      "recommendedLevel": 31,
+      "targetClearRate": 0.7
+    }
+  },
+  "gimmicks": [],
+  "events": [
+    {
+      "id": "ZB6-03/fort",
+      "trigger": {
+        "type": "battle_start"
+      },
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb6_zhang_he",
+              "name": "장합",
+              "template": "cavalry",
+              "level": 30,
+              "region": "advance_point",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb6_zh_g",
+              "name": "장합의 친위",
+              "template": "spearman",
+              "level": 29,
+              "region": "advance_point",
+              "behavior": "hold",
+              "count": 2
+            },
+            {
+              "id": "zb6_fort",
+              "name": "산채 장수",
+              "template": "infantry",
+              "level": 29,
+              "region": "shu_fort",
+              "behavior": "hold"
+            },
+            {
+              "id": "zb6_gar",
+              "name": "산채 수비병",
+              "template": "spearman",
+              "level": 29,
+              "region": "fort_garrison",
+              "behavior": "hold",
+              "count": 3
+            },
+            {
+              "id": "zb6_gar_b",
+              "name": "산채 궁병",
+              "template": "archer",
+              "level": 29,
+              "at": {
+                "x": 11,
+                "y": 6
+              },
+              "behavior": "hold"
+            },
+            {
+              "id": "zb6_nest",
+              "name": "숲 궁병",
+              "template": "archer",
+              "level": 29,
+              "region": "ambush_nests",
+              "behavior": "hold",
+              "count": 2
+            },
+            {
+              "id": "zb6_adv",
+              "name": "위군 기병",
+              "template": "cavalry",
+              "level": 29,
+              "at": {
+                "x": 9,
+                "y": 4
+              },
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ZB6-03/rear",
+      "trigger": {
+        "type": "turn_start",
+        "turn": 3
+      },
+      "once": true,
+      "actions": [
+        {
+          "type": "spawn_units",
+          "side": "enemy",
+          "units": [
+            {
+              "id": "zb6_rear",
+              "name": "뒤로 돈 위군",
+              "template": "infantry",
+              "level": 29,
+              "at": {
+                "x": 18,
+                "y": 12
+              },
+              "behavior": "advance",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "perf": {
+    "tier": "B",
+    "maxSimultaneousUnits": 40
+  }
+}

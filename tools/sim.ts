@@ -25,9 +25,9 @@ const server = await createServer({
   appType: "custom",
 });
 const load = (p: string) => server.ssrLoadModule(p);
-const { Session, chapters, campaignOrder, zhugeOrder } = await load("/packages/web/src/session.ts");
+const { Session, chapters, campaignOrder, zhugeOrder, zhugeBranchOrder } = await load("/packages/web/src/session.ts");
 const { zhugeDeployment } = await load("/packages/web/src/zhuge.ts");
-const { isZhugeStage } = await load("/packages/web/src/zhuge-data.ts");
+const { isZhugeStage, isZhugeBranch } = await load("/packages/web/src/zhuge-data.ts");
 const { award, deployment, equipSlot, freshCampaign, treasures, treasureInfo, canWear, OFFICERS } =
   await load("/packages/web/src/progression.ts");
 const { martialPower } = await load("/packages/web/src/officers.ts");
@@ -252,7 +252,7 @@ function play(chapter: number, difficulty: Difficulty, seed: number) {
     // 기본은 실제 새 전투와 같은 넓은 전장(wide 2: 연의 지도 1.5배·큰 전투 증원)으로 잰다.
     // SIM_WIDE=0이면 예전 좁은 전장(옛 저장 기록이 여는 전장)으로 잰다.
     // 제갈량전 장: 처음 하는 사람(기록 없음)의 장 기본 레벨로 잰다.
-    isZhugeStage(chapters[chapter].stage.id)
+    isZhugeStage(chapters[chapter].stage.id) || isZhugeBranch(chapters[chapter].stage.id)
       ? { ...zhugeDeployment(freshCampaign(), chapters[chapter].stage, difficulty), wide: SIM_WIDE || undefined }
       : SIM_WIDE ? { ...deployment(campaignAt(chapter, difficulty), true), wide: SIM_WIDE } : deployment(campaignAt(chapter, difficulty), true),
   );
@@ -347,7 +347,8 @@ function play(chapter: number, difficulty: Difficulty, seed: number) {
 
 const [stageFilter, runsArg] = process.argv.slice(2);
 const runs = Number(runsArg ?? 100);
-const targets = [...campaignOrder, ...zhugeOrder].filter(
+// 제갈량전 선택분기(ZB…)는 일반만 있다(가상 전장 · 사마의전 선택분기와 같다).
+const targets = [...campaignOrder, ...zhugeOrder, ...zhugeBranchOrder].filter(
   (chapter: number) => !stageFilter || chapters[chapter].stage.id.startsWith(stageFilter),
 );
 
@@ -356,7 +357,7 @@ console.log(`스테이지 ${targets.length}개 × ${runs}회 시뮬레이션\n`)
 
 for (const chapter of targets) {
   const stage = chapters[chapter].stage;
-  for (const difficulty of ["normal", "extreme"] as Difficulty[]) {
+  for (const difficulty of (isZhugeBranch(stage.id) ? ["normal"] : ["normal", "extreme"]) as Difficulty[]) {
     const seals: Record<number, number> = { 1: 0, 2: 0, 3: 0 };
     const reasons = new Map<string, number>();
     const turns: number[] = [];
