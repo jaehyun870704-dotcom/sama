@@ -46,7 +46,7 @@ export const LEGEND_TREASURE_SHEETS=[
   ['fiveFireFan','sageSword','darkRobe','phoenixRobe','windWheel','zhugeTurban','azureJewel','vermilionJewel','blackTortoiseJewel','whiteTigerJewel'],
 ] as const;
 /**
- * 상점 그림판(shop-items/treasures-shop-01-v2·02-v2·03-v2.webp, 3×4, 2026-10-13 재납품·01판은 4차에서 무명장갑 칸만 새로). 칸 순서는 납품 색인(treasures-shop-manifest.json) 그대로다.
+ * 상점 그림판(shop-items/treasures-shop-01-v3·02-v2·03-v2.webp, 3×4, 2026-10-13 재납품·01판은 무명장갑·가죽장갑 칸을 새로 그린 판). 칸 순서는 납품 색인(treasures-shop-manifest.json) 그대로다.
  * 01판: 투석기·부채·장갑 4등급(무명장갑은 천을 감은 장갑, 가죽장갑 칸은 아직 놋쇠 장갑 모양). 02판: 두건 4등급·돌보검·구리/철 기마갑옷·소모품 다섯(콩·쌀·복숭아·물·술).
  * 03판: 소모품 여섯(해독약·각성약·도포약·양치약·만능약·인수), 뒤 여섯 칸은 비었다. 소모품 칸 이름은 `supply-<소모품 id>`.
  */
@@ -55,7 +55,7 @@ export const SHOP_ITEM_SHEETS=[
   ['shop-hood-1','shop-hood-2','shop-hood-3','shop-hood-4','shop-sacredSword-1','shop-barding-2','shop-barding-3','supply-bean','supply-rice','supply-peach','supply-water','supply-wine'],
   ['supply-antidote','supply-awaken','supply-salve','supply-gargle','supply-panacea','supply-promotion',null,null,null,null,null,null],
 ] as const;
-const SHOP_ITEM_FILES=['shop-items/treasures-shop-01-v2.webp','shop-items/treasures-shop-02-v2.webp','shop-items/treasures-shop-03-v2.webp'] as const;
+const SHOP_ITEM_FILES=['shop-items/treasures-shop-01-v3.webp','shop-items/treasures-shop-02-v2.webp','shop-items/treasures-shop-03-v2.webp'] as const;
 type Cell={file:string;cell:number};
 const CELLS=new Map<string,Cell>([
   ...EXTRA_TREASURE_SHEETS.flatMap((items,sheet)=>items.map((id,cell)=>[id,{file:`treasures-extra-${String(sheet+1).padStart(2,'0')}-v1.webp`,cell}] as const)),

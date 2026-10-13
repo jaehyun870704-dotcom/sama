@@ -152,7 +152,9 @@ describe('장수별 전투 SD와 대결 모델',()=>{
   });
 
   it('기마 대결 장수만 기마 연출을 사용한다',()=>{
-    for(const id of ['zhao_yun','sun_quan','lu_meng','gongsun_yuan','meng_yan','bi_yan'])expect(officerDuelMounted({id,name:id}),id).toBe(true);
+    for(const id of ['zhao_yun','sun_quan','gongsun_yuan','meng_yan','bi_yan','meng_huo','yan_liang','cao_shuang'])expect(officerDuelMounted({id,name:id}),id).toBe(true);
+    // 6차: 곽회·조홍·여몽·주연은 도보 판으로 합격했다.
+    for(const id of ['lu_meng','guo_huai','cao_hong','zhu_ran'])expect(officerDuelMounted({id,name:id}),id).toBe(false);
     for(const id of ['huang_zhong','lu_xun','ma_su','zhuge_ke','wang_ling'])expect(officerDuelMounted({id,name:id}),id).toBe(false);
     // 2차 통합 SD: 말 탄 일기토 그림은 마대·사마사뿐이다.
     for(const id of ['ma_dai','sima_shi'])expect(officerDuelMounted({id,name:id}),id).toBe(true);
@@ -163,7 +165,7 @@ describe('장수별 전투 SD와 대결 모델',()=>{
   });
 
   it('통합 SD 장수는 1400×280 SD 한 벌·1024×256 일기토만 쓰고 옛 시트 파일은 없다',()=>{
-    expect(UNIFIED_SD_IDS.length).toBe(67);
+    expect(UNIFIED_SD_IDS.length).toBe(77);
     for(const id of UNIFIED_SD_IDS){
       const e=officerEntry({id,name:id})!;expect(e,id).toBeDefined();const f=UNIFIED_SD_FILES[id]!;
       expect(officerBattleSheet({id,name:id})!.action.sheet,id).toBe(`officers/${f.sd}`);
@@ -196,8 +198,12 @@ describe('장수별 전투 SD와 대결 모델',()=>{
     for(const id of ['cao_cao','sun_quan','lu_bu'])expect((UNIFIED_SD_IDS as readonly string[]).includes(id),id).toBe(true);
     expect(UNIFIED_SD_FILES.sun_quan).toEqual({sd:'sun_quan-sd-v3.webp',duel:'sun_quan-duel-v5.webp'});
     expect(UNIFIED_SD_FILES.wooden_zhuge).toEqual({sd:'wooden_zhuge-sd-v2.webp',duel:'wooden_zhuge-duel-v3.webp'});
-    for(const id of ['zhou_yu','guo_huai','cao_hong','xu_huang','lu_meng','zhu_ran','deng_ai','zhong_hui','dai_ling','yue_jin','meng_huo','wutugu'])
+    for(const id of ['xu_huang','deng_ai','zhong_hui','dai_ling','yue_jin'])
       expect((UNIFIED_SD_IDS as readonly string[]).includes(id),id).toBe(false);
+    // 6차(9e662ab까지): 맹획·주유·올돌골 다시 그린 판, 조상·장소·안량, 곽회·조홍·여몽·주연(도보)은 통합 SD로 들어왔다.
+    for(const id of ['zhou_yu','guo_huai','cao_hong','lu_meng','zhu_ran','meng_huo','wutugu','cao_shuang','zhang_zhao','yan_liang'])expect((UNIFIED_SD_IDS as readonly string[]).includes(id),id).toBe(true);
+    expect(UNIFIED_SD_FILES.meng_huo).toEqual({sd:'meng_huo-sd-v2.webp',duel:'meng_huo-duel-v3.webp'});
+    expect(UNIFIED_SD_FILES.zhou_yu).toEqual({sd:'zhou_yu-sd-v2.webp',duel:'zhou_yu-duel-v3.webp'});
     // 통합 SD가 아닌 장수 8명은 일기토만 새 판.
     for(const id of DUEL_V2){
       expect(officerDuelModel({id,name:id})?.sheet,id).toBe(`officers/${id}-duel-v2.webp`);
