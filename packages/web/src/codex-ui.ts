@@ -18,6 +18,7 @@ import {officerLook,officerPortrait} from './officer-art.ts';
 import {cardFace,displayName} from './faces.ts';
 import {isUploaded,setPortraitImage,removePortraitImage,importPortraitFiles} from './portrait-images.ts';
 import {bioOf} from './officer-bios.ts';
+import {byRank,rankTier,RANK_LABEL} from './officer-ranks.ts';
 import {classNames,troopRoles,troopArt,basicReactionArt,artClass,recruitPool,evolutionLines,troopSheets,classSheets} from './troops.ts';
 import {spriteAtlas,type AtlasBody} from './sprite-atlas.ts';
 import {navalAtlas} from './naval-art.ts';
@@ -45,7 +46,8 @@ export type Side=FactionSide|'custom';
 const SIDE_NAMES:Record<Side,string>={wei:'위',shu:'촉',wu:'오',other:'군웅',chu:'초',han:'한',custom:'신장수'};
 export function sideOf(name:string):Side{return customNames().includes(name)?'custom':factionSide(name);}
 /** 열전에 오르는 모든 장수(위·촉·오·군웅·초·한·신장수 순, 같은 세력 안에서는 장수록 순). */
-export function codexNames(){const order:Side[]=['wei','shu','wu','other','chu','han','custom'];const names=allRomanceNames();return order.flatMap(s=>names.filter(n=>sideOf(n)===s));}
+/** 인물열전 순서: 진영(위·촉·오·군웅·초·한·신장수)마다 연의 계급 순(군주 → 재상·대장군 → 장군 → 참모·장수 → 인물, officer-ranks.ts). */
+export function codexNames(){const order:Side[]=['wei','shu','wu','other','chu','han','custom'];const names=allRomanceNames();return order.flatMap(s=>byRank(names.filter(n=>sideOf(n)===s),n=>n));}
 /** 얼굴: 넣은 그림 → 전용 원화 → 신장수 초상 → 초상 생성기로 지은 얼굴(faces.ts). */
 export const codexFace=cardFace;
 /** 열전 본문(신장수는 능력과 성격으로 짓는다). */
@@ -62,7 +64,7 @@ function peopleTab(pick:string,side:Side|'all'){
   const r=romanceByName(name),cls=officerClass(name),temper=temperOf(name),skill=signatureSkill(name);
   const st=perkState(meta,name),best=bestLevel(meta,name),tier=officerTier(meta,name),slots=perkSlots(meta),perks=perksFor(name);
   const list=`<div class="cx-filter"><label class="cx-upload" title="파일 이름을 장수 이름으로 봅니다(조조.png → 조조)">🖼 여러 장 넣기<input type="file" accept="image/*" multiple data-cx-bulk hidden></label>${(['all','wei','shu','wu','other','chu','han'] as const).map(s=>`<button data-cx-side="${s}" class="${side===s?'active':''}">${s==='all'?'전체':SIDE_NAMES[s]}</button>`).join('')}</div>
-    <div class="cx-people">${names.map(n=>`<button data-cx-person="${esc(n)}" class="cx-person side-${sideOf(n)} ${n===name?'chosen':''}" aria-label="${esc(n)}"><span class="cx-face">${codexFace(n)}</span><b>${esc(n)}</b></button>`).join('')||'<p class="muted">이 세력에는 아직 장수가 없다.</p>'}</div>`;
+    <div class="cx-people">${names.map((n,i)=>`${side!=='all'&&(i===0||rankTier(names[i-1]!)!==rankTier(n))?`<h4 class="cx-rank">${RANK_LABEL[rankTier(n)]} <small>${names.filter(x=>rankTier(x)===rankTier(n)).length}명</small></h4>`:''}<button data-cx-person="${esc(n)}" class="cx-person side-${sideOf(n)} ${n===name?'chosen':''}" aria-label="${esc(n)}"><span class="cx-face">${codexFace(n)}</span><b>${esc(n)}</b></button>`).join('')||'<p class="muted">이 세력에는 아직 장수가 없다.</p>'}</div>`;
   const detail=!name?'':`<div class="cx-detail cx-person-detail">
     <div class="cx-head"><span class="cx-big-face">${codexFace(name)}</span><div><small class="cx-side side-${sideOf(name)}">${SIDE_NAMES[sideOf(name)]}</small><h3>${esc(displayName(name))}</h3><p class="cx-epithet">${esc(r?.epithet??'')}</p>
       <p class="cx-tags"><span>${esc(classNames[cls]??cls)}</span>${temper?`<span>성격 ${temperNames[temper]}</span>`:''}${best?`<span>최고 Lv.${best}</span>`:''}</p>

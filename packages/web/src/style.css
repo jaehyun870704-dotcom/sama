@@ -2440,3 +2440,6 @@ dialog.treasure-reveal::backdrop{background:#05090cc4;backdrop-filter:blur(3px)}
 .rc-line h3 .rc-reward{white-space:nowrap}
 @media (orientation:landscape) and (max-height:520px){.recruit-screen .screen-lede,.rc-line h3 small{display:none}.rc-summary{margin:2px 0}.rc-merit{padding:2px 10px}.rc-merit b{font-size:17px}.rc-joined{margin:4px 0;padding:4px 10px}.rc-joined .rc-face.big{width:40px;height:40px}.rc-joined p{display:none}}
 @media (orientation:landscape) and (max-height:520px){.rc-tree{grid-auto-columns:140px}.rc-node{grid-template-columns:30px minmax(0,1fr);column-gap:5px;padding:4px 5px}.rc-node .rc-face{width:30px;height:30px}.rc-node b .rc-route{left:1px;top:1px;width:12px;height:12px;font-size:8px}.rc-node small{font-size:10px;line-height:1.3}.rc-line h3{font-size:13px}}
+/* 인물열전: 진영 탭에서 연의 계급 머리글 */
+.cx-people>.cx-rank{grid-column:1/-1;margin:6px 0 0;padding-bottom:3px;border-bottom:1px solid #4d4a3a;color:#e4cf9c;font-size:calc(13px*var(--fs,1))}
+.cx-people>.cx-rank small{color:#9e978a;font-weight:400}
