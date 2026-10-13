@@ -17,21 +17,19 @@ const TIERS:Record<RankTier,string>={
   3:'하후연 조홍 장료 서황 장합 우금 악진 허저 이전 곽회 방덕 문빙 순욱 왕쌍 문흠 문앙 맹달 장패 관우 장비 마초 황충 조운 위연 방통 법정 이엄 오의 왕평 마대 요화 황권 엄안 정보 황개 한당 장흠 감녕 주연 서성 정봉 반장 안량 문추 장임 고람 이각 곽사 축융 올돌골 종리매 계포 용저 영포 팽월 번쾌 관영',
   // 참모·중견 장수
   4:'사마랑 사마방 호준 대릉 학소 조창 서서 마량 마속 관평 관흥 장포 고상 맹염 미축 손건 간옹 등지 진식 장익 유봉 양의 이적 미방 오반 주창 관색 여범 손소 고수 진궁 저수 전풍 심배 봉기 양앙 비연',
-  // 무관이 아닌 인물·소년·가족
-  5:'소년 사마의 조식 제갈균 장춘화 견씨 황월영 초선 우희',
+  // 무관이 아닌 인물·가족
+  5:'조식 제갈균 장춘화 견씨 황월영 초선 우희',
 };
 const tierOf=new Map<string,RankTier>(),seat=new Map<string,number>();
 for(const [t,names] of Object.entries(TIERS) as Array<[string,string]>){
-  // '소년 사마의'처럼 띄어 쓴 이름은 먼저 떼어 낸다
-  const rest=names.replace('소년 사마의',()=>{tierOf.set('소년 사마의',Number(t) as RankTier);seat.set('소년 사마의',seat.size);return '';});
-  for(const n of rest.split(/\s+/).filter(Boolean))if(!tierOf.has(n)){tierOf.set(n,Number(t) as RankTier);seat.set(n,seat.size);}
+  for(const n of names.split(/\s+/).filter(Boolean))if(!tierOf.has(n)){tierOf.set(n,Number(t) as RankTier);seat.set(n,seat.size);}
 }
 
 /** 연의 계급 단계(1 군주 … 5 인물). */
 export const rankTier=(name:string):RankTier=>tierOf.get(name)??4;
 export const rankLabel=(name:string)=>RANK_LABEL[rankTier(name)];
 /** 표에 없는 장수의 순서: 연의 능력(무력·지력·통솔·정치·매력) 합이 높은 순. */
-const power=(name:string)=>{const r=romanceByName(name.replace(/^소년 /,''));return r?r.war+r.int+r.lead+r.pol+r.cha:0;};
+const power=(name:string)=>{const r=romanceByName(name);return r?r.war+r.int+r.lead+r.pol+r.cha:0;};
 /** 계급 순으로 정렬한 새 배열(같은 계급은 표의 서열, 표에 없으면 능력 합, 그다음 원래 순서). */
 export function byRank<T>(list:readonly T[],name:(x:T)=>string):T[]{
   return list.map((x,i)=>({x,i,t:rankTier(name(x)),s:seat.get(name(x))??1e9,p:power(name(x))})).sort((a,b)=>a.t-b.t||a.s-b.s||b.p-a.p||a.i-b.i).map(o=>o.x);

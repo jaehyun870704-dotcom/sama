@@ -1,4 +1,3 @@
-import {artKey} from './youth.ts';
 import {familyOf,tierOf,type Unit} from '../../core/src/index.ts';
 import {romanceOf} from './romance.ts';
 
@@ -16,7 +15,6 @@ const c=(id:string,cls:string,rows=1,w=280,h=224)=>({[cls]:[`${id}-battle-${cls}
 /** public/officers/manifest.json과 같은 내장 색인. JSON을 못 읽는 테스트·오프라인 빌드도 동일하게 찾는다. */
 export const officerManifest:OfficerEntry[]=[
   E('sima_yi','사마의',{},{story:'sima_yi-story-v2.webp',bust:'sima_yi-bust-v1.webp'}),
-  E('sima_yi_young','소년 사마의',c('sima_yi_young','strategist',4),{story:'sima_yi_young-story-v1.webp',bust:'sima_yi_young-bust-v1.webp',duel:'officer-battle-sima-v2.webp'}),
   E('cao_zhen','조진',{},{story:'cao_zhen-story-v2.webp',bust:'cao_zhen-bust-v1.webp'}),
   E('sima_lang','사마랑',{},{story:'sima_lang-story-v2.webp',bust:'sima_lang-bust-v1.webp'}),
   E('sima_fang','사마방',{},{story:'sima_fang-story-v2.webp',bust:'sima_fang-bust-v1.webp'}),
@@ -104,7 +102,6 @@ for(const [id,name] of [['liu_feng','유봉'],['huang_quan','황권'],['wu_ban',
 for(const id of UNIFIED_SD_IDS){const e=officerManifest.find(x=>x.id===id);if(!e)continue;const f=UNIFIED_SD_FILES[id]!,cart=e.battle.cart;e.battle={sd:{sheet:`officers/${f.sd}`,cell:[350,280],rows:1},...(cart?{cart}:{})};e.duel=`officers/${f.duel}`;}
 
 const legacySheets=[
-  {id:'officer-battle-sima',url:'officer-battle-sima-v2.webp',rows:4,strictGrid:true,alphaCutoff:8},
   {id:'officer-battle-wei',url:'officer-battle-wei-v2.webp',rows:4,strictGrid:true,alphaCutoff:8},
   {id:'officer-battle-rivals',url:'officer-battle-rivals-v2.webp',rows:4,strictGrid:true,alphaCutoff:8},
 ] as const;
@@ -117,9 +114,8 @@ const generatedSheets=officerManifest.flatMap(e=>Object.entries(e.battle).map(([
 export const officerModelSheets=[...legacySheets,...generatedSheets];
 
 const legacy=new Map<string,OfficerBattleModel>();
-// 묶음 시트는 소년 사마의(사마 판 둘째 줄)와 조조·조비·허저(위 판 둘째~넷째 줄)만 쓴다. 첫 줄(사마의·조진)과 사마랑·사마방 줄은 통합 SD로 옮겼다.
+// 묶음 시트는 조조·조비·허저(위 판 둘째~넷째 줄)만 쓴다. 첫 줄(사마의·조진)은 통합 SD로 옮겼다.
 for(const [sheet,id,name,row] of [
-  ['officer-battle-sima','sima_yi_young','소년 사마의',1],
   ['officer-battle-wei','cao_cao','조조',1],['officer-battle-wei','cao_pi','조비',2],['officer-battle-wei','xu_chu','허저',3],
   ['officer-battle-rivals','ma_chao','마초',0],['officer-battle-rivals','lu_bu','여포',1],['officer-battle-rivals','chen_gong','진궁',2],['officer-battle-rivals','zhou_yu','주유',3],
 ] as const){const set={sheet,row,rows:4};const model={action:set,walk:set,sideWalk:set};legacy.set(id,model);legacy.set(name,model);}
@@ -129,8 +125,7 @@ const byKey=new Map<string,OfficerEntry>();
 for(const e of officerManifest)for(const k of [e.id,e.name,...e.aliases])byKey.set(k,e);
 
 export function officerEntry(u:OfficerLike):OfficerEntry|undefined{
-  // 상편 앞 세 장에서는 사마의 그림을 소년 사마의 그림으로(youth.ts).
-  const direct=byKey.get(artKey(u.id))??byKey.get(artKey(u.name))??byKey.get(artKey(plain(u.name)));if(direct)return direct;
+  const direct=byKey.get(u.id)??byKey.get(u.name)??byKey.get(plain(u.name));if(direct)return direct;
   const r=romanceOf(u);return r?byKey.get(r.name):undefined;
 }
 const classKey=(u:OfficerLike,e:OfficerEntry)=>{if(u.id==='wooden_zhuge'&&e.battle.cart)return 'cart';const cls=u.unitClass;if(cls&&e.battle[cls])return cls;if(cls){const family=familyOf(cls);if(family==='lord'&&e.battle.lord)return 'lord';if(e.battle[family])return family;}return e.battle.lord?'lord':Object.keys(e.battle)[0]!;};
@@ -144,7 +139,6 @@ export function officerBattleSheet(u:OfficerLike):OfficerBattleModel|undefined{
 export const officerBattleModel=officerBattleSheet;
 
 const duelRows:Record<string,{sheet:string;row:number;rows:number}>={
-  sima_yi_young:{sheet:'officer-battle-sima',row:1,rows:4},
   cao_cao:{sheet:'officers/cao_cao-duel-v1.webp',row:0,rows:1},cao_pi:{sheet:'officers/cao_pi-duel-v1.webp',row:0,rows:1},xu_chu:{sheet:'officer-battle-wei',row:3,rows:4},
   ma_chao:{sheet:'officers/ma_chao-duel-v2.webp',row:0,rows:1},lu_bu:{sheet:'officers/lu_bu-duel-v2.webp',row:0,rows:1},chen_gong:{sheet:'officer-battle-rivals',row:2,rows:4},zhou_yu:{sheet:'officer-battle-rivals',row:3,rows:4},
   xiang_yu:{sheet:'officers/xiang_yu-duel-v1.webp',row:0,rows:1},yu_ji:{sheet:'officers/yu_ji-duel-v1.webp',row:0,rows:1},
@@ -172,7 +166,7 @@ export const DUEL_CLASS_SHEETS=Object.freeze([
  * 기마 조운 135 ~ 여포 230) 같은 무대에서 발이 뜨거나 키가 들쭉날쭉했다. 발끝을 230에 맞추고, 도보는 키 182·기마는 205에
  * 가깝게(0.8~1.3배 안에서) 늘이거나 줄인다. 값은 원본 시트를 잰 것이다.
  */
-const DUEL_FIT:Record<string,readonly [number,number]>={sima_yi_young:[230,203],xu_chu:[236,216],ma_chao:[236,203],chen_gong:[235,180],zhou_yu:[236,174],lu_bu:[236,193],zhuge_ke:[229,182],cao_pi:[248,206],lu_fan:[229,183],sun_quan:[230,184],huang_zhong:[230,184],sun_shao:[229,183],meng_yan:[230,167],bi_yan:[229,179],zhu_ran:[229,177],wang_ling:[229,163],cao_cao:[248,203],yang_ang:[229,184],meng_da:[229,187],wang_ping:[229,183],gao_xiang:[229,177],zhao_yun:[230,175],lu_meng:[230,176],gongsun_yuan:[230,175],xiang_yu:[236,174],lu_xun:[230,169],ma_su:[229,174]};
+const DUEL_FIT:Record<string,readonly [number,number]>={xu_chu:[236,216],ma_chao:[236,203],chen_gong:[235,180],zhou_yu:[236,174],lu_bu:[236,193],zhuge_ke:[229,182],cao_pi:[248,206],lu_fan:[229,183],sun_quan:[230,184],huang_zhong:[230,184],sun_shao:[229,183],meng_yan:[230,167],bi_yan:[229,179],zhu_ran:[229,177],wang_ling:[229,163],cao_cao:[248,203],yang_ang:[229,184],meng_da:[229,187],wang_ping:[229,183],gao_xiang:[229,177],zhao_yun:[230,175],lu_meng:[230,176],gongsun_yuan:[230,175],xiang_yu:[236,174],lu_xun:[230,169],ma_su:[229,174]};
 const DUEL_FOOT=230,DUEL_FOOT_H=182,DUEL_MOUNT_H=180;
 function duelFitStyle(id:string){
   const f=(UNIFIED_SD_IDS as readonly string[]).includes(id)?undefined:DUEL_FIT[id];if(!f)return '';

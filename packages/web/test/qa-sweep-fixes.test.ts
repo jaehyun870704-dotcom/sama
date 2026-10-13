@@ -52,13 +52,11 @@ describe('전수 점검 수정',()=>{
 });
 
 describe('사마의 그림은 최종 하나',()=>{
- it('어느 장이든 성인(최종) 사마의 그림만 쓴다 — 소년 사마의 열쇠도 성인으로',async()=>{
-  const {setStoryEra}=await import('../src/youth.ts');
-  const {officerEntry}=await import('../src/officer-models.ts');
+ it('어느 장이든 성인(최종) 사마의 그림만 쓴다 — 소년 사마의는 게임에서 지웠다',async()=>{
+  const {officerEntry,officerManifest}=await import('../src/officer-models.ts');
   const {officerLook}=await import('../src/officer-art.ts');
-  const who=()=>officerEntry({id:'sima_yi',name:'사마의'})?.id;
-  for(const st of ['S1-01','S1-02','S1-03','R-02','S1-04','S3-07']){setStoryEra(st);expect(who()).toBe('sima_yi');expect(officerLook('사마의')?.id).toBe('sima_yi');}
-  expect(officerLook('소년 사마의')?.id).toBe('sima_yi');
+  expect(officerEntry({id:'sima_yi',name:'사마의'})?.id).toBe('sima_yi');expect(officerLook('사마의')?.id).toBe('sima_yi');
+  expect(officerLook('소년 사마의')).toBeUndefined();expect(officerManifest.some(e=>e.id==='sima_yi_young'||e.name==='소년 사마의')).toBe(false);
   expect(officerEntry({id:'sima_lang',name:'사마랑'})?.id).toBe('sima_lang');
  });
 });

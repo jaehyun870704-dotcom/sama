@@ -26,7 +26,6 @@ const pick=<T,>(h:number,xs:readonly T[])=>xs[(h>>>0)%xs.length]!;
 /** 이름이 정해진 인물(그린 초상·전신과 같은 옷차림으로). */
 const NAMED:Record<string,Partial<Cfg>>={
   '사마의':{body:'robe',hat:'guan',item:'fan',main:'#2c3a6a',trim:'#c8ccd8',sash:'#1a2040',beard:'short'},
-  '소년 사마의':{body:'robe',hat:'guan',item:'fan',main:'#2c3a6a',trim:'#c8ccd8',sash:'#1a2040',beard:'short'},
   '사마랑':{body:'robe',hat:'guan',item:'none',main:'#4a5a2e',trim:'#d8c890',sash:'#2a3418',beard:'short'},
   '사마방':{body:'robe',hat:'guan',item:'none',main:'#6a4a22',trim:'#e0c070',sash:'#3a2410',beard:'long',old:true},
   '사마사':{body:'armor',hat:'helm',item:'sword',main:'#3a4a7a',trim:'#c0a050',sash:'#1a2040',plume:'#2a3a9a',beard:'none'},

@@ -88,7 +88,6 @@ import type { BattleState, Command, Coord, LogEntry, TerrainKind, Unit } from '.
 import {strategyIconUrl} from './strategy-icons.ts';
 import {effectIcon,effectTone} from './effect-icons.ts';
 import {과와,을를} from './josa.ts';
-import {setStoryEra,resetStoryEra} from './youth.ts';
 import {guardStorage,storageFailText,STORAGE_FAIL,type StorageFail} from './storage-guard.ts';
 
 const $=<T extends HTMLElement=HTMLElement>(selector:string)=>document.querySelector<T>(selector)!;
@@ -252,7 +251,6 @@ function saveYeonFlags(f:readonly string[]){try{localStorage.setItem(YEON_FLAGS,
 function storyScene(chapter:number,beat=0,fromArt?:number,viewOnly=false){
   const c=chapters[chapter],script=c?scriptOf(c.stage.id):undefined;
   if(!script||!c)return legacyStoryScene(chapter,beat,fromArt,viewOnly);
-  setStoryEra(c.stage.id);
   if(!storyReady){menuOpen=true;modal(waitPanel('이야기 준비 중','인물과 배경 그림을 마저 받고 있습니다. 끝나면 바로 시작합니다.'),false);void storyArt.then(()=>storyScene(chapter,beat,fromArt,viewOnly));return;}
   menuOpen=true;clearTimeout(aiTimer);sound.scene=chapter===4?'dream':'camp';void sound.start().then(updateSound);
   modal('<div class="ss-host yeon-host"></div>',false);
@@ -278,7 +276,6 @@ function storyScene(chapter:number,beat=0,fromArt?:number,viewOnly=false){
   })();
 }
 function legacyStoryScene(chapter:number,beat=0,fromArt?:number,viewOnly=false){
-  setStoryEra(chapters[chapter]?.stage.id);
   if(!storyReady){menuOpen=true;modal(waitPanel('이야기 준비 중','인물과 배경 그림을 마저 받고 있습니다. 끝나면 바로 시작합니다.'),false);void storyArt.then(()=>legacyStoryScene(chapter,beat,fromArt,viewOnly));return;}
   menuOpen=true;clearTimeout(aiTimer);sound.scene=chapter===4?'dream':'camp';void sound.start().then(updateSound);
   const c=chapters[chapter]!,beats=storyBeats[c.stage.id]!,b=beats[beat]!;
@@ -324,7 +321,7 @@ let zgStage='';
  * 줄기는 본편 34장, 갈림 장 오른쪽으로 선택분기(가상 전장 둘 + 우두머리)가 뻗는다.
  */
 function showZhuge(){
-  menuOpen=true;clearTimeout(aiTimer);sound.scene='title';sound.combat=false;resetStoryEra();
+  menuOpen=true;clearTimeout(aiTimer);sound.scene='title';sound.combat=false;
   const p=progress(),stats=nodeStats(),nodes=zhugeMap(),byId=new Map(nodes.map(n=>[n.id,n]));
   const st=(n:ZMapNode)=>zhugeNodeState(n,zhugeWon,id=>zhugeUnlocked(zhugeIndex(id)));
   const first=nodes.find(n=>n.kind==='story'&&st(n).open&&!st(n).won)??nodes.filter(n=>n.kind==='story'&&st(n).open).at(-1)??nodes[0]!;
@@ -419,7 +416,7 @@ function zhugePicks(flags:readonly string[]){return zhugeChoiceLog(zhugeOrder.ma
  */
 function playZhugeEnding(replay?:ZhugeBranch){
   if(!storyReady){menuOpen=true;modal(waitPanel('결말 준비 중','인물과 배경 그림을 마저 받고 있습니다. 끝나면 바로 시작합니다.'),false);void storyArt.then(()=>playZhugeEnding(replay));return;}
-  menuOpen=true;clearTimeout(aiTimer);sound.scene='camp';void sound.start().then(updateSound);resetStoryEra();
+  menuOpen=true;clearTimeout(aiTimer);sound.scene='camp';void sound.start().then(updateSound);
   const flags=yeonFlags(),picks=zhugePicks(flags),t=zhugeTally(flags,picks),branch=replay??t.branch,text=ZHUGE_ENDING_TEXT[branch];
   const meta=loadMeta(),id=zhugeEndingId(branch);if(!meta.endings.includes(id)){meta.endings.push(id);saveMeta(meta);}
   const arcs=zhugeArcs(),seen=ZHUGE_ENDINGS.filter(e=>meta.endings.includes(e)).length;
@@ -561,7 +558,7 @@ function openRunSession(){
   try{const s=Session.load(JSON.parse(localStorage.getItem(SAVE_KEY)??'null'));return inRun(s)?s:undefined;}catch{return undefined;}
 }
 /** 첫 화면: 천명의 원정 본영. 게임의 중심은 원정이다. */
-function showMenu(){resetStoryEra();menuOpen=true;clearTimeout(aiTimer);sound.scene='title';sound.combat=false;showHub(runHost);}
+function showMenu(){menuOpen=true;clearTimeout(aiTimer);sound.scene='title';sound.combat=false;showHub(runHost);}
 /** 연의 회상: 원정에서 이긴 연의 전장(또는 예전 연의 진행에서 깬 전장)을 다시 치른다. */
 function replayable(chapter:number){return cleared(chapter)||loadMeta().chronicle.includes(chapters[chapter]!.stage.id);}
 function showChronicleLanding(){menuArc=1;menuStage='';showChronicle();}
@@ -579,7 +576,7 @@ function showChronicleNext(){const n=nextChronicle();if(n===undefined){showChron
  * 닿은 장(열린 장)만 볼 수 있고, 이긴 장은 바로 다시 싸울 수도 있다. 본 결말도 여기 모은다.
  */
 function showStoryArchive(focus?:number){
-  menuOpen=true;clearTimeout(aiTimer);sound.scene='title';sound.combat=false;resetStoryEra();
+  menuOpen=true;clearTimeout(aiTimer);sound.scene='title';sound.combat=false;
   const meta=loadMeta(),arcs:Array<[string,string,string]>=[['S1','상편','살아남는 자'],['S2','중편','맞서는 자'],['S3','하편','거머쥐는 자']];
   const row=(i:number)=>{const c=chapters[i]!,open=unlocked(i)||replayable(i),won=cleared(i);
     return `<li class="sa-row ${won?'won':open?'open':'locked'}${focus===i?' focus':''}"><span class="sa-no">${c.stage.id.slice(-2)}</span><span class="sa-title"><strong>${open?esc(catalogue.find(x=>x.id===c.stage.id)?.name??stories[i]?.[0]??c.stage.id):'??? · 아직 닿지 않은 장'}</strong><small>${esc(c.year)}${open?` · 「${esc(stories[i]?.[0]??'')}」 · ${esc(c.label)}`:''}</small></span><span class="sa-state">${won?'◆ 이김':open?'열림':'잠김'}</span><span class="sa-acts"><button data-sa-read="${i}" ${open?'':'disabled'}>이야기 보기</button><button data-sa-fight="${i}" ${won?'':'disabled'} title="${won?'이 장을 다시 싸운다':'이긴 장만 다시 싸울 수 있다'}">다시 싸우기</button></span></li>`;};
@@ -794,7 +791,7 @@ function briefing(chapter:number,expeditionId?:string,scenario?:ScenarioDeployme
     // 연구(로그라이크의 영구 강화)는 연의·회상·수련 어디서든 함께 간다.
     if(!preview){const m=loadMeta(),p=deploymentPerks(m,['사마의',...Object.keys(m.officerPerks??{})]);if(p)d.perks=p;}if(!expedition&&extras.length)d.extraOfficers=pickExtras(c.stage,c.map,extras,difficulty,d.levels,retinueCost());if(expedition)d.mission={id:expedition.id,runId:preview?'preview':crypto.randomUUID(),version:4,balance:1,supportClasses:[...supports]};return d;};
   const mission=chapter===7?'사마의와 조진을 생존시키고 양앙을 포함한 전초 수비대 7부대를 모두 격퇴하십시오. 수비대장만 쓰러뜨려서는 끝나지 않습니다.':chapter===6?'조조를 보호하며 마초를 격퇴한 뒤, 사마의 또는 조진으로 관문 안 금빛 구역을 점령하십시오. 조조·사마의·조진 퇴각 시 패배합니다.':chapter===5?'수송대 두 부대 중 최소 한 부대를 선택한 동쪽 출구로 호위하십시오. 두 수송대가 모두 소실되거나 사마의·조진이 퇴각하면 실패합니다.':chapter===4?'진궁·여포·주유를 차례로 격파한 다음, 전차의 방해를 뚫고 황제 옆 금빛 칸에 도달하십시오.':chapter===3?'길잡이와 대화해 탈출로를 정하고, 추격 압박이 한계에 닿기 전에 형제 모두 선택한 출구에 도착하십시오.':intro?'사마의로 창고에 도달한 뒤 민중에게 인접해 무장시키고 습격대를 격퇴하십시오.':escape?'두 형제 모두 남문에 도착하고 통행료 1,000전을 지불하십시오.':'수비대장을 격퇴한 뒤 본대로 중앙 성채를 점령하십시오. 경쟁 우군 선점 시 패배합니다.';
-  const rule=chapter===7?'26×20 산길 전장. 굽은 큰길은 기병이, 숲길은 보병이 접근하기 좋습니다. 본대 2명 뒤 편입 아군 4부대를 직접 지휘합니다. 노병은 2~3칸에서 사격하고 풍수사는 3칸 안의 아군을 치유합니다. 일반 18턴 / 극한 16턴 안에 완료하면 신속 천명 조건을 이룹니다.':chapter===6?'28×20 관문 전장. 허저를 전방 또는 후방에 배치합니다. 3턴 적 차례에 서쪽 복병 2기가 출현합니다. 성문 HP 95, 감시탑 HP 110 / 사거리 1~5. 포차로 문을 열고 풍수사의 치유로 호위 병력을 유지하십시오. 마초 격퇴 시 감시탑이 철수하고 관문 수비대가 2턴 혼란에 빠집니다.':chapter===5?'24×18 강변 전장. 수송대는 우군 차례에 최대 3칸 자동 이동하며 공격하지 않습니다. 교량길은 짧지만 사격대가 지키고, 남쪽 길은 길지만 전방을 우회합니다. 3턴 적 차례에 후방 기병 2부대가 나타납니다. 노병과 방패병으로 길을 열고 후방을 지키십시오.':chapter===4?'대결을 넘길 때 체력·책략·상태이상을 회복하고 시작 지점으로 돌아옵니다. 구급약은 보충되지 않습니다. 마지막 구간은 전멸전이 아닙니다. 무르기와 목표 전환 직전 복원이 가능합니다.':chapter===3?'일반 압박 한계 12, 극한 9. 매 턴 압박이 1씩 오릅니다. 거짓 군령 강행은 압박 +2와 궁병 매복을 부릅니다. 3턴 적 차례에 추격 기병 2부대가 서쪽에서 등장합니다.':intro?'소년 사마의와 민중은 공격할 수 없습니다. 사마의가 창고를 열면 인접한 민중이 보병으로 전환됩니다. 사마방·형제의 생존이 필수이며, 민중 전멸도 패배입니다.':escape?'지참금 3,000전. 첫 매수 1,000전, 이후 1,500전. 살피기는 행동 1회를 소비해 순찰 경로를 공개합니다.':'48×36 전장. 성문 각 칸 HP 95 · 감시탑 HP 110 / 사거리 1~5. 문을 파괴하면 통로가 열립니다. 중앙 석교와 남쪽 목교로 진격하며, 미니맵 클릭으로 먼 지점을 확인합니다. 본대 다음 편입 아군 8기를 직접 지휘합니다. 편입 아군도 손실에 포함됩니다. 경쟁 우군은 지시를 받지 않습니다.';
+  const rule=chapter===7?'26×20 산길 전장. 굽은 큰길은 기병이, 숲길은 보병이 접근하기 좋습니다. 본대 2명 뒤 편입 아군 4부대를 직접 지휘합니다. 노병은 2~3칸에서 사격하고 풍수사는 3칸 안의 아군을 치유합니다. 일반 18턴 / 극한 16턴 안에 완료하면 신속 천명 조건을 이룹니다.':chapter===6?'28×20 관문 전장. 허저를 전방 또는 후방에 배치합니다. 3턴 적 차례에 서쪽 복병 2기가 출현합니다. 성문 HP 95, 감시탑 HP 110 / 사거리 1~5. 포차로 문을 열고 풍수사의 치유로 호위 병력을 유지하십시오. 마초 격퇴 시 감시탑이 철수하고 관문 수비대가 2턴 혼란에 빠집니다.':chapter===5?'24×18 강변 전장. 수송대는 우군 차례에 최대 3칸 자동 이동하며 공격하지 않습니다. 교량길은 짧지만 사격대가 지키고, 남쪽 길은 길지만 전방을 우회합니다. 3턴 적 차례에 후방 기병 2부대가 나타납니다. 노병과 방패병으로 길을 열고 후방을 지키십시오.':chapter===4?'대결을 넘길 때 체력·책략·상태이상을 회복하고 시작 지점으로 돌아옵니다. 구급약은 보충되지 않습니다. 마지막 구간은 전멸전이 아닙니다. 무르기와 목표 전환 직전 복원이 가능합니다.':chapter===3?'일반 압박 한계 12, 극한 9. 매 턴 압박이 1씩 오릅니다. 거짓 군령 강행은 압박 +2와 궁병 매복을 부릅니다. 3턴 적 차례에 추격 기병 2부대가 서쪽에서 등장합니다.':intro?'사마의와 민중은 공격할 수 없습니다. 사마의가 창고를 열면 인접한 민중이 보병으로 전환됩니다. 사마방·형제의 생존이 필수이며, 민중 전멸도 패배입니다.':escape?'지참금 3,000전. 첫 매수 1,000전, 이후 1,500전. 살피기는 행동 1회를 소비해 순찰 경로를 공개합니다.':'48×36 전장. 성문 각 칸 HP 95 · 감시탑 HP 110 / 사거리 1~5. 문을 파괴하면 통로가 열립니다. 중앙 석교와 남쪽 목교로 진격하며, 미니맵 클릭으로 먼 지점을 확인합니다. 본대 다음 편입 아군 8기를 직접 지휘합니다. 편입 아군도 손실에 포함됩니다. 경쟁 우군은 지시를 받지 않습니다.';
   let officer=c.stage.deployment.forced[0]!,filter='weapon',inspect=campaign.treasures[0]??treasures[0]!.id,prep:Preparation='survival',difficulty:'normal'|'extreme'='normal';
   /** 난이도가 바뀌어 등용 장수만으로 COST가 넘치면 뒤에서부터 내린다. */
   const trimRetinue=()=>{const lv=deployment(campaign,true).levels;retinue=retinue.slice(0,retinueCap());while(retinue.length){const sh=storyCostSheet(c.stage,[],lv,difficulty,retinueUnits());if(sh.used<=sh.cap)break;retinue.pop();}};
@@ -865,7 +862,7 @@ function showOfficerGallery(f:OfficerFaction='위'){
  * 지금 레벨에 맞는 수련장을 골라 준다. 수련에서 이기면 사마의·연의 장수와 천명의 길 동료가 함께 자란다.
  */
 function showTraining(){
-  menuOpen=true;clearTimeout(aiTimer);sound.scene='title';sound.combat=false;resetStoryEra();
+  menuOpen=true;clearTimeout(aiTimer);sound.scene='title';sound.combat=false;
   // 막혔을 때 레벨업: 기준은 본편인 연의의 '다음에 이길 장'(아직 이기지 못한 첫 장)이다.
   const nextIdx=campaignOrder.find(i=>!cleared(i)),hero=levelInfo(campaign.xp.sima_yi??0).level;
   const mates=OFFICERS.filter(id=>id!=='sima_yi').map(id=>({name:officerNames[id]??id,level:levelInfo(campaign.xp[id]??0).level}));
@@ -983,7 +980,6 @@ function activate(){
   if(!fieldReady){startRest();modal(waitPanel('전장 준비 중','전장 그림을 마저 받고 있습니다. 끝나면 바로 시작합니다.'),false);void fieldInit?.then(activate,error=>{console.error(error);modal(`<div class="briefing"><h2>전장 그래픽 오류</h2><p class="render-error">전장 그래픽을 준비하지 못했습니다. 브라우저를 최신으로 올리거나, 다른 탭을 닫고 다시 시도해 주세요.</p><p class="muted">원인: ${String((error as Error)?.message??error).replace(/[<>&]/g,'').slice(0,160)}</p><div class="modal-actions"><button class="primary" id="field-retry">다시 시도</button></div></div>`,false);$('#field-retry').onclick=()=>location.reload();});return;}
   hasStarted=true;menuOpen=false;resultShown=false;scored=false;scorePending=false;duelPresented=!session.activeDuel;mode='move';setAuto(false);
   selected=session.state.living(session.state.currentSide).find(u=>!u.hasActed)?.id??'sima_yi';
-  setStoryEra(session.state.stage.id);
   preloadDuelArt([...session.state.units.values()].map(u=>officerDuelSheetUrl(u)));
   lastLog=session.state.log.length;field.load(session.state);const u=session.state.find(selected);if(u)field.focusUnit(u.pos);
   const m=session.state.map,terrain:TerrainKind[]=[];for(let y=0;y<m.height;y++)for(let x=0;x<m.width;x++)terrain.push(m.tileAt({x,y}).terrain);

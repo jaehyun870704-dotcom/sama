@@ -2,7 +2,6 @@
   "version": 1,
   "officers": [
     {"id":"sima_yi","name":"사마의","aliases":["사마의의 환영"],"battle":{"sd":{"sheet":"sima_yi-sd-v2.webp","cell":[350,280],"rows":1}},"story":"sima_yi-story-v2.webp","bust":"sima_yi-bust-v1.webp","duel":"sima_yi-duel-v3.webp"},
-    {"id":"sima_yi_young","name":"소년 사마의","aliases":["소년 사마의의 환영"],"battle":{"strategist":{"sheet":"sima_yi_young-battle-strategist-v1.webp","cell":[280,224],"rows":4}},"story":"sima_yi_young-story-v1.webp","bust":"sima_yi_young-bust-v1.webp","duel":"officer-battle-sima-v2.webp"},
     {"id":"cao_zhen","name":"조진","aliases":["조진의 환영"],"battle":{"sd":{"sheet":"cao_zhen-sd-v2.webp","cell":[350,280],"rows":1}},"story":"cao_zhen-story-v2.webp","bust":"cao_zhen-bust-v1.webp","duel":"cao_zhen-duel-v3.webp"},
     {"id":"sima_lang","name":"사마랑","aliases":["사마랑의 환영"],"battle":{"sd":{"sheet":"sima_lang-sd-v1.webp","cell":[350,280],"rows":1}},"story":"sima_lang-story-v2.webp","bust":"sima_lang-bust-v1.webp","duel":"sima_lang-duel-v3.webp"},
     {"id":"sima_fang","name":"사마방","aliases":["사마방의 환영"],"battle":{"sd":{"sheet":"sima_fang-sd-v2.webp","cell":[350,280],"rows":1}},"story":"sima_fang-story-v2.webp","bust":"sima_fang-bust-v1.webp","duel":"sima_fang-duel-v3.webp"},

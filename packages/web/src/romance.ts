@@ -234,10 +234,10 @@ export function romanceOf(u:{id:string;name:string}):RomanceOfficer|undefined{
 export function romanceStats(name:string){const r=byName[name];return r?`무력 ${r.war} · 지력 ${r.int} · 통솔 ${r.lead}`:'';}
 /** 이름으로 찾는 연의 능력(장수 카드용). */
 export const romanceByName=(name:string)=>byName[name];
-/** 이름있는 장수의 고유특성(규칙판 8). 목록 밖 인물은 병종이라 없다. 소년 시절 이름도 같은 사람으로 본다. */
-export function signatureSkill(name:string,tier=1):{name:string;description:string}|undefined{const g=signatureOf(name.replace(/^소년 /,''));return g?{name:g.name,description:g.text(tier)}:undefined;}
+/** 이름있는 장수의 고유특성(규칙판 8). 목록 밖 인물은 병종이라 없다. */
+export function signatureSkill(name:string,tier=1):{name:string;description:string}|undefined{const g=signatureOf(name);return g?{name:g.name,description:g.text(tier)}:undefined;}
 /** 이름있는 장수의 고유특성 셋과 해금 조건(첫째는 처음부터, 둘째는 2차 병종 진화, 셋째는 3차 병종 진화). */
-export function signatureSkills(name:string,tier=1):Array<{name:string;description:string;unlock:string;open:boolean}>{return signatureSet(name.replace(/^소년 /,'')).map((g,i)=>({name:g.name,description:g.text(tier),unlock:SIGNATURE_UNLOCK_TEXT[i]!,open:tier>=SIGNATURE_UNLOCK_TIERS[i]!}));}
+export function signatureSkills(name:string,tier=1):Array<{name:string;description:string;unlock:string;open:boolean}>{return signatureSet(name).map((g,i)=>({name:g.name,description:g.text(tier),unlock:SIGNATURE_UNLOCK_TEXT[i]!,open:tier>=SIGNATURE_UNLOCK_TIERS[i]!}));}
 /** 연의 장수록에 오른 모든 이름(신장수 포함). */
 export const allRomanceNames=()=>Object.keys(byName);
 
