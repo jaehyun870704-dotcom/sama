@@ -67,7 +67,7 @@
     {"id":"zhuge_jin","name":"제갈근","aliases":["제갈근의 환영"],"battle":{"sd":{"sheet":"zhuge_jin-sd-v1.webp","cell":[350,280],"rows":1}},"duel":"zhuge_jin-duel-v3.webp"},
     {"id":"zhang_ba","name":"장패","aliases":["장패의 환영"],"battle":{"cavalry":{"sheet":"zhang_ba-battle-cavalry-v1.webp","cell":[350,280],"rows":1}},"duel":"zhang_ba-duel-v1.webp"},
     {"id":"cao_xiu","name":"조휴","aliases":["조휴의 환영"],"battle":{"cavalry":{"sheet":"cao_xiu-battle-cavalry-v1.webp","cell":[350,280],"rows":1}},"duel":"cao_xiu-duel-v1.webp"},
-    {"id":"cao_shuang","name":"조상","aliases":["조상의 환영"],"battle":{"cavalry":{"sheet":"cao_shuang-battle-cavalry-v1.webp","cell":[350,280],"rows":1}},"duel":"cao_shuang-duel-v1.webp"},
+    {"id":"cao_shuang","name":"조상","aliases":["조상의 환영"],"battle":{"sd":{"sheet":"cao_shuang-sd-v1.webp","cell":[350,280],"rows":1},"cavalry":{"sheet":"cao_shuang-battle-cavalry-v1.webp","cell":[350,280],"rows":1}},"duel":"cao_shuang-duel-v2.webp"},
     {"id":"jia_xu","name":"가후","aliases":["가후의 환영"],"battle":{"wheelSage":{"sheet":"jia_xu-battle-wheelSage-v1.webp","cell":[280,224],"rows":1}}},
     {"id":"yu_jin","name":"우금","aliases":["우금의 환영"],"battle":{"sd":{"sheet":"yu_jin-sd-v1.webp","cell":[350,280],"rows":1},"spearman":{"sheet":"yu_jin-battle-spearman-v1.webp","cell":[280,224],"rows":1}},"duel":"yu_jin-duel-v2.webp"},
     {"id":"yue_jin","name":"악진","aliases":["악진의 환영"],"battle":{"sd":{"sheet":"yue_jin-sd-v1.webp","cell":[350,280],"rows":1}},"duel":"yue_jin-duel-v2.webp"},
