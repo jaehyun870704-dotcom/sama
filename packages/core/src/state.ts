@@ -28,6 +28,7 @@ export type LogEntry =
   | { t: "weather"; weather: Weather }
   | { t: "gate"; region: string; open: boolean }
   | { t: "item"; unit: string; item: string; target: string; hp?: number; mp?: number; auto?: boolean }
+  | { t: "pickup"; unit: string; item: string; at: Coord }
   | { t: "outcome"; outcome: BattleOutcome };
 
 /** 턴 순서. 우군 AI는 적 페이즈 뒤에 별도로 움직인다. */
@@ -50,6 +51,8 @@ export class BattleState {
   readonly enemyLevelShift: number;
   /** 부대 공용 보관함의 소모품(아군이 꺼내 쓴다: 소모품 id → 개수). */
   inventory: Record<string, number> = {};
+  /** 전장에 놓인 소모품(칸 → 소모품 id). 아군이 처음 들어가 멈추면 보관함으로 옮겨진다(pickups.ts). */
+  pickups: Map<string, string> = new Map();
   /** 사용 가능한 책략 정의. Battle 생성 시 주입된다. */
   strategies: Map<string, StrategyDef> = new Map();
   /** 시전자 레벨로 진화한 책략 정의 */
@@ -248,6 +251,7 @@ export class BattleState {
       regionHolds: [...this.regionHolds.entries()],
       telegraphs: structuredClone(this.telegraphs),
       inventory: { ...this.inventory },
+      pickups: [...this.pickups.entries()],
     };
   }
 
@@ -272,6 +276,7 @@ export class BattleState {
     this.regionHolds = new Map(snap.regionHolds.map(([k, v]) => [k, { ...v }]));
     this.telegraphs = structuredClone(snap.telegraphs ?? []);
     this.inventory = { ...(snap.inventory ?? {}) };
+    this.pickups = new Map(snap.pickups ?? []);
   }
 
   /**
@@ -324,6 +329,7 @@ export interface BattleSnapshot {
   regionHolds: Array<[string, { side: Side; since: number }]>;
   telegraphs?: Telegraph[];
   inventory?: Record<string, number>;
+  pickups?: Array<[string, string]>;
 }
 /** 사신 책략 → 그것을 여는 보옥 특성(모방으로는 보옥 없이 쓸 수 없다). */
 const JEWEL_GATE: Readonly<Record<string, string>> = { jewelAzure: "gear:jewelAzure", jewelVermilion: "gear:jewelVermilion", jewelTortoise: "gear:jewelTortoise", jewelTiger: "gear:jewelTiger" };

@@ -5,7 +5,7 @@
  * 자동 콩·책략 모방·통과 이동)은 표식만 두고 battle.ts·grid.ts·state.ts가 읽는다. 적 부대도 같은 규칙을 따른다.
  */
 import { defineTrait, combine, type DamageContext } from "./traits.ts";
-import type { Unit, StatusKind } from "./types.ts";
+import type { Unit, StatusKind, Weather } from "./types.ts";
 import { gearDef, gearGroupOf, type GearGroup } from "./equipment.ts";
 
 /** 간접 공격을 하는 계통(활·노·궁기병·투석기). */
@@ -75,13 +75,24 @@ marker("gear:armorDrill", "방어구 단련", "자기 차례마다 방어구 경
 marker("gear:beanBag", "콩주머니", "피해를 받으면 보관함의 회복의 콩을 저절로 써서 체력을 회복한다(콩이 있을 때만).");
 defineTrait({ id: "gear:sureCrit", name: "옥새의 위엄", description: "물리 공격이 반드시 회심의 일격이 된다.", hooks: {
   onAttack(ctx) { if (ctx.kind === "physical") ctx.sureCritical = true; } } });
-marker("gear:jewelAzure", "청룡의 부름", "책략 「청룡」을 쓸 수 있다(기마책사계).");
-marker("gear:jewelVermilion", "주작의 부름", "책략 「주작」을 쓸 수 있다(책사계).");
-marker("gear:jewelTortoise", "현무의 부름", "책략 「현무」를 쓸 수 있다(도사계).");
-marker("gear:jewelTiger", "백호의 부름", "책략 「백호」를 쓸 수 있다(풍수사계).");
+marker("gear:jewelAzure", "청룡의 부름", "비 오는 날 책략 「청룡」을 쓸 수 있다(기마책사계).");
+marker("gear:jewelVermilion", "주작의 부름", "맑은 날 책략 「주작」을 쓸 수 있다(책사계).");
+marker("gear:jewelTortoise", "현무의 부름", "흐린 날 책략 「현무」를 쓸 수 있다(도사계).");
+marker("gear:jewelTiger", "백호의 부름", "날씨와 상관없이 책략 「백호」를 쓸 수 있다(풍수사계).");
 
 /** 사신 책략 id → 그 책략을 여는 보옥 특성. */
 export const JEWEL_STRATEGIES: Readonly<Record<string, string>> = { jewelAzure: "gear:jewelAzure", jewelVermilion: "gear:jewelVermilion", jewelTortoise: "gear:jewelTortoise", jewelTiger: "gear:jewelTiger" };
+
+/** 사신 책략이 듣는 날씨: 청룡=비 · 주작=맑음 · 현무=흐림 · 백호=날씨와 상관없음. 사람·AI 모두 같은 조건이다. */
+export const JEWEL_WEATHER: Readonly<Record<string, Weather>> = { jewelAzure: "rain", jewelVermilion: "clear", jewelTortoise: "cloudy" };
+const WEATHER_WORD: Readonly<Record<Weather, string>> = { clear: "맑은", cloudy: "흐린", rain: "비 오는", fog: "안개 낀", snow: "눈 오는" };
+const JEWEL_NAME: Readonly<Record<string, string>> = { jewelAzure: "청룡은", jewelVermilion: "주작은", jewelTortoise: "현무는" };
+/** 지금 날씨에 이 책략을 쓸 수 없으면 그 이유(화면 안내·거절 문구), 쓸 수 있으면 null. */
+export function jewelWeatherBlock(strategyId: string, weather: Weather): string | null {
+  const need = JEWEL_WEATHER[strategyId];
+  if (!need || need === weather) return null;
+  return `${JEWEL_NAME[strategyId]} ${WEATHER_WORD[need]} 날에만 부를 수 있습니다(지금은 ${WEATHER_WORD[weather]} 날).`;
+}
 
 /** 장비 하나의 고유 기능 설명(능력치 밖). 없으면 빈 글. */
 export function gearPowerText(id: string): string {
@@ -126,10 +137,10 @@ export function gearPowerText(id: string): string {
       case "gear:armorDrill": return `자기 차례마다 방어구 경험치 +${p}`;
       case "gear:beanBag": return "피해를 받으면 회복의 콩을 저절로 씀";
       case "gear:sureCrit": return "물리 공격이 반드시 회심";
-      case "gear:jewelAzure": return "책략 「청룡」 사용(기마책사계)";
-      case "gear:jewelVermilion": return "책략 「주작」 사용(책사계)";
-      case "gear:jewelTortoise": return "책략 「현무」 사용(도사계)";
-      case "gear:jewelTiger": return "책략 「백호」 사용(풍수사계)";
+      case "gear:jewelAzure": return "책략 「청룡」 사용(기마책사계 · 비 오는 날)";
+      case "gear:jewelVermilion": return "책략 「주작」 사용(책사계 · 맑은 날)";
+      case "gear:jewelTortoise": return "책략 「현무」 사용(도사계 · 흐린 날)";
+      case "gear:jewelTiger": return "책략 「백호」 사용(풍수사계 · 날씨 무관)";
       default: return "";
     }
   }).filter(Boolean).join(" · ");

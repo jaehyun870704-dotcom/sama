@@ -27,7 +27,7 @@ import {encounterLevels,structureKind,structureFrame,raceGap} from './campaign-r
 import {readCampaign,writeCampaign,mergeRunCampaign,xpAtLevel,deployment,levelInfo,award,equip,equipSlot,treasureInfo,gearKey,gearNames,gearName,type GearSlot,treasures,OFFICERS,addGold,chapterGold,awardZhugeTreasures,gearDeployment,type Story} from './progression.ts';
 import {showShop,type ShopUnit} from './shop.ts';
 import {settleGear,gearNews} from './gear-battle.ts';
-import {CONSUMABLES,consumable} from '../../core/src/index.ts';
+import {CONSUMABLES,consumable,jewelWeatherBlock,JEWEL_WEATHER} from '../../core/src/index.ts';
 import {ZHUGE_ROSTER} from './zhuge-data.ts';
 import {actorMarkup,playBeat} from './story-motion.ts';
 import {playScenes,playNarration,choiceFlags} from './story-stage.ts';
@@ -47,7 +47,7 @@ import {loadFigures} from './story-figure.ts';
 import {registerCustoms} from './custom.ts';
 import {loadMeta as loadMetaForCustoms,saveMeta as saveMetaForCustoms} from './meta.ts';
 import {loadPortraitImages,portraitImage} from './portrait-images.ts';
-import {cardFace} from './faces.ts';
+import {cardFace,specFor} from './faces.ts';
 import {renderHud,type CardOpts} from './unit-hud.ts';
 import {inkChoice} from './ink-choice.ts';
 import {duelSplash,duelArena,duelBackdrop,duelModel,preloadDuelArt,playContest,animateDuel} from './duel-ui.ts';
@@ -846,10 +846,11 @@ function describe(e:LogEntry){const name=(id:string)=>session.state.find(id)?.na
   case 'outcome':return e.outcome==='victory'?'작전 성공.':`작전 실패 — ${session.failure||defeatCause(session.state)}`;
   case 'choice':return '선택에 따라 전장의 흐름이 바뀝니다.';
   case 'item':{const it=consumable(e.item)?.name??e.item,gain=[...(e.hp?[`체력 +${e.hp}`]:[]),...(e.mp?[`MP +${e.mp}`]:[])].join(' · ');return e.auto?`${name(e.unit)} · 콩주머니에서 ${it}을 꺼내 먹었다${gain?' · '+gain:''}`:`${name(e.unit)} · ${it} → ${name(e.target)}${gain?' · '+gain:''}`;}
+  case 'pickup':return `${name(e.unit)} · ${을를(consumable(e.item)?.name??e.item)} 주웠다`;
   case 'convert':return `${name(e.unit)} · 인수로 병종이 올랐다`;
   default:return '';
 }}
-function consumeLog(){const logs=session.state.log.slice(lastLog);lastLog=session.state.log.length;if(logs.some(e=>e.t==='terrain'||e.t==='gate'))field.repaintTerrain();field.play(logs);hudFight(logs);for(const e of logs){const line=describe(e);if(line)$('#latest-log').textContent=line;if(e.t==='turnStart'){const banner=$('#phase-banner');banner.textContent=`${sideNames[e.side]}의 차례`;banner.classList.add('show');setTimeout(()=>banner.classList.remove('show'),1300);sound.event({kind:'turn',side:e.side});if(e.side!=='player')sound.focus=undefined;}}}
+function consumeLog(){const logs=session.state.log.slice(lastLog);lastLog=session.state.log.length;if(logs.some(e=>e.t==='terrain'||e.t==='gate'))field.repaintTerrain();field.play(logs);hudFight(logs);for(const e of logs){const line=describe(e);if(line)$('#latest-log').textContent=line;if(e.t==='pickup')toast(line);if(e.t==='turnStart'){const banner=$('#phase-banner');banner.textContent=`${sideNames[e.side]}의 차례`;banner.classList.add('show');setTimeout(()=>banner.classList.remove('show'),1300);sound.event({kind:'turn',side:e.side});if(e.side!=='player')sound.focus=undefined;}}}
 function portraitFor(u:Unit,reaction=false,contestKind?:DuelKind):string{
   // 설전은 궁정·군막에서 말없이 논하는 장면이다. 기마 장수의 전용 일기토 시트 대신
   // 같은 비율의 도보 책사 모델을 세워 마초 같은 장수가 말을 탄 채 궁정에 들어오지 않게 한다.
@@ -876,6 +877,8 @@ function portraitFor(u:Unit,reaction=false,contestKind?:DuelKind):string{
 function faceFor(u:Unit):string{
   const name=romanceOf(u)?.name??(u.id==='sima_yi'?'사마의':u.name);
   if(!u.name.endsWith('환영')&&(portraitImage(name)||officerLook(name)))return `<span class="battle-model officer-photo">${officerPortrait(name)}</span>`;
+  // 넣은 초상·원화가 없는 이름난 장수(엄안 등): 전투 그림 한 칸은 카드에서 콩알만 해 빈칸처럼 보였다 — 초상 생성기로 지은 대체 초상을 쓴다.
+  if(!u.name.endsWith('환영')&&romanceOf(u)&&specFor(name))return `<span class="battle-model officer-photo">${cardFace(name)}</span>`;
   return portraitFor(u);
 }
 function raceLabel(s:BattleState){const g=raceGap(s);if(!g||g.ally===undefined)return '우군 선점 저지';return `경쟁 우군 성채까지 ${g.ally}칸 · 사마의 ${g.hero??'-'}칸${g.hero!==undefined&&g.ally<g.hero?' ⚠ 우군이 앞섬':''}`;}
@@ -1031,7 +1034,9 @@ function renderUnit(u:Unit|undefined){
   // 조조전 규칙 전투: 장수 능력 다섯(무력·지력·통솔·민첩·운)과 부대 공격·방어·이동. 순발력·사기는 칸에 마우스를 올리면 보인다.
   const statCells=ab?[['무력',ab.war],['지력',ab.int],['통솔',ab.lead],['민첩',ab.agi],['운',ab.luck],['공격',u.stats.attack],['방어',u.stats.defense],['이동',u.stats.movement]] as Array<[string,number]>:[...(r&&!u.name.endsWith('환영')?[['무력',r.war],['지력',r.int],['통솔',r.lead],['정치',r.pol],['매력',r.cha]]:[['무력',martialPower(u)],['지력',u.stats.intellect]]),['공격',u.stats.attack],['방어',u.stats.defense],['이동',u.stats.movement]] as Array<[string,number]>;
   const known=s.usableStrategies(u);
-  const strategyChips=known.map(id=>{const d=s.strategyFor(u,id)!,tier=d.tier??1;const off=!can||u.mp<d.mpCost||s.hasStatus(u,'seal');return `<button class="uc-strat t${tier}${mode===id?' active':''}" data-uc-strat="${id}" ${off?'disabled':''} title="${d.name} · ${STRATEGY_TIER_NAMES[tier]} · 위력 ${d.power} · ${strategyHint(id)}"><img src="${strategyIconUrl(id,tier)}" alt=""><b>${d.name}</b><small>${d.mpCost}</small></button>`;}).join('');
+  // 사신 책략은 날씨가 맞아야 부를 수 있다(청룡=비 · 주작=맑음 · 현무=흐림): 맞지 않으면 흐리게 하고 이유를 단다.
+  const sky=(id:string)=>jewelWeatherBlock(id,s.weather),skyNeed=(id:string)=>({rain:'☂ 비 올 때',clear:'☀ 맑을 때',cloudy:'☁ 흐릴 때',fog:'≋ 안개 낄 때',snow:'❄ 눈 올 때'} as Record<string,string>)[JEWEL_WEATHER[id]??'']??'';
+  const strategyChips=known.map(id=>{const d=s.strategyFor(u,id)!,tier=d.tier??1,why=sky(id);const off=!can||u.mp<d.mpCost||s.hasStatus(u,'seal')||!!why;return `<button class="uc-strat t${tier}${mode===id?' active':''}${why?' weather-off':''}" data-uc-strat="${id}" ${off?'disabled':''} title="${why?why+' · ':''}${d.name} · ${STRATEGY_TIER_NAMES[tier]} · 위력 ${d.power} · ${strategyHint(id)}"><img src="${strategyIconUrl(id,tier)}" alt=""><b>${d.name}</b><small>${why?skyNeed(id):d.mpCost}</small></button>`;}).join('');
   const effects=unitEffectNotes(u),traits=[...(sk?[{n:sk.name,d:sk.description,on:true}]:[]),...talents.map(t=>({n:t.name,d:t.ready?t.description:t.requirement,on:t.ready}))].filter((t,i,a)=>a.findIndex(x=>x.n===t.n)===i);
   $('#unit-detail').innerHTML=`<div class="uc"><div class="uc-head"><div class="portrait uc-face"><div>${faceFor(u)}</div><span class="portrait-tag">${sideNames[u.side]}</span></div><div class="uc-id"><h2>${unitName(u)}</h2><small>${classNames[u.unitClass]} · Lv.${u.level}${r?.epithet?` · ${r.epithet}`:''}</small>${[['hp','체력',u.hp,u.stats.maxHp],['mp','책략',u.mp,u.stats.maxMp],...xpBar(u).map(([k,,v,m])=>[k,'경험',v,m] as [string,string,number,number])].map(([kind,name,value,max])=>`<div class="uc-bar ${kind}"><span>${name}</span><i><i style="width:${Number(value)/Math.max(1,Number(max))*100}%"></i></i><b>${value}<small>/${max}</small></b></div>`).join('')}</div></div>
     <div class="uc-stats"${ab?` title="순발력 ${u.stats.agility} · 사기 ${u.stats.morale} · 정신력 ${u.stats.spirit}"`:''}>${statCells.map(([k,v])=>`<div><small>${k}</small><b>${v}</b></div>`).join('')}</div>
@@ -1039,7 +1044,7 @@ function renderUnit(u:Unit|undefined){
     ${temper||traits.length?`<div class="uc-traits">${temper?`<span class="uc-chip temper" title="일기토·설전에 응하는 방식">성격 · ${temperNames[temper]}</span>`:''}${traits.map(t=>`<span class="uc-chip${t.on?'':' locked'}" title="${t.d.replace(/"/g,'&quot;')}">${t.on?'◆':'◇'} ${t.n}</span>`).join('')}</div>`:''}
     ${known.length?`<div class="uc-strats"><div class="uc-label">책략</div><div class="uc-strat-list">${strategyChips}</div></div>`:''}
     <p class="uc-tip">${classTactics(u.unitClass).map(t=>`전법 「${t.name}」`).join(' · ')}${classTactics(u.unitClass).length?' · ':''}일반 공격 사거리 ${u.range[0]===u.range[1]?u.range[0]:`${u.range[0]}~${u.range[1]}`} · ${unitReachLabel(u)}${u.statuses.length?` · <b>${u.statuses.map(x=>(STATUS_NAMES[x.kind]??x.kind)+' '+x.turns+'턴').join(' · ')}</b>`:''}</p></div>`;
-  const buttons=[{id:'move',name:'이동',icon:'➶',meta:'1',disabled:u.hasMoved},{id:'attack',name:'공격',icon:'⚔',meta:'2',disabled:u.unitClass==='civilian'},...known.map(id=>{const d=s.strategyFor(u,id)!;return {id,name:d.name,icon:`<img src="${strategyIconUrl(id,d.tier??1)}" alt="">`,meta:d.mpCost+' MP',disabled:u.mp<d.mpCost||s.hasStatus(u,'seal')};}),{id:'wait',name:'대기',icon:'◷',meta:'W',disabled:false}];
+  const buttons=[{id:'move',name:'이동',icon:'➶',meta:'1',disabled:u.hasMoved},{id:'attack',name:'공격',icon:'⚔',meta:'2',disabled:u.unitClass==='civilian'},...known.map(id=>{const d=s.strategyFor(u,id)!,why=sky(id);return {id,name:d.name,icon:`<img src="${strategyIconUrl(id,d.tier??1)}" alt="">`,meta:why?skyNeed(id):d.mpCost+' MP',disabled:u.mp<d.mpCost||s.hasStatus(u,'seal')||!!why,...(why?{why}:{})};}),{id:'wait',name:'대기',icon:'◷',meta:'W',disabled:false}];
   if(session.deployment&&familyOf(u.unitClass)==='fengshui')buttons.push({id:'heal',name:'치유',icon:'치',meta:'8 MP',disabled:u.mp<8||s.hasStatus(u,'seal')});
   if(familyOf(u.unitClass)==='engineer')buttons.push({id:'repair',name:'수리',icon:'수',meta:'인접',disabled:false},{id:'fortify',name:'방책',icon:'책',meta:session.barricadesLeft(u.id)+'회',disabled:session.barricadesLeft(u.id)<=0});
   if(session.revision>=4&&!['civilian','ram','catapult'].includes(familyOf(u.unitClass))&&!structureKind(u.id))buttons.push({id:'duel',name:'일기토',icon:'겨',meta:session.contestKinds(u).has('duel')?'5합':'무력형만',disabled:!session.contestKinds(u).has('duel')},{id:'debate',name:'설전',icon:'논',meta:session.contestKinds(u).has('debate')?'5합':'지력형만',disabled:!session.contestKinds(u).has('debate')});
@@ -1049,7 +1054,7 @@ function renderUnit(u:Unit|undefined){
   buttons.push({id:'scout',name:'살피기',icon:'살',meta:'행동',disabled:session.scouted},{id:'medicine',name:'구급약',icon:'약',meta:String(session.medicine),disabled:!u.canUseItems||u.unitClass==='civilian'||!session.medicine||u.hp===u.stats.maxHp});
   const region=[...s.map.regions].find(([name,coords])=>s.victory.some(v=>v.type==='capture'&&v.target===name)&&coords.some(c=>c.x===u.pos.x&&c.y===u.pos.y));
   if(region&&u.side==='player')buttons.push({id:'capture',name:'거점 확보',icon:'⚑',meta:'',disabled:session.chapter===6&&!!s.find('ma_chao')?.alive});
-  $('#commands').innerHTML=buttons.map(b=>`<button title="${strategyHint(b.id)}" data-command="${b.id}" class="${mode===b.id?'active':''}" ${!can||b.disabled||field.busy?'disabled':''}><span>${b.icon}</span>${b.name}<small>${b.meta}</small></button>`).join('');
+  $('#commands').innerHTML=buttons.map(b=>`<button title="${b.why?b.why+' · ':''}${strategyHint(b.id)}" data-command="${b.id}" class="${mode===b.id?'active':''}" ${!can||b.disabled||field.busy?'disabled':''}><span>${b.icon}</span>${b.name}<small>${b.meta}</small></button>`).join('');
   const runCmd=(id:string)=>{dockOpen='';if(id==='wait')act({kind:'wait',unit:u.id});else if(id==='capture'&&region)act({kind:'capture',unit:u.id,region:region[0]});else if(['scout','medicine'].includes(id)){if(id==='scout')threat=true;act({kind:'item',unit:u.id,item:id});}else{mode=id;render();}};
   document.querySelectorAll<HTMLButtonElement>('[data-command]').forEach(b=>b.onclick=()=>runCmd(b.dataset.command!));
   document.querySelectorAll<HTMLButtonElement>('[data-uc-strat]').forEach(b=>b.onclick=()=>runCmd(b.dataset.ucStrat!));
@@ -1061,7 +1066,7 @@ function renderUnit(u:Unit|undefined){
  * 책략·특수·도구는 눌렀을 때 위로 목록이 펼쳐진다.
  */
 let dockOpen='';
-type DockBtn={id:string;name:string;icon:string;meta:string;disabled:boolean};
+type DockBtn={id:string;name:string;icon:string;meta:string;disabled:boolean;why?:string};
 function renderDock(buttons:DockBtn[],can:boolean,run:(id:string)=>void){
   const dock=$('#action-dock');if(!can){dock.hidden=true;document.body.classList.remove('dock-on');return;}
   const by=(ids:string[])=>buttons.filter(b=>ids.includes(b.id)),known=new Set(['move','attack','wait','duel','debate','scout','medicine','calm','capture']);
@@ -1075,7 +1080,7 @@ function renderDock(buttons:DockBtn[],can:boolean,run:(id:string)=>void){
     {key:'wait',label:'대기',one:buttons.find(b=>b.id==='wait'),tone:'grey'},
   ];
   const open=groups.find(g=>g.key===dockOpen&&g.items);
-  dock.innerHTML=`${open?`<div class="dock-pop" role="menu">${open.items!.map(b=>`<button role="menuitem" data-dock-cmd="${b.id}" class="${mode===b.id?'active':''}" ${b.disabled?'disabled':''}><i>${b.icon}</i><b>${b.name}</b><small>${b.meta}</small></button>`).join('')}</div>`:''}
+  dock.innerHTML=`${open?`<div class="dock-pop" role="menu">${open.items!.map(b=>`<button role="menuitem" data-dock-cmd="${b.id}" class="${mode===b.id?'active':''}${b.why?' weather-off':''}" ${b.why?`title="${b.why}"`:''} ${b.disabled?'disabled':''}><i>${b.icon}</i><b>${b.name}</b><small>${b.meta}</small></button>`).join('')}</div>`:''}
     <div class="dock-row">${groups.map(g=>{const active=g.one?mode===g.one.id:!!g.items?.some(b=>b.id===mode),off=g.one?g.one.disabled:g.items!.every(b=>b.disabled);
       return `<button class="dock-btn tone-${g.tone}${active?' active':''}${dockOpen===g.key?' open':''}" data-dock="${g.key}" ${off?'disabled':''} aria-label="${g.label}"><i class="dock-ico">${DOCK_ICONS[g.key]??''}</i><b>${g.label}</b></button>`;}).join('')}</div>`;
   dock.hidden=false;document.body.classList.add('dock-on');

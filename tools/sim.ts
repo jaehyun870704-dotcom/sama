@@ -28,10 +28,10 @@ const load = (p: string) => server.ssrLoadModule(p);
 const { Session, chapters, campaignOrder, zhugeOrder } = await load("/packages/web/src/session.ts");
 const { zhugeDeployment } = await load("/packages/web/src/zhuge.ts");
 const { isZhugeStage } = await load("/packages/web/src/zhuge-data.ts");
-const { award, deployment, equipSlot, freshCampaign, treasures, treasureInfo, canWear, OFFICERS } =
+const { award, deployment, equipSlot, freshCampaign, treasures, treasureInfo, canWear, gearKey, newShopItem, tierUnlocked, awardZhugeTreasures } =
   await load("/packages/web/src/progression.ts");
 const { martialPower } = await load("/packages/web/src/officers.ts");
-const { CONTROLLABLE, decide, evaluate, rememberedGoal, key, manhattan } = await load("/packages/core/src/index.ts");
+const { CONTROLLABLE, decide, evaluate, rememberedGoal, key, manhattan, sparedFoes, SHOP_GEAR, gearAllowed } = await load("/packages/core/src/index.ts");
 
 type Difficulty = "normal" | "extreme";
 
@@ -50,19 +50,42 @@ function campaignAt(chapter: number, difficulty: Difficulty) {
     const stage = chapters[index].stage;
     award(campaign, stage.id, "normal", stage.deployment.forced, [1]);
   }
-  // 난이도 기준은 보물·연구 없이 잰다(SIM_TREASURE=1이면 얻은 고유 보물을 장수마다 칸별로 계통에 맞는 가장 높은 등급부터 채운 상태).
-  if (!process.env.SIM_TREASURE) return campaign;
-  const owned = treasures
-    .filter((t: { id: string }) => campaign.treasures.includes(t.id))
-    .sort((a: { grade: number }, b: { grade: number }) => b.grade - a.grade);
+  // 난이도 기준은 보물·연구 없이 잰다(SIM_TREASURE=1이면 장비를 단 상태 — wearGear).
+  return campaign;
+}
+
+/**
+ * SIM_TREASURE=1: 그 장까지 얻은 고유 보물 + 그 장까지 이긴 수로 열린 상점 장비를, 출진하는 아군 장수마다 칸별로
+ * 계통에 맞는 가장 높은 등급부터 단다(같은 등급이면 고유 기능이 있는 고유 보물). 장비 레벨은 1(단련 없음), 금은 따지지 않는다.
+ * 일반은 그 장 앞까지 이긴 상태, 극한은 그 이야기를 일반으로 다 이긴 상태로 본다(campaignAt과 같다).
+ */
+const wornCache = new Map<string, any>();
+function wearGear(chapter: number, difficulty: Difficulty, campaign: any, deploy: (c: any) => any) {
+  const cacheKey = chapter + "|" + difficulty, hit = wornCache.get(cacheKey);
+  if (hit) return structuredClone(hit);
+  const zhuge = isZhugeStage(chapters[chapter].stage.id), order: number[] = zhuge ? zhugeOrder : campaignOrder;
+  const total = order.length, wins = difficulty === "extreme" ? total : Math.max(0, order.indexOf(chapter));
+  if (zhuge) for (const ch of order.slice(0, wins)) awardZhugeTreasures(campaign, chapters[ch].stage.id);
+  const probe = new Session(chapter, difficulty, 0, "strategy", SIM_REVISION, deploy(campaign));
+  const owned = treasures.filter((t: { id: string }) => campaign.treasures.includes(t.id));
   const worn = new Set<string>();
-  for (const officer of OFFICERS) {
+  for (const u of [...probe.state.living("player"), ...probe.state.living("ally")]) {
+    const who = gearKey(u);
     for (const slot of ["weapon", "armor", "accessory"]) {
-      const item = owned.find((t: { id: string }) => !worn.has(t.id) && treasureInfo(t.id).slot === slot && canWear(officer, t.id).ok);
-      if (item && equipSlot(campaign, officer, slot, item.id)) worn.add(item.id);
+      const named = owned.filter((t: { id: string }) => !worn.has(t.id) && treasureInfo(t.id).slot === slot && canWear(who, t.id, u.unitClass).ok)
+        .map((t: { id: string; grade: number }) => ({ id: t.id, grade: t.grade, named: 1 }));
+      const shop = SHOP_GEAR.filter((d: any) => treasureInfo(d.id).slot === slot && tierUnlocked(d.grade, wins, total) && gearAllowed(d.id, u.unitClass).ok)
+        .map((d: any) => ({ id: d.id, grade: d.grade, named: 0 }));
+      const pick = [...named, ...shop].sort((a, b) => b.grade - a.grade || b.named - a.named)[0];
+      if (!pick) continue;
+      const id = pick.named ? pick.id : newShopItem(campaign, pick.id);
+      if (equipSlot(campaign, who, slot, id, u.unitClass)) worn.add(id);
     }
   }
-  return campaign;
+  const out = deploy(campaign);
+  wornCache.set(cacheKey, structuredClone(out));
+  if (process.env.SIM_DEBUG_GEAR) console.log(`  [${chapters[chapter].stage.id} ${difficulty}] 장비 ${wins}/${total}승 · ` + Object.entries(out.loadouts ?? {}).map(([k, g]: any) => k + ":" + Object.values(g).map((id: any) => treasureInfo(id).name).join("/")).join(" "));
+  return out;
 }
 
 /**
@@ -169,6 +192,31 @@ function strikeQuarry(session: any, unit: any): boolean {
 
 }
 
+/** 이번 차례에 걸어서 닿는 빈 칸에 소모품이 놓였으면 그리로 간다(가서 기다린다). */
+function grabPickup(session: any, unit: any): boolean {
+  const state = session.state;
+  if (!state.pickups?.size || unit.hasMoved) return false;
+  const reach = state.map.reachable(unit, state.occupancy());
+  const spot = [...state.pickups.keys()].find((k: string) => reach.has(k) && k !== key(unit.pos));
+  if (!spot) return false;
+  const [x, y] = spot.split(",").map(Number);
+  return session.act({ kind: "move", unit: unit.id, to: { x, y } }).ok;
+}
+
+/** 소모품 사용(체력: 콩→쌀→복숭아 · MP: 물→술). 쓰면 true. */
+function useSupply(session: any, unit: any): boolean {
+  const inv = session.state.inventory ?? {};
+  if (!unit.canUseItems) return false;
+  const tryUse = (id: string) => (inv[id] ?? 0) > 0 && session.act({ kind: "item", unit: unit.id, item: id }).ok;
+  if (unit.hp < unit.stats.maxHp * 0.5 && session.medicine <= 0) {
+    const missing = unit.stats.maxHp - unit.hp;
+    for (const id of missing > 70 ? ["rice", "bean", "peach"] : ["bean", "rice", "peach"]) if (tryUse(id)) return true;
+  }
+  const costs = unit.strategies.map((id: string) => session.state.strategyFor(unit, id)).filter((d: any) => d && d.power > 0 && !d.support).map((d: any) => d.mpCost);
+  if (costs.length && unit.mp < Math.min(...costs)) for (const id of ["water", "wine"]) if (tryUse(id)) return true;
+  return false;
+}
+
 /** 일기토·설전 5합을 정해진 수순으로 끝낸다. 기합으로 기를 모아 필살기를 낸다. */
 function resolveDuel(session: any) {
   const plan = ["rally", "special", "guard", "attack", "attack"] as const;
@@ -195,7 +243,9 @@ function resolveDuel(session: any) {
  */
 function tryDuel(session: any, unit: any): boolean {
   if (session.revision !== 4) return false;
-  const enemies = session.state.living("enemy");
+  // 구출 대상(인질·살려 보낼 장수)에게는 대결을 걸지 않는다 — 공격과 같다.
+  const spared = sparedFoes(session.state);
+  const enemies = session.state.living("enemy").filter((e: any) => !spared.has(e.id));
   const options: Array<{ kind: "duel" | "debate"; target: string; edge: number }> = [];
   // 공격 책략을 가진 책사는 일기토로 턴을 쓰지 않는다(사람도 사마의로 칼싸움을 걸지 않는다).
   const caster = unit.strategies.some((id: string) => (session.state.strategies.get(id)?.power ?? 0) > 0);
@@ -242,6 +292,9 @@ const SIM_REVISION = (Number(process.env.SIM_REVISION) || 13) as 4 | 5 | 6 | 7 |
 
 /** AI 자동 플레이 1회. 사람 실력의 하한선 근사치로 쓴다. */
 function play(chapter: number, difficulty: Difficulty, seed: number) {
+  const deploy = (c: any) => isZhugeStage(chapters[chapter].stage.id)
+    ? { ...zhugeDeployment(c, chapters[chapter].stage, difficulty), wide: SIM_WIDE || undefined }
+    : SIM_WIDE ? { ...deployment(c, true), wide: SIM_WIDE } : deployment(c, true);
   // 출진 준비는 책략(MP) — 주력 딜이 책략이므로 AI가 가장 잘 쓰는 선택이다.
   const session = new Session(
     chapter,
@@ -252,9 +305,7 @@ function play(chapter: number, difficulty: Difficulty, seed: number) {
     // 기본은 실제 새 전투와 같은 넓은 전장(wide 2: 연의 지도 1.5배·큰 전투 증원)으로 잰다.
     // SIM_WIDE=0이면 예전 좁은 전장(옛 저장 기록이 여는 전장)으로 잰다.
     // 제갈량전 장: 처음 하는 사람(기록 없음)의 장 기본 레벨로 잰다.
-    isZhugeStage(chapters[chapter].stage.id)
-      ? { ...zhugeDeployment(freshCampaign(), chapters[chapter].stage, difficulty), wide: SIM_WIDE || undefined }
-      : SIM_WIDE ? { ...deployment(campaignAt(chapter, difficulty), true), wide: SIM_WIDE } : deployment(campaignAt(chapter, difficulty), true),
+    process.env.SIM_TREASURE ? wearGear(chapter, difficulty, isZhugeStage(chapters[chapter].stage.id) ? freshCampaign() : campaignAt(chapter, difficulty), deploy) : deploy(isZhugeStage(chapters[chapter].stage.id) ? freshCampaign() : campaignAt(chapter, difficulty)),
   );
 
   for (let step = 0; step < 6000 && session.state.outcome === "ongoing"; step++) {
@@ -312,6 +363,11 @@ function play(chapter: number, difficulty: Difficulty, seed: number) {
     if (!racing && unit.hp < unit.stats.maxHp * 0.5 && session.medicine > 0) {
       if (session.act({ kind: "item", unit: unit.id, item: "medicine" }).ok) continue;
     }
+    // 보관함의 소모품(출진 때 실은 것 + 전장에서 주운 콩·쌀·물): 구급약이 없거나 다 썼으면 체력이 절반 아래일 때 먹고,
+    // 책략을 쓰는 부대는 MP가 가장 싼 공격 책략에도 모자라면 물·술을 마신다. 사람이 하듯 자기 차례 하나를 쓴다.
+    if (!racing && useSupply(session, unit)) continue;
+    // SIM_PICKUP=1: 사람처럼 이번 차례에 닿는 전장 소모품을 먼저 주우러 간다(줍는 쪽의 상한을 잰다).
+    if (!racing && process.env.SIM_PICKUP && grabPickup(session, unit)) continue;
     if (!racing && tryDuel(session, unit)) continue;
     if (!racing && strikeQuarry(session, unit)) continue;
     // 진정(S2-14): 구급약이 남았으면 2칸 안의 혼란에 빠진 아군을 먼저 깨운다.
@@ -361,9 +417,12 @@ for (const chapter of targets) {
     const reasons = new Map<string, number>();
     const turns: number[] = [];
     let victories = 0;
+    // SIM_ITEMS=1: 전장에서 주운 소모품과 봇이 쓴 소모품(판당 평균)을 함께 보인다.
+    let picked = 0, usedItems = 0;
 
     for (let seed = 0; seed < runs; seed++) {
       const session = play(chapter, difficulty, seed);
+      for (const e of session.state.log) { if (e.t === "pickup") picked++; else if (e.t === "item" && !e.auto) usedItems++; }
       if (session.state.outcome === "victory") {
         victories++;
         turns.push(session.state.turn);
@@ -391,7 +450,8 @@ for (const chapter of targets) {
       `클리어 ${pct(clearRate).padStart(6)} | ` +
       `평균 ${avgTurns.toFixed(1).padStart(5)}턴 | ` +
       `인장2 ${pct(seals[2]! / runs).padStart(6)} | ` +
-      `인장3 ${pct(seals[3]! / runs).padStart(6)}`;
+      `인장3 ${pct(seals[3]! / runs).padStart(6)}` +
+      (process.env.SIM_ITEMS ? ` | 주움 ${(picked / Math.max(1, runs)).toFixed(1)} · 씀 ${(usedItems / Math.max(1, runs)).toFixed(1)}` : "");
 
     // AI 자동 플레이는 사람 실력의 하한선 근사치다. 목표치를 그대로 요구하지 않고
     // "AI가 전혀 못 깬다"(0%)를 과난이도 신호로 본다.

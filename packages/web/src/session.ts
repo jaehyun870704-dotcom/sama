@@ -30,7 +30,7 @@ import {stageRules,weatherLine,foeEdges,foeEdges6,foeEdges7,foeEdges8,foeEdgesWi
 import {campaignStage,addFortifications,addSiegeCompany,structureKind,encircled,encounterLevels} from './campaign-rules.ts';
 import {applyTreasure,equippedItems,treasureInfo,gearKey,validGearKey,type Deployment,OFFICERS} from './progression.ts';
 import {legacyGear} from './gear-migration.ts';
-import { gearDef, consumable, assemble, Battle, CONTROLLABLE, isHostile, key, manhattan, statsFor, familyOf, evolvedClass, evolveUnit, healAmount, strategyArea, evolveStrategy, syncTroopEffect, applyOfficerEffect, applySignature, applyFamedReach, topAbility, tierOf, classCanUseStrategy, fireScripted, currentClass } from '../../core/src/index.ts';
+import { gearDef, consumable, jewelWeatherBlock, placePickups, assemble, Battle, CONTROLLABLE, isHostile, key, manhattan, statsFor, familyOf, evolvedClass, evolveUnit, healAmount, strategyArea, evolveStrategy, syncTroopEffect, applyOfficerEffect, applySignature, applyFamedReach, topAbility, tierOf, classCanUseStrategy, fireScripted, currentClass } from '../../core/src/index.ts';
 import type { BattleState, Command, Difficulty, MapFile, StageDef, StrategyDef, LogEntry, Unit } from '../../core/src/index.ts';
 import escapeStage from '../../data/stages/S1-02.json';
 import fortStage from '../../data/stages/S1-08.json';
@@ -327,6 +327,8 @@ export class Session {
       e.stats.maxHp=Math.round(e.stats.maxHp*T.hp*fk);e.hp=e.stats.maxHp;e.stats.attack=Math.round(e.stats.attack*T.attack*fk);e.stats.defense=Math.round(e.stats.defense*T.defense);}
     if(this.deployment?.perks)applyPerkGrants(state,this.deployment.perks,this.revision<8);
     this.applyRomanceToNew(state);this.applyGear(state);
+    // 전장 소모품(조조전처럼 마을·병영·성채·보물고·관문에 놓인 콩·쌀·물): 이야기 전투만(원정 회차는 보관함을 쓰지 않는다). 규칙판 13부터.
+    if(this.deployment&&!this.deployment.run&&this.revision>=13)placePickups(state,this.seed);
     return battle;
   }
   act(cmd:Command){
@@ -379,6 +381,7 @@ export class Session {
       if(def?.support){
         const cost=u?.traitParams['gear:mpHalf']?Math.max(1,Math.floor(def.mpCost/2)):def.mpCost;
         if(!u?.alive||!s.usableStrategies(u).includes(def.id)||u.mp<cost||s.hasStatus(u,'seal')||(def.shape!=='global'&&manhattan(u.pos,cmd.at)>def.range))return {ok:false,error:'지원 책략의 습득·MP·사거리를 확인하세요.'};
+        const sky=jewelWeatherBlock(def.id,s.weather);if(sky)return {ok:false,error:sky};
         const area=strategyArea(def,cmd.at,u.pos),targets=s.living().filter(t=>t.side!=='enemy'&&(def.shape==='global'||area.some(c=>c.x===t.pos.x&&c.y===t.pos.y))&&!(base?.noSelf&&t.id===u.id));
         if(def.support==='again'){const keep=targets.filter(t=>t.id!==u.id&&t.hasActed);targets.length=0;targets.push(...keep);if(!targets.length)return {ok:false,error:'회귀는 이미 행동을 마친 다른 아군에게만 쓸 수 있습니다.'};}
         if(!targets.length)return {ok:false,error:'지원할 아군을 선택하세요.'};

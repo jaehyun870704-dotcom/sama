@@ -2,7 +2,7 @@
  * 목표 임무(호위·구출·방어·점령)를 실제로 깰 수 있는지 — 버전 4 지도·목표·균형 규칙 그대로.
  * 예전 시험은 목표 없는 옛 지도(버전 2)로만 돌아서, 호위·구출이 막혀도 잡아내지 못했다.
  * 시험 봇은 사람이 하듯 움직인다: 호위 대상은 적을 먼저 치운 뒤 최단 경로로 걷고, 아군은 그 길과 출구를 비켜 서며,
- * 구출은 장수가 인질 곁으로 간 뒤 인질을 안전지대로 데려간다.
+ * 구출은 엔진 자동 전투(decide)가 하듯 지키는 적을 먼저 치운 뒤 장수가 인질 곁으로 가고, 인질을 안전지대로 데려간다.
  */
 import {describe,it,expect} from 'vitest';
 import {Session} from '../src/session.ts';
@@ -18,6 +18,7 @@ const parse=(k:string):C=>{const [x,y]=k.split(',').map(Number);return {x:x!,y:y
 function costField(s:Session,u:Unit,goal:C[]){const f=new Map<string,number>();for(const g of goal){for(const [k,v] of s.state.map.reachable({...u,pos:g,stats:{...u.stats,movement:999}},new Map()))f.set(k,Math.min(f.get(k)??1e9,v));f.set(key(g),0);}return f;}
 function pathCells(s:Session,vip:Unit){const goal=s.state.map.regionCoords(goalOf(vip.id)),f=costField(s,vip,goal),path=new Set(goal.map(key));let cur=vip.pos;
  for(let i=0;i<80;i++){const nb=[[1,0],[-1,0],[0,1],[0,-1]].map(([dx,dy])=>({x:cur.x+dx!,y:cur.y+dy!})).filter(c=>f.has(key(c))).sort((a,b)=>f.get(key(a))!-f.get(key(b))!)[0];if(!nb||f.get(key(nb))!>=(f.get(key(cur))??1e9))break;path.add(key(nb));cur=nb;}return path;}
+let hostageHits=0;
 function step(s:Session){
  const st=s.state;if(!CONTROLLABLE.has(st.currentSide)){s.tick();return;}
  const u=st.living(st.currentSide).find(x=>!x.hasActed);if(!u){s.tick();return;}
@@ -29,31 +30,32 @@ function step(s:Session){
   const f=costField(s,u,st.map.regionCoords(goalOf(u.id))),best=[...st.map.reachable(u,st.occupancy()).keys(),key(u.pos)].sort((a,b)=>(f.get(a)??1e9)-(f.get(b)??1e9))[0]!;
   if(best!==key(u.pos))act({kind:'move',unit:u.id,to:parse(best)});return wait();
  }
+ // 구출은 엔진 자동 전투(decide)가 맡는다: 지키는 적을 먼저 치우고 사마의·조진이 대상 곁으로 가며, 다른 부대는 그 곁을 비운다.
  const hostage=st.find('rescue_target');
- if(hostage?.side==='enemy'&&(u.id==='sima_yi'||u.id==='cao_zhen')&&manhattan(u.pos,hostage.pos)>1){
-  const adj=[[1,0],[-1,0],[0,1],[0,-1]].map(([dx,dy])=>({x:hostage.pos.x+dx!,y:hostage.pos.y+dy!}));
-  const to=[...st.map.reachable(u,st.occupancy()).keys(),key(u.pos)].map(parse).sort((a,b)=>Math.min(...adj.map(t=>manhattan(a,t)))-Math.min(...adj.map(t=>manhattan(b,t))))[0]!;
-  if(key(to)!==key(u.pos))act({kind:'move',unit:u.id,to});
-  const foe=st.living('enemy').find(e=>e.id!=='rescue_target'&&manhattan(e.pos,u.pos)>=u.range[0]&&manhattan(e.pos,u.pos)<=u.range[1]);
-  if(foe&&!u.hasActed)act({kind:'attack',unit:u.id,target:foe.id});return wait();
- }
- // 구출 대상 곁은 사마의·조진의 자리다: 지원 부대가 그 칸을 막고 있으면 비켜 선다(사람이 하듯).
- if(hostage?.side==='enemy'&&u.id!=='sima_yi'&&u.id!=='cao_zhen'&&manhattan(u.pos,hostage.pos)===1){const off=[...st.map.reachable(u,st.occupancy()).keys()].map(parse).filter(c=>manhattan(c,hostage.pos)>1).sort((a,b)=>manhattan(a,u.pos)-manhattan(b,u.pos))[0];if(off){act({kind:'move',unit:u.id,to:off});return wait();}}
  const vip=st.find('convoy_trial')??(hostage?.side==='ally'?hostage:undefined);
  if(vip&&vip.side!=='enemy'){const path=pathCells(s,vip);if(path.has(key(u.pos))){const off=[...st.map.reachable(u,st.occupancy()).keys()].filter(k=>!path.has(k)).map(parse).sort((a,b)=>manhattan(a,u.pos)-manhattan(b,u.pos))[0];if(off){act({kind:'move',unit:u.id,to:off});return wait();}}}
  if(u.hp<u.stats.maxHp*.5&&u.canUseItems&&s.medicine){act({kind:'item',unit:u.id,item:'medicine'});return;}
  if(u.unitClass==='fengshui'&&u.mp>=8){const t=st.living().filter(t=>t.side!=='enemy'&&t.hp<t.stats.maxHp-20&&manhattan(t.pos,u.pos)<=3).sort((a,b)=>a.hp/a.stats.maxHp-b.hp/b.stats.maxHp)[0];if(t){act({kind:'item',unit:u.id,item:'heal',target:t.id});return;}}
- for(const cmd of decide(st,u)){if(cmd.kind==='move'&&key(cmd.to)===key(u.pos))continue;if(cmd.kind==='attack'&&cmd.target==='rescue_target')continue;if(!act(cmd).ok||st.outcome!=='ongoing')break;}
+ for(const cmd of decide(st,u)){if(cmd.kind==='move'&&key(cmd.to)===key(u.pos))continue;if(cmd.kind==='attack'&&cmd.target==='rescue_target')hostageHits++;if(!act(cmd).ok||st.outcome!=='ongoing')break;}
  wait();
 }
 function mission(id:string,level:number,seed:number,revision=4){const d=deployment(freshCampaign(),true);for(const who of Object.keys(d.levels))d.levels[who]=Math.max(d.levels[who]!,level);
- d.mission={id,runId:'objective-'+id,version:4,balance:1,supportClasses:['infantry','fengshui']};return new Session(7,'normal',seed,'survival',revision as 4|6|7,d);}
+ d.mission={id,runId:'objective-'+id,version:4,balance:1,supportClasses:['infantry','fengshui']};return new Session(7,'normal',seed,'survival',revision as 4|6|7|13,d);}
 const winsAt=(id:string,level:number,revision=4)=>[215,7].some(seed=>{const s=mission(id,level,seed,revision);for(let i=0;i<5000&&s.state.outcome==='ongoing';i++)step(s);return s.state.outcome==='victory';});
 
 describe('목표 임무는 실제로 깰 수 있다(버전 4 목표·지도)',()=>{
  // 수련·보물 인연·보물 사냥: 권장 레벨 +3 안에서 이긴다(시험 봇은 보물·연구 없이 사람보다 서툴다).
  it.each(expeditions.filter(m=>m.kind!=='challenge'&&trialGoals[m.id]!.kind!=='annihilate').map(m=>[m.id,trialGoals[m.id]!.kind,m.level] as const))('%s (%s) Lv.%i',(id,_kind,level)=>{
   expect(winsAt(id,level)||winsAt(id,level+3),id).toBe(true);
+ });
+});
+
+describe('구출 외전: 자동 전투는 구출 대상을 치지 않고 지키는 적을 먼저 치운 뒤 구한다',()=>{
+ // 예전에는 시험 봇이 따로 구출 대상을 거르고 장수를 먼저 보냈다(구한 대상이 남은 적 사이로 걸어 T02 85%·R05 70%). 이제 엔진이 맡는다.
+ it.each(['T02','Q03','Q06','Q09','R05'])('%s 권장 레벨 · 규칙판 13',id=>{
+  const level=expeditions.find(m=>m.id===id)!.level;hostageHits=0;
+  for(const seed of [3,11]){const s=mission(id,level,seed,13);for(let i=0;i<5000&&s.state.outcome==='ongoing';i++)step(s);expect(s.state.outcome,id+' seed '+seed).toBe('victory');}
+  expect(hostageHits).toBe(0);
  });
 });
 

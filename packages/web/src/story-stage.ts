@@ -79,6 +79,19 @@ const ANGER_FRAME=(look:Look)=>look==='bandit'||look==='assassin'||look==='physi
 const REACTION:Array<[RegExp,string]>=[[/^!+$|놀람/,'jolt'],[/\?/,'tilt'],[/분노|怒|💢|화/,'shake'],[/땀|💧|…|\.\.\./,'droop'],[/♪|웃음|하하/,'bounce']];
 const same=(a:Cell,b:Cell)=>a[0]===b[0]&&a[1]===b[1];
 
+type Box={l:number;r:number;t:number;b:number};
+/**
+ * 대화창(창 + 위로 솟은 흉상, 무대 기준 px)이 서 있는 사람(카메라를 옮기기 전 자리)을 가리지 않도록 카메라를 옮길 거리.
+ * 아래 창이면 위로(음수), 위 창이면 아래로(양수). 맨 위(아래) 사람이 무대 밖으로 나가지 않는 데까지만 옮기고, 그래도 남는 가림을 left로 돌려준다.
+ */
+export function planTalkShift(people:readonly Box[],parts:readonly Box[],top:boolean,stageHeight:number){
+  let need=0;
+  for(const p of people)for(const q of parts){if(!(q.l<p.r&&p.l<q.r))continue;need=Math.max(need,top?q.b-p.t+4:p.b-q.t+4);}
+  const room=people.length?(top?stageHeight-Math.max(...people.map(p=>p.b))-4:Math.min(...people.map(p=>p.t))-4):0;
+  const move=Math.max(0,Math.min(need,room));
+  return {shift:top?move:-move,left:Math.max(0,need-move)};
+}
+
 /** 무대 하나: 아이소메트릭 배경·인물·대화창·자막·선택지. 인물은 칸 위에 서고 한 칸씩 걷는다. */
 export class Stage {
   readonly el:HTMLElement;
@@ -196,13 +209,48 @@ export class Stage {
       if(!to){const near=[...this.actors.entries()].filter(([n,o])=>n!==speaker&&o.on).sort((p,q)=>Math.abs(p[1].cell[0]-a.cell[0])+Math.abs(p[1].cell[1]-a.cell[1])-Math.abs(q[1].cell[0]-a.cell[0])-Math.abs(q[1].cell[1]-a.cell[1]))[0];if(near)this.faceTo(speaker,near[0]);}
       this.gesture(speaker,/[!！]{1}$|이놈|닥쳐|물러서/.test(line)?ANGER_FRAME(a.look):TALK_FRAME(a.look),1000);
     }
-    // 대화창이 무대 아래를 덮으므로, 말하는 동안 무대를 조금 올려 인물이 대화창에 가리지 않게 한다.
+    // 대화창(과 위로 솟은 흉상)이 무대 아래(또는 위)를 덮는다: 말하는 동안 무대 카메라를 옮겨 서 있는 사람이 가리지 않게 한다(fitTalk).
     this.el.classList.add('talking');
     this.talk.innerHTML=talkBox(speaker,'',a&&this.scene.toPct(a.cell)[1]>58?'top':'bottom',a?.look,this.skin);
+    this.fitTalk();
+    // 흉상 그림이 늦게 읽히면 창의 크기가 바뀐다 — 다 읽은 뒤·잠시 뒤에 다시 맞춘다.
+    {const box=this.talk.querySelector('.ss-talk'),refit=()=>{if(box&&box.isConnected)this.fitTalk();};
+      for(const img of box?.querySelectorAll('img')??[])if(!img.complete)img.addEventListener('load',refit,{once:true});
+      setTimeout(refit,300);setTimeout(refit,1300);}
     await this.typeLine(this.talk.querySelector<HTMLElement>('.ss-talk-body p')!,line,a);
     await this.waitClick();if(a)a.el.classList.remove('speaking');this.talk.innerHTML='';
-    setTimeout(()=>{if(!this.talk.innerHTML)this.el.classList.remove('talking');},160);
+    setTimeout(()=>{if(!this.talk.innerHTML){this.el.classList.remove('talking');this.setTalkShift(0);}},160);
   }
+  /** 대화창 때문에 옮긴 카메라 높이(px, 위로 올리면 음수). */
+  private talkShift=0;
+  private setTalkShift(px:number){this.talkShift=px;const cam=this.el.querySelector<HTMLElement>('.ss-cam');if(cam)cam.style.translate=px?`0 ${px.toFixed(1)}px`:'';}
+  /**
+   * 대화창이 서 있는 사람을 가리면 카메라를 옮긴다: 아래 창이면 위로, 위 창이면 아래로, 가린 만큼(맨 위·아래 사람이 무대 밖으로 나가지 않는 데까지).
+   * 그래도 가리면 창을 반대쪽으로 옮겨 본다(가림이 덜한 쪽). 인물·카메라가 움직이는 중이면 끝난 뒤에 다시 맞춘다.
+   */
+  private fitTalk(){
+    const box=this.talk.querySelector<HTMLElement>('.ss-talk');if(!box)return;
+    const cam=this.el.querySelector<HTMLElement>('.ss-cam');if(!cam)return;
+    const stage=this.el.getBoundingClientRect();if(!stage.height)return;
+    // 카메라 안에서의 사람 자리(카메라를 옮겨도 변하지 않는 값) → 무대 기준 위치
+    const camBox=cam.getBoundingClientRect(),people=[...this.actors.values()].filter(a=>a.on&&!a.el.classList.contains('off')).map(a=>{
+      const r=a.el.getBoundingClientRect(),n=a.el.querySelector('.ss-name')?.getBoundingClientRect(),body=a.el.querySelector('.ss-body')?.getBoundingClientRect();
+      const top=Math.min(r.top,n?.top??r.top,body?.top??r.top),bottom=Math.max(n?.bottom??r.bottom,body?.bottom??r.bottom);
+      return {l:r.left,r:r.right,t:top-camBox.top,b:bottom-camBox.top};}).filter(p=>p.r>p.l);
+    if(!people.length){this.setTalkShift(0);return;}
+    const measure=()=>{const parts=[box.getBoundingClientRect(),box.querySelector('.ss-talk-face')?.getBoundingClientRect()].filter((r):r is DOMRect=>!!r&&r.width>0);
+      return {top:box.classList.contains('top'),parts:parts.map(r=>({l:r.left,r:r.right,t:r.top-stage.top,b:r.bottom-stage.top}))};};
+    const plan=(m:ReturnType<typeof measure>)=>planTalkShift(people,m.parts,m.top,stage.height);
+    let m=measure(),best=plan(m);
+    // 바깥(무대 아래)에 놓인 창(좁은 화면)은 가리지 않는다.
+    if(m.parts.every(q=>q.t>=stage.height-1)){this.setTalkShift(0);return;}
+    if(best.left>0){const flip=m.top?'bottom':'top';box.classList.remove('top','bottom');box.classList.add(flip);const other=plan(measure());
+      if(other.left<best.left)best=other;else{box.classList.remove(flip);box.classList.add(m.top?'top':'bottom');}}
+    this.setTalkShift(best.shift);
+    // 카메라(1.2초)·걸음이 끝나면 다시 맞춘다
+    if(!this.fitHooked){this.fitHooked=true;this.world.addEventListener('transitionend',()=>{if(this.talk.querySelector('.ss-talk'))requestAnimationFrame(()=>this.fitTalk());});}
+  }
+  private fitHooked=false;
   /** 한 글자씩 써 내려간다. 도중에 누르면 문장을 한꺼번에 보인다. 말하는 동안 몸짓을 한두 번 더 한다. */
   private typeLine(el:HTMLElement,line:string,a?:Actor){
     if(this.skipping){el.textContent=line;return Promise.resolve();}
