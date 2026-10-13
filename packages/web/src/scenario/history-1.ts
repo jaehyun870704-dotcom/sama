@@ -742,7 +742,7 @@ const pack:ScenarioPack={
           cast:[
             {name:'조진',look:'heavy',at:[22,64],face:'right'},
             {name:'사마의',look:'strategist',at:[34,66],face:'right'},
-            {name:'조조',look:'infantry',at:[52,56],face:'left'},
+            {name:'조조',look:'infantry',at:[52,56],face:'left',posture:'sit'},
             {name:'허저',look:'infantry'},
           ],
           steps:[
@@ -1328,7 +1328,7 @@ const pack:ScenarioPack={
           cast:[
             {name:'조진',look:'heavy',at:[28,62],face:'right'},
             {name:'사마의',look:'strategist',at:[40,64],face:'right'},
-            {name:'조조',look:'infantry',at:[62,56],face:'left'},
+            {name:'조조',look:'infantry',at:[62,56],face:'left',posture:'sit'},
           ],
           steps:[
             {narrate:'그해 가을, 한수가 넘쳐 우금의 칠군이 물에 잠겼다. 관우의 이름이 중원을 흔들었다.'},

@@ -1,6 +1,7 @@
 import {artKey} from './youth.ts';
 import {displayName} from './courtesy.ts';
 import {portraitImage} from './portrait-images.ts';
+import {officerEntry} from './officer-models.ts';
 export const officerLooks=[
  {id:'sima_yi',name:'사마의',title:'중달 · 깊은 계책',slot:0},
  {id:'sima_yi_young',name:'소년 사마의',title:'난세를 배우는 소년',slot:1},
@@ -64,4 +65,9 @@ export function officerPortrait(name:string){
 function dialogueBust(name:string){const p=officerLook(name);return p&&p.slot<14?`<div class="story-caption-bust"><div class="talk-bust officer-bust" role="img" aria-label="${p.name} 흉상" style="background-image:url('officers/${p.id}-bust-v1.webp');background-size:300% 100%;background-position:0 0"></div></div>`:`<div class="story-caption-bust">${officerPortrait(name)}</div>`;}
 export function dialogueCaption(speaker:string,line:string){const p=officerLook(speaker);return `<div class="story-caption with-officer" aria-live="polite">${dialogueBust(speaker)}<div class="dialogue-copy"><small>${p?.title??'이야기'}</small><strong>${escape(displayName(p?.name??speaker))}</strong><p>${escape(line)}</p></div></div>`;}
 export function splitSpokenLine(line:string){const at=line.indexOf(':');return at>0&&at<20?{speaker:line.slice(0,at).trim(),line:line.slice(at+1).trim()}:{speaker:'해설',line};}
-export function storyActorStyle(name:string,fallbackRow=0){const p=officerLook(name);return p?`background-image:url('officers/${p.id}-story-v1.webp');background-size:800% 300%;background-position:var(--story-x,0%) var(--story-y,0%)`:`--row:${fallbackRow*20}%`;}
+/** 이야기 전신 시트: v1은 8칸(서기~가리키기), v2는 9번째 칸(방석에 앉기)을 더한 9칸. 칸 수는 파일 판에서 읽는다. */
+export function storySheetOf(name:string):{url:string;cols:8|9}|undefined{
+  const p=officerLook(name);if(!p)return undefined;const file=officerEntry({id:p.id,name:p.name})?.story;if(!file)return undefined;
+  return {url:`officers/${file}`,cols:/-story-v1\.webp$/.test(file)?8:9};
+}
+export function storyActorStyle(name:string,fallbackRow=0){const s=storySheetOf(name);return s?`--story-talk-x:${(3/(s.cols-1)*100).toFixed(4)}%;background-image:url('${s.url}');background-size:${s.cols*100}% 300%;background-position:var(--story-x,0%) var(--story-y,0%)`:`--row:${fallbackRow*20}%`;}

@@ -51,6 +51,9 @@ describe("장비 그림", () => {
       else expect(treasureIcon(d.id + "#3")).toContain("pending");
     }
     expect(Object.keys(SHOP_ART).length).toBeGreaterThanOrEqual(8);
+    // 상점 그림판(2026-10-13): 투석기·부채·두건 4등급, 장갑 2~4등급, 돌보검, 구리·철 기마갑옷
+    for (const id of ["catapult:1", "fan:2", "hood:4", "gloves:3", "sacredSword:1", "barding:2", "barding:3"]) expect(treasureIcon(`shop:${id}`), id).toContain("shop-items/shop-items-0");
+    expect(treasureIcon("shop:gloves:1")).toContain("pending");
     for (const r of RELICS) expect(relicIcon(r.id, r.name), r.id).not.toContain("pending");
   });
 });

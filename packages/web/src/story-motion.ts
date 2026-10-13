@@ -2,31 +2,31 @@
  * 연의 이야기 장면의 인물 연기 — 조조전 이벤트 장면처럼 작은 인물이 걸어 들어와 서로 마주 보고,
  * 말할 때 손짓하고, 윗사람 앞에서 읍하고, 놀라면 움찔하고, 결심하면 가리킨다.
  *
- * 인물 그림은 한 장의 시트(가로 8칸 × 세로 3줄)를 쓴다. 그린 전신 시트가 있는 장수는 그 시트,
+ * 인물 그림은 한 장의 시트(가로 8칸 또는 9칸 × 세로 3줄)를 쓴다. 그린 전신 시트가 있는 장수는 그 시트,
  * 없는 인물은 도트 인물 시트(story-pixel)를 쓴다. 두 시트는 칸 배치가 같다.
- *   칸: 0 서기 · 1 걸음 A · 2 걸음 B · 3 말하기 · 4 읍(절) · 5 무릎 꿇기 · 6 놀람 · 7 가리키기
+ *   칸: 0 서기 · 1 걸음 A · 2 걸음 B · 3 말하기 · 4 읍(절) · 5 무릎 꿇기 · 6 놀람 · 7 가리키기 · 8 앉기(9칸 시트만)
  *   줄: 0 앞 · 1 뒤 · 2 옆(오른쪽을 봄). 왼쪽을 볼 때는 CSS로 뒤집는다.
  */
-import {officerLook} from './officer-art.ts';
-import {pxSheet} from './story-pixel.ts';
+import {storySheetOf} from './officer-art.ts';
+import {pxSheet,PX_COLS} from './story-pixel.ts';
 import type {Look} from './scenario-types.ts';
 
-const F={stand:0,walkA:1,walkB:2,talk:3,bow:4,kneel:5,surprise:6,point:7} as const;
+const F={stand:0,walkA:1,walkB:2,talk:3,bow:4,kneel:5,surprise:6,point:7,sit:8} as const;
 type Frame=keyof typeof F;
 /** 그린 시트가 없는 인물의 겉모습(도트 인물의 옷·무기). */
 const LOOKS:Record<string,Look>={장합:'cavalry',곽회:'archer',맹달:'infantry',제갈량:'strategist',손권:'civil','꿈속의 그림자':'civil','꿈속의 목소리':'civil'};
 
-export interface ActorArt {url:string;fig:boolean}
+export interface ActorArt {url:string;fig:boolean;cols:number}
 export function actorArt(name:string):ActorArt{
-  const p=officerLook(name);
-  if(p)return {url:`officers/${p.id}-story-v1.webp`,fig:true};
-  return {url:pxSheet(name,LOOKS[name]??'infantry'),fig:false};
+  const s=storySheetOf(name);
+  if(s)return {url:s.url,fig:true,cols:s.cols};
+  return {url:pxSheet(name,LOOKS[name]??'infantry'),fig:false,cols:PX_COLS};
 }
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 /** 무대 위 인물 한 명. role: 왼쪽(사마의) · 오른쪽(상대). */
 export function actorMarkup(name:string,role:'hero'|'companion',extra=''){
   const a=actorArt(name);
-  return `<div class="sa sa-${role} ${a.fig?'fig':'px'} ${extra}" data-role="${role}" role="img" aria-label="${esc(name)}"><i class="sa-shadow"></i><div class="sa-body"><div class="sa-sprite" style="background-image:url('${a.url}');--fx:0;--fy:2"></div></div><span class="sa-bubble" aria-hidden="true">…</span></div>`;
+  return `<div class="sa sa-${role} ${a.fig?'fig':'px'} ${extra}" data-role="${role}" role="img" aria-label="${esc(name)}"><i class="sa-shadow"></i><div class="sa-body"><div class="sa-sprite" style="background-image:url('${a.url}');--cols:${a.cols};--fx:0;--fy:2"></div></div><span class="sa-bubble" aria-hidden="true">…</span></div>`;
 }
 
 export interface BeatPlan {

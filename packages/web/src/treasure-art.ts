@@ -45,11 +45,21 @@ export const LEGEND_TREASURE_SHEETS=[
   ['ironHelm','beanBag','twinWhips','plantainFan','mirrorArmor','dragonGi','silverShield','lubuBow','linkedArmor','windGodShield','noFeatherDart','goldFireCannon'],
   ['fiveFireFan','sageSword','darkRobe','phoenixRobe','windWheel','zhugeTurban','azureJewel','vermilionJewel','blackTortoiseJewel','whiteTigerJewel'],
 ] as const;
+/**
+ * 상점 장비 그림판(shop-items/shop-items-01·02-v1.webp, 3×4, 2026-10-13 납품). 그림을 보고 게임 등급 이름에 맞춘 칸 이름이다.
+ * 장갑 첫 칸은 가죽 장갑이라 2등급(가죽장갑)에, 놋쇠 장갑 칸은 맞는 등급이 없어 쓰지 않는다(무명장갑은 글자 패).
+ * 02판 뒤 다섯 칸(소모품)은 그림이 물건과 맞지 않아 쓰지 않는다(null).
+ */
+export const SHOP_ITEM_SHEETS=[
+  ['shop-catapult-1','shop-catapult-2','shop-catapult-3','shop-catapult-4','shop-fan-1','shop-fan-2','shop-fan-3','shop-fan-4','shop-gloves-2',null,'shop-gloves-3','shop-gloves-4'],
+  ['shop-hood-1','shop-hood-2','shop-hood-3','shop-hood-4','shop-sacredSword-1','shop-barding-2','shop-barding-3',null,null,null,null,null],
+] as const;
 type Cell={file:string;cell:number};
 const CELLS=new Map<string,Cell>([
   ...EXTRA_TREASURE_SHEETS.flatMap((items,sheet)=>items.map((id,cell)=>[id,{file:`treasures-extra-${String(sheet+1).padStart(2,'0')}-v1.webp`,cell}] as const)),
   ...UNIQUE_TREASURE_SHEETS.flatMap((items,sheet)=>items.map((id,cell)=>[id,{file:`treasures-unique-${String(sheet+1).padStart(2,'0')}-v1.webp`,cell}] as const)),
   ...LEGEND_TREASURE_SHEETS.flatMap((items,sheet)=>items.map((id,cell)=>[id,{file:`treasures-legend-${String(sheet+1).padStart(2,'0')}-v1.webp`,cell}] as const)),
+  ...SHOP_ITEM_SHEETS.flatMap((items,sheet)=>items.flatMap((id,cell)=>id?[[id,{file:`shop-items/shop-items-${String(sheet+1).padStart(2,'0')}-v1.webp`,cell}] as const]:[])),
 ]);
 /**
  * 상점 장비 종류 × 등급 → 다시 쓰는 그림 칸(지운 보물이 그려진 칸). 없으면 글자 패.
@@ -60,12 +70,16 @@ export const SHOP_ART:Readonly<Partial<Record<GearKind,readonly [string|null,str
   spear:['ironSpear','tigerSpear','dragonSpear','tuskSpear'],
   bow:['bow','longbow','ironBow','hundredPaceBow'],
   club:['ironRod','steelWhip','goldHammer','armorPiercer'],
-  sacredSword:[null,'baipiDao','jadeSword','zhansheSword'],
+  sacredSword:['shop-sacredSword-1','baipiDao','jadeSword','zhansheSword'],
   armor:['leatherArmor','chainArmor','blackArmor','brightArmor'],
   robe:['strawCape','bearCloak','cloudRobe','strategistRobe'],
   shield:['hideShield','rattanShield','riverShield','tigerShield'],
   helmet:['wolfHelm','phoenixHelm','rattanHelm','lionHelm'],
-  barding:['swiftSaddle',null,null,'horseBarding'],
+  barding:['swiftSaddle','shop-barding-2','shop-barding-3','horseBarding'],
+  catapult:['shop-catapult-1','shop-catapult-2','shop-catapult-3','shop-catapult-4'],
+  fan:['shop-fan-1','shop-fan-2','shop-fan-3','shop-fan-4'],
+  gloves:[null,'shop-gloves-2','shop-gloves-3','shop-gloves-4'],
+  hood:['shop-hood-1','shop-hood-2','shop-hood-3','shop-hood-4'],
 };
 /** 장비 id(고유 보물 또는 상점 장비)가 쓰는 그림 칸 이름. 없으면 undefined. */
 export function artKey(id:string):string|undefined{
