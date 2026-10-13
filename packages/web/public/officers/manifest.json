@@ -46,7 +46,7 @@
     {"id":"zhu_rong","name":"축융","aliases":[],"battle":{"sd":{"sheet":"zhu_rong-sd-v1.webp","cell":[350,280],"rows":1}},"duel":"zhu_rong-duel-v2.webp"},
     {"id":"gongsun_yuan","name":"공손연","aliases":["공손연의 환영"],"battle":{"sd":{"sheet":"gongsun_yuan-sd-v1.webp","cell":[350,280],"rows":1},"lord":{"sheet":"gongsun_yuan-battle-lord-v1.webp","cell":[350,280],"rows":1}},"duel":"gongsun_yuan-duel-v3.webp"},
     {"id":"yuan_tan","name":"원담","aliases":["원담의 환영"],"battle":{"lord":{"sheet":"yuan_tan-battle-lord-v1.webp","cell":[350,280],"rows":1}},"duel":"yuan_tan-duel-v1.webp"},
-    {"id":"yuan_shang","name":"원상","aliases":["원상의 환영"],"battle":{"lord":{"sheet":"yuan_shang-battle-lord-v1.webp","cell":[350,280],"rows":1}},"duel":"yuan_shang-duel-v1.webp"},
+    {"id":"yuan_shang","name":"원상","aliases":["원상의 환영"],"battle":{"sd":{"sheet":"yuan_shang-sd-v1.webp","cell":[350,280],"rows":1},"lord":{"sheet":"yuan_shang-battle-lord-v1.webp","cell":[350,280],"rows":1}},"duel":"yuan_shang-duel-v2.webp"},
     {"id":"liu_bang","name":"유방","aliases":["유방의 환영"],"battle":{"lord":{"sheet":"liu_bang-battle-lord-v1.webp","cell":[350,280],"rows":1}}},
     {"id":"yang_ang","name":"양앙","aliases":["양앙의 환영"],"battle":{"infantry":{"sheet":"yang_ang-battle-infantry-v1.webp","cell":[280,224],"rows":1}},"duel":"yang_ang-duel-v2.webp"},
     {"id":"lu_fan","name":"여범","aliases":["여범의 환영"],"battle":{"crossbow":{"sheet":"lu_fan-battle-crossbow-v1.webp","cell":[280,224],"rows":1}},"duel":"lu_fan-duel-v2.webp"},
