@@ -21,6 +21,7 @@ import type {Deployment} from './progression.ts';
 import {을를} from './josa.ts';
 import {playEndingCutscene,finaleData} from './ending-finale.ts';
 import {namedOfficerCount,preloadOfficerGallery} from './troop-evolution.ts';
+import {COURTESY} from './courtesy.ts';
 
 export interface RunHost {
   modal(html:string,closable?:boolean):void;
@@ -104,10 +105,13 @@ const tile=(id:string,seal:string,title:string,line:string,meta='',cls='')=>`<bu
  * 첫 화면(타이틀). 성문 앞 전장 그림 위에 제목과 시작 단추만 둔다 — 무엇을 할지는 본영에서 고른다.
  * 그림·제목은 모두 이 게임이 직접 만든 것이다(다른 게임의 로고·그림을 쓰지 않는다).
  */
+/** 첫 화면 인물: 인물열전 초상 여섯 장(위·촉·오 군주와 여포, 두 이야기의 주인공 사마의·제갈량). */
+const TITLE_HEROES:Array<[string,string]>=[['조조','cao-cao'],['유비','liu-bei'],['손권','sun-quan'],['여포','lu-bu'],['사마의','sima-yi'],['제갈량','zhuge-liang']];
+const titleHeroes=()=>`<div class="title-hero title-heroes" aria-hidden="true">${TITLE_HEROES.map(([n,f],i)=>`<figure class="th-card${n==='사마의'||n==='제갈량'?' lead':''}" style="--i:${i}"><img src="portraits/${f}.webp" alt="" loading="eager" decoding="async"><figcaption><b>${esc(n)}</b>${COURTESY[n]?`<small>${esc(COURTESY[n])}</small>`:''}</figcaption></figure>`).join('')}</div>`;
 export function showTitle(host:RunHost){
   const c=host.chronicleSummary(),resume=host.resumeSaved,last=host.lastBattle();
   const item=(id:string,label:string,sub:string,cls='')=>`<button id="${id}" class="${cls}"><span>${label}</span><small>${sub}</small></button>`;
-  host.modal(`<div class="title-screen"><div class="title-bg" aria-hidden="true"></div><img class="title-hero" src="title-hero-v2.webp" alt="조조·유비·손권·여포 SD 창작 그림">
+  host.modal(`<div class="title-screen"><div class="title-bg" aria-hidden="true"></div>${titleHeroes()}
   <div class="title-copy"><p class="title-eyebrow">${GAME_SERIES}</p><h1 class="title-logo">${GAME_NAME}</h1><p class="title-tag">${GAME_TAG}</p>
   <nav class="title-menu" aria-label="첫 화면 메뉴">
     <div class="tm-group">${item('title-start','시작','사마의전 · 제갈량전 가운데 고른다','primary')}${resume&&last?item('title-resume','이어하기',`${esc(last.where)}${last.turn?` · ${last.turn}턴`:''} · 내 차례부터`):''}${item('title-load','불러오기','저장 칸에서 기록을 불러온다')}</div>

@@ -2380,3 +2380,18 @@ dialog.treasure-reveal::backdrop{background:#05090cc4;backdrop-filter:blur(3px)}
 .title-hero{top:50%;bottom:auto;right:2%;height:auto;width:min(54%,700px);max-width:none;object-fit:contain;transform:translateY(-48%);-webkit-mask-image:none;mask-image:none;filter:drop-shadow(0 10px 22px #000c)}
 @media (orientation:landscape) and (max-height:520px){.title-hero{width:min(48%,430px);right:1%;opacity:1}}
 @media (max-width:600px) and (orientation:portrait){.title-hero{width:94%;right:3%;top:auto;bottom:2%;transform:none;opacity:.35}}
+
+/* 첫 화면 인물: 인물열전 초상 여섯 장(족자 카드). 윗줄 위·촉·오 군주, 아랫줄 여포와 두 주인공(사마의·제갈량). */
+.title-hero.title-heroes{position:absolute;top:50%;right:3%;bottom:auto;left:auto;transform:translateY(-50%);width:min(50%,620px);height:auto;max-width:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;z-index:-1;-webkit-mask-image:none;mask-image:none;opacity:1;filter:none}
+.th-card{margin:0;position:relative;aspect-ratio:3/4;border:2px solid #8a6d3b;border-radius:4px;overflow:hidden;background:#140f0a;box-shadow:0 10px 24px #000b,inset 0 0 0 1px #f3e3bd22;animation:th-in .7s ease-out both;animation-delay:calc(var(--i)*90ms)}
+.th-card img{width:100%;height:100%;object-fit:cover;object-position:50% 18%;display:block}
+.th-card::after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,#0b0f12f0 0%,#0b0f1200 42%);pointer-events:none}
+.th-card figcaption{position:absolute;left:0;right:0;bottom:8px;z-index:1;display:flex;align-items:baseline;justify-content:center;gap:6px;color:#f3e3bd;text-shadow:0 1px 3px #000}
+.th-card figcaption b{font:700 calc(19px*var(--fs,1))/1 LocalSerif,'Batang',serif;letter-spacing:3px}
+.th-card figcaption small{font:400 calc(12.5px*var(--fs,1))/1 LocalSerif,'Batang',serif;color:#c9a96a;letter-spacing:2px}
+.th-card.lead{border-color:#d8b45f;box-shadow:0 10px 26px #000c,0 0 0 1px #d8b45f66,0 0 22px #c9953f55}
+@keyframes th-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.th-card{animation:none}}
+@media(max-width:900px){.title-hero.title-heroes{width:min(52%,520px);gap:10px;opacity:1}}
+@media (orientation:landscape) and (max-height:520px){.title-hero.title-heroes{width:min(46%,400px);right:1.5%;gap:7px}.th-card figcaption{bottom:4px}.th-card figcaption b{font-size:14px;letter-spacing:1px}.th-card figcaption small{font-size:10px}}
+@media (max-width:600px) and (orientation:portrait){.title-hero.title-heroes{width:92%;right:4%;top:auto;bottom:2%;transform:none;opacity:.35}}
