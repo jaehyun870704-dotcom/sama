@@ -30,13 +30,15 @@ export function gearExpFromLog(log:readonly LogEntry[],unitId:string){
   }
   return {weapon,armor};
 }
-export interface GearSettle {levelUps:string[];used:Record<string,number>;bookXp:number}
+export interface GearSettle {levelUps:string[];used:Record<string,number>;bookXp:number;picked?:Record<string,number>}
+/** 전장에서 주운 소모품 수(기록의 pickup). */
+export function pickedFromLog(log:readonly LogEntry[]){const out:Record<string,number>={};for(const e of log)if(e.t==='pickup')out[e.item]=(out[e.item]??0)+1;return out;}
 /**
  * 전투가 끝났을 때 한 번: 출진한 아군 장수의 장비 경험치·책 경험치를 쌓고, 쓴 소모품을 보관함에서 뺀다.
  * xpEarned: 이번 전투에서 장수가 싸워 번 경험치(맹덕신서가 절반을 더 준다).
  */
 export function settleGear(c:Campaign,state:BattleState,d:Deployment|undefined,xpEarned:Readonly<Record<string,number>>={}):GearSettle{
-  const out:GearSettle={levelUps:[],used:{},bookXp:0};
+  const out:GearSettle={levelUps:[],used:{},bookXp:0,picked:{}};
   if(!d||d.run)return out;
   const turns=state.log.filter(e=>e.t==='turnStart'&&e.side==='player').length;
   for(const u of state.units.values()){
@@ -51,12 +53,14 @@ export function settleGear(c:Campaign,state:BattleState,d:Deployment|undefined,x
     const book=Math.round(drill('gear:sunzi')*mul+(mul>1?Math.max(0,xpEarned[u.id]??0)*(mul-1):0));
     if(book>0){out.bookXp+=book;if((OFFICERS as readonly string[]).includes(key))c.xp[key]=(c.xp[key]??0)+book;else if(c.retinueXp?.[key]!==undefined)c.retinueXp[key]+=book;}
   }
-  // 쓴 소모품: 출진할 때 실은 수 − 전장에 남은 수
-  for(const [id,n] of Object.entries(d.supplies??{})){if(!consumable(id))continue;const left=state.inventory[id]??0,spent=Math.max(0,n-left);if(spent){out.used[id]=spent;addSupply(c,id,-spent);}}
+  // 쓴 소모품: 출진할 때 실은 수 + 전장에서 주운 수 − 전장에 남은 수. 보관함은 남은 수만큼으로 맞춘다(주운 것은 더해진다).
+  const picked=pickedFromLog(state.log);out.picked=picked;
+  for(const id of new Set([...Object.keys(d.supplies??{}),...Object.keys(picked)])){if(!consumable(id))continue;const n=d.supplies?.[id]??0,got=picked[id]??0,left=state.inventory[id]??0,spent=Math.max(0,n+got-left);if(spent)out.used[id]=spent;if(left!==n)addSupply(c,id,left-n);}
   return out;
 }
 /** 결과 화면에 실을 장비 소식. */
 export function gearNews(s:GearSettle){
-  const used=Object.entries(s.used).map(([id,n])=>`${consumable(id)?.name??id} ${n}개`);
-  return [...(s.levelUps.length?[`장비 단련 · ${s.levelUps.join(' · ')}`]:[]),...(s.bookXp?[`병서의 깨달음 · 경험치 +${s.bookXp}`]:[]),...(used.length?[`쓴 도구 · ${used.join(' · ')}`]:[])];
+  const list=(r:Record<string,number>)=>Object.entries(r).filter(([,n])=>n>0).map(([id,n])=>`${consumable(id)?.name??id} ${n}개`);
+  const used=list(s.used),picked=list(s.picked??{});
+  return [...(picked.length?[`주운 도구 · ${picked.join(' · ')}`]:[]),...(s.levelUps.length?[`장비 단련 · ${s.levelUps.join(' · ')}`]:[]),...(s.bookXp?[`병서의 깨달음 · 경험치 +${s.bookXp}`]:[]),...(used.length?[`쓴 도구 · ${used.join(' · ')}`]:[])];
 }

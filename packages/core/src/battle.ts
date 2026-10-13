@@ -17,7 +17,7 @@ import { inReach, reachLabel, unitReachLabel } from "./reach.ts";
 import { CONTROLLABLE } from "./types.ts";
 import type { Unit, Coord, StrategyDef } from "./types.ts";
 import { decide } from "./ai.ts";
-import { ON_HIT_STATUS, BAD_STATUS } from "./treasure-traits.ts";
+import { ON_HIT_STATUS, BAD_STATUS, jewelWeatherBlock } from "./treasure-traits.ts";
 import { consumable } from "./equipment.ts";
 import { nextEvolution } from "./classes.ts";
 import { evolveUnit } from "./units.ts";
@@ -130,7 +130,18 @@ export class Battle {
     u.movedSteps = manhattan(from, to);
     this.state.push({ t: "move", unit: u.id, from, to: u.pos });
     this.applyTileHazard(u);
+    this.pickUp(u);
     return ok;
+  }
+
+  /** 전장 소모품 줍기: 직접 움직이는 아군(편입 아군 포함)이 놓인 칸에 멈추면 공용 보관함에 넣는다(한 칸 한 번). */
+  private pickUp(u: Unit): void {
+    if (!u.alive || !CONTROLLABLE.has(u.side) || u.unitClass === "civilian") return;
+    const at = key(u.pos), item = this.state.pickups.get(at);
+    if (!item || !consumable(item)) return;
+    this.state.pickups.delete(at);
+    this.state.inventory[item] = (this.state.inventory[item] ?? 0) + 1;
+    this.state.push({ t: "pickup", unit: u.id, item, at: { ...u.pos } });
   }
 
   private doAttack(attackerId: string, defenderId: string): CommandResult {
@@ -222,6 +233,8 @@ export class Battle {
     if (!this.state.usableStrategies(c).includes(strategyId)) return fail("보유하지 않은 책략");
     if (c.mp < def.mpCost) return fail(`MP 부족 (필요 ${def.mpCost}, 보유 ${c.mp})`);
     if (this.state.hasStatus(c, "seal")) return fail("책략 봉인 상태");
+    const sky = jewelWeatherBlock(strategyId, this.state.weather);
+    if (sky) return fail(sky);
     const global = def.shape === "global";
     if (!global && manhattan(c.pos, at) > def.range) return fail("시전 사거리 밖");
 

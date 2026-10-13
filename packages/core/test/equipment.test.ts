@@ -9,6 +9,8 @@ import {
   gearStats, maxLevelOf, gearLevelFromExp, CONSUMABLES, consumable,
 } from "../src/equipment.ts";
 import type { Unit, UnitClass, StrategyDef } from "../src/types.ts";
+import { JEWEL_WEATHER, jewelWeatherBlock } from "../src/treasure-traits.ts";
+import { decide } from "../src/ai.ts";
 
 /** 장비 하나의 고유 기능(특성)을 부대에 입힌다(능력치는 웹 계층이 더한다). */
 function wear(u: Unit, id: string) {
@@ -232,6 +234,7 @@ describe("사신 책략", () => {
     const { state, battle } = field([{ id: "a", side: "player", cls: "mountedStrategist", x: 1, y: 1 }, { id: "e1", side: "enemy", cls: "infantry", x: 4, y: 1 }, { id: "e2", side: "enemy", cls: "infantry", x: 4, y: 2 }], 5, new Map([["jewelAzure", azure]]));
     const a = state.get("a"); a.strategies = ["jewelAzure"]; a.stats.maxMp = a.mp = 99;
     for (const id of ["e1", "e2"]) state.get(id).stats.maxHp = state.get(id).hp = 999;
+    state.weather = "rain";
     expect(battle.execute({ kind: "strategy", unit: "a", strategy: "jewelAzure", at: { x: 4, y: 1 } }).ok).toBe(true);
     const e = state.log.find((x) => x.t === "strategy");
     expect(e && e.t === "strategy" && e.targets.length).toBe(5);
@@ -241,8 +244,45 @@ describe("사신 책략", () => {
     const tortoise: StrategyDef = { id: "jewelTortoise", name: "현무", element: "earth", shape: "global", range: 99, radius: 0, mpCost: 50, power: 0, mutate: true, targetSides: ["enemy", "player", "ally", "allyAi"] };
     const { state, battle } = field([{ id: "a", side: "player", cls: "taoist", x: 1, y: 1 }, { id: "b", side: "player", cls: "infantry", x: 1, y: 2 }, { id: "e", side: "enemy", cls: "infantry", x: 7, y: 7 }], 5, new Map([["jewelTortoise", tortoise]]));
     const a = state.get("a"); a.strategies = ["jewelTortoise"]; a.stats.maxMp = a.mp = 99;
+    state.weather = "cloudy";
     expect(battle.execute({ kind: "strategy", unit: "a", strategy: "jewelTortoise", at: a.pos }).ok).toBe(true);
     for (const id of ["a", "b", "e"]) expect(state.get(id).statuses.length, id).toBeGreaterThan(0);
+  });
+});
+
+describe("사신 책략의 날씨: 청룡=비 · 주작=맑음 · 현무=흐림 · 백호=무관", () => {
+  const azure: StrategyDef = { id: "jewelAzure", name: "청룡", element: "thunder", shape: "spread", range: 4, radius: 2, mpCost: 50, power: 110, strikes: 5, inflicts: ["shock"], targetSides: ["enemy"] };
+  const vermilion: StrategyDef = { id: "jewelVermilion", name: "주작", element: "fire", shape: "spread", range: 4, radius: 2, mpCost: 55, power: 150, inflicts: ["burn"], targetSides: ["enemy", "player", "ally", "allyAi"] };
+  it("날씨 조건과 이유 문구", () => {
+    expect(JEWEL_WEATHER).toEqual({ jewelAzure: "rain", jewelVermilion: "clear", jewelTortoise: "cloudy" });
+    expect(jewelWeatherBlock("jewelAzure", "rain")).toBeNull();
+    expect(jewelWeatherBlock("jewelAzure", "clear")).toBe("청룡은 비 오는 날에만 부를 수 있습니다(지금은 맑은 날).");
+    expect(jewelWeatherBlock("jewelVermilion", "fog")).toContain("맑은 날에만");
+    expect(jewelWeatherBlock("jewelTortoise", "snow")).toContain("흐린 날에만");
+    for (const w of ["clear", "cloudy", "rain", "fog", "snow"] as const) expect(jewelWeatherBlock("jewelTiger", w)).toBeNull();
+    expect(jewelWeatherBlock("fireBlast", "rain")).toBeNull();
+  });
+  it("날씨가 맞지 않으면 엔진이 거절하고 MP를 쓰지 않는다", () => {
+    const { state, battle } = field([{ id: "a", side: "player", cls: "mountedStrategist", x: 1, y: 1 }, { id: "e1", side: "enemy", cls: "infantry", x: 4, y: 1 }], 5, new Map([["jewelAzure", azure]]));
+    const a = state.get("a"); a.strategies = ["jewelAzure"]; a.stats.maxMp = a.mp = 99;
+    const r = battle.execute({ kind: "strategy", unit: "a", strategy: "jewelAzure", at: { x: 4, y: 1 } });
+    expect(r.ok).toBe(false);
+    expect(r.ok ? "" : r.error).toContain("비 오는 날");
+    expect(a.mp).toBe(99);
+    state.weather = "rain";
+    expect(battle.execute({ kind: "strategy", unit: "a", strategy: "jewelAzure", at: { x: 4, y: 1 } }).ok).toBe(true);
+  });
+  it("AI도 같은 조건: 맞지 않는 날씨에는 사신 책략을 고르지 않는다", () => {
+    for (const side of ["player", "enemy"] as const) {
+      const foe = side === "player" ? "enemy" : "player";
+      const { state } = field([{ id: "a", side, cls: "strategist", x: 1, y: 1, level: 40 }, { id: "e1", side: foe, cls: "infantry", x: 4, y: 1, level: 5 }, { id: "e2", side: foe, cls: "infantry", x: 4, y: 2, level: 5 }], 5, new Map([["jewelVermilion", vermilion]]));
+      const a = state.get("a"); a.strategies = ["jewelVermilion"]; a.stats.maxMp = a.mp = 99;
+      for (const id of ["e1", "e2"]) state.get(id).stats.maxHp = state.get(id).hp = 999;
+      state.weather = "rain";
+      expect(decide(state, a).some((c) => c.kind === "strategy"), side + " 비").toBe(false);
+      state.weather = "clear";
+      expect(decide(state, a).some((c) => c.kind === "strategy" && c.strategy === "jewelVermilion"), side + " 맑음").toBe(true);
+    }
   });
 });
 

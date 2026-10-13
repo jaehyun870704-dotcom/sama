@@ -90,12 +90,14 @@ body.nightmare .map-vignette {box-shadow:inset 0 0 85px #11162baa}
 @keyframes duel-frames{0%,100%{background-position-x:0}15%{background-position-x:33.333333%}40%{background-position-x:66.666667%}75%{background-position-x:100%}}
 @media(prefers-reduced-motion:reduce){.duel-fighter .battle-model{animation:none}}
 @media(max-height:760px) and (min-width:701px){.duel-screen{padding:16px 24px}.duel-hud{margin:10px 0}.duel-arena{height:185px}.duel-fighter,.duel-fighter .battle-model{height:180px;width:180px}.duel-fighter{width:42%}.duel-report{min-height:40px;padding:10px}.duel-screen details{margin-top:8px}.duel-screen h2{font-size:26px}.duel-actions button{padding:7px}}
-.camp-screen .modal-actions{bottom:32px;padding:10px 0;margin-bottom:0}
+/* 정비 화면 아래 버튼 줄: 대화상자 아래 가장자리에 붙인다(예전 bottom:32px은 줄 밑으로 내용이 비치고 보물 탭을 가렸다). 줄 높이만큼 아래 여백을 두어 끝까지 내리면 보물 칸이 줄 위로 다 올라온다. */
+.camp-screen .modal-actions{bottom:0;padding:10px 0;margin-bottom:0}
+#modal:has(.camp-screen){scroll-padding-bottom:88px}.camp-screen .treasury{scroll-margin-bottom:88px}
 .feature-card.locked{opacity:.55;border-left-color:#596459}.strategy-tree{max-height:170px;overflow:auto}.treasure-grid{max-height:560px;overflow:auto;padding:3px}.expedition-hub{width:100%;max-width:1000px!important}.expedition-hub>p{margin:16px 0;color:#a9baa8}.expedition-hub>h3{margin:24px 0 12px;color:#dac392;font-size:calc(19px*var(--fs,1))}.expedition-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:20px}.expedition-grid button{text-align:left;border-color:#716142;background:linear-gradient(130deg,#34392a,#14251e)}.expedition-grid strong{display:block;color:#e4d5b4;font-size:calc(15px*var(--fs,1))}.expedition-grid small{display:block;line-height:1.8;margin-top:8px}.expedition-grid button:disabled{opacity:.4}
 @media(max-width:700px){.expedition-grid{grid-template-columns:1fr}.expedition-hub{padding:20px!important}.treasure-grid{max-height:420px}.feature-card{font-size:calc(13px*var(--fs,1))}}
 .duel-speech{position:absolute;top:9px;left:1%;right:1%;border:1px solid #a99c77;border-radius:5px;padding:7px 9px;color:#e8dcc0;background:#17221ef2;font-size:calc(13.5px*var(--fs,1));line-height:1.5;z-index:2}.duel-speech:after{content:'';position:absolute;bottom:-6px;left:45%;width:10px;height:10px;transform:rotate(45deg);background:#17221e;border-bottom:1px solid #a99c77;border-right:1px solid #a99c77}.duel-fighter .damage-number{top:70px;z-index:3}.debate .motion-attack,.debate .motion-special{animation:debate-argument .7s ease-out}.debate .motion-attack .battle-model,.debate .motion-special .battle-model{animation:none}.debate .motion-special:after{content:'논파';position:absolute;right:0;top:45%;color:#ecd89e;font:26px serif;letter-spacing:5px;animation:damage-rise .8s ease-out both}.debate .duel-speech{border-color:#85afa4;background:#142a28f5;color:#d7ebe2}@keyframes debate-argument{40%{translate:calc(12px * var(--direction)) -5px;filter:brightness(1.25)}80%{translate:0 0}}
 @media(prefers-reduced-motion:reduce){.debate .motion-attack,.debate .motion-special,.debate .motion-special:after{animation:none}}
-@media(max-width:700px){.camp-screen .modal-actions{bottom:20px;display:grid;grid-template-columns:1fr 1fr;gap:6px}.camp-screen .modal-actions>span{grid-column:1/-1;grid-row:1;font-size:calc(12.5px*var(--fs,1));text-align:center}.camp-screen .modal-actions button{width:100%;margin:0;padding:8px 5px}.treasury-filters button{padding:6px 10px}.gear-slots span{word-break:keep-all;text-align:center}}
+@media(max-width:700px){.camp-screen .modal-actions{bottom:0;margin-bottom:0;display:grid;grid-template-columns:1fr 1fr;gap:6px}.camp-screen .modal-actions>span{grid-column:1/-1;grid-row:1;font-size:calc(12.5px*var(--fs,1));text-align:center}.camp-screen .modal-actions button{width:100%;margin:0;padding:8px 5px}.treasury-filters button{padding:6px 10px}.gear-slots span{word-break:keep-all;text-align:center}}
 
 .reward-scene{height:220px;min-height:180px;margin:14px 0;border-radius:8px;overflow:hidden}.growth-summary p{margin:6px 0}.expedition-grid button small{line-height:1.8}
 
@@ -1096,6 +1098,7 @@ dialog:has(.story-scene){max-height:calc(100vh - 16px);max-height:calc(100dvh - 
 .dock-pop button b{font-size:calc(14px*var(--fs,1))}.dock-pop button small{font-size:calc(13px*var(--fs,1));color:#bba878}
 .dock-pop button.active{border-color:#ffe08a;background:rgba(255,210,120,.16)}
 .dock-pop button:hover:not(:disabled){background:rgba(255,210,120,.12)}
+.dock-pop button:disabled{opacity:.5}.dock-pop button.weather-off small,.uc-strat.weather-off small{color:#9fc3e6}
 /* 명령 목록은 지도 위 단추가 대신한다 */
 #commands,.right-panel .command-label{display:none!important}
 body.dock-on .unit-hud{right:calc(var(--dock-w,470px) + 16px)}
@@ -2100,7 +2103,7 @@ dialog:has(.title-screen),dialog:has(.lobby){width:min(1240px,calc(100vw - 24px)
 
 /* 말하는 동안 무대를 올린다(대화창이 아래 3분의 1을 덮는 화면). 휴대폰 가로처럼 대화창이 무대 밖에 붙는 화면은 그대로. */
 .ss-stage.iso .ss-cam{transition:translate .4s cubic-bezier(.3,.7,.3,1)}
-@media (min-width:581px){.ss-stage.iso.talking .ss-cam{translate:0 -11%}}
+/* 말하는 동안의 카메라 높이는 Stage.fitTalk가 대화창과 사람 자리를 재서 정한다(가린 만큼만). */
 /* 계보가 일곱으로 늘었다: 한 줄로 늘어놓고 옆으로 넘겨 본다(상세 칸은 오른쪽에 그대로) */
 .rc-tree{grid-template-columns:none!important;grid-auto-flow:column;grid-auto-columns:minmax(140px,1fr);overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}
 @media (orientation:landscape) and (max-height:520px){.rc-tree{grid-auto-columns:112px}}

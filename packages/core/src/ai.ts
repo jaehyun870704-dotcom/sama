@@ -14,6 +14,85 @@ import { inReach, reachSpec, reachOffsets, unitReachSpec } from "./reach.ts";
 import { ignoresRough } from "./traits.ts";
 import { estimatePhysical, estimateStrategy } from "./formulas.ts";
 import { evaluate, rememberedGoal } from "./conditions.ts";
+import { strategyArea } from "./battle.ts";
+import { jewelWeatherBlock } from "./treasure-traits.ts";
+
+/**
+ * 아군 쪽이 치면 안 되는 적 진영 유닛(구출 대상): 쓰러지면 우리가 지는 적 진영 유닛(인질·포로·살려 보내야 할 장수),
+ * 어딘가에 닿는 것이 우리 승리인 적 진영 유닛, 곁에 다가가면 아군으로 넘어오는 유닛(units_adjacent → grant_control·convert_unit).
+ * 아군 자동 전투와 sim 봇은 이들을 공격·책략 대상으로 고르지 않는다.
+ */
+export function sparedFoes(state: BattleState): Set<string> {
+  const out = new Set<string>();
+  const enemySide = (id: string | undefined) => { const u = id ? state.find(id) : undefined; return u?.alive && u.side === "enemy" ? u : undefined; };
+  for (const c of state.defeat) if (c.type === "retreat" && enemySide(c.unit)) out.add(c.unit!);
+  for (const c of state.victory) if (c.type === "reach" && enemySide(c.unit)) out.add(c.unit!);
+  for (const ev of state.stage.events ?? []) {
+    if (ev.trigger.type !== "units_adjacent") continue;
+    for (const a of ev.actions) {
+      const joins = a.type === "grant_control" || (a.type === "convert_unit" && a.side !== undefined && a.side !== "enemy");
+      if (!joins) continue;
+      for (const id of a.targets ?? []) if (enemySide(id)) out.add(id);
+    }
+  }
+  return out;
+}
+
+/** 아직 일어나지 않은 「곁에 다가가면」 사건(units_adjacent): 구출(아군으로 넘어옴) 또는 한 번뿐인 만남(대화 — 화용도의 관우와 조조). */
+function pendingMeeting(state: BattleState, ev: NonNullable<BattleState["stage"]["events"]>[number], target: string): boolean {
+  const joins = ev.actions.some((a) => (a.type === "grant_control" || (a.type === "convert_unit" && a.side !== undefined && a.side !== "enemy")) && (a.targets ?? []).includes(target));
+  return joins || (ev.id !== undefined && !state.firedEvents.has(ev.id));
+}
+
+/** 구출을 맡은 장수: 곁에 다가가면 구출 대상이 아군으로 넘어오는(또는 만남이 이루어지는) 사건에 이름이 오른 유닛. 아직 구하지 못한 대상들. */
+function rescueTargetsFor(state: BattleState, unit: Unit, spared: Set<string>): Unit[] {
+  const out: Unit[] = [];
+  for (const ev of state.stage.events ?? []) {
+    const t = ev.trigger;
+    if (t.type !== "units_adjacent" || !t.unitA || !t.unitB) continue;
+    const other = t.unitA === unit.id ? t.unitB : t.unitB === unit.id ? t.unitA : undefined;
+    if (!other || !spared.has(other)) continue;
+    const target = state.find(other);
+    if (pendingMeeting(state, ev, other) && target?.alive && target.side === "enemy" && !out.includes(target)) out.push(target);
+  }
+  return out;
+}
+
+/** 구출 순서: 지키는 적을 먼저 치운다 — 구출 대상 말고 남은 적이 하나 이하이거나 15턴부터 구하러 간다(구한 대상이 적 사이로 걷지 않게). */
+export const RESCUE_TURN = 15;
+function rescueReady(state: BattleState, foes: Unit[]): boolean {
+  return foes.length <= 1 || state.turn >= RESCUE_TURN;
+}
+
+/** 이 대상을 곁에 다가가 구하는 사건이 있는가. */
+function rescuers(state: BattleState, targetId: string, spared: Set<string>): boolean {
+  if (!spared.has(targetId)) return false;
+  return (state.stage.events ?? []).some((ev) => ev.trigger.type === "units_adjacent" &&
+    (ev.trigger.unitA === targetId || ev.trigger.unitB === targetId) && pendingMeeting(state, ev, targetId));
+}
+
+/** 구출을 맡은 장수의 한 수: 대상 곁 빈 칸으로 가고(이번에 닿지 않으면 그쪽으로 다가가고), 그 자리에서 칠 적이 있으면 친다. */
+function rescueStep(state: BattleState, unit: Unit, reach: Map<string, number>, targets: Unit[], hostiles: Unit[], marked: Unit[], spared: Set<string>): Command[] | null {
+  const free = (c: Coord) => { const o = state.unitAt(c); return !o || o.id === unit.id; };
+  const besideOf = (t: Unit) => [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }]
+    .map((d) => ({ x: t.pos.x + d.x, y: t.pos.y + d.y }))
+    .filter((c) => state.map.inBounds(c) && Number.isFinite(state.map.moveCost(unit.unitClass, c)) && free(c));
+  const cells = targets.flatMap(besideOf);
+  const strikeFrom = (from: Coord): Command[] => {
+    const hit = bestAction(state, unit, new Map(), hostiles, marked, spared, [from]);
+    if (!hit) return [{ kind: "wait", unit: unit.id }];
+    return [hit.kind === "strategy"
+      ? { kind: "strategy", unit: unit.id, strategy: hit.strategyId, at: hit.target.pos }
+      : { kind: "attack", unit: unit.id, target: hit.target.id }];
+  };
+  const now = cells.filter((c) => reach.has(key(c)))
+    .sort((a, b) => reach.get(key(a))! - reach.get(key(b))! || a.y - b.y || a.x - b.x)[0];
+  if (now) return [{ kind: "move", unit: unit.id, to: now }, ...strikeFrom(now)];
+  const goal = closestCoord(unit.pos, cells.length ? cells : targets.map((t) => t.pos));
+  const step = goal ? bestStepToward(state, unit, reach, goal) : null;
+  if (!step || sameCoord(step, unit.pos)) return null;
+  return [{ kind: "move", unit: unit.id, to: step }, ...strikeFrom(step)];
+}
 
 /** 유닛 1기의 다음 행동을 결정한다. 상태를 변경하지 않는다. */
 export function decide(state: BattleState, unit: Unit): Command[] {
@@ -35,7 +114,9 @@ export function decide(state: BattleState, unit: Unit): Command[] {
       for (const c of t.cells) if (!sameCoord(c, unit.pos)) reach.delete(key(c));
     }
   }
-  const hostiles = state.enemiesOf(unit.side);
+  // 아군 쪽은 구출 대상(인질·포로·합류할 유닛)을 적으로 셈하지 않는다 — 치지도, 쫓아가지도 않는다.
+  const spared = unit.side === "enemy" ? new Set<string>() : sparedFoes(state);
+  const hostiles = state.enemiesOf(unit.side).filter((h) => !spared.has(h.id));
   // 스테이지 guardLeaders: 쓰러지면 패배인 장수(필수 생존)는 길목을 지키고 선 적(hold)이 한 번에 달려와 칠 수 있는 칸으로
   // 걸어 들어가지 않는다 — 책략을 쏘러 다가갔다가 버티던 무리를 깨워 둘러싸이던 문제(Z2-02 제갈량).
   // 안전한 칸이 하나도 없으면 그대로 둔다.
@@ -148,7 +229,25 @@ export function decide(state: BattleState, unit: Unit): Command[] {
   // 승리 조건이 「이 적장을 물리쳐라」인 전장: 아군 쪽은 그 적장을 먼저 노린다
   // (자동 전투가 잔병만 쫓다 60턴을 넘겨 지던 문제 — 관도 결전 등).
   const marked = victoryTargets(state, unit, hostiles);
-  const best = bestAction(state, unit, reach, hostiles, marked);
+
+  // 구출: 곁에 다가가면 아군으로 넘어오는 대상(인질·포로)이 남아 있으면, 구출을 맡은 장수는 지키는 적을 먼저 치운 뒤
+  // (남은 적 하나 이하, 또는 15턴부터) 대상 곁으로 간다. 그 전에는 누구도 대상 곁 칸에 서지 않는다 — 싸우다 얼떨결에 구해
+  // 대상이 적 사이로 걷게 되거나, 구하러 올 장수의 자리를 막지 않게(호위 외전의 "길목을 먼저 연다"와 같은 순서).
+  if (unit.side === "player" || unit.side === "ally") {
+    const rescuable = [...spared].map((id) => state.find(id)!).filter((h) => h && rescuers(state, h.id, spared));
+    if (rescuable.length) {
+      const mine = rescueTargetsFor(state, unit, spared);
+      const ready = rescueReady(state, hostiles);
+      if (mine.length && ready) {
+        const plan = rescueStep(state, unit, reach, mine, hostiles, marked, spared);
+        if (plan) return plan;
+      }
+      const beside = decodeAll(reach).filter((c) => !sameCoord(c, unit.pos) && rescuable.some((h) => manhattan(c, h.pos) === 1));
+      if (beside.length < reach.size) for (const c of beside) reach.delete(key(c));
+    }
+  }
+
+  const best = bestAction(state, unit, reach, hostiles, marked, spared);
   if (best) {
     const cmds: Command[] = [];
     if (!sameCoord(best.from, unit.pos)) cmds.push({ kind: "move", unit: unit.id, to: best.from });
@@ -312,14 +411,18 @@ function bestAction(
   reach: Map<string, number>,
   hostiles: Unit[],
   marked: Unit[] = [],
+  spared: Set<string> = new Set(),
+  only?: Coord[],
 ): ActionPlan | null {
   // 승리 목표 적장을 치면 가산점, 쓰러뜨리면 크게(다른 적을 쓰러뜨리는 것보다 우선).
   const markBonus = (target: Unit, dealt: number) => (marked.includes(target) ? 30 + (dealt >= target.hp ? 1000 : 0) : 0);
-  const positions: Coord[] = [unit.pos, ...decodeAll(reach)];
+  const positions: Coord[] = only ?? [unit.pos, ...decodeAll(reach)];
   const usable = unit.strategies
     .map((id) => state.strategyFor(unit, id))
     // 봉인된 책사는 책략을 쓸 수 없다: 책략 자리로 걸어가 아무것도 못 하고 턴을 버리지 않게 거른다.
-    .filter((d): d is NonNullable<typeof d> => d !== undefined && d.mpCost <= unit.mp && !d.support && !state.hasStatus(unit, "seal"));
+    .filter((d): d is NonNullable<typeof d> => d !== undefined && d.mpCost <= unit.mp && !d.support && !state.hasStatus(unit, "seal"))
+    // 사신 책략은 날씨가 맞을 때만(청룡=비 · 주작=맑음 · 현무=흐림) — 사람과 같은 조건.
+    .filter((d) => !jewelWeatherBlock(d.id, state.weather));
 
   let best: ActionPlan | null = null;
   const consider = (plan: ActionPlan) => {
@@ -372,6 +475,8 @@ function bestAction(
       for (const def of usable) {
         if (manhattan(from, target.pos) > def.range) continue;
         if (!def.targetSides.includes(target.side)) continue;
+        // 구출 대상이 범위에 들어가는 책략(전 맵 책략 포함)은 쓰지 않는다.
+        if (spared.size && (def.shape === "global" || strategyArea(def, target.pos, from).some((c) => { const o = state.unitAt(c); return !!o && spared.has(o.id); }))) continue;
         unit.pos = from;
         const dealt = estimateStrategy(unit, target, def, state.map);
         unit.pos = original;

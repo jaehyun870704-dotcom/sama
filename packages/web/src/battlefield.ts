@@ -21,7 +21,7 @@ import {officerBattleSheet} from './officer-models.ts';
 import {strategyFx,playImpact,drawTravel} from './strategy-fx.ts';
 import {weaponImpact,weaponShape,type WeaponImpact} from './weapon-impact.ts';
 import type {LogEntry} from '../../core/src/index.ts';
-import { key, manhattan, ignoresRough, tierOf, familyOf, strategyArea, inReach } from '../../core/src/index.ts';
+import { key, manhattan, ignoresRough, tierOf, familyOf, strategyArea, inReach, consumable } from '../../core/src/index.ts';
 import type { BattleState, Coord, Unit, TerrainKind } from '../../core/src/index.ts';
 
 const W=48,H=48;
@@ -32,6 +32,7 @@ const sides={player:0x3d86ff,ally:0x6fa8ff,allyAi:0x3fbf5a,enemy:0xff4a3d};
 export const terrainNames:Record<TerrainKind,string>={plain:'평지',road:'길',forest:'숲',mountain:'산지',hill:'구릉',water:'수상',rapids:'완류',bridge:'다리',fort:'성채',gate:'성문',wall:'성벽',cliff:'절벽(통행 불가)',marsh:'갈대늪',plank:'잔도',ford:'여울'};
 export {classNames} from './troops.ts';
 import {classNames} from './troops.ts';
+import {을를} from './josa.ts';
 export function unitName(u:Unit){return classNames[u.name]??u.name;}
 function iso(c:Coord){return {x:c.x*W+W/2,y:c.y*H+H/2};}
 /** 목표 종류별 색: 탈출 청록, 도착 노랑, 점령 주황. */
@@ -613,6 +614,8 @@ export class Battlefield {
       await this.tween(720,epoch,p=>{const m=retreatMotion(p,mechanical);actor.sprite.rotation=m.rotation;actor.sprite.y=8+m.drop;actor.piece.alpha=m.alpha;});
       if(epoch===this.animationEpoch){actor.piece.destroy({children:true});actor.name?.destroy();this.actors.delete(e.unit);this.facing.delete(e.unit);}return;
     }
+    // 전장 소모품 줍기: 그 칸 위에 「회복의 콩을 주웠다」를 띄운다.
+    if(e.t==='pickup'){const it=consumable(e.item)?.name??e.item;this.floatText(e.at,`${을를(it)} 주웠다`,0xffe08a);this.sparks(e.at,{count:10,color:0xffe08a,speed:60,life:600,gravity:30,size:3});await this.pause(520,epoch);return;}
     if(e.t==='guard'){
       const protector=this.actors.get(e.protector);if(!protector||!this.hasReaction(protector.unit))return;
       const facing=this.facing.get(e.protector)??0,scale=protector.sprite.scale.x;
