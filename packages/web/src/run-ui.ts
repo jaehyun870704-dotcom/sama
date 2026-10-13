@@ -105,21 +105,21 @@ const tile=(id:string,seal:string,title:string,line:string,meta='',cls='')=>`<bu
  * 첫 화면(타이틀). 성문 앞 전장 그림 위에 제목과 시작 단추만 둔다 — 무엇을 할지는 본영에서 고른다.
  * 그림·제목은 모두 이 게임이 직접 만든 것이다(다른 게임의 로고·그림을 쓰지 않는다).
  */
-/** 첫 화면 인물: 인물열전 초상을 한 사람씩 크게 — 그림이 전장 배경에 스며들고, 세로 이름 족자와 함께 천천히 넘어간다. 두 이야기의 주인공(사마의·제갈량)부터. */
+/** 첫 화면 인물: 인물열전 초상을 한 사람씩 크게 — 그림이 전장 배경에 스며들고, 세로 이름 족자와 함께 넘어간다. 순서: 조조·유비·손권·여포·사마의·제갈량·주유. */
 const TITLE_HEROES:Array<[string,string,string]>=[
-  ['사마의','sima-yi','때를 기다린 자'],['제갈량','zhuge-liang','누운 용'],['조조','cao-cao','난세의 간웅'],['유비','liu-bei','인덕으로 일어선 황숙'],
-  ['손권','sun-quan','강동을 지킨 젊은 군주'],['주유','zhou-yu','적벽의 불꽃'],['여포','lu-bu','천하무쌍'],
+  ['조조','cao-cao','난세의 간웅'],['유비','liu-bei','인덕으로 일어선 황숙'],['손권','sun-quan','강동을 지킨 젊은 군주'],['여포','lu-bu','천하무쌍'],
+  ['사마의','sima-yi','때를 기다린 자'],['제갈량','zhuge-liang','누운 용'],['주유','zhou-yu','적벽의 불꽃'],
 ];
-const titleHeroes=()=>`<div class="title-showcase">${TITLE_HEROES.map(([n,f,tag],i)=>`<figure class="ts-slide${i===0?' on':''}" aria-hidden="true"><img src="portraits/${f}.webp" alt="" decoding="async"${i?' loading="lazy"':''}><figcaption class="ts-name"><b>${esc(n)}</b>${COURTESY[n]?`<small>${esc(COURTESY[n])}</small>`:''}<em>${esc(tag)}</em></figcaption></figure>`).join('')}
+const titleHeroes=()=>`<div class="title-showcase">${TITLE_HEROES.map(([n,f,tag],i)=>`<figure class="ts-slide${i===0?' on':''}" aria-hidden="true"><img src="portraits/${f}.webp" alt="" decoding="async"><figcaption class="ts-name"><b>${esc(n)}</b>${COURTESY[n]?`<small>${esc(COURTESY[n])}</small>`:''}<em>${esc(tag)}</em></figcaption></figure>`).join('')}
   <div class="ts-dots" role="group" aria-label="첫 화면 인물">${TITLE_HEROES.map(([n,f],i)=>`<button type="button" data-ts="${i}" class="${i===0?'on':''}" aria-label="${esc(n)}" style="background-image:url(portraits/${f}.webp)"></button>`).join('')}</div></div>`;
-/** 첫 화면 인물 넘기기: 6.5초마다 다음 사람. 움직임 줄이기 설정이면 넘기지 않는다(점을 눌러 고른다). 화면을 떠나면 멈춘다. */
+/** 첫 화면 인물 넘기기: 2초마다 다음 사람. 움직임 줄이기 설정이면 넘기지 않는다(점을 눌러 고른다). 화면을 떠나면 멈춘다. */
 function runTitleShowcase(){
   const root=document.querySelector<HTMLElement>('.title-showcase');if(!root)return;
   const slides=[...root.querySelectorAll<HTMLElement>('.ts-slide')],dots=[...root.querySelectorAll<HTMLButtonElement>('[data-ts]')];
   let at=0,timer:number|undefined;
   const show=(k:number)=>{at=(k+slides.length)%slides.length;slides.forEach((s,j)=>s.classList.toggle('on',j===at));dots.forEach((d,j)=>d.classList.toggle('on',j===at));};
   const reduce=typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const restart=()=>{clearInterval(timer);if(!reduce)timer=window.setInterval(()=>{if(!root.isConnected){clearInterval(timer);return;}show(at+1);},6500);};
+  const restart=()=>{clearInterval(timer);if(!reduce)timer=window.setInterval(()=>{if(!root.isConnected){clearInterval(timer);return;}show(at+1);},2000);};
   dots.forEach((d,j)=>d.onclick=()=>{show(j);restart();});restart();
 }
 export function showTitle(host:RunHost){

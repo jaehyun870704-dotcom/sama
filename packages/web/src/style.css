@@ -2383,17 +2383,17 @@ dialog.treasure-reveal::backdrop{background:#05090cc4;backdrop-filter:blur(3px)}
 
 /* 첫 화면 인물: 인물열전 초상을 한 사람씩 크게. 그림 왼쪽·아래는 전장 배경으로 스며들고, 오른쪽에 세로 이름 족자. */
 .title-showcase{position:absolute;top:0;right:0;bottom:0;width:62%;z-index:-1;pointer-events:none}
-.ts-slide{position:absolute;inset:0;margin:0;opacity:0;transition:opacity 1.4s ease;
+.ts-slide{position:absolute;inset:0;margin:0;opacity:0;transition:opacity .6s ease;
   -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 42%),linear-gradient(0deg,transparent 2%,#000 34%);-webkit-mask-composite:source-in;
   mask-image:linear-gradient(90deg,transparent 0%,#000 42%),linear-gradient(0deg,transparent 2%,#000 34%);mask-composite:intersect}
 .ts-slide.on{opacity:1}
 .ts-slide img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 20%;
-  filter:saturate(.92) contrast(1.04);transform:scale(1.07);transform-origin:60% 30%;transition:transform 7.5s ease-out}
+  filter:saturate(.92) contrast(1.04);transform:scale(1.04);transform-origin:60% 30%;transition:transform 2.4s ease-out}
 .ts-slide.on img{transform:scale(1)}
 .ts-slide::after{content:'';position:absolute;inset:0;background:radial-gradient(110% 95% at 68% 32%,transparent 60%,#0b0f1288 100%);pointer-events:none}
 .ts-name{position:absolute;top:9%;right:3.5%;display:flex;flex-direction:column;align-items:center;gap:12px;padding:18px 10px 16px;writing-mode:vertical-rl;text-orientation:upright;
   background:linear-gradient(180deg,#1a120bdd,#0e0a07cc);border:1px solid #8a6d3b;border-top:3px solid #c9a96a;border-bottom:3px solid #c9a96a;box-shadow:0 8px 22px #000a;
-  opacity:0;transform:translateY(-10px);transition:opacity .9s ease .35s,transform .9s ease .35s}
+  opacity:0;transform:translateY(-8px);transition:opacity .45s ease .15s,transform .45s ease .15s}
 .ts-slide.on .ts-name{opacity:1;transform:none}
 .ts-name b{font:700 calc(34px*var(--fs,1))/1 LocalSerif,'Batang',serif;letter-spacing:8px;color:#f3e3bd;text-shadow:0 2px 6px #000}
 .ts-name small{font:400 calc(15px*var(--fs,1))/1 LocalSerif,'Batang',serif;letter-spacing:4px;color:#c9a96a}
