@@ -7,6 +7,7 @@
   "subtitle": "목문의 좁은 길",
   "synopsis": "군량이 떨어져 네 번째 북벌의 군사를 거둔다. 사마의의 만류에도 장합이 날랜 기병을 이끌고 뒤를 쫓는다. 장합을 목문의 좁은 골짜기로 끌어들여, 언덕 위의 쇠뇌로 물러나게 하라.",
   "mapId": "z2-16-mumen-gorge",
+  "guardLeaders": true,
   "deployment": {
     "forced": [
       "z_liang",

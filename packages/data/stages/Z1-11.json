@@ -6,6 +6,7 @@
   "subtitle": "가맹관 북쪽 들판",
   "synopsis": "장로에게 몸을 맡긴 마초가 서량의 기병을 이끌고 가맹관으로 몰려온다. 장비가 관을 나서 금마초를 맞고, 제갈량은 싸움 뒤를 내다본다. 마초를 물러서게 해야 그와 말을 나눌 수 있다.",
   "mapId": "z1-11-jiameng",
+  "guardLeaders": true,
   "focusVictoryTargets": true,
   "deployment": {
     "forced": [
