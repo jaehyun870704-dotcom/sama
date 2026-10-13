@@ -9,7 +9,7 @@ import type { BattleState } from "./state.ts";
 import type { VictoryCondition } from "./stage.ts";
 import type { Unit, Coord } from "./types.ts";
 import type { Command } from "./commands.ts";
-import { manhattan, key, sameCoord, isHostile } from "./grid.ts";
+import { manhattan, key, sameCoord, isHostile, effectiveMovement } from "./grid.ts";
 import { inReach, reachSpec, reachOffsets, unitReachSpec } from "./reach.ts";
 import { ignoresRough } from "./traits.ts";
 import { estimatePhysical, estimateStrategy } from "./formulas.ts";
@@ -120,8 +120,10 @@ export function decide(state: BattleState, unit: Unit): Command[] {
   // 스테이지 guardLeaders: 쓰러지면 패배인 장수(필수 생존)는 길목을 지키고 선 적(hold)이 한 번에 달려와 칠 수 있는 칸으로
   // 걸어 들어가지 않는다 — 책략을 쏘러 다가갔다가 버티던 무리를 깨워 둘러싸이던 문제(Z2-02 제갈량).
   // 안전한 칸이 하나도 없으면 그대로 둔다.
-  if ((unit.side === "player" || unit.side === "ally") && state.stage.guardLeaders === true &&
-      state.defeat.some((c) => c.type === "retreat" && c.unit === unit.id)) {
+  const guarded = guardedLeader(state, unit);
+  // 길목 적을 피해 줄이기 전의 이동 범위: 줄인 범위에 몰매를 피할 칸이 없으면 여기서 피할 칸을 찾는다(아래 shelter).
+  const openReach = guarded ? new Map(reach) : reach;
+  if (guarded) {
     const threat = new Set<string>();
     for (const h of hostiles) {
       if (h.behavior !== "hold") continue;
@@ -263,14 +265,33 @@ export function decide(state: BattleState, unit: Unit): Command[] {
 
   // 교전 불가 → 목표 지점이 있으면 그쪽으로, 없으면 가장 가까운 적 쪽으로 전진.
   // 단 아군 쪽 부상병(체력 45% 미만)은 목표가 없으면 적에게서 물러난다.
+  // guardLeaders의 장수는 그중에서도 몰매를 맞지 않을 칸(없으면 맞을 피해가 가장 적은 칸)에서 고른다 — 멀어지기만 하면
+  // 이동력이 큰 기병이 따라와 친다.
   if (!objective && (unit.side === "player" || unit.side === "ally") && unit.hp < unit.stats.maxHp * 0.45) {
-    const away = stepAwayFrom(reach, hostiles);
+    const away = stepAwayFrom(guarded ? shelter(state, unit, reach, hostiles, openReach).cells : reach, hostiles);
     if (away && !sameCoord(away, unit.pos)) return [{ kind: "move", unit: unit.id, to: away }, { kind: "wait", unit: unit.id }];
   }
   const goal = objective
     ? goalCoord(state, unit, objective.region)
     : (closest(unit.pos, chaseTargets(unit, marked, hostiles))?.pos ?? null);
   if (!goal) return [{ kind: "wait", unit: unit.id }];
+  // guardLeaders: 칠 적이 없어 다가가기만 할 때도, 다음 적 차례에 몰매를 맞아 쓰러질 칸으로는 나서지 않는다
+  // (명마로 이동이 늘어난 제갈량이 기병 무리 앞까지 혼자 달려가던 문제 — Z1-05·Z1-11·Z2-16).
+  // 지금 선 칸이 몰매 자리면 그 자리에도 머물지 않는다. 안전한 칸이 하나도 없으면 맞을 피해가 가장 적은 칸으로 물러난다
+  // (제자리에서 버티다 쓰러지지 않게).
+  if (guarded) {
+    const { cells, safe } = shelter(state, unit, reach, hostiles, openReach);
+    if (!safe) {
+      const refuge = stepAwayFrom(cells, hostiles);
+      return refuge && !sameCoord(refuge, unit.pos)
+        ? [{ kind: "move", unit: unit.id, to: refuge }, { kind: "wait", unit: unit.id }]
+        : [{ kind: "wait", unit: unit.id }];
+    }
+    const step = bestStepToward(state, unit, cells, goal);
+    return step && !sameCoord(step, unit.pos)
+      ? [{ kind: "move", unit: unit.id, to: step }, { kind: "wait", unit: unit.id }]
+      : [{ kind: "wait", unit: unit.id }];
+  }
   const step = bestStepToward(state, unit, reach, goal);
   return step
     ? [{ kind: "move", unit: unit.id, to: step }, { kind: "wait", unit: unit.id }]
@@ -433,6 +454,9 @@ function bestAction(
   // 아군 쪽(사람이 고를 수 있는 편)만: 다음 적 차례에 닿을 적들의 기대 피해가 체력을 넘는 자리는 피한다.
   // 대각선까지 치는 기병이 늘어 무턱대고 들어간 장수가 쓰러지는 일을 줄인다. 적 AI는 그대로.
   const careful = unit.side === "player" || unit.side === "ally";
+  // guardLeaders: 쓰러지면 지는 장수는 쓰러뜨릴 적을 보고도 그 자리가 몰매 자리면 가지 않는다(처치 가산점이 위험을 덮지 않게).
+  // 칠 적도 쓰러뜨리지 못하면 반격에 더해 다음 차례 공격에 들어간다고 본다.
+  const guarded = guardedLeader(state, unit);
   const exposureCache = new Map<string, number>();
   const exposure = (from: Coord, target: Unit) => {
     if (!careful) return 0;
@@ -463,6 +487,7 @@ function bestAction(
         unit.pos = original;
         // 쓰러뜨리지도 못하면서 반격에 쓰러질 공격은 하지 않는다
         if (counter * 1.3 >= unit.hp && dealt < target.hp) continue;
+        if (guarded && lethalExposure(state, unit, from, hostiles, dealt >= target.hp ? target : undefined, counter)) continue;
         consider({
           kind: "attack",
           from,
@@ -480,6 +505,7 @@ function bestAction(
         unit.pos = from;
         const dealt = estimateStrategy(unit, target, def, state.map);
         unit.pos = original;
+        if (guarded && lethalExposure(state, unit, from, hostiles, dealt >= target.hp ? target : undefined)) continue;
         consider({
           kind: "strategy",
           from,
@@ -491,6 +517,62 @@ function bestAction(
     }
   }
   return best;
+}
+
+/** 스테이지가 guardLeaders를 켰고, 이 유닛이 쓰러지면 지는 아군 쪽 장수인가. */
+function guardedLeader(state: BattleState, unit: Unit): boolean {
+  return (unit.side === "player" || unit.side === "ally") && state.stage.guardLeaders === true &&
+    state.defeat.some((c) => c.type === "retreat" && c.unit === unit.id);
+}
+
+/**
+ * 쓰러지면 지는 장수가 설 만한 칸: 다음 적 차례에 몰매를 맞지 않을 칸들(safe), 그런 칸이 없으면 맞을 피해가 가장 적은 칸들.
+ * 지금 선 칸도 몰매 자리면 빠진다(제자리에서 버티다 쓰러지지 않게). reach(길목 적을 피해 줄인 범위)에 안전한 칸이 없으면
+ * open(줄이기 전 범위)에서 다시 찾는다 — 길목 적을 피하느라 제자리에 묶여 쓰러지지 않게.
+ */
+function shelter(state: BattleState, unit: Unit, reach: Map<string, number>, hostiles: Unit[], open = reach): { cells: Map<string, number>; safe: boolean } {
+  const risk = new Map<string, number>();
+  const pick = (from: Map<string, number>) => {
+    for (const c of decodeAll(from)) if (!risk.has(key(c))) risk.set(key(c), incomingAt(state, unit, c, hostiles));
+    return [...from.keys()].filter((k) => !lethal(unit, risk.get(k)!));
+  };
+  for (const from of open === reach ? [reach] : [reach, open]) {
+    const safe = pick(from);
+    if (safe.length) return { cells: new Map(safe.map((k) => [k, from.get(k)!])), safe: true };
+  }
+  const least = Math.min(...[...open.keys()].map((k) => risk.get(k)!));
+  return { cells: new Map([...open].filter(([k]) => risk.get(k)! <= least)), safe: false };
+}
+
+/**
+ * from 칸에 서면 다음 적 차례에 닿을 적들의 기대 피해 합(반격 피해 counter 포함). spare(이번에 쓰러뜨릴 적)는 셈하지 않는다.
+ * 닿는 거리는 적의 이동력(가속과 넓은 전장의 이동력 +2 포함) + 사거리 + 직선 사거리 + 1로 넉넉히 본다.
+ */
+function incomingAt(state: BattleState, unit: Unit, from: Coord, hostiles: Unit[], spare?: Unit, counter = 0): number {
+  const original = unit.pos;
+  unit.pos = from;
+  let incoming = counter;
+  for (const h of hostiles) {
+    if (h === spare || !h.alive || h.range[1] <= 0) continue;
+    // 둔화·묶임은 적 차례 전에 풀릴 수 있으니 줄여 보지 않는다(가속은 더한다).
+    const stride = Math.max(h.stats.movement, effectiveMovement(h)) + state.map.moveBonus;
+    if (manhattan(h.pos, from) <= stride + h.range[1] + unitReachSpec(h).line + 1) incoming += estimatePhysical(h, unit, state.map);
+  }
+  unit.pos = original;
+  return incoming;
+}
+
+/**
+ * 기대 피해는 명중률을 곱한 평균이고 기병 돌격(+20%)·회심이 겹치면 더 아프다 — 쓰러지면 지는 장수는 2.2배로 넉넉히 본다
+ * (1.5배로는 Z1-11·Z2-16에서, 1.8배로는 Z2-02에서 "안전하다"고 선 칸에서 돌격·회심을 맞고 쓰러졌다).
+ */
+const GUARD_MARGIN = 2.2;
+function lethal(unit: Unit, incoming: number): boolean {
+  return incoming * GUARD_MARGIN >= unit.hp;
+}
+
+function lethalExposure(state: BattleState, unit: Unit, from: Coord, hostiles: Unit[], spare?: Unit, counter = 0): boolean {
+  return lethal(unit, incomingAt(state, unit, from, hostiles, spare, counter));
 }
 
 function raceGoal(state: BattleState, unit: Unit, objective: string | null): Coord | null {

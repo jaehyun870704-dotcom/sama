@@ -185,7 +185,8 @@ export interface StageDef {
   weather?: Weather;
   /** true: 이미 이룬 차례 목표(order · stickyGoals 규칙)로 AI가 되돌아가지 않는다(목표 기억). 생략하면 예전처럼. */
   goalMemory?: boolean;
-  /** true: 쓰러지면 패배인 아군 장수는 길목을 지키는 적(hold)이 한 번에 달려와 칠 수 있는 칸으로 걸어 들어가지 않는다(자동 전투). */
+  /** true: 쓰러지면 패배인 아군 장수는 길목을 지키는 적(hold)이 한 번에 달려와 칠 수 있는 칸으로 걸어 들어가지 않고,
+   *  다음 적 차례에 닿을 적들의 기대 피해가 남은 체력을 넘는 칸으로도 나서지 않는다(자동 전투). */
   guardLeaders?: boolean;
   /** false: 성벽·성문이 있어도 공성대(충차)·성문 방벽·감시탑을 자동으로 붙이지 않는다(성문은 이벤트로 연다). */
   siege?: boolean;
