@@ -76,7 +76,7 @@
     {"id":"hao_zhao","name":"학소","aliases":["학소의 환영"],"battle":{"crossbow":{"sheet":"hao_zhao-battle-crossbow-v1.webp","cell":[280,224],"rows":1}}},
     {"id":"cao_hong","name":"조홍","aliases":["조홍의 환영"],"battle":{"sd":{"sheet":"cao_hong-sd-v1.webp","cell":[350,280],"rows":1}},"duel":"cao_hong-duel-v2.webp"},
     {"id":"cao_zhang","name":"조창","aliases":["조창의 환영"],"battle":{"cavalry":{"sheet":"cao_zhang-battle-cavalry-v1.webp","cell":[280,224],"rows":1}}},
-    {"id":"wen_ping","name":"문빙","aliases":["문빙의 환영"],"battle":{"spearman":{"sheet":"wen_ping-battle-spearman-v1.webp","cell":[280,224],"rows":1}}},
+    {"id":"wen_ping","name":"문빙","aliases":["문빙의 환영"],"battle":{"sd":{"sheet":"wen_ping-sd-v1.webp","cell":[350,280],"rows":1},"spearman":{"sheet":"wen_ping-battle-spearman-v1.webp","cell":[280,224],"rows":1}},"duel":"wen_ping-duel-v2.webp"},
     {"id":"guan_ping","name":"관평","aliases":["관평의 환영"],"battle":{"sd":{"sheet":"guan_ping-sd-v1.webp","cell":[350,280],"rows":1}},"duel":"guan_ping-duel-v2.webp"},
     {"id":"ma_dai","name":"마대","aliases":["마대의 환영"],"battle":{"sd":{"sheet":"ma_dai-sd-v1.webp","cell":[350,280],"rows":1}},"duel":"ma_dai-duel-v3.webp"},
     {"id":"xu_sheng","name":"서성","aliases":["서성의 환영"],"battle":{"spearman":{"sheet":"xu_sheng-battle-spearman-v1.webp","cell":[280,224],"rows":1}}},
