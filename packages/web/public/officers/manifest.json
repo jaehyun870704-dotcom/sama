@@ -63,7 +63,7 @@
     {"id":"gao_shou","name":"고수","aliases":["고수의 환영"],"battle":{"bandit":{"sheet":"gao_shou-battle-bandit-v1.webp","cell":[350,280],"rows":1}},"duel":"gao_shou-duel-v1.webp"},
     {"id":"guo_huai","name":"곽회","aliases":["곽회의 환영"],"battle":{"sd":{"sheet":"guo_huai-sd-v1.webp","cell":[350,280],"rows":1}},"story":"guo_huai-story-v2.webp","duel":"guo_huai-duel-v2.webp"},
     {"id":"dai_ling","name":"대릉","aliases":["대릉의 환영"],"battle":{"sd":{"sheet":"dai_ling-sd-v1.webp","cell":[350,280],"rows":1}},"duel":"dai_ling-duel-v2.webp"},
-    {"id":"zhang_zhao","name":"장소","aliases":["장소의 환영"],"battle":{"strategist":{"sheet":"zhang_zhao-battle-strategist-v1.webp","cell":[280,224],"rows":1}},"duel":"zhang_zhao-duel-v1.webp"},
+    {"id":"zhang_zhao","name":"장소","aliases":["장소의 환영"],"battle":{"sd":{"sheet":"zhang_zhao-sd-v1.webp","cell":[350,280],"rows":1},"strategist":{"sheet":"zhang_zhao-battle-strategist-v1.webp","cell":[280,224],"rows":1}},"duel":"zhang_zhao-duel-v2.webp"},
     {"id":"zhuge_jin","name":"제갈근","aliases":["제갈근의 환영"],"battle":{"sd":{"sheet":"zhuge_jin-sd-v1.webp","cell":[350,280],"rows":1}},"duel":"zhuge_jin-duel-v3.webp"},
     {"id":"zhang_ba","name":"장패","aliases":["장패의 환영"],"battle":{"cavalry":{"sheet":"zhang_ba-battle-cavalry-v1.webp","cell":[350,280],"rows":1}},"duel":"zhang_ba-duel-v1.webp"},
     {"id":"cao_xiu","name":"조휴","aliases":["조휴의 환영"],"battle":{"sd":{"sheet":"cao_xiu-sd-v1.webp","cell":[350,280],"rows":1},"cavalry":{"sheet":"cao_xiu-battle-cavalry-v1.webp","cell":[350,280],"rows":1}},"duel":"cao_xiu-duel-v2.webp"},
