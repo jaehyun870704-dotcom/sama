@@ -20,6 +20,8 @@ export interface EpilogueData {
   stats:ReadonlyArray<{label:string;value:string}>;
   /** 마지막 단추 글 */
   button:string;
+  /** 회상 도장 글(지켜 낸 · 놓친 — 없으면 '지켜 냄' · '남은 값') */
+  marks?:{kept:string;lost:string};
 }
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const sceneUrl=(art:number,place:string)=>{try{return isoScene(art,place).url;}catch{return '';}};
@@ -27,7 +29,7 @@ const sceneUrl=(art:number,place:string)=>{try{return isoScene(art,place).url;}c
 /** 에필로그를 root 안에 그린다. 끝나면(마지막 단추) resolve. */
 export function playEpilogue(root:HTMLElement,d:EpilogueData):Promise<void>{
   const still=typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
-  root.innerHTML=`<div class="epilogue-cut${still?' still':''}" role="dialog" aria-label="${esc(d.eyebrow)} · ${esc(d.title)}">
+  root.innerHTML=`<div class="epilogue-cut${still?' still':''}${d.marks?' two-way':''}" role="dialog" aria-label="${esc(d.eyebrow)} · ${esc(d.title)}">
     <div class="ep-bg"></div><div class="ep-bg"></div><div class="ep-veil"></div>
     <button type="button" class="fn-skip ep-skip">건너뛰기 ⏭</button>
     <section class="ep-cover"><div class="ep-eyebrow">${esc(d.eyebrow)}</div><h2><span>${esc(d.title)}</span></h2></section>
@@ -58,7 +60,7 @@ export function playEpilogue(root:HTMLElement,d:EpilogueData):Promise<void>{
       if(i)show(b.art,b.place);
       beat.classList.remove('on');beat.classList.toggle('kept',b.kept);
       beat.querySelector('.ep-tag b')!.textContent=b.when;beat.querySelector('.ep-tag span')!.textContent=b.name;beat.querySelector('.ep-line')!.textContent=b.line;
-      beat.querySelector('.ep-mark')!.textContent=b.kept?'지켜 냄':'남은 값';
+      beat.querySelector('.ep-mark')!.textContent=b.kept?(d.marks?.kept??'지켜 냄'):(d.marks?.lost??'남은 값');
       dots.forEach((dot,j)=>{dot.classList.toggle('now',j===i);dot.classList.toggle('past',j<i);});
       await wait(60);beat.classList.add('on');await wait(read(b.line));
     }

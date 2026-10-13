@@ -3,7 +3,7 @@
  * 칸을 누르면 아래에 단계별 효과표·비용·선행·조건(진행 막대)이 뜨고 천명으로 한 단계 올린다.
  * 오른쪽에는 지금 걸려 있는 연구 효과 합계와, 천명을 얻는 법(이번 회차 예상 천명 포함)을 보여 준다.
  */
-import {loadMeta,saveMeta,type MetaState} from './meta.ts';
+import {loadMeta,saveMeta,simaEndings,type MetaState} from './meta.ts';
 import {RESEARCH,RESEARCH_TABS,nodeById,nodeState,rankOf,buyResearch,gateOpen,researchProgress,mandateBonus,rankGate,rankBand,type ResearchTab,type ResearchNode,type Gate} from './research.ts';
 import {researchIcon,TAB_ICONS} from './research-icons.ts';
 import {loadScenario,runMandate} from './scenario.ts';
@@ -19,7 +19,7 @@ function gateRows(m:MetaState,g:Gate){
   const best=Math.max(0,...Object.values(m.officerBest??{}));
   const rows:Array<[string,number,number]>=[];
   if(g.runs)rows.push(['천명의 길 회차',m.runs,g.runs]);if(g.chronicle)rows.push(['이긴 연의 전장',m.chronicle.length,g.chronicle]);
-  if(g.endings)rows.push(['본 결말',m.endings.length,g.endings]);if(g.wins)rows.push(['끝까지 완주',m.wins,g.wins]);if(g.officerLv)rows.push(['장수 최고 레벨',best,g.officerLv]);
+  if(g.endings)rows.push(['본 결말',simaEndings(m).length,g.endings]);if(g.wins)rows.push(['끝까지 완주',m.wins,g.wins]);if(g.officerLv)rows.push(['장수 최고 레벨',best,g.officerLv]);
   return rows.map(([k,v,need])=>`<div class="rs-gate ${v>=need?'ok':''}"><span>${k}</span><i><i style="width:${Math.min(100,v/need*100)}%"></i></i><b>${Math.min(v,need)}/${need}</b></div>`).join('');
 }
 const gateLabel=(g:Gate)=>[g.runs?`천명의 길 ${g.runs}회차`:'',g.chronicle?`연의 전장 ${g.chronicle}승`:'',g.endings?`결말 ${g.endings}개`:'',g.wins?`완주 ${g.wins}번`:'',g.officerLv?`장수 Lv.${g.officerLv}`:''].filter(Boolean).join(' · ');
@@ -42,7 +42,7 @@ function mandateGuide(m:MetaState){
     ${row('unify','결말에 닿음','+10','회차를 끝까지 걸으면')}
     ${row('granary','연구 보너스','+'+mandateBonus(m),'군량·공물·소하의 장부 연구로 회차마다 더')}
   </ul><p>천명은 <b>천명의 길 회차가 끝날 때</b>(결말·패배·포기) 정산해 받는다. 져도 그때까지 모은 만큼은 남는다.</p>
-  <div class="rs-stat"><span>지금까지 얻은 천명 <b>${m.earned}</b></span><span>회차 <b>${m.runs}</b></span><span>본 결말 <b>${m.endings.length}</b></span><span>이긴 연의 전장 <b>${m.chronicle.length}</b></span></div></section>`;
+  <div class="rs-stat"><span>지금까지 얻은 천명 <b>${m.earned}</b></span><span>회차 <b>${m.runs}</b></span><span>본 결말 <b>${simaEndings(m).length}</b></span><span>이긴 연의 전장 <b>${m.chronicle.length}</b></span></div></section>`;
 }
 
 export function showResearch(host:ResearchHost,tab:ResearchTab='battle',pick?:string){

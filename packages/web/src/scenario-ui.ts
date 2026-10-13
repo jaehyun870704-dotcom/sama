@@ -25,7 +25,7 @@ import {taleSortieLimit,taleCostCap,marchSortieLimit,storyRetinueCap,unitCost,st
 import {classNames} from './troops.ts';
 import {classSprite} from './codex-ui.ts';
 import {nextEvolutionText,XP_PER_LEVEL,RELICS,survivorsOf,stageOfficerNames,type BattleMods,type RunBattleRef,type RunUnit} from './roguelike.ts';
-import {loadMeta,saveMeta,recordStory,buyUnlock,UNLOCKS,recordOfficerLevels} from './meta.ts';
+import {loadMeta,saveMeta,recordStory,buyUnlock,UNLOCKS,recordOfficerLevels,simaEndings} from './meta.ts';
 import {xpMult,restMult,mandateBonus,recruitBonus,heroLevelBonus} from './research.ts';
 import {deploymentPerks,officerClass} from './officer-perks.ts';
 import {showResearch} from './research-ui.ts';
@@ -277,9 +277,9 @@ async function showEnding(host:ScenarioHost,state:ScenarioState,step:ScenarioSte
   host.modal('<div class="ss-host finale-host"></div>',false);
   const root=document.querySelector<HTMLElement>('.finale-host');
   const mates=Object.keys(state.officers).filter(n=>n!=='사마의');
-  if(root)await playFinale(root,finaleData(e0,{route:state.route,notes,people:[{label:'함께한 사람들',names:['사마의',...mates]}],seen:{count:meta.endings.length,total:ALL_ENDINGS.length},text:t=>ft(state,t)}));
+  if(root)await playFinale(root,finaleData(e0,{route:state.route,notes,people:[{label:'함께한 사람들',names:['사마의',...mates]}],seen:{count:simaEndings(meta).length,total:ALL_ENDINGS.length},text:t=>ft(state,t)}));
   host.modal(`<div class="briefing run-screen"><div class="eyebrow">결말 · ${e.history?'정사':'가상'}</div><div class="ending-card ${e.history?'history':'what-if'}"><h3>${esc(e.title)}</h3>${e.lines.map(l=>`<p>${esc(l)}</p>`).join('')}${notes.map(l=>`<p class="ending-note">${esc(l)}</p>`).join('')}</div>
-  <p class="muted">본 결말 ${meta.endings.length}/${ALL_ENDINGS.length} · 이번 회차 천명 +${gain}. 새 회차를 시작해 다른 갈림길을 고르면 다른 이야기와 결말이 펼쳐진다.</p>
+  <p class="muted">본 결말 ${simaEndings(meta).length}/${ALL_ENDINGS.length} · 이번 회차 천명 +${gain}. 새 회차를 시작해 다른 갈림길을 고르면 다른 이야기와 결말이 펼쳐진다.</p>
   <div class="run-actions"><button class="primary" id="end-list">회차 정산 ▶</button><button id="end-menu">← 본영</button></div></div>`,false);
   document.getElementById('end-list')!.onclick=()=>showRunOver(host);document.getElementById('end-menu')!.onclick=host.showMenu;
 }

@@ -28,6 +28,8 @@ export interface FinaleData {
   art:number;place:string;
   /** 본 결말 수 */
   seen?:{count:number;total:number};
+  /** 자막 끝의 이야기 이름(없으면 사마의전) */
+  story?:string;
 }
 const ACTS=['상편','중편','하편'];
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -56,7 +58,7 @@ export function playFinale(root:HTMLElement,d:FinaleData):Promise<void>{
     <section class="fn-roll"><div class="fn-roll-inner">
       <h3>걸어온 길</h3>${d.path.map(p=>`<p><small>${esc(p.act)}</small>${esc(p.name)}</p>`).join('')}
       ${d.people.map(g=>`<h3>${esc(g.label)}</h3><p class="fn-names">${g.names.map(esc).join(' · ')}</p>`).join('')}
-      <h3>${GAME_FULL} · 사마의전</h3><p>『삼국지연의』와 정사를 바탕으로 새로 그린 이야기</p>
+      <h3>${GAME_FULL} · ${esc(d.story??'사마의전')}</h3><p>『삼국지연의』와 정사를 바탕으로 새로 그린 이야기</p>
     </div></section>
     <section class="fn-end"><div class="fn-seal" aria-label="끝">끝</div>${d.seen?`<p>본 결말 ${d.seen.count}/${d.seen.total}</p>`:''}<button type="button" class="primary fn-go">계속 ▶</button></section>
   </div>`;

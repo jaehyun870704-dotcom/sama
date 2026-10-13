@@ -8,6 +8,7 @@
 import {mandateEarned,RUN_FLOORS,type Run} from './roguelike.ts';
 import {endingFor,ALL_ENDINGS,ROUTES} from './fate.ts';
 import {readCustoms,type CustomOfficer} from './custom.ts';
+import {ZHUGE_ENDINGS} from './zhuge-ending.ts';
 import {RESEARCH} from './research.ts';
 import {LEGACIES} from './chuhan.ts';
 
@@ -22,7 +23,7 @@ export interface MetaState {
   chronicle:string[];
   /** 이긴 가상 전장 */
   tales:string[];
-  /** 본 결말(중편 루트/하편 루트) */
+  /** 본 결말(중편 루트/하편 루트) · 제갈량전 결말('zhuge_heart' 꼴, zhuge-ending.ts) */
   endings:string[];
   runs:number;wins:number;best:number;
   /** 플레이어가 만든 신장수(영구) */
@@ -65,7 +66,7 @@ export function readMeta(raw:string|null):MetaState{
       unlocks:Array.isArray(m.unlocks)?m.unlocks.filter(x=>typeof x==='string'&&ids.has(x)):[],
       chronicle:Array.isArray(m.chronicle)?m.chronicle.filter(x=>typeof x==='string'&&/^[SZ][1-3]-\d\d$/.test(x)):[],
       tales:Array.isArray(m.tales)?m.tales.filter(x=>typeof x==='string'&&TALE_IDS.has(x)):[],
-      endings:Array.isArray(m.endings)?m.endings.filter(x=>typeof x==='string'&&ALL_ENDINGS.includes(x)):[],
+      endings:Array.isArray(m.endings)?[...new Set(m.endings.filter(x=>typeof x==='string'&&(ALL_ENDINGS.includes(x)||ZHUGE_ENDINGS.includes(x))))]:[],
       ...(Array.isArray(m.customOfficers)?{customOfficers:readCustoms(m.customOfficers)}:{}),
       ...(Array.isArray(m.recruited)?{recruited:strList(m.recruited,80)}:{}),
       ...(Array.isArray(m.sealPaid)?{sealPaid:[...new Set(m.sealPaid.filter((x):x is string=>typeof x==='string'&&SEAL_KEY.test(x)))].slice(0,400)}:{}),
@@ -90,6 +91,8 @@ function cleanProgress(m:Partial<MetaState>):Pick<MetaState,'research'|'officerP
 export function recordOfficerLevels(m:MetaState,party:ReadonlyArray<{name:string;level:number}>){
   const best=m.officerBest??={};for(const u of party)if(u.level>(best[u.name]??0))best[u.name]=Math.min(60,u.level);
 }
+/** 사마의전 결말만(본 결말 수·연구 조건은 사마의전 결말 ALL_ENDINGS로 센다 — 제갈량전 결말은 따로). */
+export const simaEndings=(m:Pick<MetaState,'endings'>)=>m.endings.filter(e=>ALL_ENDINGS.includes(e));
 export function loadMeta():MetaState{try{return readMeta(localStorage.getItem(KEY));}catch{return freshMeta();}}
 export function saveMeta(m:MetaState){try{localStorage.setItem(KEY,JSON.stringify(m));}catch{/* storage optional */}}
 

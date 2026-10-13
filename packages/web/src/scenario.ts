@@ -27,13 +27,14 @@ import zhugeA from './scenario/zhuge-a.ts';
 import zhugeB from './scenario/zhuge-b.ts';
 import zhugeC from './scenario/zhuge-c.ts';
 import zhugeD from './scenario/zhuge-d.ts';
+import zhugeEnding from './scenario/zhuge-ending.ts';
 
 export const PACKS:ScenarioPack[]=[history1,history2,history3,ifA,ifB,ifC];
 const SCRIPTS=new Map<string,ChapterScript>(PACKS.flatMap(p=>p.chapters.map(c=>[c.id,c] as const)));
 export const EXTRA_TALES:ExtraTale[]=PACKS.flatMap(p=>p.extraTales??[]);
 export const ENDING_NOTES=PACKS.flatMap(p=>p.endingNotes??[]);
-/** 제갈량전 대본(천명의 길 경로에는 들어가지 않는다). */
-export const ZHUGE_PACKS:ScenarioPack[]=[zhuge1,zhugeA,zhugeB,zhugeC,zhugeD];
+/** 제갈량전 대본(천명의 길 경로에는 들어가지 않는다). 마지막은 결말 장면('ending:zhuge'). */
+export const ZHUGE_PACKS:ScenarioPack[]=[zhuge1,zhugeA,zhugeB,zhugeC,zhugeD,zhugeEnding];
 const ZHUGE_SCRIPTS=new Map<string,ChapterScript>(ZHUGE_PACKS.flatMap(p=>p.chapters.map(c=>[c.id,c] as const)));
 export const scriptOf=(id:string)=>SCRIPTS.get(id)??ZHUGE_SCRIPTS.get(id)??(isNewPower(id)?newPowerScript(id):undefined);
 

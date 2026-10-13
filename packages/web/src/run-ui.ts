@@ -10,7 +10,7 @@ import {runBoard} from './run-board.ts';
 import {treasureSummary,treasureCodex,defaultFilter,type TreasureTab,type CodexFilter} from './treasure-codex.ts';
 import {fateMap} from './fate-map.ts';
 import {classTactics} from '../../core/src/index.ts';
-import {loadMeta,saveMeta,buyUnlock,recordStory,settleRun,UNLOCKS,type MetaState} from './meta.ts';
+import {loadMeta,saveMeta,buyUnlock,recordStory,settleRun,UNLOCKS,simaEndings,type MetaState} from './meta.ts';
 import {deploymentPerks} from './officer-perks.ts';
 import {fatePoint,ROUTES,routesFor,routeById,endingFor,ALL_ENDINGS} from './fate.ts';
 import {classNames} from './troops.ts';
@@ -146,7 +146,7 @@ export function showHub(host:RunHost){
     ${tile('hub-zhuge','제','제갈량전',`연의 ${host.zhugeSummary().total}장 · 피난길에서 오장원까지`,host.zhugeSummary().next?`다음 · ${esc(host.zhugeSummary().next!)}`:'이어지는 장을 기다린다','primary')}
     ${tile('hub-training','수','수련장','막혔을 때 레벨업 · 다음 연의 장 권장 레벨까지','승리마다 경험치 · 연의 장수 모두')}
     ${tile('hub-challenge','관','도전의 관문','10단계 · 단계마다 적이 늘고 강해진다','처음 넘는 단계마다 장비·금 · 6~9단계는 사신보옥')}
-    ${tile('hub-archive','서','시나리오 보기','지난 이야기를 다시 보고, 이긴 장을 다시 싸운다',`결말 ${meta.endings.length}/${ALL_ENDINGS.length}`)}
+    ${tile('hub-archive','서','시나리오 보기','지난 이야기를 다시 보고, 이긴 장을 다시 싸운다',`결말 ${simaEndings(meta).length}/${ALL_ENDINGS.length}`)}
     ${tile('hub-shop','상','상점','장비·도구를 사고팔고 장수의 장비를 정비한다',host.shopLine())}
     ${tile('hub-collections','감','도감','인물 · 병종 · 책략 · 보물 · 갈림길',`고유 보물 ${treasureSummary().owned}/${treasureSummary().total}`)}
   </div>
@@ -173,7 +173,7 @@ export function showCollections(host:RunHost,back?:()=>void){
     ${card('col-evolution','진','병종 진화표','레벨이 오르면 어떻게 강해지는가','4단계 진화')}
     ${card('col-strategies','책','책략','속성 단계 · 상승 · 감소 · 보급 · 사신',`${allStrategies.length}종`)}
     ${card('col-treasures','보','보물','고유 보물 50점 · 얻는 곳 · 고유 기능',`${t.owned}/${t.total} · 회차 ${t.relics}/${t.relicTotal}`)}
-    ${card('col-fate','갈','갈림길 지도','정사와 가상이 갈라지는 곳과 결말',`결말 ${meta.endings.length}/${ALL_ENDINGS.length}`)}
+    ${card('col-fate','갈','갈림길 지도','정사와 가상이 갈라지는 곳과 결말',`결말 ${simaEndings(meta).length}/${ALL_ENDINGS.length}`)}
   </div>
   <div class="run-actions"><button id="col-back">← 돌아가기</button></div></div>`,false);
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
@@ -359,7 +359,7 @@ function showEnd(host:RunHost,run:Run){
   // 완주: 결말 컷신(결말 장면 → 종막)을 먼저 본다. 컷신은 한 번만(끝나면 원정 기록을 비운다).
   if(run.status==='won'&&!run.endingShown){run.endingShown=true;saveRun(run);
     host.modal('<div class="ss-host finale-host"></div>',false);const root=document.querySelector<HTMLElement>('.finale-host');
-    const e=endingFor(run.route),seenNow=loadMeta().endings.length+(loadMeta().endings.includes(e.id)?0:1);
+    const e=endingFor(run.route),seenNow=simaEndings(loadMeta()).length+(loadMeta().endings.includes(e.id)?0:1);
     const people=[{label:'끝까지 함께한 부대',names:run.party.map(u=>u.name)},{label:'먼저 쓰러진 사람들',names:run.fallen}];
     if(root){void playEndingCutscene(root,finaleData(e,{route:run.route??{},people,seen:{count:seenNow,total:ALL_ENDINGS.length}}),{id:e.id,heading:`천명의 원정 · ${e.title}`}).then(()=>showEnd(host,run));return;}
   }
@@ -367,7 +367,7 @@ function showEnd(host:RunHost,run:Run){
   const won=run.status==='won',reached=won?RUN_FLOORS:run.floor;
   host.modal(`<div class="briefing run-screen"><div class="eyebrow">천명의 원정 · ${won?'완주':'원정 종료'}</div><h2>${won?'천명을 거머쥐다':'원정이 끝났다'}</h2>${news(run)}
   ${won?(()=>{const e=endingFor(run.route);return `<div class="ending-card ${e.history?'history':'what-if'}"><div class="eyebrow">결말 · ${e.history?'정사':'가상'}</div><h3>${esc(e.title)}</h3>${e.lines.map(l=>`<p>${esc(l)}</p>`).join('')}</div>`;})():''}
-  <p>${won?'세 편의 우두머리를 모두 꺾었다.':`${reached}층(${esc(regionFor(run,reached).arc)})에서 멈췄다.`} 최고 기록 ${meta.best}층 · 본 결말 ${meta.endings.length}/${ALL_ENDINGS.length}.</p>
+  <p>${won?'세 편의 우두머리를 모두 꺾었다.':`${reached}층(${esc(regionFor(run,reached).arc)})에서 멈췄다.`} 최고 기록 ${meta.best}층 · 본 결말 ${simaEndings(meta).length}/${ALL_ENDINGS.length}.</p>
   <div class="hub-stats"><span><b>+${gain||mandateEarned(run)}</b><small>얻은 천명</small></span><span><b>${meta.mandate}</b><small>쓸 수 있는 천명</small></span><span><b>${(run.storyDone?.length??0)+(run.talesDone?.length??0)}</b><small>이긴 연의·가상 전장</small></span><span><b>${run.bosses??0}</b><small>꺾은 우두머리</small></span></div>
   ${run.party.length?`<h3>끝까지 남은 부대</h3>${partyPanel(run)}`:''}
   ${run.fallen.length?`<h3>쓰러진 부대</h3><p class="muted">${run.fallen.map(esc).join(' · ')}</p>`:''}

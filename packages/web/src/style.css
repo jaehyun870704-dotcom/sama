@@ -2289,3 +2289,24 @@ dialog:has(.title-screen),dialog:has(.lobby){width:min(1240px,calc(100vw - 24px)
 @media(max-width:700px){.sh-body{grid-template-columns:1fr}.sh-roster{max-height:none;flex-direction:row;overflow-x:auto}.sh-unit{min-width:180px}}
 /* 이야기 무대의 겹(장소 이름·눈발·대화창)은 무대 안에서만 겹친다 — 그 위에 뜨는 일기토·설전 화면을 뚫고 나오지 않게. */
 .ss-stage{isolation:isolate}
+/* 제갈량전 결말 회상: 마음(붉은 도장)과 법(푸른 도장) 두 갈래 모두 도장을 찍는다. */
+.epilogue-cut.two-way .ep-beat:not(.kept) .ep-line{border-left-color:#6f8fb8}
+.epilogue-cut.two-way .ep-beat:not(.kept) .ep-mark{color:#eef3fa;background:#2c4a6e;padding:3px 9px;border-radius:3px;box-shadow:0 0 0 1px #b9cbe3 inset}
+.epilogue-cut.two-way .ep-dots li.past:not(.kept){background:#5f7fa8}
+/* 제갈량전 장 목록: 천명 보상 줄 · 결말 다시 보기 */
+.zg-seals{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:10px 0 4px;padding:8px 12px;background:#1a140dd9;border:1px solid #8a6a32}
+.zg-seals .ym-seal-head{color:#f0c96a;font-weight:700;white-space:nowrap}.zg-seals .sr-meter{flex:1;min-width:120px;max-width:240px;height:8px;grid-column:auto}
+.zg-seals>b{font:700 14px Georgia,serif;color:#f3dfb0}.zg-seals .zg-next{flex:1 1 200px;font-size:calc(12.5px*var(--fs,1));color:#cdb98d;min-width:0}
+#zg-claim{min-height:30px;padding:3px 14px;background:#3a1a12;border:1px solid #7a5a32;color:#9a8a6a}#zg-claim.ready{background:#9b2a1a;border-color:#f0c96a;color:#fff2cf;animation:sr-glow 1.6s ease-in-out infinite}
+.zg-arcs{display:flex;gap:12px;flex-wrap:wrap;width:100%;font-size:calc(12px*var(--fs,1));color:#bfae88}.zg-arcs b{color:#f0d79c}
+.zg-endings{margin:6px 0 2px;padding:8px 12px;border:1px solid #6c5a36;background:#111a1cd9}.zg-endings h3{margin:0 0 6px;font:600 calc(15px*var(--fs,1)) LocalSerif,'Batang',serif;color:#f0d08e}.zg-endings h3 small{color:#b9ab8b;font-weight:400}
+.zg-endings .chronicle-list{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+/* 「내가 한 선택」 회고 */
+.zg-recap .zr-head{display:flex;flex-wrap:wrap;gap:6px 14px;margin:8px 0}.zg-recap .zr-head span{padding:2px 10px;border:1px solid #6c5a36;background:#1a140d;color:#e8d6ac;font-size:calc(13px*var(--fs,1))}
+.zg-recap .zr-list{list-style:none;margin:8px 0;padding:0;display:grid;gap:4px;max-height:52vh;overflow:auto}
+.zg-recap .zr-list li{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:6px 10px;background:#111a1cd9;border-left:3px solid #6c5a36}
+.zg-recap .zr-list li.heart{border-left-color:#c9a24a}.zg-recap .zr-list li.law{border-left-color:#6f8fb8}
+.zg-recap .zr-no{font:700 13px Georgia,serif;color:#d7b16a}.zg-recap .zr-text b{color:#f4e2b8}.zg-recap .zr-text p{margin:2px 0 0;color:#d8ccb0;font-size:calc(13px*var(--fs,1))}.zg-recap .zr-text small{color:#a99c7e}
+.zg-recap .zr-tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.zg-recap .zr-tags i{font-style:normal;font-size:12px;padding:1px 7px;border:1px solid #6c5a36;color:#cdb98d;white-space:nowrap}
+.zg-recap .zr-tags i.win{border-color:#9fd18a;color:#bfe6b0}.zg-recap .zr-tags i.lose{border-color:#c27a6a;color:#e7b0a3}.zg-recap .zr-tags i.heart{border-color:#c9a24a;color:#f0d08e}.zg-recap .zr-tags i.law{border-color:#6f8fb8;color:#c8d8ee}
+@media(max-width:700px){.zg-recap .zr-list li{grid-template-columns:40px minmax(0,1fr)}.zg-recap .zr-tags{grid-column:2;justify-content:flex-start}}

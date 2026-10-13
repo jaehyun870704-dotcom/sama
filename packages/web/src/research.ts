@@ -134,7 +134,7 @@ export function gateText(g:Gate){const out:string[]=[];
   return out.join(' · ');}
 export function gateOpen(m:MetaState,g?:Gate){if(!g)return true;
   const best=Math.max(0,...Object.values(m.officerBest??{}));
-  return (g.runs??0)<=m.runs&&(g.chronicle??0)<=m.chronicle.length&&(g.endings??0)<=m.endings.length&&(g.wins??0)<=m.wins&&(g.officerLv??0)<=best;}
+  return (g.runs??0)<=m.runs&&(g.chronicle??0)<=m.chronicle.length&&(g.endings??0)<=m.endings.filter(e=>!e.startsWith('zhuge_')).length&&(g.wins??0)<=m.wins&&(g.officerLv??0)<=best;}
 export type NodeState='done'|'open'|'locked'|'hidden';
 /** done=끝까지 배움 · open=지금 배울 수 있음(천명이 모자랄 수는 있다) · locked=선행이나 조건이 모자람 */
 /** 다음 단계(r→r+1)를 올리는 데 필요한 강화 구간 조건. 없으면 undefined. */
