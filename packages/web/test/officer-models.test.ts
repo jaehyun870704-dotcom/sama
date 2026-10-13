@@ -83,7 +83,7 @@ describe('장수별 전투 SD와 대결 모델',()=>{
     expect(officerEntry({id:'story_enemy',name:'진궁의 환영'})?.id).toBe('chen_gong');
     expect(officerEntry({id:'wooden_zhuge',name:'목우 제갈'})?.name).toBe('제갈량');
     expect(officerEntry({id:'boss',name:'관우'})?.id).toBe('guan_yu');
-    expect(officerBattleSheet({id:'wooden_zhuge',name:'제갈량',unitClass:'strategist'})?.action.sheet).toContain('zhuge_liang-battle-cart');
+    expect(officerBattleSheet({id:'wooden_zhuge',name:'제갈량',unitClass:'strategist'})?.action.sheet).toContain('wooden_zhuge-sd-v2'); // 사륜거는 통합 SD 안에 그려졌다(따로 쓰던 수레 판은 지움)
   });
 
   it('전투 SD와 대결 모델은 다른 파일을 쓴다',()=>{
@@ -93,8 +93,8 @@ describe('장수별 전투 SD와 대결 모델',()=>{
       if(duel)expect(duel.sheet,id).not.toBe(battle.action.sheet);
     }
     expect(officerDuelModelStyle({id:'lu_bu',name:'여포'})).toContain('--officer-x');
-    expect(officerDuelModel({id:'lu_bu',name:'여포'})?.sheet).toBe('officers/lu_bu-duel-v2.webp');
-    expect(officerDuelModel({id:'cao_cao',name:'조조'})?.sheet).toBe('officers/cao_cao-duel-v1.webp');
+    expect(officerDuelModel({id:'lu_bu',name:'여포'})?.sheet).toBe('officers/lu_bu-duel-v4.webp');
+    expect(officerDuelModel({id:'cao_cao',name:'조조'})?.sheet).toBe('officers/cao_cao-duel-v3.webp');
     expect(officerDuelModel({id:'cao_pi',name:'조비'})?.sheet).toBe('officers/cao_pi-duel-v2.webp');
     expect(officerDuelModel({id:'xiang_yu',name:'항우'})?.sheet).toBe('officers/xiang_yu-duel-v1.webp');
   });
@@ -163,10 +163,10 @@ describe('장수별 전투 SD와 대결 모델',()=>{
   });
 
   it('통합 SD 장수는 1400×280 SD 한 벌·1024×256 일기토만 쓰고 옛 시트 파일은 없다',()=>{
-    expect(UNIFIED_SD_IDS.length).toBe(64);
+    expect(UNIFIED_SD_IDS.length).toBe(67);
     for(const id of UNIFIED_SD_IDS){
       const e=officerEntry({id,name:id})!;expect(e,id).toBeDefined();const f=UNIFIED_SD_FILES[id]!;
-      expect(officerBattleSheet({id,name:id})!.action.sheet,id).toBe(id==='wooden_zhuge'?'officers/zhuge_liang-battle-cart-v1.webp':`officers/${f.sd}`);
+      expect(officerBattleSheet({id,name:id})!.action.sheet,id).toBe(`officers/${f.sd}`);
       expect(webpSize(new URL(`../public/officers/${f.sd}`,import.meta.url)),id).toEqual([1400,280]);
       expect(officerDuelModel({id,name:id})?.sheet,id).toBe(`officers/${f.duel}`);
       expect(webpSize(new URL(`../public/officers/${f.duel}`,import.meta.url)),id).toEqual([1024,256]);
@@ -192,8 +192,11 @@ describe('장수별 전투 SD와 대결 모델',()=>{
     expect(UNIFIED_SD_FILES.zhuge_jun).toEqual({sd:'jun-sd-v2.webp',duel:'jun-duel-v4.webp'});
     expect(UNIFIED_SD_FILES.meng_da).toEqual({sd:'meng_da-sd-v2.webp',duel:'meng_da-duel-v4.webp'});
     expect(UNIFIED_SD_FILES.zhuge_jin).toEqual({sd:'zhuge_jin-sd-v1.webp',duel:'zhuge_jin-duel-v3.webp'});
-    // 불합격 장수(조조·손권·여포·주유 등)는 예전 그림 그대로다.
-    for(const id of ['cao_cao','sun_quan','lu_bu','zhou_yu','guo_huai','cao_hong','xu_huang','lu_meng','zhu_ran','deng_ai','zhong_hui','dai_ling','yue_jin','meng_huo','wutugu'])
+    // 4차 불합격 장수(주유 등)는 예전 그림 그대로다. 조조·손권·여포는 5차(f13bbec, 군주 기마)에 통합 SD로 들어왔다.
+    for(const id of ['cao_cao','sun_quan','lu_bu'])expect((UNIFIED_SD_IDS as readonly string[]).includes(id),id).toBe(true);
+    expect(UNIFIED_SD_FILES.sun_quan).toEqual({sd:'sun_quan-sd-v3.webp',duel:'sun_quan-duel-v5.webp'});
+    expect(UNIFIED_SD_FILES.wooden_zhuge).toEqual({sd:'wooden_zhuge-sd-v2.webp',duel:'wooden_zhuge-duel-v3.webp'});
+    for(const id of ['zhou_yu','guo_huai','cao_hong','xu_huang','lu_meng','zhu_ran','deng_ai','zhong_hui','dai_ling','yue_jin','meng_huo','wutugu'])
       expect((UNIFIED_SD_IDS as readonly string[]).includes(id),id).toBe(false);
     // 통합 SD가 아닌 장수 8명은 일기토만 새 판.
     for(const id of DUEL_V2){
