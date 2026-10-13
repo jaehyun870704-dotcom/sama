@@ -42,7 +42,7 @@
     {"id":"gan_ning","name":"감녕","aliases":[],"battle":{"bandit":{"sheet":"gan_ning-battle-bandit-v1.webp","cell":[350,280],"rows":1}},"duel":"gan_ning-duel-v1.webp"},
     {"id":"lu_su","name":"노숙","aliases":[],"battle":{"strategist":{"sheet":"lu_su-battle-strategist-v1.webp","cell":[280,224],"rows":1}},"duel":"lu_su-duel-v1.webp"},
     {"id":"huang_gai","name":"황개","aliases":[],"battle":{"infantry":{"sheet":"huang_gai-battle-infantry-v1.webp","cell":[280,224],"rows":1}},"duel":"huang_gai-duel-v1.webp"},
-    {"id":"meng_huo","name":"맹획","aliases":[],"battle":{"sd":{"sheet":"meng_huo-sd-v1.webp","cell":[350,280],"rows":1}},"duel":"meng_huo-duel-v2.webp"},
+    {"id":"meng_huo","name":"맹획","aliases":[],"battle":{"sd":{"sheet":"meng_huo-sd-v2.webp","cell":[350,280],"rows":1}},"duel":"meng_huo-duel-v3.webp"},
     {"id":"zhu_rong","name":"축융","aliases":[],"battle":{"sd":{"sheet":"zhu_rong-sd-v1.webp","cell":[350,280],"rows":1}},"duel":"zhu_rong-duel-v2.webp"},
     {"id":"gongsun_yuan","name":"공손연","aliases":["공손연의 환영"],"battle":{"lord":{"sheet":"gongsun_yuan-battle-lord-v1.webp","cell":[350,280],"rows":1}},"duel":"gongsun_yuan-duel-v2.webp"},
     {"id":"yuan_tan","name":"원담","aliases":["원담의 환영"],"battle":{"lord":{"sheet":"yuan_tan-battle-lord-v1.webp","cell":[350,280],"rows":1}},"duel":"yuan_tan-duel-v1.webp"},
