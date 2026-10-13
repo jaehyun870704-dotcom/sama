@@ -2,7 +2,6 @@ import {displayName} from './courtesy.ts';
 import {portraitImage} from './portrait-images.ts';
 export const officerLooks=[
  {id:'sima_yi',name:'사마의',title:'중달 · 깊은 계책',slot:0},
- {id:'sima_yi_young',name:'소년 사마의',title:'난세를 배우는 소년',slot:1},
  {id:'sima_lang',name:'사마랑',title:'백달 · 가문의 버팀목',slot:2},
  {id:'sima_fang',name:'사마방',title:'엄정한 아버지',slot:3},
  {id:'cao_zhen',name:'조진',title:'자단 · 전장의 선봉',slot:4},
