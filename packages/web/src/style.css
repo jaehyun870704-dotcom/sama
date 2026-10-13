@@ -2410,3 +2410,33 @@ dialog.treasure-reveal::backdrop{background:#05090cc4;backdrop-filter:blur(3px)}
 /* 장수 도감: 연의 계급 단계 머리글 */
 .evo-rank{margin:14px 0 6px;padding-bottom:3px;border-bottom:1px solid #6b523088;font:600 calc(14px*var(--fs,1))/1.3 LocalSerif,'Batang',serif;color:#d8b45f;letter-spacing:2px}.evo-rank small{margin-left:6px;color:#a9a58f;font-weight:400;letter-spacing:0}
 .evo-line>h3,.evo-line>.evo-rank{flex:1 1 100%}.evo-line>h3+.evo-rank{margin-top:4px}
+/* 등용 개편: 세 갈래(연의 합류·격파 귀순·공훈 등용) · 공훈 · 진척 막대 · 계보 완성 보상 */
+.rc-summary{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:8px 0 4px}
+.rc-merit{display:flex;align-items:baseline;gap:8px;padding:6px 14px;background:#2a2414;border:1px solid #e0bd75}
+.rc-merit small{color:#cbb98a}.rc-merit b{color:#f6dc98;font:700 calc(22px*var(--fs,1)) LocalSerif,'Batang',serif;font-variant-numeric:tabular-nums}
+.rc-routes{display:flex;flex-wrap:wrap;gap:6px}
+.rc-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;background:#151d1f;border:1px solid #4d4a3a;color:#cfc4a6;font-size:calc(12.5px*var(--fs,1))}
+.rc-chip b{color:#efe2c0;font-variant-numeric:tabular-nums}
+.rc-route{display:inline-grid;place-items:center;width:18px;height:18px;margin-right:4px;font-style:normal;font-size:11px;font-weight:700;color:#10171a;background:#b9a46c;border-radius:50%;flex:none;vertical-align:1px}
+.route-story .rc-route{background:#c9b06a}.route-defeat .rc-route{background:#d47a5a}.route-merit .rc-route{background:#8fbf8a}
+.rc-ready{padding:4px 10px;color:#10171a;background:#9fd18a;font-weight:700;font-size:calc(12.5px*var(--fs,1))}
+.rc-howto{margin:4px 0 6px;color:#bdb59e;font-size:calc(12.5px*var(--fs,1))}
+.rc-howto summary{cursor:pointer;color:#e4cf9c}.rc-howto ul{margin:6px 0 0;padding-left:18px;display:grid;gap:3px;line-height:1.55}.rc-howto b{color:#efe2c0}
+.rc-node{position:relative;grid-template-rows:auto auto auto}
+.rc-node b{display:flex;align-items:center}
+.rc-node .rc-bar{grid-column:2}
+.rc-bar{display:block;height:4px;margin-top:4px;background:#0c1314;border:1px solid #33352e;overflow:hidden}
+.rc-bar>i{display:block;height:100%;background:linear-gradient(90deg,#8a7440,#e0bd75)}
+.rc-node.ready .rc-bar>i{background:#9fd18a}
+.rc-conds li .rc-bar{margin-top:5px}
+.rc-line h3 .rc-reward{font-style:normal;font-weight:400;font-size:calc(11px*var(--fs,1));color:#cbb98a;padding:1px 8px;border:1px solid #5d5134}
+.rc-line.done{border-color:#7a6638;background:#191a14}.rc-line.done h3 .rc-reward{color:#10171a;background:#e0bd75;border-color:#e0bd75}
+.rc-route-note{margin:0;padding:8px 10px;background:#101718;border-left:3px solid #6c5a36;color:#cbb98a;font-size:calc(12.5px*var(--fs,1));line-height:1.55}
+.rc-detail .rc-chip{padding:1px 7px}
+.rc-dot{display:inline-grid;place-items:center;min-width:18px;height:18px;margin-left:4px;padding:0 4px;border-radius:9px;background:#9fd18a;color:#10171a;font-size:11px}
+@media (orientation:landscape) and (max-height:520px){.rc-howto{display:none}.rc-route-note{display:none}}
+.rc-node .rc-face{position:relative}
+.rc-node b .rc-route{position:absolute;left:4px;top:4px;width:15px;height:15px;margin:0;font-size:9px;box-shadow:0 0 0 1px #10171a}
+.rc-line h3 .rc-reward{white-space:nowrap}
+@media (orientation:landscape) and (max-height:520px){.recruit-screen .screen-lede,.rc-line h3 small{display:none}.rc-summary{margin:2px 0}.rc-merit{padding:2px 10px}.rc-merit b{font-size:17px}.rc-joined{margin:4px 0;padding:4px 10px}.rc-joined .rc-face.big{width:40px;height:40px}.rc-joined p{display:none}}
+@media (orientation:landscape) and (max-height:520px){.rc-tree{grid-auto-columns:140px}.rc-node{grid-template-columns:30px minmax(0,1fr);column-gap:5px;padding:4px 5px}.rc-node .rc-face{width:30px;height:30px}.rc-node b .rc-route{left:1px;top:1px;width:12px;height:12px;font-size:8px}.rc-node small{font-size:10px;line-height:1.3}.rc-line h3{font-size:13px}}

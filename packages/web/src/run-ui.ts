@@ -53,6 +53,8 @@ export interface RunHost {
   showStoryArchive():void;
   /** 등용: 계보마다 조건을 채워 장수를 들인다 */
   showRecruit():void;
+  /** 공훈을 바쳐 지금 들일 수 있는 장수 수(첫 화면 등용 표시) */
+  recruitReady?():number;
   /** 제갈량전: 장 목록 */
   showZhuge():void;
   /** 상점(본영에서 · 이야기마다 따로 쓰는 금) */
@@ -129,7 +131,7 @@ export function showTitle(host:RunHost){
   <div class="title-copy"><p class="title-eyebrow">${GAME_SERIES}</p><h1 class="title-logo">${GAME_NAME}</h1><p class="title-tag">${GAME_TAG}</p>
   <nav class="title-menu" aria-label="첫 화면 메뉴">
     <div class="tm-group">${item('title-start','시작','사마의전 · 제갈량전 가운데 고른다','primary')}${resume&&last?item('title-resume','이어하기',`${esc(last.where)}${last.turn?` · ${last.turn}턴`:''} · 내 차례부터`):''}${item('title-load','불러오기','저장 칸에서 기록을 불러온다')}</div>
-    <div class="tm-group">${item('title-recruit','등용','계보마다 조건을 채워 장수를 휘하로 · 연의에 데려간다')}${item('title-codex','도감 보기','인물 · 장수 · 병종 · 책략 · 보물 · 갈림길')}${item('title-lobby','본영','수련장 · 도전 · 연구')}</div>
+    <div class="tm-group">${item('title-recruit',`등용${(()=>{const n=host.recruitReady?.()??0;return n?` <b class="rc-dot">${n}</b>`:'';})()}`,'연의 합류 · 격파 귀순 · 공훈 등용 — 모은 장수를 연의에 데려간다')}${item('title-codex','도감 보기','인물 · 장수 · 병종 · 책략 · 보물 · 갈림길')}${item('title-lobby','본영','수련장 · 도전 · 연구')}</div>
   </nav>
   <p class="title-note">비상업 팬 창작 게임 · 등장인물은 『삼국지연의』와 정사를 바탕으로 새로 그렸다</p></div></div>`,false);
   runTitleShowcase();

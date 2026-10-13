@@ -36,6 +36,12 @@ export interface MetaState {
   officerBest?:Record<string,number>;
   /** 등용한 장수(recruit.ts 계보) — 회차가 바뀌어도 남는다 */
   recruited?:string[];
+  /** 공훈 등용에 바칠 공훈(recruit.ts MERIT) — 없으면 아직 셈하지 않은 옛 저장 */
+  merit?:number;
+  /** 격파 귀순: 적장 이름 → 꺾은 횟수 */
+  defeats?:Record<string,number>;
+  /** 완성 보상을 받은 계보 id */
+  lineageRewards?:string[];
   /** 계승: 연 초한 영웅의 유산들과 지금 계승한 영웅(chuhan.ts) */
   legacies?:string[];heir?:string;
   /** 쓸 천명으로 바꿔 준 연의 천명(옛 인장) — 'S1-01:normal:2' 꼴. 같은 것을 두 번 주지 않는다. */
@@ -69,6 +75,9 @@ export function readMeta(raw:string|null):MetaState{
       endings:Array.isArray(m.endings)?[...new Set(m.endings.filter(x=>typeof x==='string'&&(ALL_ENDINGS.includes(x)||ZHUGE_ENDINGS.includes(x))))]:[],
       ...(Array.isArray(m.customOfficers)?{customOfficers:readCustoms(m.customOfficers)}:{}),
       ...(Array.isArray(m.recruited)?{recruited:strList(m.recruited,80)}:{}),
+      ...(m.merit!==undefined?{merit:Math.min(1e7,num(m.merit))}:{}),
+      ...(m.defeats&&typeof m.defeats==='object'?{defeats:Object.fromEntries(Object.entries(m.defeats).filter(([k,v])=>isName(k)&&Number.isFinite(v)&&v>0).slice(0,60).map(([k,v])=>[k,Math.min(99,Math.floor(v))]))}:{}),
+      ...(Array.isArray(m.lineageRewards)?{lineageRewards:strList(m.lineageRewards,20)}:{}),
       ...(Array.isArray(m.sealPaid)?{sealPaid:[...new Set(m.sealPaid.filter((x):x is string=>typeof x==='string'&&SEAL_KEY.test(x)))].slice(0,400)}:{}),
       ...cleanProgress(m)};
   }catch{return freshMeta();}

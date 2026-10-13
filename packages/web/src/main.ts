@@ -65,7 +65,7 @@ import type {ScenarioDeployment,Deployment} from './progression.ts';
 import {loadMeta,saveMeta,recordStory,paySeals,simaEndings} from './meta.ts';
 import {ALL_ENDINGS,endingFor,factionText} from './fate.ts';
 import {playEndingCutscene,finaleData,replayData,type FinaleData} from './ending-finale.ts';
-import {LINEAGES,condMet,condText,recruitStatus,previousOf,storyRecruits,type RecruitContext} from './recruit.ts';
+import {LINEAGES,condMet,condText,condProgress,recruitStatus,recruitProgress,previousOf,autoRecruits,recordDefeats,defeatNews,completedLineages,battleMerit,missionMerit,retroMerit,meritCost,officerOf,lineageOf,MERIT,ROUTE_LABEL,ROUTE_NOTE,type RecruitContext} from './recruit.ts';
 import {officerClass} from './officer-perks.ts';
 import {RUN_FLOORS,RELICS,newRun,startingOfficers,battleRef,stageOfficerNames,type RunBattleRef} from './roguelike.ts';
 import {romance,romanceOf,romanceByName,temperOf,signatureSkills} from './romance.ts';
@@ -539,7 +539,7 @@ const resumeSaved=()=>{try{const loaded=Session.load(JSON.parse(localStorage.get
   catch{toast('현재 버전의 저장 기록을 읽지 못했습니다.');try{const l=lastBattle();if(l)localStorage.setItem(LAST_KEY,JSON.stringify({...l,ongoing:false}));}catch{/* optional */}}};
 const runHost:RunHost={modal:(html,closable)=>modal(html,closable),showMenu:()=>showMenu(),toast:t=>toast(t),startBattle:(dep,seed)=>{session=new Session(RUN_CHAPTER,'normal',seed,'survival',RULES,dep);activate();persist();},
   startStory:(chapter,dep,seed)=>{session=new Session(chapter,'normal',seed,'survival',RULES,dep);activate();persist();},
-  showChronicle:()=>showChronicleLanding(),showChronicleNext:()=>showChronicleNext(),chronicleSummary:()=>chronicleSummary(),showZhuge:()=>showZhuge(),zhugeSummary:()=>zhugeSummary(),showScenario:()=>showScenario(scenarioHost),showTraining:()=>showTraining(),showStoryArchive:()=>showStoryArchive(),showRecruit:()=>showRecruit(),showShop:(back:()=>void)=>openShop('S',back,undefined,true),shopLine:()=>`사마의전 금 ${(campaign.gold?.S??1000).toLocaleString()} · 제갈량전 금 ${(campaign.gold?.Z??1000).toLocaleString()}`,showExpeditions:(tab?:Expedition['kind'])=>showExpeditions(tab),showTroops:()=>showTroopGallery(),showOfficers:()=>showOfficerGallery(),showSlots:(back?:()=>void)=>showSlots(back),
+  showChronicle:()=>showChronicleLanding(),showChronicleNext:()=>showChronicleNext(),chronicleSummary:()=>chronicleSummary(),showZhuge:()=>showZhuge(),zhugeSummary:()=>zhugeSummary(),showScenario:()=>showScenario(scenarioHost),showTraining:()=>showTraining(),showStoryArchive:()=>showStoryArchive(),showRecruit:()=>showRecruit(),recruitReady:()=>meritReady().length,showShop:(back:()=>void)=>openShop('S',back,undefined,true),shopLine:()=>`사마의전 금 ${(campaign.gold?.S??1000).toLocaleString()} · 제갈량전 금 ${(campaign.gold?.Z??1000).toLocaleString()}`,showExpeditions:(tab?:Expedition['kind'])=>showExpeditions(tab),showTroops:()=>showTroopGallery(),showOfficers:()=>showOfficerGallery(),showSlots:(back?:()=>void)=>showSlots(back),
   get resumeSaved(){const l=lastBattle();return l?.ongoing?resumeSaved:undefined;},lastBattle:()=>{const l=lastBattle();return l?.ongoing?{where:l.where,turn:l.turn}:undefined;},
   liveRunBattle:()=>{const s=openRunSession();if(!s)return undefined;const d=s.deployment!;return d.run?{seed:d.run.seed,floor:d.run.floor,kind:d.run.kind}:{seed:d.runStory!.seed,floor:d.runStory!.floor,kind:'story'};},
   backToBattle:()=>{const s=openRunSession();if(s&&s!==session){session=s;activate();return;}menuOpen=false;closeModal();}};
@@ -681,7 +681,7 @@ function showChronicleMap(){
       <p class="ym-story">${esc(story)}</p>${extra}
       <div class="ym-go">${ss.open&&sel.kind!=='fork'?`<button id="ym-enter" class="primary">${sel.kind==='story'?(ss.won?'입장 · 다시 치르기':'입장'):(ss.won?'입장 · 다시 치르기':'입장')}</button>`:lock?`<div class="ym-lock">🔒 ${lock}</div>`:''}</div>
     </div></aside></div>
-  <footer class="ym-foot"><button id="ym-home">본영</button><button id="ym-train">수련장</button><button id="ym-recruit">등용</button><button id="ym-troops">병종 도감</button>${lastBattle()?.ongoing?'<button id="resume" class="primary">전투 이어하기 →</button>':''}${hasStarted?'<button id="back-battle">현재 전장</button>':''}<button id="save-slots">저장 칸</button></footer></div>`,false);
+  <footer class="ym-foot"><button id="ym-home">본영</button><button id="ym-train">수련장</button><button id="ym-recruit">등용${(()=>{const n=meritReady().length;return n?` <b class="rc-dot">${n}</b>`:'';})()}</button><button id="ym-troops">병종 도감</button>${lastBattle()?.ongoing?'<button id="resume" class="primary">전투 이어하기 →</button>':''}${hasStarted?'<button id="back-battle">현재 전장</button>':''}<button id="save-slots">저장 칸</button></footer></div>`,false);
   document.querySelectorAll<HTMLButtonElement>('[data-node]').forEach(b=>b.onclick=()=>{menuStage=b.dataset.node!;showChronicleMap();});
   document.querySelectorAll<HTMLButtonElement>('[data-route-first]').forEach(b=>b.onclick=()=>{menuStage=b.dataset.routeFirst!;showChronicleMap();});
   $('#ym-back').onclick=()=>showStoryPick(runHost,showMenu);$('#ym-home').onclick=showMenu;$('#ym-train').onclick=()=>showTraining();$('#ym-recruit').onclick=()=>showRecruit();$('#ym-troops').onclick=()=>showTroopGallery();
@@ -895,33 +895,79 @@ function recruitContext():RecruitContext{
   const idx=(stage:string)=>chapters.findIndex(c=>c.stage.id===stage);
   return {won:stage=>{const i=idx(stage);return (i>=0&&cleared(i))||sc.done.includes(stage);},extreme:stage=>Array.isArray(p[stage+':extreme']),
     heroLevel:levelInfo(campaign.xp.sima_yi??0).level,seals,challenges:(campaign.challenges??[]).length,trainingWins:campaign.trainingWins??0,endings:simaEndings(meta).length,treasures:campaign.treasures.filter(id=>treasureInfo(id).named).length,
-    recruited:new Set(meta.recruited??[]),stageName:stage=>{const i=idx(stage);return i>=0?(stories[i]?.[0]??stage):stage;}};
+    recruited:new Set(meta.recruited??[]),stageName:stage=>{const i=idx(stage);return i>=0?(stories[i]?.[0]??stage):stage;},
+    merit:ensureMerit(meta).merit??0,defeats:meta.defeats??{}};
+}
+/** 공훈이 생기기 전 저장: 지금까지의 공적(이긴 사마의전 장·받은 천명·도전·보물 외전·수련·보물 사냥)을 한 번 공훈으로 셈한다. */
+function ensureMerit(m=loadMeta()){
+  if(m.merit===undefined){m.merit=retroMerit({storyWins:m.chronicle.filter(id=>id.startsWith('S')).length,sealsPaid:(m.sealPaid??[]).filter(k=>k.startsWith('S')).length,challenges:(campaign.challenges??[]).length,quests:(campaign.quests??[]).length,trainingWins:campaign.trainingWins??0,bountyWins:campaign.bountyWins??0});saveMeta(m);}
+  return m;
+}
+/** 다 모은 계보의 완성 보상(천명)을 준다. 알림 문구를 돌려준다(저장은 부른 쪽이). */
+function rewardLineages(m:ReturnType<typeof loadMeta>):string[]{
+  return completedLineages(new Set(m.recruited??[]),m.lineageRewards??[]).map(l=>{m.lineageRewards=[...(m.lineageRewards??[]),l.id];m.mandate+=l.reward;m.earned+=l.reward;return `계보 완성 「${l.name}」 — 천명 +${l.reward}`;});
+}
+/** 공훈을 바쳐 들일 수 있는 장수(공훈 등용). 본영·첫 화면의 표시에 쓴다. */
+function meritReady(x=recruitContext()){return LINEAGES.flatMap(l=>l.officers).filter(o=>o.route==='merit'&&recruitStatus(o.name,x)==='ready').map(o=>o.name);}
+/**
+ * 사마의 쪽 전투가 끝난 뒤 등용 정산: 공훈을 더하고, 쓰러뜨린 적장을 격파 귀순 기록에 세고,
+ * 저절로 들어오는 장수(연의 합류·격파 귀순)를 들이고, 다 모은 계보에 보상을 준다. 결과 화면에 붙일 문구를 돌려준다.
+ */
+function settleRecruits(merit:number,fallen:readonly string[],extreme:boolean):{news:string[];joined:string[]}{
+  const m=ensureMerit(),news:string[]=[];
+  if(merit>0){m.merit=(m.merit??0)+merit;news.push(`공훈 +${merit} (모은 공훈 ${m.merit})`);}
+  const hit=recordDefeats(m.defeats??={},fallen,extreme);saveMeta(m);
+  let x=recruitContext();news.push(...defeatNews(hit,x));
+  const joined=autoRecruits(x);
+  if(joined.length){m.recruited=[...new Set([...(m.recruited??[]),...joined])];const sc=loadScenario();joinRecruits(sc,joined,levelInfo(campaign.xp.sima_yi??0).level,officerClass);saveScenario(sc);
+    news.push(`등용 · ${joined.map(n=>`${n}(${ROUTE_LABEL[officerOf(n)!.route]})`).join(' · ')} — 사마의 휘하에 들었다`);}
+  news.push(...rewardLineages(m));saveMeta(m);
+  x=recruitContext();const ready=meritReady(x);
+  if(ready.length)news.push(`등용 가능 · ${ready.join(' · ')} — 본영 「등용」에서 공훈을 바쳐 들인다`);
+  return {news,joined};
 }
 /**
- * 등용: 계보마다 장수가 위에서 아래로 늘어선다. 앞 단계를 들여야 다음 단계가 열리고, 장수마다 '해낸 일'이 조건이다.
- * 들인 장수는 천명의 길 동료로 합류한다(회차가 바뀌어도 다시 합류).
+ * 등용: 계보마다 장수가 늘어선다. 들이는 길은 셋 — 연의 합류(그 장을 이기면 저절로) · 격파 귀순(전장에서 정해진 횟수를 꺾으면 스스로) ·
+ * 공훈 등용(싸워 모은 공훈을 바쳐 모셔 옴). 계보를 다 모으면 천명을 받는다. 들인 장수는 천명의 길 동료로도 합류한다.
  */
 function showRecruit(focus?:string,joined?:string){
   menuOpen=true;clearTimeout(aiTimer);sound.scene='title';sound.combat=false;
-  const x=recruitContext(),all=LINEAGES.flatMap(l=>l.officers),got=all.filter(o=>x.recruited.has(o.name)).length;
+  const x=recruitContext(),all=LINEAGES.flatMap(l=>l.officers),got=all.filter(o=>x.recruited.has(o.name)).length,merit=x.merit??0,ready=meritReady(x);
   const sel=all.find(o=>o.name===focus)??all.find(o=>recruitStatus(o.name,x)==='ready')??all.find(o=>recruitStatus(o.name,x)!=='recruited')??all[0]!;
   const badge:Record<string,string>={recruited:'등용함',ready:'등용 가능',locked:'조건 남음',sealed:'앞 단계 먼저'};
-  const node=(name:string)=>{const st=recruitStatus(name,x);return `<button class="rc-node ${st}${name===sel.name?' sel':''}" data-rc="${esc(name)}"><span class="rc-face">${cardFace(name)}</span><b>${esc(name)}</b><small>${badge[st]}${st==='recruited'?` · Lv.${retinueLevel(name)}`:''}</small></button>`;};
-  const st=recruitStatus(sel.name,x),r=romanceByName(sel.name),prev=previousOf(sel.name);
-  const conds=[...(prev?[`<li class="${x.recruited.has(prev)?'ok':''}">${x.recruited.has(prev)?'✓':'·'} 계보 앞 단계 ${esc(prev)} 등용</li>`]:[]),...LINEAGES.flatMap(l=>l.officers).find(o=>o.name===sel.name)!.conds.map(c=>`<li class="${condMet(c,x)?'ok':''}">${condMet(c,x)?'✓':'·'} ${esc(condText(c,x))}</li>`)].join('');
-  const lineage=LINEAGES.find(l=>l.officers.some(o=>o.name===sel.name))!;
-  modal(`<div class="briefing recruit-screen"><div class="eyebrow">본영 · 등용 · ${got}/${all.length}명</div><h2>등용</h2><p class="screen-lede">계보마다 조건을 채워 장수를 휘하로 들인다.</p>
-  <p class="muted">계보마다 위에서부터 차례로 들인다. 돈으로 사지 않는다 — 그 장수와 얽힌 싸움을 이기고, 그릇을 보여 주면 스스로 찾아온다. 조건에 연의 장이 들어 있는 장수는 그 장을 이겨 조건을 다 채우는 순간 이야기 속에서 저절로 합류한다. 들인 장수는 연의 출진 준비의 「등용 장수」 칸에서 데려가고(일반 2명 · 극한 1명), 천명의 길에도 동료로 합류한다.</p>
-  ${joined?`<div class="rc-joined"><span class="rc-face big">${cardFace(joined)}</span><div><b>${esc(joined)}</b> — 사마의 휘하에 들었다.<p>「${esc(all.find(o=>o.name===joined)!.line)}」</p></div></div>`:''}
-  <div class="rc-body"><div class="rc-tree">${LINEAGES.map(l=>`<section class="rc-line"><h3><span class="lobby-seal" aria-hidden="true">${l.seal}</span>${esc(l.name)}<small>${esc(l.blurb)}</small></h3><div class="rc-steps">${l.officers.map(o=>node(o.name)).join('<i class="rc-arrow" aria-hidden="true">▼</i>')}</div></section>`).join('')}</div>
-  <aside class="rc-detail"><div class="rc-head"><span class="rc-face big">${cardFace(sel.name)}</span><div><small>${esc(lineage.name)}</small><h3>${esc(sel.name)}</h3><p>${esc(r?.epithet??'')}</p><p class="rc-stats">${r?`무력 ${r.war} · 지력 ${r.int} · 통솔 ${r.lead}`:''} · ${esc(classNames[officerClass(sel.name)]??'')}</p></div></div>
+  const mark:Record<string,string>={story:'연',defeat:'격',merit:'공'};
+  const pct=(v:number)=>Math.round(v*100);
+  const node=(name:string)=>{const st=recruitStatus(name,x),o=officerOf(name)!,p=recruitProgress(name,x);
+    const tip=st==='recruited'?`Lv.${retinueLevel(name)}`:o.route==='merit'&&st!=='sealed'?`공훈 ${Math.min(merit,meritCost(name))}/${meritCost(name)}`:o.route==='defeat'?(()=>{const c=o.conds.find(c=>c.kind==='defeat');return c&&c.kind==='defeat'?`격파 ${Math.min(c.count,x.defeats?.[c.name]??0)}/${c.count}`:'';})():'';
+    return `<button class="rc-node ${st} route-${o.route}${name===sel.name?' sel':''}" data-rc="${esc(name)}"><span class="rc-face">${cardFace(name)}</span><b><i class="rc-route" title="${ROUTE_LABEL[o.route]}">${mark[o.route]}</i>${esc(name)}</b><small>${badge[st]}${tip?` · ${tip}`:''}</small>${st!=='recruited'?`<i class="rc-bar" aria-hidden="true"><i style="width:${pct(p)}%"></i></i>`:''}</button>`;};
+  const o=officerOf(sel.name)!,st=recruitStatus(sel.name,x),r=romanceByName(sel.name),prev=previousOf(sel.name),lineage=lineageOf(sel.name)!;
+  const condLi=(ok:boolean,text:string,p:number)=>`<li class="${ok?'ok':''}">${ok?'✓':'·'} ${esc(text)}${ok?'':`<i class="rc-bar" aria-hidden="true"><i style="width:${pct(p)}%"></i></i>`}</li>`;
+  const conds=[...(prev?[condLi(x.recruited.has(prev),`계보 앞 단계 ${prev} 등용`,x.recruited.has(prev)?1:0)]:[]),...o.conds.map(c=>condLi(condMet(c,x),condText(c,x),condProgress(c,x)))].join('');
+  const goText=st==='recruited'?'이미 휘하에 있다':o.route==='story'?(st==='ready'?esc(sel.name)+' 들이기':'연의에서 그 장을 이기면 저절로 합류한다'):o.route==='defeat'?(st==='ready'?esc(sel.name)+' 받아들이기':'정해진 횟수를 꺾으면 스스로 귀순한다'):st==='ready'?`공훈 ${meritCost(sel.name)}을 바치고 ${esc(sel.name)} 등용`:st==='sealed'?'계보 앞 단계를 먼저 들인다':'조건을 채우면 공훈을 바쳐 등용한다';
+  const lineDone=(l:typeof LINEAGES[number])=>(loadMeta().lineageRewards??[]).includes(l.id);
+  const count=(route:string)=>{const list=all.filter(o=>o.route===route);return `${list.filter(o=>x.recruited.has(o.name)).length}/${list.length}`;};
+  modal(`<div class="briefing recruit-screen"><div class="eyebrow">본영 · 등용 · ${got}/${all.length}명</div><h2>등용</h2><p class="screen-lede">연의에서 만나고, 전장에서 꺾고, 공훈으로 모셔 온다.</p>
+  <div class="rc-summary"><span class="rc-merit"><small>모은 공훈</small><b>${merit.toLocaleString()}</b></span>
+    <span class="rc-routes">${(['story','defeat','merit'] as const).map(k=>`<span class="rc-chip route-${k}" title="${esc(ROUTE_NOTE[k])}"><i class="rc-route">${mark[k]}</i>${ROUTE_LABEL[k]} <b>${count(k)}</b></span>`).join('')}</span>
+    ${ready.length?`<span class="rc-ready">지금 등용 가능 · ${ready.map(esc).join(' · ')}</span>`:''}</div>
+  <details class="rc-howto"><summary>공훈 얻는 법 · 등용의 세 갈래</summary><ul>
+    <li><b>연의 합류</b> — ${esc(ROUTE_NOTE.story)}</li><li><b>격파 귀순</b> — ${esc(ROUTE_NOTE.defeat)}</li><li><b>공훈 등용</b> — ${esc(ROUTE_NOTE.merit)}</li>
+    <li><b>공훈</b> — 연의 첫 승리 +${MERIT.storyFirst}(극한 +${MERIT.storyFirstExtreme}) · 다시 이기면 +${MERIT.storyAgain} · 새로 얻은 천명 하나 +${MERIT.seal} · 쓰러뜨린 이름난 적장 +${MERIT.foe} · 수련·보물 사냥 승리 +${MERIT.training} · 도전 첫 돌파 +${MERIT.challenge} · 보물 외전 첫 승리 +${MERIT.quest}</li>
+    <li><b>계보 완성</b> — 한 계보를 다 모으면 천명을 받는다.</li></ul></details>
+  ${joined?`<div class="rc-joined"><span class="rc-face big">${cardFace(joined)}</span><div><b>${esc(joined)}</b> — 사마의 휘하에 들었다.<p>「${esc(officerOf(joined)!.line)}」</p></div></div>`:''}
+  <div class="rc-body"><div class="rc-tree">${LINEAGES.map(l=>`<section class="rc-line${lineDone(l)?' done':''}"><h3><span class="lobby-seal" aria-hidden="true">${l.seal}</span>${esc(l.name)}<small>${esc(l.blurb)}</small><em class="rc-reward">${lineDone(l)?'계보 완성 ✓':`완성 보상 천명 +${l.reward}`}</em></h3><div class="rc-steps">${l.officers.map(o=>node(o.name)).join('')}</div></section>`).join('')}</div>
+  <aside class="rc-detail"><div class="rc-head"><span class="rc-face big">${cardFace(sel.name)}</span><div><small>${esc(lineage.name)} · <span class="rc-chip route-${o.route}"><i class="rc-route">${mark[o.route]}</i>${ROUTE_LABEL[o.route]}</span></small><h3>${esc(sel.name)}</h3><p>${esc(r?.epithet??'')}</p><p class="rc-stats">${r?`무력 ${r.war} · 지력 ${r.int} · 통솔 ${r.lead}`:''} · ${esc(classNames[officerClass(sel.name)]??'')}</p></div></div>
+    <p class="rc-route-note">${esc(ROUTE_NOTE[o.route])}</p>
     <h4>등용 조건</h4><ul class="rc-conds">${conds}</ul>
-    <button id="rc-go" class="primary" ${st==='ready'?'':'disabled'}>${st==='recruited'?'이미 휘하에 있다':st==='ready'?esc(sel.name)+' 등용':'조건을 채우면 등용할 수 있다'}</button></aside></div>
+    <button id="rc-go" class="primary" ${st==='ready'?'':'disabled'}>${goText}</button></aside></div>
   <div class="run-actions"><button id="rc-back">← 본영</button></div></div>`,false);
   document.querySelectorAll<HTMLButtonElement>('[data-rc]').forEach(b=>b.onclick=()=>showRecruit(b.dataset.rc));
   $('#rc-back').onclick=showMenu;
-  $('#rc-go').onclick=()=>{const now=recruitContext();if(recruitStatus(sel.name,now)!=='ready')return;const m=loadMeta();m.recruited=[...new Set([...(m.recruited??[]),sel.name])];saveMeta(m);
-    const sc=loadScenario();joinRecruits(sc,[sel.name],levelInfo(campaign.xp.sima_yi??0).level,officerClass);saveScenario(sc);sound.event({kind:'victory'});showRecruit(sel.name,sel.name);};
+  $('#rc-go').onclick=()=>{const now=recruitContext();if(recruitStatus(sel.name,now)!=='ready')return;const m=ensureMerit();
+    if(o.route==='merit'){const cost=meritCost(sel.name);if((m.merit??0)<cost)return;m.merit=(m.merit??0)-cost;}
+    m.recruited=[...new Set([...(m.recruited??[]),sel.name])];const bonus=rewardLineages(m);saveMeta(m);
+    const sc=loadScenario();joinRecruits(sc,[sel.name],levelInfo(campaign.xp.sima_yi??0).level,officerClass);saveScenario(sc);sound.event({kind:'victory'});
+    if(bonus.length)setTimeout(()=>toast(bonus.join(' · ')),900);showRecruit(sel.name,sel.name);};
 }
 function showExpeditions(tab:Expedition['kind']='challenge'){
  menuOpen=true;clearTimeout(aiTimer);
@@ -968,7 +1014,9 @@ function romanceCard(u:Unit){
 function milestoneMarkup(items:ReturnType<typeof growthMilestones>){return items.map(x=>`<div class="growth-summary"><b>${officerNames[x.id]}${x.to>x.from?' · Lv.'+x.from+' → '+x.to:''}</b>${x.evolution?`<p class="evo-news">병종 진화: ${x.evolution.from} → <b>${x.evolution.to}</b>${x.evolution.bloom?` · 개화 「${x.evolution.bloom.name}」 ${x.evolution.bloom.description}`:''}</p>`:''}${x.strategies.length?'<p>새 책략: '+x.strategies.join(' · ')+'</p>':''}</div>`).join('');}
 function showExpeditionResult(){if(resultShown)return;resultShown=true;const run=session.deployment!.mission!,m=expeditions.find(x=>x.id===run.id)!,win=session.state.outcome==='victory';const before=structuredClone(campaign);
  const reward=expeditionReward(campaign,m.id,run.runId,win);
- const again=session.rewarded;session.rewarded=true;persist();const gearLines=again?[]:gearNews(settleGear(campaign,session.state,session.deployment,session.xpEarned));saveCampaign();
+ const again=session.rewarded;session.rewarded=true;persist();
+ // 외전 승리도 공훈을 준다(수련·보물 사냥은 매번, 도전·보물 외전은 첫 승리). 쓰러뜨린 격파 귀순 대상도 센다.
+ if(win&&!again&&reward.xp>0){const rc=settleRecruits(missionMerit(m.kind,true),[...session.state.units.values()].filter(u=>u.side==='enemy'&&!u.alive).map(u=>u.name),false);if(rc.news.length)setTimeout(()=>toast(rc.news.join(' · ')),1600);}const gearLines=again?[]:gearNews(settleGear(campaign,session.state,session.deployment,session.xpEarned));saveCampaign();
  const milestones=growthMilestones(before,campaign);
  modal(`<div class="result"><div class="result-character">${win?'승':'련'}</div><h2>${win?'성장의 한 걸음':'다시 준비할 시간'}</h2><p>${m.name} · ${session.state.turn}턴</p>${win?`<div class="story-stage reward-scene"><div class="story-backdrop incoming" style="${storyBackdrop(m.art)}"></div>${actorMarkup('사마의','hero')}${actorMarkup('조진','companion')}</div>`:''}${win?dialogueCaption(splitSpokenLine(m.lines[2]!).speaker,splitSpokenLine(m.lines[2]!).line):`<p class="battle-aftermath">${esc(session.failure)}<br>패배해도 경험치와 보물은 잃지 않습니다. 정비 후 다시 도전하세요.</p>`}<p>${win&&!reward.xp?'이미 보상을 받은 전투입니다. · ':'경험치 +'+reward.xp+' · '}${growthText()}</p>${reward.items.length?`<p class="treasure-reward">얻은 것: ${reward.items.map(esc).join(' · ')}</p>`:''}${gearLines.map(x=>`<p class="growth-summary">${esc(x)}</p>`).join('')}${milestoneMarkup(milestones)}<div class="modal-actions"><button id="expedition-again">${m.kind==='training'?'다시 수련':'다시 도전'}</button>${m.kind==='challenge'&&win&&m.step!<10?'<button id="expedition-next-step" class="primary">다음 단계 →</button>':''}<button id="expedition-list">연무장 목록</button><button id="expedition-menu">연의 회상</button></div></div>`,false);
  $('#expedition-again').onclick=()=>briefing(7,m.id);const nextStep=document.getElementById('expedition-next-step');if(nextStep)nextStep.onclick=()=>expeditionStory('C'+String(m.step!+1).padStart(2,'0'));$('#expedition-list').onclick=()=>m.kind==='training'?showTraining():showExpeditions(m.kind);$('#expedition-menu').onclick=m.kind==='challenge'?showMenu:showTraining;
@@ -1420,9 +1468,11 @@ function checkModal(){
       // 연의 회상·수련 전투(천명의 길 밖)도 천명을 조금 준다: 연구가 로그라이크의 성장이다.
       if(!again&&!session.deployment?.scenario&&!session.deployment?.mission){mandateGain=s.difficulty==='extreme'?2:1;m.mandate+=mandateGain;m.earned+=mandateGain;}saveMeta(m);}
     // 이야기를 하면서 들이는 장수: 이 장을 이겨 조건을 다 채운 장수는 등용 화면에 가지 않아도 합류한다.
-    if(win&&!again&&!session.deployment?.mission&&chapters.some(c=>c.stage.id===s.stage.id)){const joined=storyRecruits(recruitContext());
-      if(joined.length){const m=loadMeta();m.recruited=[...new Set([...(m.recruited??[]),...joined])];saveMeta(m);const sc=loadScenario();joinRecruits(sc,joined,levelInfo(campaign.xp.sima_yi??0).level,officerClass);saveScenario(sc);
-        setTimeout(()=>toast(`등용 · ${joined.join(' · ')} 합류 — 연의에서 맺은 인연으로 사마의 휘하에 들었다`),1900);}}
+    // 등용 정산: 공훈(첫 승리·천명·쓰러뜨린 적장) · 격파 귀순 기록 · 연의 합류와 격파 귀순 장수 합류 · 계보 완성 보상.
+    if(win&&!again&&!session.deployment?.mission&&chapters.some(c=>c.stage.id===s.stage.id)){
+      const fallen=[...s.units.values()].filter(u=>u.side==='enemy'&&!u.alive&&!u.name.endsWith('환영')).map(u=>u.name),ext=s.difficulty==='extreme';
+      const rc=settleRecruits(battleMerit({firstWin,extreme:ext,newSeals:sealGain,foes:fallen.filter(n=>romanceByName(n)).length}),fallen,ext);extraNews.push(...rc.news);
+      if(rc.joined.length)setTimeout(()=>toast(`등용 · ${rc.joined.join(' · ')} 합류 — 사마의 휘하에 들었다`),1900);}
     sound.sfx(win?(session.somber?'somber':'victory'):'defeat');
     if(session.deployment?.scenario){
       // 시나리오 모드의 연의 장: 보상은 같고, 전투 뒤 장면과 다음 장은 시나리오 흐름이 맡는다.
