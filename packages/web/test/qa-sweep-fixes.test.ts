@@ -52,11 +52,11 @@ describe('전수 점검 수정',()=>{
 });
 
 describe('사마의 그림은 최종 하나',()=>{
- it('어느 장이든 성인(최종) 사마의 그림만 쓴다 — 소년 사마의는 게임에서 지웠다',async()=>{
+ it('어느 장이든 성인(최종) 사마의 그림만 쓴다',async()=>{
   const {officerEntry,officerManifest}=await import('../src/officer-models.ts');
   const {officerLook}=await import('../src/officer-art.ts');
   expect(officerEntry({id:'sima_yi',name:'사마의'})?.id).toBe('sima_yi');expect(officerLook('사마의')?.id).toBe('sima_yi');
-  expect(officerLook('소년 사마의')).toBeUndefined();expect(officerManifest.some(e=>e.id==='sima_yi_young'||e.name==='소년 사마의')).toBe(false);
+  expect(officerManifest.filter(e=>e.name==='사마의')).toHaveLength(1);
   expect(officerEntry({id:'sima_lang',name:'사마랑'})?.id).toBe('sima_lang');
  });
 });

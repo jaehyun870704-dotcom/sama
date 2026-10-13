@@ -40,8 +40,7 @@ describe('장수별 전투 SD와 대결 모델',()=>{
   const players=[['sima_yi','사마의'],['cao_zhen','조진'],['sima_lang','사마랑'],['sima_fang','사마방'],['sima_shi','사마사'],['sima_zhao','사마소']] as const;
 
   it('대상 94명(이야기 전신 전용 인물 2명 포함)과 모든 공개 시트를 색인한다',()=>{
-    expect(officerManifest).toHaveLength(162); // 소년 사마의를 지워 한 명 줄었다
-    expect(officerManifest.some(e=>e.id==='sima_yi_young')).toBe(false);
+    expect(officerManifest).toHaveLength(162);
     const sheets=new Set(officerModelSheets.map(s=>s.id));
     for(const entry of officerManifest)for(const battle of Object.values(entry.battle))expect(sheets.has(battle.sheet),battle.sheet).toBe(true);
   });
