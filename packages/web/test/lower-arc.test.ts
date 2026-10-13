@@ -104,9 +104,12 @@ describe('하편 · 왕릉 진압전',()=>{
  it('opens the water gate when a warship reaches the canal end, then the courtyard storm begins',()=>{
   const s=open('S3-07');const ships=s.state.living('ally').filter(u=>u.unitClass==='navy');expect(ships).toHaveLength(2);
   for(const b of ships)expect(s.state.map.tileAt(b.pos).terrain).toBe('water');
-  expect(s.state.map.tileAt({x:12,y:8}).terrain).toBe('wall');expect(s.somber).toBe(true);
+  // 수문은 진짜 성문 칸(공성 없는 성문 · siege:false): 닫힌 채 시작해 수군이 닿으면 열리고 폭우가 쏟아진다.
+  const gate=()=>s.state.map.tileAt({x:12,y:9});
+  expect(gate().terrain).toBe('gate');expect(gate().locked).toBe(true);expect(s.somber).toBe(true);expect(s.state.weather).toBe('cloudy');
+  expect(s.state.find('siege_crew')).toBeUndefined();expect([...s.state.units.keys()].some(id=>/^gate_/.test(id))).toBe(false);
   ships[0]!.pos={x:11,y:8};s.act({kind:'wait',unit:'sima_yi'});
-  expect(s.state.map.tileAt({x:12,y:8}).terrain).toBe('road');expect(s.state.victory).toEqual([{type:'retreat',unit:'wang_ling'}]);
+  expect(gate().locked).toBeFalsy();expect(s.state.victory).toEqual([{type:'retreat',unit:'wang_ling'}]);expect(s.state.weather).toBe('rain');
   expect(s.phase).toContain('육상 진입');
  });
  it('is the last stage of the 32-stage campaign',()=>{expect(chapters.filter(c=>c.stage.id.startsWith('S'))).toHaveLength(32);expect(chapters[campaignOrder.at(-1)!]!.stage.id).toBe('S3-07');});

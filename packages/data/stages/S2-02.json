@@ -6,6 +6,7 @@
   "subtitle": "동구 전투",
   "synopsis": "조비의 동정. 동구의 함대가 폭풍에 흩어졌다. 번개가 떨어질 칸을 미리 읽고, 오군 상륙대가 퇴로를 막기 전에 조비를 북서쪽 출구로 철수시킨다.",
   "mapId": "dongkou-river",
+  "weather": "rain",
   "deployment": {
     "forced": [
       "sima_yi",
@@ -200,7 +201,12 @@
       "trigger": {
         "type": "turn_start",
         "turn": 1,
-        "side": "player"
+        "side": "player",
+        "whenWeather": {
+          "is": [
+            "rain"
+          ]
+        }
       },
       "actions": [
         {
@@ -218,7 +224,12 @@
       "trigger": {
         "type": "turn_start",
         "turn": 3,
-        "side": "player"
+        "side": "player",
+        "whenWeather": {
+          "is": [
+            "rain"
+          ]
+        }
       },
       "actions": [
         {
@@ -236,7 +247,12 @@
       "trigger": {
         "type": "turn_start",
         "turn": 5,
-        "side": "player"
+        "side": "player",
+        "whenWeather": {
+          "is": [
+            "rain"
+          ]
+        }
       },
       "actions": [
         {
@@ -254,7 +270,12 @@
       "trigger": {
         "type": "turn_start",
         "turn": 7,
-        "side": "player"
+        "side": "player",
+        "whenWeather": {
+          "is": [
+            "rain"
+          ]
+        }
       },
       "actions": [
         {
@@ -264,6 +285,20 @@
           "magnitude": 35,
           "effect": "shock",
           "label": "낙뢰"
+        }
+      ]
+    },
+    {
+      "id": "dongkou/storm-ends",
+      "trigger": {
+        "type": "turn_start",
+        "side": "player",
+        "turn": 8
+      },
+      "actions": [
+        {
+          "type": "set_weather",
+          "weather": "cloudy"
         }
       ]
     }

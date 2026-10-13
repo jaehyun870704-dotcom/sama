@@ -9,7 +9,8 @@
     "~": "water",
     "#": "wall",
     "F": "fort",
-    "X": "cliff"
+    "X": "cliff",
+    "G": "gate"
   },
   "rows": [
     "XXXXXXXXXXXXXXXXXXXXXXXX",
@@ -19,9 +20,9 @@
     "..~~~~......##########..",
     "..~~~~......#FFFFFFFF#..",
     "..~~~~......#FFFFFFFF#..",
-    "..~~~~,,,,,,#FFFFFFFF#..",
-    "..~~~~~~~~~~#FFFFFFFF#..",
-    "..~~~~,,,,,,#FFFFFFFF#..",
+    "..~~~~,,,,,,GFFFFFFFF#..",
+    "..~~~~~~~~~~GFFFFFFFF#..",
+    "..~~~~,,,,,,GFFFFFFFF#..",
     "..~~~~......#FFFFFFFF#..",
     "..~~~~......#FFFFFFFF#..",
     "..~~~~..f...##########..",

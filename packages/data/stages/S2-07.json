@@ -6,6 +6,7 @@
   "subtitle": "양평관 추격전",
   "synopsis": "조진의 촉 정벌, 서른 날 이어진 비. 위연이 곽회의 진영을 치고 양평관으로 돌아가려 한다. 잔도로 질러갈지 계곡으로 돌지 먼저 정한다. 적 7부대를 격퇴하거나 위연을 꺾으면 승리. 위연이 관을 빠져나가면 남은 적으로 7부대를 채워야 한다.",
   "mapId": "yangping-pass",
+  "weather": "rain",
   "deployment": {
     "forced": [
       "sima_yi"
@@ -64,7 +65,7 @@
       "slot": 3,
       "normal": "clear",
       "extreme": "clear",
-      "note": "웹 세션에서 위연 격퇴를 별도 평가한다."
+      "note": "웹 세션에서 위연을 7턴 안에 격퇴했는지 별도 평가한다."
     }
   ],
   "difficulty": {
@@ -260,7 +261,12 @@
       "trigger": {
         "type": "turn_start",
         "side": "player",
-        "every": 2
+        "every": 2,
+        "whenWeather": {
+          "is": [
+            "rain"
+          ]
+        }
       },
       "actions": [
         {

@@ -6,6 +6,7 @@
   "subtitle": "광릉 전투",
   "synopsis": "강이 얼어 황제의 함대가 발이 묶였다. 오의 고수가 밤을 틈타 행영을 친다. 사마의 없이 조진의 편성만으로 고수를 물리치고, 강노 저격 예고를 피하며 조비를 북쪽 출구로 모신다.",
   "mapId": "guangling-camp",
+  "weather": "snow",
   "deployment": {
     "forced": [
       "cao_zhen"
@@ -78,8 +79,9 @@
     },
     {
       "slot": 3,
-      "normal": "turn_limit:12",
-      "extreme": "turn_limit:10"
+      "normal": "clear",
+      "extreme": "clear",
+      "note": "웹 세션에서 조비가 체력 80% 이상으로 탈출했는지 별도 평가한다."
     }
   ],
   "difficulty": {

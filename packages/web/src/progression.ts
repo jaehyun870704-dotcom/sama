@@ -91,12 +91,13 @@ export function deployment(c:Campaign,modern=false):Deployment{return {...(moder
 /** 고유 보물을 보관함에 넣는다(이미 있으면 그대로). 넣었으면 true. */
 export function grantTreasure(c:Campaign,id:string){if(!isNamedGear(id)||c.treasures.includes(id))return false;c.treasures.push(id);return true;}
 export function award(c:Campaign,stage:string,difficulty:Difficulty,participants:string[],seals:number[]){
-  const id=stage+':'+difficulty;if(c.rewards.includes(id)||!seals.includes(1))return {xp:0,treasure:null as Treasure|null,levels:[] as string[]};
+  const id=stage+':'+difficulty;if(c.rewards.includes(id)||!seals.includes(1))return {xp:0,treasure:null as Treasure|null,levels:[] as string[],got:[] as Treasure[]};
   const amount=difficulty==='normal'?140:70,levels:string[]=[];c.rewards.push(id);
   for(const officer of OFFICERS){if(officer!=='sima_yi'&&!participants.includes(officer))continue;const before=levelInfo(c.xp[officer]??0).level;c.xp[officer]=(c.xp[officer]??0)+amount;if(levelInfo(c.xp[officer]!).level>before)levels.push(officer);}
   const treasure=treasures.find(t=>t.stage===stage&&!c.treasures.includes(t.id))??null;
-  for(const item of treasures.filter(t=>t.stage===stage))grantTreasure(c,item.id);
-  return {xp:amount,treasure,levels};
+  // 이번에 새로 얻은 보물(획득 장면 차례): 이미 가진 것은 빠진다.
+  const got=treasures.filter(t=>t.stage===stage&&grantTreasure(c,t.id));
+  return {xp:amount,treasure,levels,got};
 }
 /** 제갈량전 장을 처음 이겼을 때의 고유 보물(이미 가진 것은 건너뛴다). 새로 얻은 보물을 돌려준다. */
 export function awardZhugeTreasures(c:Campaign,stage:string){const got:Treasure[]=[];for(const t of treasures.filter(x=>x.zstage===stage))if(grantTreasure(c,t.id))got.push(t);return got;}
