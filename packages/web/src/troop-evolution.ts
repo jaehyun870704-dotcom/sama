@@ -85,11 +85,17 @@ export function officerGallery(f:OfficerFaction='위'){
  * "곽회 창병"·"조휴 궁수"·"조상 친위"처럼 장수 이름을 단 부대는 따로 세우지 않고 그 장수 카드에 휘하로 적는다. */
 const escortOf=(n:typeof NPC_ROSTER[number],all:typeof NPC_ROSTER)=>all.find(o=>o!==n&&n.name.startsWith(o.name+' '));
 export const npcList=()=>{const ai=NPC_ROSTER.filter(n=>n.side==='allyAi');return ai.filter(n=>!escortOf(n,ai));};
+/** 나오는 장 목록을 화면 글로: ['S1-01','S1-04','S2-02'] → '상편 1·4장 · 중편 2장'(내부 id를 그대로 보이지 않는다). */
+function stageList(ids:readonly string[]){
+  const arcs=new Map<string,number[]>();
+  for(const id of ids){const m=/^([SZ])(\d)-(\d\d)$/.exec(id);const key=m?`${m[1]==='Z'?'제갈량전 ':''}${(m[1]==='S'?['상','중','하']:['상','하'])[Number(m[2])-1]??''}편`:id;const list=arcs.get(key)??[];if(m)list.push(Number(m[3]));arcs.set(key,list);}
+  return [...arcs].map(([k,n])=>n.length?`${k} ${n.join('·')}장`:k).join(' · ');
+}
 function npcCards(){
   const ai=NPC_ROSTER.filter(n=>n.side==='allyAi');
   return `<div class="evo-grid">${npcList().map(n=>{const e=officerEntry({id:'npc',name:n.name}),b=e&&officerSheet(e,LORD_NAMES.includes(e.name)?'lord':n.unitClass);
     const escorts=ai.filter(o=>escortOf(o,ai)===n).map(o=>classNames[o.unitClass]??o.unitClass);
-    return personCard(b?officerArt(n.name,b):classArt(n.unitClass),`NPC · ${esc(n.stages.join(' '))}`,n.name,n.unitClass,escorts.length?`<p class="evo-escort">휘하 ${esc(escorts.join('·'))} 부대</p>`:'');}).join('')}</div>`;
+    return personCard(b?officerArt(n.name,b):classArt(n.unitClass),`NPC · ${esc(stageList(n.stages))}`,n.name,n.unitClass,escorts.length?`<p class="evo-escort">휘하 ${esc(escorts.join('·'))} 부대</p>`:'');}).join('')}</div>`;
 }
 /** 진화하지 않는 단일 병종(민중·물자대·공병·수군 등). */
 function singleLines(){
@@ -125,16 +131,62 @@ function idleBox(sheet:string,row:number){
   }).catch(()=>undefined);
   boxes.set(key,p);return p;
 }
-/** 진화표의 모든 병종·장수·NPC 그림을 같은 상자 크기로 맞춘다: 그림 둘레가 가로형 상자(5:4) 폭 96%·높이 90% 안에 꽉 차고 발은 같은 선에 선다. */
+/** 원본 시트(자르기 전)를 한 번만 받는다. 아틀라스(작업자가 칸마다 실루엣을 모으는 일)는 장수 44명이면 수십 초 걸리므로,
+ * 그동안 원본 첫 칸을 바로 그려 카드가 비어 보이지 않게 한다. */
+const rawSheets=new Map<string,Promise<HTMLImageElement|undefined>>();
+function rawSheet(url:string){
+  let p=rawSheets.get(url);
+  if(!p){p=new Promise<HTMLImageElement|undefined>(ok=>{const img=new Image();img.decoding='async';img.onload=()=>ok(img);img.onerror=()=>ok(undefined);img.src=url;})
+    .then(async img=>{await img?.decode?.().catch(()=>undefined);return img;});rawSheets.set(url,p);}
+  return p;
+}
+/** 진화표·장수 도감의 그림 시트를 미리 받아 둔다(도감 첫 화면에서 부른다). 실패해도 화면은 그대로 열린다. */
+export function preloadOfficerGallery(f:OfficerFaction='위',limit=16){
+  if(typeof Image==='undefined')return;
+  for(const e of namedManifest().filter(x=>officerFaction(x.name)===f).slice(0,limit)){const b=officerSheet(e,officerClass(e));const def=b&&evolutionSheet(b.sheet);if(def)void rawSheet(def.url);}
+}
+const FIT_W=320,FIT_H=256;
+/** 원본 시트의 대기 자세 칸을 그대로 재서 그린다(아틀라스가 오기 전의 빠른 그림). 키 맞춤(fit)이 있는 시트는 아틀라스와 같은 키로. */
+async function quickFit(el:HTMLCanvasElement){
+  const def=evolutionSheet(el.dataset.fit!),row=Number(el.dataset.row??0);if(!def)return false;
+  const img=await rawSheet(def.url);if(!img||!el.isConnected||el.classList.contains('on'))return false;
+  const cw=Math.floor(img.naturalWidth/4),ch=Math.floor(img.naturalHeight/def.rows);if(!cw||!ch)return false;
+  const tmp=document.createElement('canvas');tmp.width=cw;tmp.height=ch;const t=tmp.getContext('2d',{willReadFrequently:true})!;
+  t.drawImage(img,0,row*ch,cw,ch,0,0,cw,ch);
+  const d=t.getImageData(0,0,cw,ch).data;let l=cw,tp=ch,r=-1,b=-1;
+  for(let y=0;y<ch;y++)for(let x=0;x<cw;x++)if(d[(y*cw+x)*4+3]!>24){if(x<l)l=x;if(x>r)r=x;if(y<tp)tp=y;if(y>b)b=y;}
+  if(r<0)return false;
+  const w0=r-l+1,h0=b-tp+1,stand=def.fit?FIT_H*1.35*def.fit.height/h0:FIT_H*1.35/ch;
+  const k=Math.min(stand,FIT_W*.96/w0,FIT_H*.94/h0),w=w0*k,h=h0*k,g=el.getContext('2d')!;
+  el.width=FIT_W;el.height=FIT_H;g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
+  g.drawImage(tmp,l,tp,w0,h0,(FIT_W-w)/2,FIT_H*.96-h,w,h);el.classList.add('on','quick');return true;
+}
+/** 아틀라스로 다시 그린다(칸을 넘는 창끝·이웃 칸 조각까지 정리된 그림). */
+async function atlasFit(el:HTMLCanvasElement){
+  const box=await idleBox(el.dataset.fit!,Number(el.dataset.row??0));if(!box||!el.isConnected)return;
+  const W=FIT_W,H=FIT_H,g=el.getContext('2d')!;
+  // 병종·장수·NPC 모두 한 축척: 아틀라스가 이미 모든 병사·장수의 서 있는 키를 칸 높이에 맞춰 두었으므로 칸 높이 기준으로 그린다
+  // (그림마다 둘레에 맞추면 기병·긴 창은 작아지고 책사·민중은 커진다). 그래도 넓어 상자를 넘는 그림만 그만큼 줄인다.
+  const k=Math.min(H*1.35/box.ch,W*.96/box.w,H*.94/box.h),w=box.w*k,h=box.h*k;
+  el.width=W;el.height=H;g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
+  g.drawImage(box.atlas,box.x,box.y,box.w,box.h,(W-w)/2,H*.96-h,w,h);el.classList.remove('quick');el.classList.add('on','fitted');
+}
+let evoObserver:IntersectionObserver|undefined;
+const nearView=(el:Element)=>{const r=el.getBoundingClientRect();return r.bottom>-200&&r.top<innerHeight+200&&r.right>-200&&r.left<innerWidth+200;};
+/** 진화표의 모든 병종·장수·NPC 그림을 같은 상자 크기로 맞춘다: 그림 둘레가 가로형 상자(5:4) 폭 96%·높이 90% 안에 꽉 차고 발은 같은 선에 선다.
+ * 1) 원본 시트 첫 칸으로 바로 그리고(화면에 보이는 카드부터), 2) 아틀라스 자르기는 화면에 들어온 카드만 차례로 맡긴다
+ * — 예전에는 장수 44명의 아틀라스를 한꺼번에 맡겨 첫 화면 카드도 십수 초 비어 있었다. */
 export async function fitEvoSprites(root:ParentNode=document){
-  await Promise.all([...root.querySelectorAll<HTMLCanvasElement>('canvas.evo-fit:not(.on)')].map(async el=>{
-    const box=await idleBox(el.dataset.fit!,Number(el.dataset.row??0));if(!box||!el.isConnected)return;
-    const W=320,H=256,g=el.getContext('2d')!;
-    // 병종·장수·NPC 모두 한 축척: 아틀라스가 이미 모든 병사·장수의 서 있는 키를 칸 높이에 맞춰 두었으므로 칸 높이 기준으로 그린다
-    // (그림마다 둘레에 맞추면 기병·긴 창은 작아지고 책사·민중은 커진다). 그래도 넓어 상자를 넘는 그림만 그만큼 줄인다.
-    const k=Math.min(H*1.35/box.ch,W*.96/box.w,H*.94/box.h),w=box.w*k,h=box.h*k;
-    el.width=W;el.height=H;g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
-    g.drawImage(box.atlas,box.x,box.y,box.w,box.h,(W-w)/2,H*.96-h,w,h);el.classList.add('on');
-  }));
+  const els=[...root.querySelectorAll<HTMLCanvasElement>('canvas.evo-fit:not(.fitted)')];
+  if(!els.length)return;
+  evoObserver?.disconnect();
+  const seen=evoObserver=typeof IntersectionObserver==='undefined'?undefined:new IntersectionObserver(entries=>{for(const e of entries)if(e.isIntersecting){seen!.unobserve(e.target);void atlasFit(e.target as HTMLCanvasElement);}},{rootMargin:'200px'});
+  const first=els.filter(nearView),later=els.filter(el=>!first.includes(el));
+  await Promise.all(first.map(el=>quickFit(el).catch(()=>false)));
+  if(!seen){await Promise.all(els.map(atlasFit));return;}
+  for(const el of first)seen.observe(el);
+  // 나머지 카드: 빠른 그림은 한가할 때 조금씩, 아틀라스는 화면에 들어올 때.
+  for(let i=0;i<later.length;i+=6){await new Promise(r=>setTimeout(r,0));await Promise.all(later.slice(i,i+6).map(el=>quickFit(el).catch(()=>false)));}
+  for(const el of later)if(el.isConnected)seen.observe(el);
 }
 export {paintArmor};

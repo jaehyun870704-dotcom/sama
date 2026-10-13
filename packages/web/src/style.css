@@ -15,11 +15,11 @@ dialog{width:min(1080px,calc(100vw - 32px));background:#202628;border:1px solid 
 /* Keep battle controls visible on short desktop screens. */
 @media(min-width:851px){.layout{height:calc(100vh - 110px);height:calc(100dvh - 110px);min-height:0}.left-panel,.right-panel{min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#68624c transparent}.battle-panel{min-height:0}.map{height:auto;min-height:200px}.battle-heading{flex-shrink:0}.battle-toolbar,.dispatch{flex-shrink:0}.left-bottom{display:none}.tactic-note{margin-top:12px}.roster{max-height:250px}}
 @media(min-width:851px) and (max-height:800px){.portrait{height:155px}.portrait-title h2{font-size:23px}.right-panel .stats{margin:10px 0}.right-panel .stat-bar{margin:5px 0 9px}.right-panel .command-label{padding-top:10px}.right-panel .tactic-note{display:none}.right-panel{padding-top:16px}.campaign{min-height:0}.campaign-copy{padding-top:22px;padding-bottom:22px}.chapter-pretitle{margin-top:10px}.tagline{margin-bottom:15px}.arc-tabs{margin-bottom:15px}.campaign-path{max-height:180px}.campaign-copy h2{font-size:48px}.menu-actions{margin-top:14px}.prototype-note{margin-top:10px}}
-.briefing .modal-actions{position:sticky;bottom:-36px;background:#202628;padding:15px 0;margin-top:15px;border-top:1px solid #84724e;z-index:2}.journey-node:disabled strong{color:#d9d2bb}.journey-node:disabled{opacity:.6}
+.briefing .modal-actions{position:sticky;bottom:0;background:#202628;padding:15px 0;margin-top:15px;border-top:1px solid #84724e;z-index:2}.journey-node:disabled strong{color:#d9d2bb}.journey-node:disabled{opacity:.6}
 .family-portrait{position:absolute;inset:0;background-image:url('/sima-family-v2.webp');background-size:300% auto;background-repeat:no-repeat}.story-face{display:block;width:74px;height:94px;flex-shrink:0;background-size:cover;background-position:50% 20%;background-image:url('/sima-portrait-v2.webp')}.story-face.boy{background-image:url('/sima-family-v2.webp');background-size:300% auto;background-position:0% 20%}#dialogue-undo{margin-top:18px}.family-portrait+.portrait-tag{background:#152321bb}
 @media(max-width:580px){.story-face{width:56px;height:75px}.family-portrait{background-size:auto 100%}}
 .commands button{gap:4px;padding:8px 7px;font-size:calc(13.5px*var(--fs,1));white-space:nowrap}.commands small{font-size:calc(12px*var(--fs,1))}.commands button>span{font-size:calc(15px*var(--fs,1))}
-@media(max-width:580px){.commands button{font-size:calc(13.5px*var(--fs,1))}.command-hint,.dialogue-options button,.briefing>p{font-size:calc(14px*var(--fs,1))}.modal-actions{bottom:-26px}.family-portrait{background-size:300% auto}}
+@media(max-width:580px){.commands button{font-size:calc(13.5px*var(--fs,1))}.command-hint,.dialogue-options button,.briefing>p{font-size:calc(14px*var(--fs,1))}.modal-actions{bottom:0}.family-portrait{background-size:300% auto}}
 
 /* Nightmare court: cool ink, lilac mist and warm objective markers. */
 body.nightmare .battle-panel {background:linear-gradient(155deg,#222638,#161e29)}
@@ -899,7 +899,7 @@ dialog:has(.ss-root){max-height:calc(100vh - 16px);max-height:calc(100dvh - 16px
   #compact-objective{padding:0 12px 4px!important;font-size:calc(13px*var(--fs,1))!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .battle-toolbar{padding:5px 8px!important}.battle-toolbar button{min-height:38px!important;padding:5px 8px!important}
   .dispatch{min-height:0!important;padding:4px 10px!important;font-size:calc(13px*var(--fs,1))!important}.dispatch p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  footer{display:none!important}
+  #app>footer{display:none!important}
   .right-panel{display:block!important;padding:4px 8px 6px!important;border-top:1px solid #4c5046}
   .right-panel>.section-label:first-child{display:flex!important;margin:0 0 4px;font-size:calc(13px*var(--fs,1));cursor:pointer;color:#e8d6a8}
   .right-panel>.section-label:first-child>span::after{content:' ▾'}
@@ -943,7 +943,7 @@ dialog:has(.story-scene){max-height:calc(100vh - 16px);max-height:calc(100dvh - 
   .seal-logo{width:24px!important;height:26px!important;font-size:calc(16px*var(--fs,1))!important}
   .topbar nav button{min-height:28px!important;padding:2px 8px!important;font-size:calc(13px*var(--fs,1))!important}
   .chapter-breadcrumb{display:none}
-  footer{display:none!important}
+  #app>footer{display:none!important}
   /* 전투: 지도(왼쪽 넓게) + 명령 판(오른쪽 210px). 전황은 덧창, 장수 상세도 덧창 */
   .layout{display:grid!important;grid-template-columns:minmax(0,1fr) 206px!important;grid-template-rows:minmax(0,1fr)!important;height:calc(100vh - 34px)!important;height:calc(100dvh - 34px)!important;min-height:0!important;position:relative}
   .left-panel{position:fixed!important;z-index:60;left:6px;top:40px;width:270px;max-height:calc(100vh - 48px);max-height:calc(100dvh - 48px);overflow:auto;display:block!important;padding:12px!important;border:1px solid #5a6a58;border-radius:6px;background:rgba(16,26,27,.96);box-shadow:0 10px 30px #000a;transform:translateX(calc(-100% - 16px));transition:transform .28s ease}
@@ -1114,7 +1114,7 @@ body.dock-on .unit-hud{right:calc(var(--dock-w,470px) + 16px)}
   .right-panel{overflow:auto!important}
 }
 /* ───── v38 한 화면 장수 카드: 가로 화면(PC·휴대폰)에서 스크롤 없이 모두 보이게 ───── */
-footer{display:none!important}
+#app>footer{display:none!important}
 .layout{height:calc(100vh - var(--topbar-h,68px))!important;height:calc(100dvh - var(--topbar-h,68px))!important;min-height:0!important}
 .right-panel{display:flex!important;flex-direction:column!important;overflow:hidden!important;gap:clamp(4px,.8vh,8px)}
 .right-panel>.section-label:first-child{flex:0 0 auto;margin:0!important}
@@ -1986,7 +1986,7 @@ dialog:has(.title-screen),dialog:has(.lobby){width:min(1240px,calc(100vw - 24px)
 .ym-choices{display:grid;gap:5px}.ym-choices>span{color:#f0c96a;font-weight:700}.ym-route{display:flex;flex-direction:column;align-items:flex-start;min-height:0;padding:6px 10px;text-align:left;background:#16223a;border:1px solid #4b6fa8}.ym-route b{color:#dfe8fa}.ym-route small{color:#9fb2d6;font-size:11.5px}
 .ym-go{margin-top:auto;padding-top:6px}.ym-go #ym-enter{width:100%;min-height:46px;font-size:17px;background:linear-gradient(#a3341f,#6e1c10);border:1px solid #f0c96a;color:#fff2cf}
 .ym-lock{padding:10px 12px;text-align:center;background:#120d08;border:1px solid #6b5230;color:#cdb98d;font-size:13px}
-.ym-foot{display:flex;gap:6px;padding:6px 10px;background:#1d160e;border-top:1px solid #6b5230;flex-wrap:wrap}.ym-foot button{min-height:32px;padding:4px 12px}
+.ym-foot{display:flex;height:auto;justify-content:flex-start;gap:6px;padding:6px 10px;background:#1d160e;border-top:1px solid #6b5230;flex-wrap:wrap}.ym-foot button{min-height:32px;padding:4px 12px}
 .branch-brief .bb-foe{display:flex;gap:14px;align-items:flex-start;margin:10px 0}.branch-brief .bb-foe b{color:#f1e0b6;font-size:17px}.branch-brief .bb-foe small{display:block;color:#9e978a}.branch-brief .bb-foe p{margin:6px 0 0;line-height:1.6}
 .bb-party{display:flex;flex-wrap:wrap;gap:6px}
 @media (orientation:landscape) and (max-height:520px){
@@ -2280,7 +2280,7 @@ dialog:has(.title-screen),dialog:has(.lobby){width:min(1240px,calc(100vw - 24px)
   .zg-history{font-size:11.5px;padding:4px 7px}.zg-party em{font-size:11px;padding:1px 5px}.zg-arc-head{font-size:13px}
   .zhuge-map .ym-hero{display:inline;font-size:11px}
   .zhuge-map .ym-info>*{flex-shrink:0}.zhuge-map .ym-items .ym-item{min-width:34px;height:34px}.zhuge-map .ym-item .treasure-icon{width:28px;height:28px}.zhuge-map .ym-item.face>*{width:28px!important;height:28px!important}
-  .zhuge-map .ym-go{position:sticky;bottom:-6px;padding:4px 0;background:#21180e}
+  .yeon-map .ym-go{position:sticky;bottom:-6px;padding:4px 0;background:#21180e}
 }
 .zg-gear{display:flex;flex-direction:column;gap:6px;margin:10px 0}.zg-gear-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;font-size:calc(13.5px*var(--fs,1))}.zg-gear-row strong{min-width:4.5em;color:#f0d79c}.zg-gear-row label{display:inline-flex;align-items:center;gap:6px}.zg-gear-row select{max-width:16em}
 /* 상점 · 장비 장착 제한 */
@@ -2351,3 +2351,23 @@ dialog.treasure-reveal::backdrop{background:#05090cc4;backdrop-filter:blur(3px)}
 .cond-limit,.mo-limit{color:#f3c77a;font-weight:700}
 .mo-short-limit{margin-left:.5em;padding:0 .4em;border-radius:3px;background:#7a4a12;color:#fff1d6;font-weight:700;white-space:nowrap}
 #turn-limit.extreme-limit{color:#f3c77a;font-weight:700}
+/* 이야기 무대: 선택지를 고르는 동안에는 「다음」이 아무 일도 하지 않으므로 눌러지지 않게 흐리게 둔다 */
+.ss-root:has(.ss-stage.choosing) .ss-next{opacity:.45;pointer-events:none}
+/* 상점 장수 목록: 목록이 높이 한도를 넘으면 칸이 눌려 둘째 줄(레벨·병종)이 잘렸다 — 줄이지 않고 목록을 스크롤한다 */
+.sh-roster>*{flex-shrink:0}
+/* 출진 칸 동그라미의 'COST' 글자: 카드 공통 small 규칙(11.5px)이 이겨 글자가 동그라미 밖으로 넘쳤다 */
+.sortie-cards .sortie-chip .sortie-cost small,.sortie-chip .sortie-cost small{font:600 calc(7.5px*var(--fs,1))/1 system-ui,sans-serif;letter-spacing:.5px;color:#c8a772;margin-bottom:1px;overflow:visible;text-overflow:clip}
+@media (orientation:landscape) and (max-height:520px){.sortie-cards .sortie-chip .sortie-cost small,.sortie-chip .sortie-cost small{font-size:6.5px}}
+/* 도감 책략 칸: 다섯 글자 넘는 이름(백호의 가호·구원 행렬)이 칸 밖으로 넘쳐 옆 이름과 겹쳤다 — 칸 안에서 두 줄로 */
+.cx-spell{min-width:0}.cx-spell small{max-width:100%;white-space:normal;word-break:keep-all;overflow-wrap:anywhere;line-height:1.15;text-align:center}
+/* 결말 종막: 「끝」 도장이 뜬 뒤에는 건너뛸 것이 없다 — 눌러도 아무 일이 없던 건너뛰기 단추를 감춘다(「계속」만 남김) */
+.finale.phase-end .fn-skip{display:none}
+/* 「내가 한 선택」 장 번호: 내부 id(Z1-01) 대신 '상편 1장' — 좁은 칸에서는 두 줄로 */
+.zg-recap .zr-list li{grid-template-columns:60px minmax(0,1fr) auto}.zg-recap .zr-no{font:700 calc(12.5px*var(--fs,1))/1.25 LocalSerif,'Batang',serif;word-break:keep-all}
+@media(max-width:700px){.zg-recap .zr-list li{grid-template-columns:52px minmax(0,1fr)}}
+/* 일기토·설전 결과: 마지막 합의 '정면 승부/상성' 표가 큰 「승리」 글자 위에 겹쳐 남았다 — 결과가 뜨면 감춘다 */
+#modal:has(.duel-result) .duel-clash,.duel-stage:has(.duel-result) .duel-clash{display:none}
+/* 가로 휴대폰(폭 850px 이하)에서 전투 속도 단추를 숨겨 2×·3×·연출 생략을 고를 길이 없었다 — 가로 화면에서는 다시 보인다 */
+@media (orientation:landscape) and (max-width:850px){.battle-toolbar #speed{display:inline-flex;align-items:center}}
+/* 가로 휴대폰: 모든 창을 화면 가득(margin 0)으로 펴는 규칙이 작은 「보물 획득」 창까지 왼쪽 위에 붙여 아래가 비어 보였다 — 그 창만 가운데에 */
+@media (orientation:landscape) and (max-height:520px){dialog.treasure-reveal{width:min(560px,calc(100vw - 24px))!important;max-height:calc(100dvh - 16px)!important;margin:auto!important;border-radius:4px!important}}

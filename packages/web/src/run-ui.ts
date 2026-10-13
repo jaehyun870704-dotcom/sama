@@ -20,7 +20,7 @@ import {tierOf,currentClass,type UnitClass,type BattleState} from '../../core/sr
 import type {Deployment} from './progression.ts';
 import {을를} from './josa.ts';
 import {playEndingCutscene,finaleData} from './ending-finale.ts';
-import {namedOfficerCount} from './troop-evolution.ts';
+import {namedOfficerCount,preloadOfficerGallery} from './troop-evolution.ts';
 
 export interface RunHost {
   modal(html:string,closable?:boolean):void;
@@ -182,6 +182,8 @@ export function showCollections(host:RunHost,back?:()=>void){
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
   on('col-people',codexOf(host,'people'));on('col-classes',codexOf(host,'classes'));on('col-strategies',codexOf(host,'strategies'));
   on('col-officers',host.showOfficers);on('col-evolution',host.showTroops);on('col-treasures',()=>showTreasures(host));on('col-fate',()=>showFateMap(host,()=>showCollections(host)));on('col-back',leave);
+  // 「장수」 카드를 누르기 전에 첫 탭(위) 장수 그림을 미리 받아 둔다: 열자마자 첫 화면 카드가 보이게.
+  preloadOfficerGallery('위');
 }
 
 /** 보물 도감: 가진 것·얻는 곳·효과·특기·장착한 장수. */
