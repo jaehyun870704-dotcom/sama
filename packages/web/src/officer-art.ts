@@ -1,6 +1,7 @@
 import {artKey} from './youth.ts';
 import {displayName} from './courtesy.ts';
 import {portraitImage} from './portrait-images.ts';
+import {officerEntry} from './officer-models.ts';
 export const officerLooks=[
  {id:'sima_yi',name:'사마의',title:'중달 · 깊은 계책',slot:0},
  {id:'sima_yi_young',name:'소년 사마의',title:'난세를 배우는 소년',slot:1},
@@ -64,4 +65,4 @@ export function officerPortrait(name:string){
 function dialogueBust(name:string){const p=officerLook(name);return p&&p.slot<14?`<div class="story-caption-bust"><div class="talk-bust officer-bust" role="img" aria-label="${p.name} 흉상" style="background-image:url('officers/${p.id}-bust-v1.webp');background-size:300% 100%;background-position:0 0"></div></div>`:`<div class="story-caption-bust">${officerPortrait(name)}</div>`;}
 export function dialogueCaption(speaker:string,line:string){const p=officerLook(speaker);return `<div class="story-caption with-officer" aria-live="polite">${dialogueBust(speaker)}<div class="dialogue-copy"><small>${p?.title??'이야기'}</small><strong>${escape(displayName(p?.name??speaker))}</strong><p>${escape(line)}</p></div></div>`;}
 export function splitSpokenLine(line:string){const at=line.indexOf(':');return at>0&&at<20?{speaker:line.slice(0,at).trim(),line:line.slice(at+1).trim()}:{speaker:'해설',line};}
-export function storyActorStyle(name:string,fallbackRow=0){const p=officerLook(name);return p?`background-image:url('officers/${p.id}-story-v1.webp');background-size:800% 300%;background-position:var(--story-x,0%) var(--story-y,0%)`:`--row:${fallbackRow*20}%`;}
+export function storyActorStyle(name:string,fallbackRow=0){const p=officerLook(name),story=p?officerEntry({id:p.id,name:p.name})?.story:undefined,v2=story?.endsWith('-v2.webp');return p&&story?`--story-talk-x:${v2?'37.5':'42.857143'}%;background-image:url('officers/${story}');background-size:${v2?'900':'800'}% 300%;background-position:var(--story-x,0%) var(--story-y,0%)`:`--row:${fallbackRow*20}%`;}

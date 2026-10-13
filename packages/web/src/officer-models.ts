@@ -15,42 +15,42 @@ const c=(id:string,cls:string,rows=1,w=280,h=224)=>({[cls]:[`${id}-battle-${cls}
 
 /** public/officers/manifest.json과 같은 내장 색인. JSON을 못 읽는 테스트·오프라인 빌드도 동일하게 찾는다. */
 export const officerManifest:OfficerEntry[]=[
-  E('sima_yi','사마의',c('sima_yi','strategist',4),{story:'sima_yi-story-v1.webp',bust:'sima_yi-bust-v1.webp',duel:'officer-battle-sima-v2.webp'}),
+  E('sima_yi','사마의',c('sima_yi','strategist',4),{story:'sima_yi-story-v2.webp',bust:'sima_yi-bust-v1.webp',duel:'officer-battle-sima-v2.webp'}),
   E('sima_yi_young','소년 사마의',c('sima_yi_young','strategist',4),{story:'sima_yi_young-story-v1.webp',bust:'sima_yi_young-bust-v1.webp',duel:'officer-battle-sima-v2.webp'}),
-  E('cao_zhen','조진',c('cao_zhen','heavyCav',4,350,280),{story:'cao_zhen-story-v1.webp',bust:'cao_zhen-bust-v1.webp',duel:'officer-battle-wei-v2.webp'}),
-  E('sima_lang','사마랑',c('sima_lang','infantry',4),{story:'sima_lang-story-v1.webp',bust:'sima_lang-bust-v1.webp',duel:'officer-battle-sima-v2.webp'}),
-  E('sima_fang','사마방',c('sima_fang','spearman',4),{story:'sima_fang-story-v1.webp',bust:'sima_fang-bust-v1.webp',duel:'officer-battle-sima-v2.webp'}),
-  E('sima_fu','사마부',{}, {aliases:['사마부의 환영'],story:'sima_fu-story-v1.webp'}),
-  E('hu_zun','호준',{}, {aliases:['호준의 환영'],story:'hu_zun-story-v1.webp'}),
-  E('sima_shi','사마사',c('sima_shi','cavalry',4),{story:'sima_shi-story-v1.webp',bust:'sima_shi-bust-v1.webp',duel:'officers/sima_shi-duel-v1.webp'}),
-  E('sima_zhao','사마소',c('sima_zhao','crossbow',4,350,280),{story:'sima_zhao-story-v1.webp',bust:'sima_zhao-bust-v1.webp',duel:'officers/sima_zhao-duel-v1.webp'}),
-  E('cao_cao','조조',c('cao_cao','lord',1,350,280),{story:'cao_cao-story-v1.webp',bust:'cao_cao-bust-v1.webp',duel:'officers/cao_cao-duel-v1.webp'}),
-  E('cao_pi','조비',c('cao_pi','lord',1,350,280),{story:'cao_pi-story-v1.webp',bust:'cao_pi-bust-v1.webp',duel:'officers/cao_pi-duel-v1.webp'}),
+  E('cao_zhen','조진',c('cao_zhen','heavyCav',4,350,280),{story:'cao_zhen-story-v2.webp',bust:'cao_zhen-bust-v1.webp',duel:'officer-battle-wei-v2.webp'}),
+  E('sima_lang','사마랑',c('sima_lang','infantry',4),{story:'sima_lang-story-v2.webp',bust:'sima_lang-bust-v1.webp',duel:'officer-battle-sima-v2.webp'}),
+  E('sima_fang','사마방',c('sima_fang','spearman',4),{story:'sima_fang-story-v2.webp',bust:'sima_fang-bust-v1.webp',duel:'officer-battle-sima-v2.webp'}),
+  E('sima_fu','사마부',{}, {aliases:['사마부의 환영'],story:'sima_fu-story-v2.webp'}),
+  E('hu_zun','호준',{}, {aliases:['호준의 환영'],story:'hu_zun-story-v2.webp'}),
+  E('sima_shi','사마사',c('sima_shi','cavalry',4),{story:'sima_shi-story-v2.webp',bust:'sima_shi-bust-v1.webp',duel:'officers/sima_shi-duel-v1.webp'}),
+  E('sima_zhao','사마소',c('sima_zhao','crossbow',4,350,280),{story:'sima_zhao-story-v2.webp',bust:'sima_zhao-bust-v1.webp',duel:'officers/sima_zhao-duel-v1.webp'}),
+  E('cao_cao','조조',c('cao_cao','lord',1,350,280),{story:'cao_cao-story-v2.webp',bust:'cao_cao-bust-v1.webp',duel:'officers/cao_cao-duel-v1.webp'}),
+  E('cao_pi','조비',c('cao_pi','lord',1,350,280),{story:'cao_pi-story-v2.webp',bust:'cao_pi-bust-v1.webp',duel:'officers/cao_pi-duel-v1.webp'}),
   E('cao_rui','조예',c('cao_rui','lord',1,350,280),{duel:'officers/cao_rui-duel-v1.webp'}),
-  E('xu_chu','허저',c('xu_chu','infantry'),{story:'xu_chu-story-v1.webp',bust:'xu_chu-bust-v1.webp',duel:'officer-battle-wei-v2.webp'}),
-  E('ma_chao','마초',{sd:['ma_chao-sd-v1.webp',350,280,1]},{story:'ma_chao-story-v1.webp',bust:'ma_chao-bust-v1.webp',duel:'ma_chao-duel-v2.webp'}),
-  E('lu_bu','여포',{...c('lu_bu','cavalry'),...c('lu_bu','heavyCav',1,350,280)},{story:'lu_bu-story-v1.webp',bust:'lu_bu-bust-v1.webp',duel:'officers/lu_bu-duel-v2.webp'}),
+  E('xu_chu','허저',c('xu_chu','infantry'),{story:'xu_chu-story-v2.webp',bust:'xu_chu-bust-v1.webp',duel:'officer-battle-wei-v2.webp'}),
+  E('ma_chao','마초',{sd:['ma_chao-sd-v1.webp',350,280,1]},{story:'ma_chao-story-v2.webp',bust:'ma_chao-bust-v1.webp',duel:'ma_chao-duel-v2.webp'}),
+  E('lu_bu','여포',{...c('lu_bu','cavalry'),...c('lu_bu','heavyCav',1,350,280)},{story:'lu_bu-story-v2.webp',bust:'lu_bu-bust-v1.webp',duel:'officers/lu_bu-duel-v2.webp'}),
   E('xiang_yu','항우',c('xiang_yu','lord',1,350,280),{duel:'officers/xiang_yu-duel-v1.webp'}),
-  E('chen_gong','진궁',c('chen_gong','strategist'),{story:'chen_gong-story-v1.webp',bust:'chen_gong-bust-v1.webp',duel:'officer-battle-rivals-v2.webp'}),
-  E('zhou_yu','주유',{...c('zhou_yu','strategist'),...c('zhou_yu','archer',1,350,280)},{story:'zhou_yu-story-v1.webp',bust:'zhou_yu-bust-v1.webp',duel:'officer-battle-rivals-v2.webp'}),
+  E('chen_gong','진궁',c('chen_gong','strategist'),{story:'chen_gong-story-v2.webp',bust:'chen_gong-bust-v1.webp',duel:'officer-battle-rivals-v2.webp'}),
+  E('zhou_yu','주유',{...c('zhou_yu','strategist'),...c('zhou_yu','archer',1,350,280)},{story:'zhou_yu-story-v2.webp',bust:'zhou_yu-bust-v1.webp',duel:'officer-battle-rivals-v2.webp'}),
   E('liu_bei','유비',{sd:['liu_bei-sd-v1.webp',350,280,1]},{duel:'officers/liu_bei-duel-v2.webp'}),E('guan_yu','관우',c('guan_yu','cavalry'),{duel:'officers/guan_yu-duel-v1.webp'}),E('zhang_fei','장비',c('zhang_fei','spearman')),
-  E('wooden_zhuge','제갈량',{...c('wooden_zhuge','strategist'),cart:['zhuge_liang-battle-cart-v1.webp',280,224,1]},{aliases:['zhuge_liang','제갈량의 환영'],story:'zhuge_liang-story-v1.webp',duel:'officers/wooden_zhuge-duel-v1.webp'}),E('zhao_yun','조운',{...c('zhao_yun','cavalry'),...c('zhao_yun','heavyCav',1,350,280)},{duel:'officers/zhao_yun-duel-v1.webp'}),
+  E('wooden_zhuge','제갈량',{...c('wooden_zhuge','strategist'),cart:['zhuge_liang-battle-cart-v1.webp',280,224,1]},{aliases:['zhuge_liang','제갈량의 환영'],story:'zhuge_liang-story-v2.webp',duel:'officers/wooden_zhuge-duel-v1.webp'}),E('zhao_yun','조운',{...c('zhao_yun','cavalry'),...c('zhao_yun','heavyCav',1,350,280)},{duel:'officers/zhao_yun-duel-v1.webp'}),
   E('huang_zhong','황충',c('huang_zhong','archer',1,350,280),{duel:'officers/huang_zhong-duel-v1.webp'}),E('wei_yan','위연',c('wei_yan','infantry'),{duel:'officers/wei_yan-duel-v1.webp'}),E('jiang_wei','강유',c('jiang_wei','cavalry'),{duel:'officers/jiang_wei-duel-v1.webp'}),E('pang_tong','방통',c('pang_tong','strategist'),{duel:'officers/pang_tong-duel-v1.webp'}),
   E('xiahou_dun','하후돈',c('xiahou_dun','cavalry'),{duel:'officers/xiahou_dun-duel-v1.webp'}),E('xiahou_yuan','하후연',c('xiahou_yuan','horseArcher'),{duel:'officers/xiahou_yuan-duel-v1.webp'}),E('zhang_liao','장료',c('zhang_liao','cavalry'),{duel:'officers/zhang_liao-duel-v1.webp'}),E('xu_huang','서황',c('xu_huang','heavyCav',1,350,280),{duel:'officers/xu_huang-duel-v1.webp'}),
-  E('zhang_he','장합',c('zhang_he','cavalry'),{story:'zhang_he-story-v1.webp',duel:'officers/zhang_he-duel-v1.webp'}),E('cao_ren','조인',c('cao_ren','heavyCav',1,350,280),{duel:'officers/cao_ren-duel-v1.webp'}),E('xun_yu','순욱',c('xun_yu','strategist'),{duel:'officers/xun_yu-duel-v1.webp'}),E('sun_quan','손권',c('sun_quan','lord',1,350,280),{story:'sun_quan-story-v1.webp',duel:'officers/sun_quan-duel-v1.webp'}),
+  E('zhang_he','장합',c('zhang_he','cavalry'),{story:'zhang_he-story-v2.webp',duel:'officers/zhang_he-duel-v1.webp'}),E('cao_ren','조인',c('cao_ren','heavyCav',1,350,280),{duel:'officers/cao_ren-duel-v1.webp'}),E('xun_yu','순욱',c('xun_yu','strategist'),{duel:'officers/xun_yu-duel-v1.webp'}),E('sun_quan','손권',c('sun_quan','lord',1,350,280),{story:'sun_quan-story-v2.webp',duel:'officers/sun_quan-duel-v1.webp'}),
   E('lu_xun','육손',c('lu_xun','strategist'),{duel:'officers/lu_xun-duel-v1.webp'}),E('lu_meng','여몽',{...c('lu_meng','cavalry'),...c('lu_meng','infantry')},{duel:'officers/lu_meng-duel-v1.webp'}),E('gan_ning','감녕',c('gan_ning','bandit',1,350,280),{duel:'officers/gan_ning-duel-v1.webp'}),E('lu_su','노숙',c('lu_su','strategist'),{duel:'officers/lu_su-duel-v1.webp'}),
   E('huang_gai','황개',c('huang_gai','infantry'),{duel:'officers/huang_gai-duel-v1.webp'}),E('meng_huo','맹획',c('meng_huo','elephant'),{duel:'officers/meng_huo-duel-v1.webp'}),E('zhu_rong','축융',c('zhu_rong','assassin',1,350,280),{duel:'officers/zhu_rong-duel-v1.webp'}),
   E('gongsun_yuan','공손연',c('gongsun_yuan','lord',1,350,280),{duel:'officers/gongsun_yuan-duel-v1.webp'}),E('yuan_tan','원담',c('yuan_tan','lord',1,350,280),{duel:'officers/yuan_tan-duel-v1.webp'}),E('yuan_shang','원상',c('yuan_shang','lord',1,350,280),{duel:'officers/yuan_shang-duel-v1.webp'}),E('liu_bang','유방',c('liu_bang','lord',1,350,280)),
   E('yang_ang','양앙',c('yang_ang','infantry'),{duel:'officers/yang_ang-duel-v1.webp'}),E('lu_fan','여범',c('lu_fan','crossbow'),{duel:'officers/lu_fan-duel-v1.webp'}),E('sun_shao','손소',c('sun_shao','crossbow'),{duel:'officers/sun_shao-duel-v1.webp'}),
-  E('meng_da','맹달',c('meng_da','infantry'),{story:'meng_da-story-v1.webp',duel:'officers/meng_da-duel-v1.webp'}),E('ma_su','마속',c('ma_su','strategist'),{duel:'officers/ma_su-duel-v1.webp'}),E('wang_ping','왕평',c('wang_ping','infantry'),{duel:'officers/wang_ping-duel-v1.webp'}),
+  E('meng_da','맹달',c('meng_da','infantry'),{story:'meng_da-story-v2.webp',duel:'officers/meng_da-duel-v1.webp'}),E('ma_su','마속',c('ma_su','strategist'),{duel:'officers/ma_su-duel-v1.webp'}),E('wang_ping','왕평',c('wang_ping','infantry'),{duel:'officers/wang_ping-duel-v1.webp'}),
   E('gao_xiang','고상',c('gao_xiang','infantry'),{duel:'officers/gao_xiang-duel-v1.webp'}),E('meng_yan','맹염',c('meng_yan','cavalry'),{duel:'officers/meng_yan-duel-v1.webp'}),E('bi_yan','비연',c('bi_yan','cavalry'),{duel:'officers/bi_yan-duel-v1.webp'}),
   E('zhu_ran','주연',c('zhu_ran','infantry'),{duel:'officers/zhu_ran-duel-v1.webp'}),E('zhuge_ke','제갈각',c('zhuge_ke','strategist'),{duel:'officers/zhuge_ke-duel-v1.webp'}),E('wang_ling','왕릉',c('wang_ling','infantry'),{duel:'officers/wang_ling-duel-v1.webp'}),
-  E('gao_shou','고수',c('gao_shou','bandit'),{duel:'officers/gao_shou-duel-v1.webp'}),E('guo_huai','곽회',c('guo_huai','archer'),{story:'guo_huai-story-v1.webp',duel:'officers/guo_huai-duel-v1.webp'}),
+  E('gao_shou','고수',c('gao_shou','bandit'),{duel:'officers/gao_shou-duel-v1.webp'}),E('guo_huai','곽회',c('guo_huai','archer'),{story:'guo_huai-story-v2.webp',duel:'officers/guo_huai-duel-v1.webp'}),
   E('dai_ling','대릉',c('dai_ling','infantry'),{duel:'officers/dai_ling-duel-v1.webp'}),E('zhang_zhao','장소',c('zhang_zhao','strategist'),{duel:'officers/zhang_zhao-duel-v1.webp'}),E('zhuge_jin','제갈근',c('zhuge_jin','strategist'),{duel:'officers/zhuge_jin-duel-v1.webp'}),
   E('zhang_ba','장패',c('zhang_ba','cavalry'),{duel:'officers/zhang_ba-duel-v1.webp'}),E('cao_xiu','조휴',c('cao_xiu','cavalry'),{duel:'officers/cao_xiu-duel-v1.webp'}),E('cao_shuang','조상',c('cao_shuang','cavalry'),{duel:'officers/cao_shuang-duel-v1.webp'}),
   // 이름있는 장수 전용 SD(Codex 2026-10-11): 병종 실루엣과 오른쪽 기본 방향을 통일한 대기·이동·공격·피격 4칸 시트.
-  E('jia_xu','가후',c('jia_xu','wheelSage')),E('yu_jin','우금',c('yu_jin','spearman')),E('yue_jin','악진',c('yue_jin','infantry')),E('deng_ai','등애',c('deng_ai','infantry'),{story:'deng_ai-story-v1.webp'}),
-  E('zhong_hui','종회',c('zhong_hui','fengshui'),{story:'zhong_hui-story-v1.webp'}),E('hao_zhao','학소',c('hao_zhao','crossbow')),E('cao_hong','조홍',c('cao_hong','infantry')),E('cao_zhang','조창',c('cao_zhang','cavalry')),
+  E('jia_xu','가후',c('jia_xu','wheelSage')),E('yu_jin','우금',c('yu_jin','spearman')),E('yue_jin','악진',c('yue_jin','infantry')),E('deng_ai','등애',c('deng_ai','infantry'),{story:'deng_ai-story-v2.webp'}),
+  E('zhong_hui','종회',c('zhong_hui','fengshui'),{story:'zhong_hui-story-v2.webp'}),E('hao_zhao','학소',c('hao_zhao','crossbow')),E('cao_hong','조홍',c('cao_hong','infantry')),E('cao_zhang','조창',c('cao_zhang','cavalry')),
   E('wen_ping','문빙',c('wen_ping','spearman')),E('guan_ping','관평',c('guan_ping','infantry')),E('ma_dai','마대',c('ma_dai','infantry')),E('xu_sheng','서성',c('xu_sheng','spearman')),
   E('ding_feng','정봉',c('ding_feng','infantry')),E('yan_liang','안량',c('yan_liang','cavalry')),E('wen_chou','문추',c('wen_chou','cavalry')),E('ju_shou','저수',c('ju_shou','strategist')),
   E('tian_feng','전풍',c('tian_feng','strategist')),E('shen_pei','심배',c('shen_pei','strategist')),E('han_xin','한신',c('han_xin','spearman')),E('zhang_liang','장량',c('zhang_liang','strategist')),
@@ -84,6 +84,21 @@ export const officerManifest:OfficerEntry[]=[
 // 완전 아트 세트가 추가된 장수: 공통 파일 규격(초상·흉상·일기토)을 색인에 연결한다.
 const COMPLETE_ART_IDS=['sun_jian','sun_ce','taishi_ci','cheng_pu','zhou_tai','ling_tong','yuan_shao','dong_zhuo','hua_xiong','gongsun_zan','zhang_jiao','gao_shun','ma_teng','liu_biao','xu_shu','zhang_ren','zhou_cang','jian_yong','mi_zhu','sun_qian','liao_hua','zhang_yi','li_yan','chen_shi','deng_zhi','wen_yang','zhang_chunhua','zhen_shi','wang_shuang','wen_qin','han_dang','zhang_qin','pan_zhang','lu_kang','diaochan','li_jue','guo_si','yuan_shu'] as const;
 for(const id of COMPLETE_ART_IDS){const e=officerManifest.find(x=>x.id===id);if(e){e.bust=`${id}-bust-v1.webp`;e.duel=`officers/${id}-duel-v1.webp`;}}
+
+/** 2차 통합 원화: 병종이 진화해도 같은 350×280 SD 한 벌과 256×256 대결 4칸을 쓴다. */
+const UNIFIED_SD_ENTRIES=[
+  ['zhuge_jin','제갈근'],['meng_da','맹달'],['sima_lang','사마랑'],['sima_fang','사마방'],['sima_shi','사마사'],['sima_zhao','사마소'],['sima_yi','사마의'],['z_jun','제갈균'],['cao_zhen','조진'],['jian_yong','간옹'],
+  ['gao_xiang','고상'],['guan_suo','관색'],['guan_xing','관흥'],['deng_zhi','등지'],['ma_dai','마대'],['ma_liang','마량'],['ma_su','마속'],['mi_fang','미방'],['mi_zhu','미축'],['fa_zheng','법정'],
+  ['fei_yi','비의'],['sun_qian','손건'],['yang_yi','양의'],['yan_yan','엄안'],['wu_ban','오반'],['wu_yi','오의'],['wang_ping','왕평'],['liao_hua','요화'],['wei_yan','위연'],['liu_feng','유봉'],
+  ['li_yan','이엄'],['yi_ji','이적'],['jiang_wan','장완'],['zhang_yi','장익'],['zhang_bao','장포'],['zhou_cang','주창'],['chen_shi','진식'],['huang_quan','황권'],['huang_yueying','황월영'],
+] as const;
+export const UNIFIED_SD_IDS=new Set<string>(UNIFIED_SD_ENTRIES.map(([id])=>id));
+for(const [id,name] of UNIFIED_SD_ENTRIES){
+  let e=officerManifest.find(entry=>entry.id===id);
+  if(!e){e=E(id,name,{});officerManifest.push(e);}
+  e.battle={sd:{sheet:`officers/${id}-sd-v1.webp`,cell:[350,280],rows:1}};
+  e.duel=`officers/${id}-duel-v2.webp`;
+}
 
 const legacySheets=[
   {id:'officer-battle-sima',url:'officer-battle-sima-v2.webp',rows:4,strictGrid:true,alphaCutoff:8},
@@ -137,9 +152,11 @@ const duelRows:Record<string,{sheet:string;row:number;rows:number}>={
   gao_shou:{sheet:'officers/gao_shou-duel-v1.webp',row:0,rows:1},guo_huai:{sheet:'officers/guo_huai-duel-v1.webp',row:0,rows:1},dai_ling:{sheet:'officers/dai_ling-duel-v1.webp',row:0,rows:1},zhang_zhao:{sheet:'officers/zhang_zhao-duel-v1.webp',row:0,rows:1},zhuge_jin:{sheet:'officers/zhuge_jin-duel-v1.webp',row:0,rows:1},zhang_ba:{sheet:'officers/zhang_ba-duel-v1.webp',row:0,rows:1},cao_xiu:{sheet:'officers/cao_xiu-duel-v1.webp',row:0,rows:1},cao_shuang:{sheet:'officers/cao_shuang-duel-v1.webp',row:0,rows:1},
 };
 for(const id of COMPLETE_ART_IDS)duelRows[id]={sheet:`officers/${id}-duel-v1.webp`,row:0,rows:1};
+for(const id of ['ma_chao','liu_bei','guan_yu','zhang_fei','guan_ping','huang_zhong','jiang_wei','pang_tong','wooden_zhuge','zhao_yun'] as const)duelRows[id]={sheet:`officers/${id}-duel-v2.webp`,row:0,rows:1};
+for(const id of UNIFIED_SD_IDS)duelRows[id]={sheet:`officers/${id}-duel-v2.webp`,row:0,rows:1};
 export function officerDuelModel(u:OfficerLike){const e=officerEntry(u);return e?duelRows[e.id]:undefined;}
 /** 말을 탄 대결 모델(일기토에서 말 탄 크기·말 흔들림). 나머지 대결 모델은 걸어서 싸운다. */
-const MOUNTED_DUEL=new Set(['ma_chao','lu_bu','xiang_yu','sima_shi','cao_cao','cao_pi','zhao_yun','sun_quan','lu_meng','gongsun_yuan','meng_yan','bi_yan','guan_yu','zhang_liao','zhang_he','xiahou_dun','jiang_wei','xiahou_yuan','xu_huang','cao_ren','liu_bei','cao_rui','yuan_tan','yuan_shang','zhang_ba','cao_xiu','cao_shuang']);
+const MOUNTED_DUEL=new Set(['ma_chao','lu_bu','xiang_yu','sima_shi','cao_cao','cao_pi','zhao_yun','sun_quan','lu_meng','gongsun_yuan','meng_yan','bi_yan','guan_yu','zhang_liao','zhang_he','xiahou_dun','jiang_wei','xiahou_yuan','xu_huang','cao_ren','liu_bei','cao_rui','yuan_tan','yuan_shang','zhang_ba','cao_xiu','cao_shuang','cao_zhen','ma_dai','wei_yan']);
 export function officerDuelMounted(u:OfficerLike){const e=officerEntry(u);return !!e&&!!duelRows[e.id]&&MOUNTED_DUEL.has(e.id);}
 
 /** 병종별 일기토 대표 모델(1024×256, 4프레임). 개별 장수 모델이 없을 때의 전용 폴백 자산. */
@@ -156,6 +173,7 @@ export const DUEL_CLASS_SHEETS=Object.freeze([
 const DUEL_FIT:Record<string,readonly [number,number]>={sima_yi:[236,202],sima_yi_young:[230,203],sima_lang:[236,216],sima_fang:[236,204],cao_zhen:[236,203],xu_chu:[236,216],ma_chao:[236,203],chen_gong:[235,180],zhou_yu:[236,174],lu_bu:[236,193],zhuge_ke:[229,182],cao_pi:[248,206],lu_fan:[229,183],sun_quan:[230,184],huang_zhong:[230,184],sima_shi:[246,228],sun_shao:[229,183],meng_yan:[230,167],bi_yan:[229,179],zhu_ran:[229,177],sima_zhao:[246,236],wang_ling:[229,163],cao_cao:[248,203],yang_ang:[229,184],meng_da:[229,187],wang_ping:[229,183],gao_xiang:[229,177],zhao_yun:[230,175],lu_meng:[230,176],gongsun_yuan:[230,175],xiang_yu:[236,174],lu_xun:[230,169],wei_yan:[230,176],ma_su:[229,174]};
 const DUEL_FOOT=230,DUEL_FOOT_H=182,DUEL_MOUNT_H=180;
 function duelFitStyle(id:string){
+  if(UNIFIED_SD_IDS.has(id))return '';
   const f=DUEL_FIT[id];if(!f)return '';
   const [foot,h]=f,k=Math.max(.8,Math.min(1.3,(MOUNTED_DUEL.has(id)?DUEL_MOUNT_H:DUEL_FOOT_H)/h));
   return `;transform-origin:50% ${(foot/256*100).toFixed(1)}%;translate:0 ${((DUEL_FOOT-foot)/256*100).toFixed(2)}%;scale:${k.toFixed(3)}`;

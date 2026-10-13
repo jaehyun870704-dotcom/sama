@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {readFileSync} from 'node:fs';
-import {officerBattleSheet,officerDuelModel,officerDuelModelStyle,officerDuelMounted,officerEntry,officerManifest,officerModelSheets} from '../src/officer-models.ts';
+import {UNIFIED_SD_IDS,officerBattleSheet,officerDuelModel,officerDuelModelStyle,officerDuelMounted,officerEntry,officerManifest,officerModelSheets} from '../src/officer-models.ts';
 
 const lordIds=['cao_cao','cao_pi','cao_rui','liu_bei','sun_quan','gongsun_yuan','yuan_tan','yuan_shang','liu_bang','xiang_yu'] as const;
 const priorityDuelIds=['huang_zhong','zhao_yun','sun_quan','lu_meng','wei_yan','lu_xun','gongsun_yuan','yang_ang','lu_fan','sun_shao','meng_da','ma_su','wang_ping','gao_xiang','meng_yan','bi_yan','zhu_ran','zhuge_ke','wang_ling'] as const;
@@ -33,40 +33,39 @@ describe('장수별 전투 SD와 대결 모델',()=>{
   const players=[['sima_yi','사마의'],['cao_zhen','조진'],['sima_lang','사마랑'],['sima_fang','사마방'],['sima_shi','사마사'],['sima_zhao','사마소']] as const;
 
   it('대상 94명(이야기 전신 전용 인물 2명 포함)과 모든 공개 시트를 색인한다',()=>{
-    expect(officerManifest).toHaveLength(151);
+    expect(officerManifest).toHaveLength(163);
     const sheets=new Set(officerModelSheets.map(s=>s.id));
     for(const entry of officerManifest)for(const battle of Object.values(entry.battle))expect(sheets.has(battle.sheet),battle.sheet).toBe(true);
   });
 
-  it('플레이어 장수 6명은 전투 SD 4줄이며 정확한 셀 규격을 쓴다',()=>{
+  it('플레이어 장수 6명은 통합 SD 한 줄과 정확한 셀 규격을 쓴다',()=>{
     for(const [id,name] of players){
       const model=officerBattleSheet({id,name})!;
-      expect(model.action.rows,id).toBe(4);
-      expect(model.action.cell?.[0],id).toBe(id==='cao_zhen'||id==='sima_zhao'?350:280);
-      expect(model.action.cell?.[1],id).toBe(id==='cao_zhen'||id==='sima_zhao'?280:224);
+      expect(model.action.rows,id).toBe(1);
+      expect(model.action.cell,id).toEqual([350,280]);
       expect(model.action.sheet,id).toMatch(/^officers\//);
     }
   });
 
   it('진화 병종도 원래 계통 시트의 같은 모습(첫 줄)을 쓴다',()=>{
     const strategist=officerBattleSheet({id:'sima_yi',name:'사마의',unitClass:'mastermind'})!;
-    expect(strategist.action.sheet).toContain('battle-strategist');
+    expect(strategist.action.sheet).toBe('officers/sima_yi-sd-v1.webp');
     expect(strategist.action.row).toBe(0);
     const infantry=officerBattleSheet({id:'sima_lang',name:'사마랑',unitClass:'ironInfantry'})!;
-    expect(infantry.action.sheet).toContain('battle-infantry');
+    expect(infantry.action.sheet).toBe('officers/sima_lang-sd-v1.webp');
     expect(infantry.action.row).toBe(0);
   });
 
   it('군주 10명은 군주 전 계통에서 전용 기마 시트를 찾는다',()=>{
     for(const id of lordIds)for(const unitClass of ['lord','hegemon','sovereign','sonOfHeaven'] as const){
       const model=officerBattleSheet({id,name:id,unitClass})!;
-      expect(model.action.sheet,`${id}/${unitClass}`).toBe(`officers/${id}-battle-lord-v1.webp`);
-      expect(model.action.cell,`${id}/${unitClass}`).toEqual([280,224]);
+      expect(model.action.sheet,`${id}/${unitClass}`).toMatch(/^officers\//);
+      expect(model.action.cell?.[0],`${id}/${unitClass}`).toBeGreaterThanOrEqual(280);
     }
   });
 
   it('군주 10명의 전투 시트는 1120×224(280×224 × 4칸)이다',()=>{
-    for(const id of lordIds)expect(webpSize(new URL(`../public/officers/${id}-battle-lord-v1.webp`,import.meta.url)),id).toEqual([1120,224]);
+    for(const id of lordIds){const model=officerBattleSheet({id,name:id,unitClass:'lord'})!;expect(webpSize(new URL(`../public/${model.action.sheet}`,import.meta.url)),id).toEqual([model.action.cell![0]*4,model.action.cell![1]*model.action.rows]);}
   });
 
   it('id, 환영, wooden_zhuge, boss의 연의 이름 순서로 찾는다',()=>{
@@ -92,54 +91,63 @@ describe('장수별 전투 SD와 대결 모델',()=>{
 
   it('우선순위 장수 19명은 각자 1024×256 전용 대결 시트를 쓴다',()=>{
     for(const id of priorityDuelIds){
-      expect(officerDuelModel({id,name:id})?.sheet,id).toBe(`officers/${id}-duel-v1.webp`);
-      expect(webpSize(new URL(`../public/officers/${id}-duel-v1.webp`,import.meta.url)),id).toEqual([1024,256]);
+      const model=officerDuelModel({id,name:id})!;expect(webpSize(new URL(`../public/${model.sheet}`,import.meta.url)),id).toEqual([1024,256]);
     }
   });
 
   it('2차 장수 20명은 각자 1024×256 전용 대결 시트를 쓴다',()=>{
     for(const id of secondaryDuelIds){
-      expect(officerDuelModel({id,name:id})?.sheet,id).toBe(`officers/${id}-duel-v1.webp`);
-      expect(webpSize(new URL(`../public/officers/${id}-duel-v1.webp`,import.meta.url)),id).toEqual([1024,256]);
+      const model=officerDuelModel({id,name:id})!;expect(webpSize(new URL(`../public/${model.sheet}`,import.meta.url)),id).toEqual([1024,256]);
     }
   });
 
   it('2차 추가 장수 8명도 각자 1024×256 전용 대결 시트를 쓴다',()=>{
     for(const id of secondaryFullIds){
-      expect(officerDuelModel({id,name:id})?.sheet,id).toBe(`officers/${id}-duel-v1.webp`);
-      expect(webpSize(new URL(`../public/officers/${id}-duel-v1.webp`,import.meta.url)),id).toEqual([1024,256]);
+      const model=officerDuelModel({id,name:id})!;expect(webpSize(new URL(`../public/${model.sheet}`,import.meta.url)),id).toEqual([1024,256]);
     }
   });
 
   it('2차 추가 장수 8명은 병종별 전투 시트 규격을 지킨다',()=>{
     for(const [id,unitClass,width,height] of secondaryBattle){
       const model=officerBattleSheet({id,name:id,unitClass})!;
-      expect(model.action.sheet,id).toBe(`officers/${id}-battle-${unitClass}-v1.webp`);
-      expect(model.action.cell,id).toEqual([width/4,height]);
-      expect(webpSize(new URL(`../public/officers/${id}-battle-${unitClass}-v1.webp`,import.meta.url)),id).toEqual([width,height]);
+      expect(webpSize(new URL(`../public/${model.action.sheet}`,import.meta.url)),id).toEqual([model.action.cell![0]*4,model.action.cell![1]*model.action.rows]);
     }
   });
 
   it('우선순위 장수 12명은 병종별 전투 시트 규격을 지킨다',()=>{
     for(const [id,unitClass,width,height] of priorityBattle){
       const model=officerBattleSheet({id,name:id,unitClass})!;
-      expect(model.action.sheet,id).toBe(`officers/${id}-battle-${unitClass}-v1.webp`);
-      expect(model.action.cell,id).toEqual([width/4,height]);
-      expect(webpSize(new URL(`../public/officers/${id}-battle-${unitClass}-v1.webp`,import.meta.url)),id).toEqual([width,height]);
+      expect(webpSize(new URL(`../public/${model.action.sheet}`,import.meta.url)),id).toEqual([model.action.cell![0]*4,model.action.cell![1]*model.action.rows]);
     }
   });
 
   it('이름있는 장수 28명은 병종별 표준 SD 시트를 쓴다',()=>{
     for(const [id,unitClass] of namedBattle){
       const model=officerBattleSheet({id,name:id,unitClass})!;
-      expect(model.action.sheet,id).toBe(`officers/${id}-battle-${unitClass}-v1.webp`);
-      expect(model.action.cell,id).toEqual([280,224]);
-      expect(webpSize(new URL(`../public/officers/${id}-battle-${unitClass}-v1.webp`,import.meta.url)),id).toEqual([1120,224]);
+      expect(webpSize(new URL(`../public/${model.action.sheet}`,import.meta.url)),id).toEqual([model.action.cell![0]*4,model.action.cell![1]*model.action.rows]);
     }
   });
 
   it('기마 대결 장수만 기마 연출을 사용한다',()=>{
     for(const id of ['zhao_yun','sun_quan','lu_meng','gongsun_yuan','meng_yan','bi_yan'])expect(officerDuelMounted({id,name:id}),id).toBe(true);
-    for(const id of ['huang_zhong','wei_yan','lu_xun','ma_su','zhuge_ke','wang_ling'])expect(officerDuelMounted({id,name:id}),id).toBe(false);
+    for(const id of ['huang_zhong','lu_xun','ma_su','zhuge_ke','wang_ling'])expect(officerDuelMounted({id,name:id}),id).toBe(false);
+    expect(officerDuelMounted({id:'wei_yan',name:'위연'})).toBe(true);
+  });
+
+  it('2차 통합 장수 39명은 1400×280 SD 한 벌만 쓴다',()=>{
+    expect(UNIFIED_SD_IDS.size).toBe(39);
+    for(const id of UNIFIED_SD_IDS){
+      const model=officerBattleSheet({id,name:id})!;
+      expect(model.action.sheet,id).toBe(`officers/${id}-sd-v1.webp`);
+      expect(model.action.cell,id).toEqual([350,280]);
+      expect(webpSize(new URL(`../public/officers/${id}-sd-v1.webp`,import.meta.url)),id).toEqual([1400,280]);
+    }
+  });
+
+  it('2차 통합 장수 39명은 1024×256 대결 v2를 쓴다',()=>{
+    for(const id of UNIFIED_SD_IDS){
+      expect(officerDuelModel({id,name:id})?.sheet,id).toBe(`officers/${id}-duel-v2.webp`);
+      expect(webpSize(new URL(`../public/officers/${id}-duel-v2.webp`,import.meta.url)),id).toEqual([1024,256]);
+    }
   });
 });

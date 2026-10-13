@@ -101,7 +101,7 @@ const tile=(id:string,seal:string,title:string,line:string,meta='',cls='')=>`<bu
 export function showTitle(host:RunHost){
   const c=host.chronicleSummary(),resume=host.resumeSaved,last=host.lastBattle();
   const item=(id:string,label:string,sub:string,cls='')=>`<button id="${id}" class="${cls}"><span>${label}</span><small>${sub}</small></button>`;
-  host.modal(`<div class="title-screen"><div class="title-bg" aria-hidden="true"></div><img class="title-hero" src="portraits/cao-cao.webp" alt="관을 쓴 조조 창작 초상">
+  host.modal(`<div class="title-screen"><div class="title-bg" aria-hidden="true"></div><img class="title-hero" src="title-hero-v1.webp" alt="조조·유비·손권·여포가 함께 선 창작 표지">
   <div class="title-copy"><p class="title-eyebrow">${GAME_SERIES}</p><h1 class="title-logo">${GAME_NAME}</h1><p class="title-tag">${GAME_TAG}</p>
   <nav class="title-menu" aria-label="첫 화면 메뉴">
     <div class="tm-group">${item('title-start','시작','사마의전 · 제갈량전 가운데 고른다','primary')}${resume&&last?item('title-resume','이어하기',`${esc(last.where)}${last.turn?` · ${last.turn}턴`:''} · 내 차례부터`):''}${item('title-load','불러오기','저장 칸에서 기록을 불러온다')}</div>

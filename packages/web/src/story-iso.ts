@@ -78,6 +78,9 @@ const PLACE_RULES:Array<[RegExp,Kind]>=[
   [/황야|사막|모래 벌판|서량 벌판/,'field'],
   [/알현|어전|옥좌|용상|천자|황제|폐하|즉위|선양|조회/,'throne'],
   [/전장|싸움터|격전|결전|진 앞|진두|양군|대치|전투|맞선|적진|포위망/,'battlefield'],
+  [/옥사|감옥|옥중/,'store'],
+  [/연회|잔치/,'hall'],
+  [/관아|태수부|도독부|승상부|집무/,'hall'],
   [/군막|막사|장막|군의|천막/,'tent'],
   [/서재|서고|서방|글방/,'study'],
   [/회랑|복도/,'corridor'],
@@ -1094,6 +1097,10 @@ function storyVariant(url:string,kinds:Kind[],variant:'day'|'night'|'rain',yTop:
   return {url,w:1600,h:900,cropTop:0,kinds,variant,lit:true,back:[800,yTop],right:[1560,yTop+190],figScale,
     floor:[[45,yTop],[1555,yTop],[1600,900],[0,900]],blocks:[]};
 }
+function storyRoom(url:string,kinds:Kind[],places:RegExp,yTop:number,figScale=1.08):Painted{
+  return {url,w:1600,h:900,cropTop:0,kinds,places,back:[800,yTop],right:[1560,yTop+190],figScale,
+    floor:[[45,yTop],[1555,yTop],[1600,900],[0,900]],blocks:[]};
+}
 /** 3번째 3×3 판: 지역 전용 5장 + 강가/성 밖 진영의 밤·비 4장. */
 function specialPanel(idx:number,kinds:Kind[],yTop:number,o:{variant?:'night'|'rain';places:RegExp;inset?:[number,number];fig?:number}):Painted{
   const edges=[0,340,682,1024],row=Math.floor(idx/3),w=508,h=edges[row+1]!-edges[row]!-4,cropTop=Math.max(0,Math.min(h-254,yTop-150)),[l,r]=o.inset??[8,8];
@@ -1120,6 +1127,10 @@ export function specialBackdropCell(art:number,place:string){
     ??SPECIAL_PANELS.find(s=>s.kinds.includes(kind)&&!s.variant&&s.places.test(place))?.idx;
 }
 const PAINTED:Painted[]=[
+  storyRoom('story-council-day-v1.webp',['tent'],/군의/,320),
+  storyRoom('story-banquet-day-v1.webp',['hall','palace','home'],/연회|잔치/,325),
+  storyRoom('story-prison-day-v1.webp',['store','hall'],/옥사|감옥|옥중/,360,1.02),
+  storyRoom('story-office-day-v1.webp',['hall','study','palace'],/관아|태수부|도독부|승상부|집무/,390,1.04),
   // 레퍼런스 전투 화면과 같은 낮은 디테일 밀도·넓은 인물 배치 공간의 지역 전용 배경.
   ...SPECIAL_PANELS.map(s=>specialPanel(s.idx,s.kinds,s.yTop,{places:s.places,...(s.variant?{variant:s.variant}:{}),...(s.inset?{inset:s.inset}:{}),...(s.fig!==undefined?{fig:s.fig}:{})})),
   storyVariant('story-tent-day-v1.webp',['tent'],'day',350),
@@ -1224,10 +1235,10 @@ function groundScene(kind:Kind,seed:number,place:string,clearPct:readonly At[]):
 
 // ─────────────────────────────────────────────── 장면 조립
 function build(kind:Kind,seed:number,place='',clear:Set<string>=new Set(),artNo=-1):IsoScene{
-  // 반복이 많은 군막·야외 진영·대전은 밤/비 전용 원화를 먼저 쓴다.
-  const themed=paintedFor(kind,artNo,place,true);if(themed)return buildPainted(themed,kind,place);
-  // 지역 이름이 지정된 신규 원화(남만·초원·설성·잔도·갑판)는 절차식 야외 지도보다 먼저 쓴다.
+  // 장소가 정확히 지정된 신규 원화(군의실·연회·옥사·관아·지역 전용)를 먼저 쓴다.
   const dedicated=paintedFor(kind,artNo,place,false,true);if(dedicated)return buildPainted(dedicated,kind,place);
+  // 반복이 많은 군막·야외 진영·대전은 밤/비 전용 원화를 쓴다.
+  const themed=paintedFor(kind,artNo,place,true);if(themed)return buildPainted(themed,kind,place);
   // 알현(옥좌) 장면은 자리 배치가 따로 있어 그린 배경을 쓴다.
   if(OUTDOOR.has(kind)){const t=groundScene(kind,seed,place,[...clear].map(k=>{const [c,r]=k.split(',').map(Number);return [((c!-r!)*TW/2+OX)/W*100,(OY+(c!+r!)*TH/2)/H*100] as At;}));if(t)return t;}
   if(kind!=='throne'){const p=paintedFor(kind,artNo,place);if(p)return buildPainted(p,kind,place);}

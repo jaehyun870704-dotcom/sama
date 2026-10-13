@@ -1,0 +1,30 @@
+{
+  "sheetSize": [816, 1088],
+  "grid": [3, 4],
+  "cellSize": [272, 272],
+  "sheets": [
+    {
+      "file": "shop-items-01-v1.webp",
+      "items": [
+        "catapult-common", "catapult-rare", "catapult-heroic", "catapult-legendary",
+        "fan-common", "fan-rare", "fan-heroic", "fan-legendary",
+        "gloves-common", "gloves-rare", "gloves-heroic", "gloves-legendary"
+      ]
+    },
+    {
+      "file": "shop-items-02-v1.webp",
+      "items": [
+        "headband-common", "headband-rare", "headband-heroic", "headband-legendary",
+        "stone-treasure-sword", "copper-horse-armor", "iron-horse-armor",
+        "herb-pouch", "antidote-vial", "healing-pill", "spirit-pill", "repair-kit"
+      ]
+    },
+    {
+      "file": "shop-items-03-v1.webp",
+      "items": [
+        "scout-scroll", "forced-march-scroll", "secret-strategy-scroll",
+        "return-scroll", "fire-oil-jar", "smoke-caltrop-pouch"
+      ]
+    }
+  ]
+}

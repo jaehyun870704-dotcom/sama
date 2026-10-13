@@ -1,0 +1,9 @@
+{
+  "horse-idle": {
+    "file": "horse-idle-v1.webp",
+    "canvas": [1024, 1024],
+    "recommendedDisplay": [230, 230],
+    "anchor": [0.5, 0.92],
+    "use": "paddock"
+  }
+}
