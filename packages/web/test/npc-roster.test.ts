@@ -2,7 +2,7 @@ import {describe,expect,it} from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import {NPC_ROSTER} from '../src/npc-roster.ts';
-import {evolutionChart,evolutionSheet,npcList} from '../src/troop-evolution.ts';
+import {evolutionChart,evolutionSheet,npcList,officerGallery} from '../src/troop-evolution.ts';
 import {officerManifest} from '../src/officer-models.ts';
 import {officerFaction,OFFICER_FACTIONS} from '../src/officer-factions.ts';
 
@@ -27,15 +27,15 @@ describe('NPC 목록', ()=>{
     const key=(x:{name:string;unitClass:string;side:string;stages:string[]})=>`${x.name}|${x.unitClass}|${x.side}|${x.stages.join(',')}`;
     expect(NPC_ROSTER.map(key).sort()).toEqual(fromStages().map(key).sort());
   });
-  it('진화표는 병종·장수·NPC를 각자 탭에서만 보여 준다', ()=>{
+  it('진화표는 병종·NPC를 각자 탭에서, 장수는 따로 장수 도감에서 보여 준다', ()=>{
     const all=evolutionChart('all'),foot=evolutionChart('foot');
     for(const html of [all,foot,evolutionChart('single')]){expect(html).not.toContain('사마의');expect(html).not.toContain('동문 피난민');expect(html).not.toContain('evo-people');}
     expect(all).toContain('단일 병종');
     expect(evolutionChart('single')).not.toContain('계통 <small>');
-    const officer=evolutionChart('officer');
-    for(const f of ['위','촉','오','군웅'])expect(officer).toContain(`<h3>${f} <small>`);
-    for(const n of ['사마의','유비','손권','여포'])expect(officer).toContain(`<h4>${n}</h4>`);
-    expect(officer).not.toContain('동문 피난민');
+    expect(all).not.toContain('data-evo-group="officer"');
+    for(const f of OFFICER_FACTIONS){const g=officerGallery(f);expect(g).toContain(`<h3>${f} <small>`);expect(g).toContain(`data-officer-faction="${f}"`);expect(g).not.toContain('동문 피난민');}
+    for(const [f,n] of [['위','사마의'],['촉','유비'],['오','손권'],['군웅','여포'],['초','항우'],['한','유방']])expect(officerGallery(f as never)).toContain(`<h4>${n}</h4>`);
+    expect(officerGallery('촉')).not.toContain('<h4>사마의</h4>');
     const npc=evolutionChart('npc');
     for(const n of ['꿈속의 황제','동문 피난민','북문 피난민','군량 수송대','조조'])expect(npc).toContain(`<h4>${n}</h4>`);
     expect(npc).not.toContain('우군');
@@ -51,8 +51,8 @@ describe('NPC 목록', ()=>{
     for(const e of officerManifest)expect(OFFICER_FACTIONS,e.id).toContain(officerFaction(e.name));
   });
   it('진화표 그림은 모두 같은 상자에 맞춰 다시 그린다', ()=>{
-    for(const g of ['all','officer','npc'] as const){
-      const html=evolutionChart(g),cards=html.match(/<article class="evo-card/g)?.length??0,fits=html.match(/class="evo-fit"/g)?.length??0,officers=html.match(/background-image:url\(officers\//g)?.length??0;
+    for(const html0 of [evolutionChart('all'),evolutionChart('npc'),...OFFICER_FACTIONS.map(f=>officerGallery(f))]){
+      const html=html0,cards=html.match(/<article class="evo-card/g)?.length??0,fits=html.match(/class="evo-fit"/g)?.length??0,officers=html.match(/background-image:url\(officers\//g)?.length??0;
       expect(fits+officers).toBe(cards);
     }
   });
@@ -70,7 +70,7 @@ describe('군주', ()=>{
     const bosses=ROUTES.map(r=>r.region.boss).filter(b=>['조조','조비','조예','유비','손권','공손연','원담','원상'].includes(b.name));
     expect(bosses.length).toBeGreaterThan(0);
     for(const b of bosses)expect(b.unitClass).toBe('lord');
-    const officer=evolutionChart('officer');
+    const officer=officerGallery('위');
     expect(officer).toMatch(/<h4>조조<\/h4><\/div><\/div><div class="evo-range">[\s\S]*?<b>군주 ·/);
   });
 });

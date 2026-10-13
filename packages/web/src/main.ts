@@ -2,7 +2,8 @@ import {trialGoals,trialGoalText,trialProgress} from './expedition-objectives.ts
 import {GAME_NAME,GAME_SERIES} from './brand.ts';
 import {DOCK_ICONS} from './dock-icons.ts';
 import {navalAtlas} from './naval-art.ts';
-import {evolutionChart,paintArmor,fitEvoSprites,type EvoGroup} from './troop-evolution.ts';
+import {evolutionChart,officerGallery,paintArmor,fitEvoSprites,type EvoGroup} from './troop-evolution.ts';
+import type {OfficerFaction} from './officer-factions.ts';
 import {troopAdvice,adviceFor,recommendExpeditionSupport,supportWarnings,physicalMatchup} from './troop-tactics.ts';
 import {officerLooks,officerLook,officerPortrait,dialogueCaption,splitSpokenLine,customFace} from './officer-art.ts';
 import {troopRoles,supportOptions,visualClass,troopArt,troopSheets,basicReactionArt,evolutionLines,classSheets,loadClassSheets} from './troops.ts';
@@ -538,7 +539,7 @@ const resumeSaved=()=>{try{const loaded=Session.load(JSON.parse(localStorage.get
   catch{toast('현재 버전의 저장 기록을 읽지 못했습니다.');try{const l=lastBattle();if(l)localStorage.setItem(LAST_KEY,JSON.stringify({...l,ongoing:false}));}catch{/* optional */}}};
 const runHost:RunHost={modal:(html,closable)=>modal(html,closable),showMenu:()=>showMenu(),toast:t=>toast(t),startBattle:(dep,seed)=>{session=new Session(RUN_CHAPTER,'normal',seed,'survival',RULES,dep);activate();persist();},
   startStory:(chapter,dep,seed)=>{session=new Session(chapter,'normal',seed,'survival',RULES,dep);activate();persist();},
-  showChronicle:()=>showChronicleLanding(),showChronicleNext:()=>showChronicleNext(),chronicleSummary:()=>chronicleSummary(),showZhuge:()=>showZhuge(),zhugeSummary:()=>zhugeSummary(),showScenario:()=>showScenario(scenarioHost),showTraining:()=>showTraining(),showStoryArchive:()=>showStoryArchive(),showRecruit:()=>showRecruit(),showShop:(back:()=>void)=>openShop('S',back,undefined,true),shopLine:()=>`사마의전 금 ${(campaign.gold?.S??1000).toLocaleString()} · 제갈량전 금 ${(campaign.gold?.Z??1000).toLocaleString()}`,showExpeditions:(tab?:Expedition['kind'])=>showExpeditions(tab),showTroops:()=>showTroopGallery(),showSlots:(back?:()=>void)=>showSlots(back),
+  showChronicle:()=>showChronicleLanding(),showChronicleNext:()=>showChronicleNext(),chronicleSummary:()=>chronicleSummary(),showZhuge:()=>showZhuge(),zhugeSummary:()=>zhugeSummary(),showScenario:()=>showScenario(scenarioHost),showTraining:()=>showTraining(),showStoryArchive:()=>showStoryArchive(),showRecruit:()=>showRecruit(),showShop:(back:()=>void)=>openShop('S',back,undefined,true),shopLine:()=>`사마의전 금 ${(campaign.gold?.S??1000).toLocaleString()} · 제갈량전 금 ${(campaign.gold?.Z??1000).toLocaleString()}`,showExpeditions:(tab?:Expedition['kind'])=>showExpeditions(tab),showTroops:()=>showTroopGallery(),showOfficers:()=>showOfficerGallery(),showSlots:(back?:()=>void)=>showSlots(back),
   get resumeSaved(){const l=lastBattle();return l?.ongoing?resumeSaved:undefined;},lastBattle:()=>{const l=lastBattle();return l?.ongoing?{where:l.where,turn:l.turn}:undefined;},
   liveRunBattle:()=>{const s=openRunSession();if(!s)return undefined;const d=s.deployment!;return d.run?{seed:d.run.seed,floor:d.run.floor,kind:d.run.kind}:{seed:d.runStory!.seed,floor:d.runStory!.floor,kind:'story'};},
   backToBattle:()=>{const s=openRunSession();if(s&&s!==session){session=s;activate();return;}menuOpen=false;closeModal();}};
@@ -847,6 +848,13 @@ function showTroopGallery(group:EvoGroup='all'){
  menuOpen=true;clearTimeout(aiTimer);
  modal(`<div class="briefing troop-evolution"><div class="eyebrow">도감 · 병종</div><h2>병종 진화표</h2><p class="muted">레벨이 오르면 진화하고, 공격 범위가 넓어진다.</p>${evolutionChart(group)}<div class="modal-actions"><button id="troop-back">← 도감</button></div></div>`,false);
  document.querySelectorAll<HTMLButtonElement>('[data-evo-group]').forEach(b=>b.onclick=()=>showTroopGallery(b.dataset.evoGroup as EvoGroup));
+ void paintArmor();void fitEvoSprites();$('#troop-back').onclick=()=>showCollections(runHost);
+}
+/** 장수 도감: 이름있는 장수만 진영(위·촉·오·군웅·초·한)별로 본다. 병종 진화표와 따로 둔다. */
+function showOfficerGallery(f:OfficerFaction='위'){
+ menuOpen=true;clearTimeout(aiTimer);
+ modal(`<div class="briefing troop-evolution officer-gallery"><div class="eyebrow">도감 · 장수</div><h2>장수</h2><p class="muted">이름있는 장수의 전투 모습 · 병종 · 고유특성을 진영별로 본다.</p>${officerGallery(f)}<div class="modal-actions"><button id="troop-back">← 도감</button></div></div>`,false);
+ document.querySelectorAll<HTMLButtonElement>('[data-officer-faction]').forEach(b=>b.onclick=()=>showOfficerGallery(b.dataset.officerFaction as OfficerFaction));
  void paintArmor();void fitEvoSprites();$('#troop-back').onclick=()=>showCollections(runHost);
 }
 /**

@@ -14,15 +14,15 @@ import {officerManifest,officerEntry,officerModelSheets,type OfficerEntry} from 
 import {NPC_ROSTER} from './npc-roster.ts';
 import {singleStageCorrectionRows} from './complete-troops.ts';
 import {LORD_NAMES} from './lords.ts';
-import {officerFaction,OFFICER_FACTIONS} from './officer-factions.ts';
+import {officerFaction,OFFICER_FACTIONS,type OfficerFaction} from './officer-factions.ts';
 import {paintedTroopArt} from './painted-troops.ts';
 import {spriteAtlas,type AtlasFit} from './sprite-atlas.ts';
 
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
-export type EvoGroup='all'|'foot'|'spear'|'horse'|'ranged'|'mind'|'siege'|'single'|'officer'|'npc';
+export type EvoGroup='all'|'foot'|'spear'|'horse'|'ranged'|'mind'|'siege'|'single'|'npc';
 export const EVO_GROUPS:Array<[EvoGroup,string,string[]]>=[
   ['all','전체',[]],['foot','보병',['infantry','bandit','monk']],['spear','창병',['spearman']],['horse','기병',['cavalry','heavyCav','horseArcher']],
-  ['ranged','궁·노',['archer','crossbow']],['mind','책사·술사',['strategist','fengshui','shaman','maiden','taoist']],['siege','공성·수군',['engineer','catapult','ram','navy']],['single','단일',[]],['officer','장수',[]],['npc','NPC',[]],
+  ['ranged','궁·노',['archer','crossbow']],['mind','책사·술사',['strategist','fengshui','shaman','maiden','taoist']],['siege','공성·수군',['engineer','catapult','ram','navy']],['single','단일',[]],['npc','NPC',[]],
 ];
 const TIER_NAME=['','기본','정예','최정예','전설','신화'];
 /** 평타가 닿는 칸을 작은 격자로(가운데 = 자기). 진화할수록 넓어지는 모양이 한눈에 보인다. */
@@ -69,13 +69,17 @@ function officerNote(name:string,c?:UnitClass){
   const troop=te?`<p class="evo-skill evo-troop" title="${esc(troopEffectText(te.effect))}"><b>병종 특성 「${esc(te.effect.name)}」</b><span>${esc(troopEffectText(te.effect))} (병종 1~4단계 · 장수도 함께 쓴다)</span></p>`:'';
   return troop+gs.map((g,k)=>`<p class="evo-skill evo-troop" title="${esc(g.description)}"><b>고유특성 ${k+1} 「${esc(g.name)}」</b><span>${esc(g.description)} (${esc(g.unlock)})</span></p>`).join('');
 }
-/** 장수 탭: 고유특성이 있는 이름있는 장수만(목록 밖 인물은 병종으로 처리). */
+/** 장수 도감: 고유특성이 있는 이름있는 장수만(목록 밖 인물은 병종으로 처리). 병종 진화표와 따로 본다. */
 const namedManifest=()=>officerManifest.filter(e=>!!signatureSkill(e.name));
-function officerCards(){
-  return OFFICER_FACTIONS.map(f=>{
-    const list=namedManifest().filter(e=>officerFaction(e.name)===f);if(!list.length)return '';
-    return `<section class="evo-line"><h3>${f} <small>${list.length}명</small></h3><div class="evo-grid">${list.map(e=>{const c=officerClass(e),b=officerSheet(e,c);return personCard(b?officerArt(e.name,b):classArt(c),'장수',e.name,c,officerNote(e.name,c),FAMED_OFFICERS.includes(e.name));}).join('')}</div></section>`;
-  }).join('');
+export const namedOfficerCount=()=>namedManifest().length;
+function officerCards(f:OfficerFaction){
+  const list=namedManifest().filter(e=>officerFaction(e.name)===f);if(!list.length)return '';
+  return `<section class="evo-line"><h3>${f} <small>${list.length}명</small></h3><div class="evo-grid">${list.map(e=>{const c=officerClass(e),b=officerSheet(e,c);return personCard(b?officerArt(e.name,b):classArt(c),'장수',e.name,c,officerNote(e.name,c),FAMED_OFFICERS.includes(e.name));}).join('')}</div></section>`;
+}
+/** 장수 도감 화면 본문: 위·촉·오·군웅·초·한 탭과 고른 진영의 장수 카드. */
+export function officerGallery(f:OfficerFaction='위'){
+  const all=namedManifest(),n=(x:OfficerFaction)=>all.filter(e=>officerFaction(e.name)===x).length;
+  return `<div class="evo-tabs">${OFFICER_FACTIONS.map(x=>`<button data-officer-faction="${x}" class="${x===f?'active':''}">${x} <small>${n(x)}</small></button>`).join('')}<span class="muted">이름있는 장수 ${all.length}명</span></div><div class="evo-lines">${officerCards(f)}</div>`;
 }
 /** 본편 전장의 NPC(아군 AI). 한 사람은 카드 한 장·병종 하나다.
  * "곽회 창병"·"조휴 궁수"·"조상 친위"처럼 장수 이름을 단 부대는 따로 세우지 않고 그 장수 카드에 휘하로 적는다. */
@@ -93,7 +97,6 @@ function singleLines(){
 }
 export function evolutionChart(group:EvoGroup='all'){
   const tabs=(note:string)=>`<div class="evo-tabs">${EVO_GROUPS.map(([id,name])=>`<button data-evo-group="${id}" class="${id===group?'active':''}">${name}</button>`).join('')}<span class="muted">${note}</span></div>`;
-  if(group==='officer')return `${tabs('이름있는 장수 '+namedManifest().length)}<div class="evo-lines">${officerCards()}</div>`;
   if(group==='npc')return `${tabs('NPC '+npcList().length)}<div class="evo-lines">${npcCards()}</div>`;
   const fams=EVO_GROUPS.find(g=>g[0]===group)![2];
   const lines=group==='single'?[]:evolutionLines().filter(l=>!fams.length||fams.includes(familyOf(l[0]![0])));

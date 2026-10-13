@@ -20,6 +20,7 @@ import {tierOf,currentClass,type UnitClass,type BattleState} from '../../core/sr
 import type {Deployment} from './progression.ts';
 import {을를} from './josa.ts';
 import {playEndingCutscene,finaleData} from './ending-finale.ts';
+import {namedOfficerCount} from './troop-evolution.ts';
 
 export interface RunHost {
   modal(html:string,closable?:boolean):void;
@@ -39,6 +40,7 @@ export interface RunHost {
   /** 연의 진행 요약: 다음 장 · 이긴 장 · 인장 */
   chronicleSummary():{next?:string;won:number;total:number;seals:number;sealMax:number};
   showTroops():void;
+  showOfficers():void;
   showSlots(back?:()=>void):void;
   /** 시나리오 모드(본편: 연의 + 가상) */
   showScenario():void;
@@ -109,7 +111,7 @@ export function showTitle(host:RunHost){
   <div class="title-copy"><p class="title-eyebrow">${GAME_SERIES}</p><h1 class="title-logo">${GAME_NAME}</h1><p class="title-tag">${GAME_TAG}</p>
   <nav class="title-menu" aria-label="첫 화면 메뉴">
     <div class="tm-group">${item('title-start','시작','사마의전 · 제갈량전 가운데 고른다','primary')}${resume&&last?item('title-resume','이어하기',`${esc(last.where)}${last.turn?` · ${last.turn}턴`:''} · 내 차례부터`):''}${item('title-load','불러오기','저장 칸에서 기록을 불러온다')}</div>
-    <div class="tm-group">${item('title-recruit','등용','계보마다 조건을 채워 장수를 휘하로 · 연의에 데려간다')}${item('title-codex','도감 보기','인물 · 병종 · 책략 · 보물 · 갈림길')}${item('title-lobby','본영','수련장 · 도전 · 연구')}</div>
+    <div class="tm-group">${item('title-recruit','등용','계보마다 조건을 채워 장수를 휘하로 · 연의에 데려간다')}${item('title-codex','도감 보기','인물 · 장수 · 병종 · 책략 · 보물 · 갈림길')}${item('title-lobby','본영','수련장 · 도전 · 연구')}</div>
   </nav>
   <p class="title-note">비상업 팬 창작 게임 · 등장인물은 『삼국지연의』와 정사를 바탕으로 새로 그렸다</p></div></div>`,false);
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
@@ -170,6 +172,7 @@ export function showCollections(host:RunHost,back?:()=>void){
   <div class="codex-cards">
     ${card('col-people','인','인물 열전','연의·정사의 장수 · 능력 · 고유특성 · 열전',`${codexNames().length}명`)}
     ${card('col-classes','병','병종','병종마다 무기·상성·부대효과',`${Object.keys(classNames).length}종`)}
+    ${card('col-officers','장','장수','위 · 촉 · 오 · 군웅 · 초 · 한 장수의 전투 모습 · 고유특성',`${namedOfficerCount()}명`)}
     ${card('col-evolution','진','병종 진화표','레벨이 오르면 어떻게 강해지는가','4단계 진화')}
     ${card('col-strategies','책','책략','속성 단계 · 상승 · 감소 · 보급 · 사신',`${allStrategies.length}종`)}
     ${card('col-treasures','보','보물','고유 보물 50점 · 얻는 곳 · 고유 기능',`${t.owned}/${t.total} · 회차 ${t.relics}/${t.relicTotal}`)}
@@ -178,7 +181,7 @@ export function showCollections(host:RunHost,back?:()=>void){
   <div class="run-actions"><button id="col-back">← 돌아가기</button></div></div>`,false);
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
   on('col-people',codexOf(host,'people'));on('col-classes',codexOf(host,'classes'));on('col-strategies',codexOf(host,'strategies'));
-  on('col-evolution',host.showTroops);on('col-treasures',()=>showTreasures(host));on('col-fate',()=>showFateMap(host,()=>showCollections(host)));on('col-back',leave);
+  on('col-officers',host.showOfficers);on('col-evolution',host.showTroops);on('col-treasures',()=>showTreasures(host));on('col-fate',()=>showFateMap(host,()=>showCollections(host)));on('col-back',leave);
 }
 
 /** 보물 도감: 가진 것·얻는 곳·효과·특기·장착한 장수. */
