@@ -3,7 +3,9 @@ import {existsSync,readFileSync} from 'node:fs';
 // 장수 그림 한 벌(디자인 지시서: SD 1400×280)이 들어온 장수는 병종과 무관하게 그 시트를 쓴다.
 // 새 일기토가 들어온 장수는 그 시트를 쓴다(옛 -v1은 지운다). 파일 이름(판 번호)은 장수마다 UNIFIED_SD_FILES에 적혀 있다.
 import {UNIFIED_SD_FILES,UNIFIED_SD_IDS,officerBattleSheet,officerDuelModel,officerDuelModelStyle,officerDuelMounted,officerEntry,officerManifest,officerModelSheets} from '../src/officer-models.ts';
-const duelFile=(id:string)=>UNIFIED_SD_FILES[id]?.duel??`${id}-duel-v1.webp`;
+// 4차 납품에서 통합 SD가 아닌 장수 8명은 일기토만 SD 비례 duel-v2로 바뀌었다.
+const DUEL_V2=['bi_yan','gongsun_yuan','lu_fan','meng_yan','sun_shao','wang_ling','yang_ang','zhuge_ke'];
+const duelFile=(id:string)=>UNIFIED_SD_FILES[id]?.duel??`${id}-duel-v${DUEL_V2.includes(id)?2:1}.webp`;
 const hasSd=(id:string)=>!!UNIFIED_SD_FILES[id];
 const sdFile=(id:string)=>UNIFIED_SD_FILES[id]!.sd;
 
@@ -59,7 +61,7 @@ describe('장수별 전투 SD와 대결 모델',()=>{
     const strategist=officerBattleSheet({id:'xun_yu',name:'순욱',unitClass:'mastermind'})!;
     expect(strategist.action.sheet).toContain('battle-strategist');
     expect(strategist.action.row).toBe(0);
-    const infantry=officerBattleSheet({id:'xu_chu',name:'허저',unitClass:'ironInfantry'})!;
+    const infantry=officerBattleSheet({id:'gao_shun',name:'고순',unitClass:'ironInfantry'})!;
     expect(infantry.action.sheet).toContain('battle-infantry');
     expect(infantry.action.row).toBe(0);
   });
@@ -93,7 +95,7 @@ describe('장수별 전투 SD와 대결 모델',()=>{
     expect(officerDuelModelStyle({id:'lu_bu',name:'여포'})).toContain('--officer-x');
     expect(officerDuelModel({id:'lu_bu',name:'여포'})?.sheet).toBe('officers/lu_bu-duel-v2.webp');
     expect(officerDuelModel({id:'cao_cao',name:'조조'})?.sheet).toBe('officers/cao_cao-duel-v1.webp');
-    expect(officerDuelModel({id:'cao_pi',name:'조비'})?.sheet).toBe('officers/cao_pi-duel-v1.webp');
+    expect(officerDuelModel({id:'cao_pi',name:'조비'})?.sheet).toBe('officers/cao_pi-duel-v2.webp');
     expect(officerDuelModel({id:'xiang_yu',name:'항우'})?.sheet).toBe('officers/xiang_yu-duel-v1.webp');
   });
 
@@ -161,7 +163,7 @@ describe('장수별 전투 SD와 대결 모델',()=>{
   });
 
   it('통합 SD 장수는 1400×280 SD 한 벌·1024×256 일기토만 쓰고 옛 시트 파일은 없다',()=>{
-    expect(UNIFIED_SD_IDS.length).toBe(49);
+    expect(UNIFIED_SD_IDS.length).toBe(64);
     for(const id of UNIFIED_SD_IDS){
       const e=officerEntry({id,name:id})!;expect(e,id).toBeDefined();const f=UNIFIED_SD_FILES[id]!;
       expect(officerBattleSheet({id,name:id})!.action.sheet,id).toBe(id==='wooden_zhuge'?'officers/zhuge_liang-battle-cart-v1.webp':`officers/${f.sd}`);
@@ -175,10 +177,34 @@ describe('장수별 전투 SD와 대결 모델',()=>{
       expect(existsSync(new URL(`../public/officers/${f}.webp`,import.meta.url)),f).toBe(false);
     expect(UNIFIED_SD_FILES.sima_shi).toEqual({sd:'sima_shi-sd-v2.webp',duel:'sima_shi-duel-v3.webp'});
     // 제갈균은 파일 이름이 jun-*이고, 제갈량전 출진 id(z_jun)는 이름으로 찾는다.
-    expect(officerDuelModel({id:'z_jun',name:'제갈균'})?.sheet).toBe('officers/jun-duel-v2.webp');
-    expect(officerBattleSheet({id:'z_guan_suo',name:'관색',unitClass:'infantry'})?.action.sheet).toBe('officers/guan_suo-sd-v1.webp');
+    expect(officerDuelModel({id:'z_jun',name:'제갈균'})?.sheet).toBe('officers/jun-duel-v4.webp');
+    expect(officerBattleSheet({id:'z_guan_suo',name:'관색',unitClass:'infantry'})?.action.sheet).toBe('officers/guan_suo-sd-v2.webp');
     // 색인에 없던 촉 장수도 이름으로 찾는다(촉 출진 장수 id는 z_ 접두).
     expect(officerBattleSheet({id:'z_huang_yueying',name:'황월영',unitClass:'strategist'})?.action.sheet).toBe('officers/huang_yueying-sd-v1.webp');
-    expect(officerDuelModel({id:'z_fei_yi',name:'비의'})?.sheet).toBe('officers/fei_yi-duel-v2.webp');
+    expect(officerDuelModel({id:'z_fei_yi',name:'비의'})?.sheet).toBe('officers/fei_yi-duel-v3.webp');
+  });
+
+  it('4차 납품(2927c61·6d66aeb): 합격 15명은 통합 SD, 일기토만 다시 그린 장수는 새 판, 옛 그림은 지웠다',()=>{
+    const fourth=['cao_pi','cao_rui','xu_chu','sima_fu','hu_zun','zhang_he','cao_ren','xiahou_dun','xiahou_yuan','zhang_liao','wang_shuang','lu_xun','chen_gong','zhu_rong','xu_shu'];
+    for(const id of fourth)expect((UNIFIED_SD_IDS as readonly string[]).includes(id),id).toBe(true);
+    expect(UNIFIED_SD_FILES.lu_xun).toEqual({sd:'lu_xun-sd-v1.webp',duel:'lu_xun-duel-v3.webp'});
+    expect(UNIFIED_SD_FILES.sima_zhao).toEqual({sd:'sima_zhao-sd-v3.webp',duel:'sima_zhao-duel-v5.webp'});
+    expect(UNIFIED_SD_FILES.zhuge_jun).toEqual({sd:'jun-sd-v2.webp',duel:'jun-duel-v4.webp'});
+    expect(UNIFIED_SD_FILES.meng_da).toEqual({sd:'meng_da-sd-v2.webp',duel:'meng_da-duel-v4.webp'});
+    expect(UNIFIED_SD_FILES.zhuge_jin).toEqual({sd:'zhuge_jin-sd-v1.webp',duel:'zhuge_jin-duel-v3.webp'});
+    // 불합격 장수(조조·손권·여포·주유 등)는 예전 그림 그대로다.
+    for(const id of ['cao_cao','sun_quan','lu_bu','zhou_yu','guo_huai','cao_hong','xu_huang','lu_meng','zhu_ran','deng_ai','zhong_hui','dai_ling','yue_jin','meng_huo','wutugu'])
+      expect((UNIFIED_SD_IDS as readonly string[]).includes(id),id).toBe(false);
+    // 통합 SD가 아닌 장수 8명은 일기토만 새 판.
+    for(const id of DUEL_V2){
+      expect(officerDuelModel({id,name:id})?.sheet,id).toBe(`officers/${id}-duel-v2.webp`);
+      expect(existsSync(new URL(`../public/officers/${id}-duel-v1.webp`,import.meta.url)),id).toBe(false);
+    }
+    for(const f of ['cao_pi-battle-lord-v1','cao_rui-duel-v1','xu_chu-battle-infantry-v1','chen_gong-battle-strategist-v1','zhang_liao-duel-v1','meng_da-sd-v1','meng_da-duel-v2','guan_suo-sd-v1','sima_zhao-duel-v3','jun-duel-v2','huang_zhong-duel-v2','zhao_yun-duel-v2'])
+      expect(existsSync(new URL(`../public/officers/${f}.webp`,import.meta.url)),f).toBe(false);
+    // 군주는 통합 SD로 바뀌어도 군주 병종으로 본다(전장 모습은 SD 한 벌).
+    expect(officerBattleSheet({id:'cao_pi',name:'조비',unitClass:'lord'})?.action.sheet).toBe('officers/cao_pi-sd-v1.webp');
+    for(const id of ['cao_pi','cao_rui','zhang_he','cao_ren','xiahou_dun','xiahou_yuan','zhang_liao','gongsun_yuan','meng_yan','bi_yan'])expect(officerDuelMounted({id,name:id}),id).toBe(true);
+    for(const id of ['xu_chu','sima_fu','hu_zun','wang_shuang','lu_xun','chen_gong','zhu_rong','xu_shu','lu_fan','sun_shao','wang_ling','yang_ang','zhuge_ke'])expect(officerDuelMounted({id,name:id}),id).toBe(false);
   });
 });
