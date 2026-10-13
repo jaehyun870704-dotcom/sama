@@ -710,7 +710,8 @@ export class Session {
     if(this.state.outcome!=='victory')return [];
     const rules=stageRules[this.state.stage.id],custom=rules?.seals?.({state:this.state,difficulty:this.difficulty,journalLength:this.journal.length});if(custom)return custom;
     if(this.chapter===10){const finalTries=this.state.choices.filter(c=>c.nodeId==='sun_quan').length;return [1,...(this.wrongAnswers===0?[2]:[]),...(finalTries===1?[3]:[])];}
-    if(this.chapter===9)return [1,...(this.state.firedEvents.has('flood/lock')?[2]:[]),...(this.state.turn<=(this.difficulty==='extreme'?12:14)?[3]:[])];
+    // S1-10: 조운을 사방에서 묶거나(봉쇄) 꺾으면 · 신속한 철수(물이 들판을 덮는 7턴 전후). 14·12턴은 누구나 넘겨 가르지 못했다.
+    if(this.chapter===9)return [1,...(this.state.firedEvents.has('flood/lock')||this.state.find('zhao_yun')?.alive===false?[2]:[]),...(this.state.turn<=(this.difficulty==='extreme'?7:6)?[3]:[])];
     if(this.chapter===5)return [1,...(['convoy_a','convoy_b'].every(id=>this.state.find(id)?.alive)?[2]:[]),...(this.state.turn<=(this.difficulty==='extreme'?9:10)?[3]:[])];
     if(this.chapter===0)return [1,...(this.bribes===0&&!this.state.choices.some(c=>c.nodeId==='bribe')?[2]:[]),...(['sima_yi','sima_lang'].every(id=>{const u=this.state.get(id);return u.alive&&u.hp>=u.stats.maxHp*.5;})?[3]:[])];
     return awardedSeals(this.state,this.difficulty);
@@ -802,9 +803,13 @@ export class Session {
     if(data.deployment?.mission?.supportClasses&&(!Array.isArray(data.deployment.mission.supportClasses)||data.deployment.mission.supportClasses.length!==2||data.deployment.mission.supportClasses.some(k=>!supportOptions.includes(k))))throw new Error('잘못된 지원 병종');
     if(data.deployment?.perks!==undefined&&!validGrants(data.deployment.perks))throw new Error('잘못된 연구·장수 효과 기록');
     if(data.deployment?.growth&&Object.values(data.deployment.growth).some(n=>!Number.isSafeInteger(n)||n<0))throw new Error('잘못된 성장 기록');
+    // 엔진 기능(날씨·영역 피해·성문)을 옮겨 대본·지도가 바뀐 장: 바꾸기 전에 저장한 전투는 다시 재생하다 어긋나는 곳에서 멈춰 그 자리부터 이어 한다.
+    if(ENGINE_RESCRIPTED.has(chapters[data.chapter]!.stage.id))lenient=true;
     const session=new Session(data.chapter,data.difficulty,data.seed,data.preparation,data.revision??2,data.deployment?structuredClone(data.deployment):undefined);
     session.journal=structuredClone(data.journal);session.checkpoints=[...data.checkpoints];session.rewarded=data.rewarded===true;session.lenientReplay=lenient;session.replay();return session;
   }
 }
 /** 장의 인장 세 개 이름(전투 전에도 보이게 — 연의 장 상세·정비 화면). */
-export function sealNamesOf(chapter:number):readonly [string,string,string]{const named=stageRules[chapters[chapter]?.stage.id??'']?.sealNames;if(named)return named;const self={chapter};return (self.chapter===10?['맹약 성사','실언 없는 설득','손권을 단번에']:self.chapter===9?['조조 탈출','조운 봉쇄','신속한 철수']:self.chapter===8?['야곡 출구 도착','손실 최소화','신속한 철수']:self.chapter===7?['전초 수비망 격파','전 부대 생환','신속한 진격']:self.chapter===6?['관문 돌파','호위 부대 보존','신속한 제압']:self.chapter===5?['수송대 탈출','수송대 두 부대 생존','신속한 철수']:self.chapter===4?['흉몽 돌파','사마의 생존','빠른 각성']:self.chapter===0?['탈출 성공','무발각 잠입','형제 체력 50%']:self.chapter===2?['가문 수호','민중·부대 전원 생존','신속한 방어']:self.chapter===3?['산길 탈출','형제 생존','추격 따돌리기']:['성채 점령','신속한 결단','병력 보존']) as [string,string,string];}
+/** 제갈량전의 엔진 기능을 옮겨 대본·지도가 바뀐 사마의전 장(2026-10-13). */
+export const ENGINE_RESCRIPTED:ReadonlySet<string>=new Set(['S1-10','S2-02','S2-03','S2-07','S2-13','S3-02','S3-06','S3-07']);
+export function sealNamesOf(chapter:number):readonly [string,string,string]{const named=stageRules[chapters[chapter]?.stage.id??'']?.sealNames;if(named)return named;const self={chapter};return (self.chapter===10?['맹약 성사','실언 없는 설득','손권을 단번에']:self.chapter===9?['조조 탈출','조운을 묶거나 꺾음','신속한 철수']:self.chapter===8?['야곡 출구 도착','손실 최소화','신속한 철수']:self.chapter===7?['전초 수비망 격파','전 부대 생환','신속한 진격']:self.chapter===6?['관문 돌파','호위 부대 보존','신속한 제압']:self.chapter===5?['수송대 탈출','수송대 두 부대 생존','신속한 철수']:self.chapter===4?['흉몽 돌파','사마의 생존','빠른 각성']:self.chapter===0?['탈출 성공','무발각 잠입','형제 체력 50%']:self.chapter===2?['가문 수호','민중·부대 전원 생존','신속한 방어']:self.chapter===3?['산길 탈출','형제 생존','추격 따돌리기']:['성채 점령','신속한 결단','병력 보존']) as [string,string,string];}

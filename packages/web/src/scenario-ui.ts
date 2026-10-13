@@ -2,6 +2,7 @@
  * 시나리오 모드 화면: 장 선택 → 이야기 무대(선택) → 출진 전 정비(반드시) → 전투 → 전투 뒤 장면 → 다음 장.
  * 규칙은 scenario.ts, 무대 연출은 story-stage.ts. 연의 장의 정비·전투·보상은 main.ts의 기존 흐름을 쓴다.
  */
+import {revealAfterResult} from './treasure-reveal.ts';
 import {loadScenario,saveScenario,scenarioPath,winOver,currentStep,scriptOf,choose,undoChoice,finishStep,fateChoices,floorFor,scenarioParty,rewardOfficers,endingNotes,routeTales,COMPANIONS,
   ensureRun,joinRecruits,newScenarioRun,inWhatIf,joinCaptive,pendingMarch,marchNodes,recruitOffer,relicOffer,recruitOfficer,healAll,finishMarch,marchFloor,afterFight,loseFight,runMandate,omenOffer,omenOf,chooseOmen,omenReward,addRunBonus,EXTRA_TALES,type ScenarioState,type ScenarioStep,type MarchNode} from './scenario.ts';
 import {playScenes,playNarration,Stage} from './story-stage.ts';
@@ -385,7 +386,7 @@ export async function finishIfBattle(host:ScenarioHost,state:BattleState,deploym
   await afterVictory(host,sc,step,news);
 }
 /** 연의 장 전투가 끝났을 때(main.ts가 보상 처리 뒤에 부른다). */
-export async function finishStoryBattle(host:ScenarioHost,chapterId:string,victory:boolean,news:string[],heroHp?:number,battle?:BattleState,recruits?:RunUnit[],earned:Record<string,number>={}){
+export async function finishStoryBattle(host:ScenarioHost,chapterId:string,victory:boolean,news:string[],heroHp?:number,battle?:BattleState,recruits?:RunUnit[],earned:Record<string,number>={},treasures:readonly string[]=[]){
   const sc=loadScenario(),step=scenarioPath(sc).find(s=>s.id===chapterId);
   if(!step)return showScenario(host);
   if(!victory)return defeat(host,sc,step);
@@ -396,7 +397,7 @@ export async function finishStoryBattle(host:ScenarioHost,chapterId:string,victo
     if(lost.length)news.push(`중상: ${lost.join(' · ')} — 다음 싸움엔 체력 25%로 나선다.`);}
   finishStep(sc,step.id);saveScenario(sc);
   if(battle)news.push(...await battleSpoils(host,step,battle));
-  await afterVictory(host,sc,step,news);
+  await afterVictory(host,sc,step,news,treasures);
 }
 /** 붙잡은 적장을 설득할지 묻는다. */
 function captiveChoice(host:ScenarioHost,name:string,unitClass:UnitClass){
@@ -407,7 +408,7 @@ function captiveChoice(host:ScenarioHost,name:string,unitClass:UnitClass){
     <div class="run-actions"><button class="primary" id="cap-talk">설득한다 ▶</button><button id="cap-free">놓아 보낸다</button></div></div>`,false);
     document.getElementById('cap-talk')!.onclick=()=>done(true);document.getElementById('cap-free')!.onclick=()=>done(false);});
 }
-async function afterVictory(host:ScenarioHost,sc:ScenarioState,step:ScenarioStep,news:string[]){
+async function afterVictory(host:ScenarioHost,sc:ScenarioState,step:ScenarioStep,news:string[],treasures:readonly string[]=[]){
   const script=scriptOf(step.id);
   if(script?.after?.length)await stage(host,sc,step,script.after,`전투 뒤 · ${script.title}`,false);
   const next=currentStep(loadScenario());
@@ -417,6 +418,8 @@ async function afterVictory(host:ScenarioHost,sc:ScenarioState,step:ScenarioStep
   <div class="modal-actions"><button id="res-list">장 목록</button>${next?`<button class="primary" id="res-next">${pendingMarch(loadScenario())?'행군로 ▶':'다음 장 ▶'}</button>`:''}</div></div>`,false);
   document.getElementById('res-list')!.onclick=()=>showScenario(host,next?.id);
   document.getElementById('res-next')?.addEventListener('click',()=>goNext(host));
+  // 보물 획득 장면: 결과 화면 다음에 새로 얻은 고유 보물을 한 점씩.
+  revealAfterResult(treasures,'S',document.querySelector('.scenario-result'));
 }
 /** 마지막 패배 이유(통행료 부족·보호 대상 퇴각 등). 회차 종료·가호 화면이 그대로 보여 준다. */
 let lastDefeatReason='';

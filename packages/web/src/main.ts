@@ -72,6 +72,7 @@ import { Session, chapters, campaignOrder, sealNamesOf, type Preparation ,zhugeO
 import {sealTiers,sealRewardText,sealClaimed,claimSealTier} from './seal-rewards.ts';
 import {arcMap,arcRoutes,branchLevel,branchFloor,branchWins,recordBranchWin,nodeStats,countSortie,FORK_ANCHOR,type MapNode} from './chronicle-map.ts';
 import {treasureIcon} from './treasure-art.ts';
+import {revealAfterResult} from './treasure-reveal.ts';
 import {ambition,ambitionOk,ambitionRule,ambitionPercent,recordStageChoices,choiceAmbition} from './ambition.ts';
 import {FATE_POINTS,routeById} from './fate.ts';
 import { Battlefield, classNames, terrainNames, unitName } from './battlefield.ts';
@@ -344,10 +345,10 @@ function finishZhuge(){
   const s=session.state,win=s.outcome==='victory',seals=session.seals,id=s.stage.id,chapter=session.chapter,difficulty=s.difficulty;
   const again=session.rewarded;session.rewarded=true;persist();
   sound.sfx(win?'victory':'defeat');
-  const news:string[]=[];let growth:ReturnType<typeof zhugeMilestones>=[];
+  const news:string[]=[];let growth:ReturnType<typeof zhugeMilestones>=[];let gotTreasures:string[]=[];
   const firstZ=!Array.isArray(progress()[id+':'+difficulty]);
   if(win){
-    const got=awardZhugeTreasures(campaign,id);if(got.length)news.push(`보물 ${got.map(t=>`「${t.name}」`).join(' · ')} 얻었다`);
+    const got=awardZhugeTreasures(campaign,id);gotTreasures=got.map(t=>t.id);if(got.length)news.push(`보물 ${got.map(t=>`「${t.name}」`).join(' · ')} 얻었다`);
     if(!again){const g=winGold('Z',id,firstZ);if(g)news.push(`금 +${g.toLocaleString()} (제갈량전)`);}
     saveCampaign();
     try{const p=progress(),k=id+':'+difficulty;p[k]=[...new Set([...(p[k]??[]),...seals])];localStorage.setItem(PROGRESS_KEY,JSON.stringify(p));}catch{/* optional persistence */}
@@ -361,6 +362,7 @@ function finishZhuge(){
   const result=()=>{menuOpen=true;
     modal(`<div class="result"><div class="result-character">${win?'승':'패'}</div><h2>${win?'살아서 다음 길로.':'아직, 끝이 아니다.'}</h2><p>${esc(s.stage.title)} · ${s.turn}턴</p>${news.length?`<div class="run-news">${news.map(x=>`<p>${esc(x)}</p>`).join('')}</div>`:''}${growth.map(x=>`<div class="growth-summary"><b>${esc(x.name)}${x.to>x.from?` · Lv.${x.from} → ${x.to}`:''}</b>${x.evolution?`<p class="evo-news">병종 진화: ${esc(x.evolution.from)} → <b>${esc(x.evolution.to)}</b>${x.evolution.bloom?` · 개화 「${esc(x.evolution.bloom.name)}」 ${esc(x.evolution.bloom.description)}`:''}</p>`:''}${x.signatures.length?`<p>고유특성 해금: ${x.signatures.map(n=>`「${esc(n)}」`).join(' · ')}</p>`:''}</div>`).join('')}<div class="seals">${session.sealNames.map((name,i)=>`<div class="${seals.includes(i+1)?'earned':''}"><b>◆</b><span>${esc(name)}</span></div>`).join('')}</div><p>${win?'전투 기록과 천명이 저장되었습니다.':esc(session.failure)}</p><div class="modal-actions"><button id="zg-retry">다시 도전</button><button id="zg-list">장 목록</button>${win?(next!==undefined?'<button id="zg-next" class="primary">다음 장 →</button>':'<button disabled>제갈량전 끝</button>'):''}</div></div>`,false);
     $('#zg-retry').onclick=()=>zhugeBriefing(chapter);$('#zg-list').onclick=showZhuge;
+    revealAfterResult(gotTreasures,'Z',document.querySelector('#modal .result'));
     document.getElementById('zg-next')?.addEventListener('click',()=>storyScene(next!));
   };
   void xp;
@@ -816,6 +818,8 @@ function showExpeditionResult(){if(resultShown)return;resultShown=true;const run
  const milestones=growthMilestones(before,campaign);
  modal(`<div class="result"><div class="result-character">${win?'승':'련'}</div><h2>${win?'성장의 한 걸음':'다시 준비할 시간'}</h2><p>${m.name} · ${session.state.turn}턴</p>${win?`<div class="story-stage reward-scene"><div class="story-backdrop incoming" style="${storyBackdrop(m.art)}"></div>${actorMarkup('사마의','hero')}${actorMarkup('조진','companion')}</div>`:''}${win?dialogueCaption(splitSpokenLine(m.lines[2]!).speaker,splitSpokenLine(m.lines[2]!).line):`<p class="battle-aftermath">${esc(session.failure)}<br>패배해도 경험치와 보물은 잃지 않습니다. 정비 후 다시 도전하세요.</p>`}<p>${win&&!reward.xp?'이미 보상을 받은 전투입니다. · ':'경험치 +'+reward.xp+' · '}${growthText()}</p>${reward.items.length?`<p class="treasure-reward">얻은 것: ${reward.items.map(esc).join(' · ')}</p>`:''}${gearLines.map(x=>`<p class="growth-summary">${esc(x)}</p>`).join('')}${milestoneMarkup(milestones)}<div class="modal-actions"><button id="expedition-again">${m.kind==='training'?'다시 수련':'다시 도전'}</button>${m.kind==='challenge'&&win&&m.step!<10?'<button id="expedition-next-step" class="primary">다음 단계 →</button>':''}<button id="expedition-list">연무장 목록</button><button id="expedition-menu">연의 회상</button></div></div>`,false);
  $('#expedition-again').onclick=()=>briefing(7,m.id);const nextStep=document.getElementById('expedition-next-step');if(nextStep)nextStep.onclick=()=>expeditionStory('C'+String(m.step!+1).padStart(2,'0'));$('#expedition-list').onclick=()=>m.kind==='training'?showTraining():showExpeditions(m.kind);$('#expedition-menu').onclick=m.kind==='challenge'?showMenu:showTraining;
+ // 외전·도전에서 처음 얻은 고유 보물(사마의전 획득처)도 결과 화면 다음에 장면으로.
+ revealAfterResult(campaign.treasures.filter(id=>!before.treasures.includes(id)),'S',document.querySelector('#modal .result'));
 }
 function activate(){
   // 전장 그림이 아직이면 기다렸다가 시작한다(첫 화면을 빨리 띄우느라 그림은 뒤에서 준비한다).
@@ -1264,10 +1268,12 @@ function checkModal(){
     if(session.deployment?.scenario){
       // 시나리오 모드의 연의 장: 보상은 같고, 전투 뒤 장면과 다음 장은 시나리오 흐름이 맡는다.
       const news=[...extraNews,...(mandateGain+sealGain?[mandateText(mandateGain,sealGain)]:[]),...(reward?.xp?[`경험치 +${reward.xp}`]:[]),...(fought?[`전투 경험치 +${fought} (때리고 물리쳐 번 경험치)`]:[]),...(reward?.treasure?[`보물 ${을를(`「${reward.treasure.name}」`)} 얻었다`]:[]),...growthMilestones(before,campaign).filter(x=>x.to>x.from||x.evolution).map(x=>`${officerNames[x.id]} Lv.${x.from} → ${x.to}${x.evolution?` · 병종 진화 ${x.evolution.from} → ${x.evolution.to}`:''}`)];
-      const chapterId=session.deployment.scenario.chapter,hero=s.find('sima_yi'),heroHp=hero?.alive?Math.max(.05,hero.hp/hero.stats.maxHp):undefined;const rc=session.deployment.scenario.recruits,xp={...session.xpEarned};scorePending=true;setTimeout(()=>{scorePending=false;markScored();menuOpen=true;void finishStoryBattle(scenarioHost,chapterId,win,news,heroHp,s,rc,xp);},900);return;
+      const chapterId=session.deployment.scenario.chapter,hero=s.find('sima_yi'),heroHp=hero?.alive?Math.max(.05,hero.hp/hero.stats.maxHp):undefined;const rc=session.deployment.scenario.recruits,xp={...session.xpEarned};scorePending=true;setTimeout(()=>{scorePending=false;markScored();menuOpen=true;void finishStoryBattle(scenarioHost,chapterId,win,news,heroHp,s,rc,xp,(reward?.got??[]).map(t=>t.id));},900);return;
     }
     const after=win?storyAftermath[s.stage.id]:undefined;
     modal(`<div class="result">${after?`<div class="aftermath"><div class="aftermath-stage" style="${storyBackdrop(after.art)}"><span class="story-location">${after.name}</span></div><div id="aftermath-line">${dialogueCaption(after.beats[0]!.speaker,after.beats[0]!.line)}</div>${after.beats.length>1?'<button id="aftermath-next">다음 장면 →</button>':''}</div>`:''}<div class="result-character">${win?'승':'패'}</div><h2>${win?'판을 읽었다.':'아직, 끝이 아니다.'}</h2><p>${s.stage.subtitle} · ${s.turn}턴</p>${reward?.xp||fought?`<p class="growth-summary">${reward?.xp?`경험치 +${reward.xp} · `:''}${fought?`전투 경험치 +${fought} · `:''}${growthText()}</p>${treasures.some(t=>t.stage===s.stage.id)?`<p class="treasure-reward">보물: ${treasures.filter(t=>t.stage===s.stage.id).map(t=>t.name).join(' · ')}</p>`:''}`:''}${milestoneMarkup(growthMilestones(before,campaign))}${extraNews.map(x=>`<p class="growth-summary">${esc(x)}</p>`).join('')}${mandateGain+sealGain?`<p class="growth-summary">${mandateText(mandateGain,sealGain)}</p>`:''}<div class="seals">${session.sealNames.map((name,i)=>`<div class="${seals.includes(i+1)?'earned':''}"><b>◆</b><span>${name}</span></div>`).join('')}</div><p>${win?'전투 기록과 천명이 저장되었습니다.':esc(session.failure)}</p><div class="modal-actions"><button id="result-undo">↶ 마지막 수 무르기</button>${session.phaseCheckpoint!==null?'<button id="phase-restore">목표 전환 직전으로</button>':''}<button id="retry">다시 도전</button><button id="result-menu">연의 회상</button>${win&&session.chapter===campaignOrder.at(-1)?'<button id="epilogue" class="primary">에필로그 →</button>':''}${win&&campaignOrder.indexOf(session.chapter)<campaignOrder.length-1&&unlocked(campaignOrder[campaignOrder.indexOf(session.chapter)+1]!)?'<button id="next-chapter" class="primary">다음 전장 →</button>':''}</div></div>`,false);
+    // 보물 획득 장면: 결과 화면 다음에 새로 얻은 고유 보물을 한 점씩.
+    revealAfterResult((reward?.got??[]).map(t=>t.id),'S',document.querySelector('#modal .result'));
     if(after){let k=0;$('#aftermath-next')?.addEventListener('click',e=>{k=(k+1)%after.beats.length;const b=after.beats[k]!;$('#aftermath-line').innerHTML=dialogueCaption(b.speaker,b.line);(e.currentTarget as HTMLButtonElement).textContent=k===after.beats.length-1?'↺ 처음 장면':'다음 장면 →';});}
     $('#result-undo').onclick=undo;$('#result-menu').onclick=showChronicle;
     $('#phase-restore')?.addEventListener('click',()=>rewind(()=>session.restorePhase()));

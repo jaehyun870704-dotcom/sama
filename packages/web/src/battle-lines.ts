@@ -25,7 +25,7 @@ export const battleLines:Record<string,BattleLine[]>={
   'S3-06':[
     {id:'open-1',when:{turn:1},speaker:'사마의',text:'무기고가 저들 손에 있는 동안 금군은 견고하고, 증원은 끊이지 않는다. 사야, 소야, 무기고를 먼저 쥐어라.'},
     {id:'open-2',when:{turn:2},speaker:'사마소',text:'형님, 무기고 수비병은 셋입니다. 동쪽 담을 따라 붙겠습니다.'},
-    {id:'armory',when:{lockedBy:'coup/armory'},speaker:'사마사',text:'무기고를 쥐었습니다! 금군의 견고가 풀리고 증원이 멈춥니다. 저희는 성문을 닫으러 갑니다!'},
+    {id:'armory',when:{lockedBy:'coup/armory'},speaker:'사마사',text:'무기고를 쥐었습니다! 금군의 견고가 풀립니다. 저희는 병영의 성문을 닫아 증원을 끊겠습니다!'},
     {id:'fire',when:{lockedBy:'coup/armory'},speaker:'사마의',text:'영녕궁 앞길에 불을 지르려 한다. 다음 턴이면 불길이다. 돌아서라도 들어간다.'},
   ],
   'S3-05':[
@@ -47,7 +47,8 @@ export const battleLines:Record<string,BattleLine[]>={
     {id:'zhu',when:{retreat:'zhu_ran'},speaker:'사마의',text:'주연이 물러났다. 포위는 끝났다.'},
   ],
   'S3-02':[
-    {id:'open-1',when:{turn:1},speaker:'사마의',text:'포차로 성 안 군량고를 노려라. 군량고가 남아 있는 동안 연군은 기운을 되찾는다.'},
+    {id:'open-1',when:{turn:1},speaker:'사마의',text:'비가 그칠 때까지 진을 옮기지 마라. 성 앞 들판은 물이 찬다. 비가 그치면 포차로 성 안 군량고를 노린다.'},
+    {id:'clear',when:{turn:3},speaker:'사마사',text:'아버님, 비가 그쳤습니다! 이제 성을 칠 때입니다.'},
     {id:'open-2',when:{turn:2},speaker:'공손연',text:'성은 높고 군량은 넉넉하다. 사마의는 늙었다, 오래 버티지 못한다.'},
     {id:'flight',when:{lockedBy:'xiangping/flight'},speaker:'사마사',text:'공손연의 깃발이 셋입니다! 어느 것이 진짜인지 살펴야 합니다!'},
     {id:'reveal',when:{lockedBy:'xiangping/revealed'},speaker:'사마의',text:'살펴보니 둘은 깃발만 든 미끼다. 진짜를 쫓아라.'},
@@ -186,7 +187,7 @@ export const battleLines:Record<string,BattleLine[]>={
   'S1-10':[
     {id:'open-1',when:{turn:1},speaker:'사마의',text:'조운의 앞·뒤·좌·우를 모두 막아야 합니다. 강물과 바위도 벽이 됩니다.'},
     {id:'open-2',when:{turn:1},speaker:'조운',text:'상산의 조자룡이 여기 있다! 조조의 목을 내놓아라!'},
-    {id:'rise',when:{turn:3},speaker:'조진',text:'강물이 둑을 넘었다! 남쪽 들판이 여울이 되어 발이 묶인다.'},
+    {id:'rise',when:{turn:3},speaker:'조진',text:'비가 그치지 않는다. 강물이 둑을 넘었다! 남쪽 들판이 여울이 되고, 거기 선 자는 물살에 휩쓸린다.'},
     {id:'rise-2',when:{turn:5},speaker:'사마의',text:'물이 더 차오릅니다. 들판 한가운데로는 가지 마십시오.'},
     {id:'lock',when:{lockedBy:'flood/lock'},speaker:'조진',text:'조운이 묶였다! 승상, 지금 고개로 오르십시오!'},
     {id:'exit',when:{reach:{unit:'cao_cao',region:'exit'}},speaker:'사마의',text:'승상께서 고개를 넘으셨다. 물러나라, 강물이 길을 덮는다.'},

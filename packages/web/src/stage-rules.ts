@@ -59,13 +59,19 @@ export function weatherLine(state:BattleState,rules:StageRules|undefined,fallbac
   if(!live)return rules?.weather??fallback;
   return rules?.weatherText?.[state.weather]??`${WEATHER_NAMES[state.weather]}${rules?.weather?' · '+rules.weather:''}`;
 }
+/** 예고된 광역 공격(telegraph_aoe·damage_region)이 이 부대들에 떨어진 횟수. */
+export function bombardHits(state:BattleState,ids:readonly string[]){return state.log.reduce((n,e)=>e.t==='strike'?n+e.hits.filter(h=>ids.includes(h.unit)).length:n,0);}
+/** 이 부대가 퇴각한 턴(아직 서 있으면 undefined). */
+export function retreatTurn(state:BattleState,id:string){let turn=0;for(const e of state.log){if(e.t==='turnStart')turn=e.turn;else if(e.t==='retreat'&&e.unit===id)return turn;}return undefined;}
 const HILL=['ma_su','hill_spear','hill_bow','hill_foot_a','hill_foot_b','hill_xbow'];
 
 export const stageRules:Record<string,StageRules>={
   'S3-07':{
-    sealNames:['왕릉 진압','부대 보존','신속한 진압'],
+    sealNames:['왕릉 진압','손실 1부대 이하','신속한 진압'],
     somber:true,
     weather:'폭우 · 먹구름과 낙뢰',
+    // 날씨(엔진): 먹구름으로 시작해 수문이 열리면(open_gate) 폭우(set_weather rain). 수문은 진짜 성문 칸(siege:false · close_gate).
+    weatherText:{cloudy:'☁ 먹구름 · 영수의 물길',rain:'☂ 폭우 · 성 안마당에 낙뢰'},
     labels:[{region:'canal_label',text:'수로 · 수군만 지남'},{region:'gate_label',text:'수춘성'},{region:'keep',text:'왕릉'}],
     zones:[{region:'landing',color:0xffd27a}],
     tick:({state})=>{
@@ -75,9 +81,9 @@ export const stageRules:Record<string,StageRules>={
     phase:({state})=>state.firedEvents.has('shouchun/gate')?'육상 진입 · 왕릉 격퇴 (3턴마다 안마당 낙뢰)':'수상 접근 · 수군을 수로 끝 수문 앞(노란 칸)으로 (짝수 턴 포격)',
   },
   'S3-06':{
-    sealNames:['영녕궁 진입','두 아들 생존','신속한 무기고 장악'],
+    sealNames:['영녕궁 진입','두 아들 생존 · 부대 보존','6턴 안에 영녕궁으로'],
     weather:'정월 · 맑고 찬 하늘',
-    labels:[{region:'palace_label',text:'영녕궁'},{region:'armory_label',text:'무기고'}],
+    labels:[{region:'palace_label',text:'영녕궁'},{region:'armory_label',text:'무기고'},{region:'barracks_gate',text:'금군 병영 성문'}],
     zones:[{region:'armory',color:0xffd27a}],
     tough:[{unit:'sima_shi',hpScale:1.5,defense:3},{unit:'sima_zhao',hpScale:1.5,defense:3},{unit:'sima_yi',hpScale:1.3,defense:2}],
     tick:({state})=>{
@@ -91,9 +97,11 @@ export const stageRules:Record<string,StageRules>={
     },
     phase:({state})=>{
       if(!state.firedEvents.has('coup/armory'))return `두 전선 · 무기고 장악 전 — 적 견고, 2턴마다 증원 (증원 ${state.survivalClocks.get('waves')??0}회)`;
-      return '영녕궁 진입 · 무기고 장악: 적 견고 해제 · 증원 중지 · 아군 사기 상승 · 두 아들 성문 임무로 이탈';
+      return '영녕궁 진입 · 무기고 장악: 적 견고 해제 · 병영 성문 닫힘(증원 중지) · 아군 사기 상승 · 두 아들 성문 임무로 이탈';
     },
-    seals:({state})=>[1,...(state.firedEvents.has('coup/armory')&&!state.firedEvents.has('coup/heir-lost')?[2]:[]),...((state.survivalClocks.get('waves')??99)<=2?[3]:[])],
+    // 무기고는 자동 전투도 언제나 첫 증원 무렵에 쥐어(증원 2회 이하 · 두 아들 생존이 늘 달성) 가르지 못했다 →
+    // 두 아들 생존에 부대 보존을 더하고, 셋째는 6턴 안에 영녕궁 진입.
+    seals:({state})=>[1,...(state.firedEvents.has('coup/armory')&&!state.firedEvents.has('coup/heir-lost')&&state.losses.player+state.losses.ally===0?[2]:[]),...(state.turn<=6?[3]:[])],
   },
   'S3-05':{
     sealNames:['조상 호송','부대 보존','신속한 회군'],
@@ -156,8 +164,10 @@ export const stageRules:Record<string,StageRules>={
     failure:({state})=>state.captured.get('keep')==='enemy'?'오군이 번성 본채를 차지했습니다.':undefined,
   },
   'S3-02':{
-    sealNames:['공손연 포획','신속한 보급 차단','미끼에 속지 않음'],
-    weather:'장마 뒤 · 젖은 성벽',
+    sealNames:['공손연 포획','신속한 포획','보급 차단 · 미끼 간파'],
+    weather:'장마 · 젖은 성벽',
+    // 날씨(엔진): 한 달 넘게 이어진 장마로 시작해 3턴에 갠다. 비가 오는 동안 성 앞 낮은 들(lowland)에 선 부대는 차오른 빗물에 체력을 잃는다(damage_region · whenWeather).
+    weatherText:{rain:'☂ 장마 · 성 앞 들판에 물이 차오른다',clear:'☀ 장마가 그쳤다 · 젖은 성벽'},
     labels:[{region:'keep',text:'공손연 본채'},{region:'north_label',text:'북문 밖 도주로'},{region:'south_label',text:'남문 밖 도주로'}],
     protect:[{unit:'convoy_depot_a',hp:90},{unit:'convoy_depot_b',hp:90}],
     anchored:['convoy_depot_a','convoy_depot_b'],
@@ -183,7 +193,9 @@ export const stageRules:Record<string,StageRules>={
     phase:({state})=>{const depots=['convoy_depot_a','convoy_depot_b'].filter(id=>state.find(id)?.alive).length;
       const cut=state.survivalClocks.get('cut_turn');if(depots===0&&cut!==undefined&&state.turn<=cut)return '보급 끊김 · 공손연이 성을 버릴 채비 — 다음 턴에 북문·남문으로 달아난다';
       return depots>0?`보급 차단 · 남은 군량고 ${depots}/2 (매 턴 연군 회복)`:state.firedEvents.has('xiangping/revealed')?'공손연 포획 · 미끼 식별됨':'공손연 포획 · 깃발 셋 중 진짜를 찾아라 (살피기)';},
-    seals:({state})=>[1,...((state.survivalClocks.get('cut_turn')??99)<=6?[2]:[]),...(!state.firedEvents.has('xiangping/fooled')?[3]:[])],
+    // 장마로 진군이 늦어져 '6턴 안에 군량고 둘'은 자동 전투가 거의 못 했고, 미끼는 군량고를 끊어야 나와 늘 달성이었다 →
+    // 신속한 포획(일반 8턴·극한 10턴) · 군량고 둘을 부수고 미끼에 속지 않음.
+    seals:({state,difficulty})=>[1,...(state.turn<=(difficulty==='extreme'?10:8)?[2]:[]),...(state.survivalClocks.has('cut_turn')&&!state.firedEvents.has('xiangping/fooled')?[3]:[])],
   },
   'S3-01':{foeEdge:{normal:-16,extreme:-1},
     sealNames:['비연 격퇴','양동으로 진형 붕괴','신속한 도하'],
@@ -245,8 +257,10 @@ export const stageRules:Record<string,StageRules>={
     seals:({state})=>[1,...((state.survivalClocks.get('escaped')??0)<=(state.stickyGoals?3:1)||(state.stickyGoals&&(state.survivalClocks.get('stopped')??0)>=3)?[2]:[]),...(state.losses.player+state.losses.ally===0&&[...state.living('player'),...state.living('ally')].every(u=>u.pos.x>=17)?[3]:[])],
   },
   'S2-13':{
-    sealNames:['호로곡 탈출','부대 보존','신속한 탈출'],
+    sealNames:['호로곡 탈출','부대 보존','바위 그늘 · 포격 1회 이하'],
     weather:'마른 하늘 · 골짜기의 불',
+    // 날씨(엔진): 맑게 시작해 버틴 끝에 큰비(set_weather rain)가 서쪽 목책의 불길(위험 지대)을 끈다.
+    weatherText:{clear:'☀ 마른 하늘 · 골짜기와 서쪽 목책이 탄다',rain:'☂ 큰비 · 호로곡의 불이 꺼졌다'},
     zones:[{region:'shelter',color:0x8fd0ff}],
     labels:[{region:'rally',text:'합류 지점'},{region:'exit_label',text:'불타는 목책 · 비가 오면 열림'},{region:'shelter_label',text:'바위 그늘 · 포격 차폐'}],
     tough:[{unit:'sima_shi',hpScale:2,defense:4},{unit:'sima_zhao',hpScale:2,defense:4}],
@@ -261,6 +275,8 @@ export const stageRules:Record<string,StageRules>={
       if(p==='합류')return '합류 · 사마의와 사마사가 합류 지점으로 (합류 뒤 7턴 버티기)';
       if(p==='버티기'&&start!==undefined)return `버티기 · 비까지 ${Math.max(0,7-(state.turn-start))}턴`;
       return '퇴로 열림 · 사마의를 서쪽 출구로';},
+    // 신속한 탈출(턴)은 합류 뒤 7턴을 버텨야 해 누구나 같은 턴에 끝나 가르지 못했다 → 바위 그늘: 세 부자가 화공 포격에 맞은 횟수 1회 이하.
+    seals:({state})=>[1,...(state.losses.player+state.losses.ally===0?[2]:[]),...(bombardHits(state,['sima_yi','sima_shi','sima_zhao'])<=1?[3]:[])],
     failure:({state})=>protectedFailure(state,['sima_shi','sima_zhao']),
   },
   'S2-12':{
@@ -323,8 +339,10 @@ export const stageRules:Record<string,StageRules>={
     failure:({state})=>protectedFailure(state,['sima_shi','sima_zhao','cao_xiu']),
   },
   'S2-07':{
-    sealNames:['위연 또는 7부대 격퇴','곽회 생존','위연을 놓치지 않음'],
+    sealNames:['위연 또는 7부대 격퇴','곽회 생존','위연을 7턴 안에 꺾음'],
     weather:'장맛비 · 길이 젖음',
+    // 날씨(엔진): 서른 날 이어진 비. 잔도의 낙석 예고는 비가 오는 동안에만 떨어진다(whenWeather).
+    weatherText:{rain:'☂ 장맛비 · 잔도가 젖어 돌이 구른다'},
     labels:[{region:'pass_exit',text:'양평관'},{region:'guo_camp',text:'곽회 진영'}],
     tough:[{unit:'guo_huai',hpScale:1.4,defense:2}],
     // 곽회 진영은 위연·호위·습격대 다섯에 둘러싸여 시작한다. 비율식에서는 둘째 적 차례에 쓰러져 '곽회 생존'을 얻을 길이 없었다:
@@ -346,7 +364,8 @@ export const stageRules:Record<string,StageRules>={
     phase:({state})=>{const left=Math.max(0,16-state.turn),down=state.losses.enemy;
       if(state.firedEvents.has('yangping/escaped'))return `위연 탈출 · 격퇴 ${down}/7 · ${left}턴 남음`;
       return `${state.firedEvents.has('yangping/flee')?'위연 도주 중':(state.scenarioPhase??'길 선택')} · 격퇴 ${down}/7 · ${left}턴 남음`;},
-    seals:({state})=>[1,...(state.find('guo_huai')?.alive?[2]:[]),...(state.find('wei_yan')?.alive===false?[3]:[])],
+    // 위연을 놓치지 않음(퇴각시키기만 하면)은 자동 전투도 언제나 이뤄 가르지 못했다 → 7턴 안에 꺾기.
+    seals:({state})=>[1,...(state.find('guo_huai')?.alive?[2]:[]),...((retreatTurn(state,'wei_yan')??99)<=7?[3]:[])],
   },
   'S2-06':{foeEdge:{normal:-23,extreme:-7},
     sealNames:['남산 공략','도주 최소화','신속한 수원 차단'],
@@ -377,8 +396,11 @@ export const stageRules:Record<string,StageRules>={
   'S2-04':{foeEdge:{normal:15,extreme:0},sealNames:['양양 수성','수비대 전원 생환','적 격퇴 수'],tough:[{unit:'gate_captain',hpScale:1.8,defense:4}],labels:[{region:'xiangyang',text:'양양 성문'}],phase:({state})=>`${state.scenarioPhase} · ${Math.max(0,8-(state.turn-(state.survivalClocks.get('xiangyang')??1)))}턴 남음`,failure:({state})=>state.captured.get('xiangyang')==='enemy'?'오군이 양양 성문을 차지했습니다.':undefined},
   // 제갈량전 1장: 싸울 수 없는 세 형제(피난민)는 한 번에 쓰러지지 않을 만큼 버틴다.
   'Z1-01':{sealNames:['세 형제 도강','신속한 피난','추격 떨치기'],weather:'맑음 · 서주의 연기',protect:[{unit:'z_liang',hp:80,movement:5},{unit:'z_jin',hp:90,movement:5},{unit:'z_jun',hp:70,movement:5}],labels:[{region:'objective',text:'남쪽 나루'}]},
-  'S2-03':{foeEdge:{normal:-14,extreme:-13},sealNames:['황제 탈출','부대 보존','신속한 탈출'],weather:'혹한 · 강이 얼어붙음',protect:[{unit:'cao_pi',hp:150,movement:3}],tough:[{unit:'gao_shou',hpScale:1.6}],labels:[{region:'exit',text:'북쪽 출구'}],failure:({state})=>state.find('cao_pi')?.alive===false?'조비가 퇴각했습니다.':undefined},
-  'S2-02':{sealNames:['황제 철수','함대 보존','신속한 철수'],weather:'폭풍 · 낙뢰',protect:[{unit:'cao_pi',hp:150,movement:3}],labels:[{region:'exit',text:'북서쪽 출구'}],failure:({state})=>state.find('cao_pi')?.alive===false?'조비가 퇴각했습니다.':undefined},
+  // S2-03 날씨(엔진): 눈. 신속한 탈출(12·10턴)은 자동 전투도 늘 6턴 남짓에 끝내 가르지 못했다 → 폐하 무사(조비 체력 80% 이상).
+  'S2-03':{foeEdge:{normal:-14,extreme:-13},sealNames:['황제 탈출','부대 보존','폐하 무사 · 체력 80% 이상'],weather:'혹한 · 강이 얼어붙음',weatherText:{snow:'❄ 눈 · 혹한에 강이 얼어붙음'},
+    seals:({state,difficulty})=>{const pi=state.find('cao_pi');return [1,...(state.losses.player+state.losses.ally<(difficulty==='extreme'?1:2)?[2]:[]),...(pi?.alive&&pi.hp>=pi.stats.maxHp*.8?[3]:[])];},protect:[{unit:'cao_pi',hp:150,movement:3}],tough:[{unit:'gao_shou',hpScale:1.6}],labels:[{region:'exit',text:'북쪽 출구'}],failure:({state})=>state.find('cao_pi')?.alive===false?'조비가 퇴각했습니다.':undefined},
+  // S2-02 날씨(엔진): 폭풍(비)으로 시작해 낙뢰는 비가 오는 동안만, 8턴에 폭풍이 걷힌다(흐림).
+  'S2-02':{sealNames:['황제 철수','함대 보존','신속한 철수'],weather:'폭풍 · 낙뢰',weatherText:{rain:'☂ 폭풍 · 강 위에 낙뢰',cloudy:'☁ 폭풍이 걷힘 · 낮은 먹구름'},protect:[{unit:'cao_pi',hp:150,movement:3}],labels:[{region:'exit',text:'북서쪽 출구'}],failure:({state})=>state.find('cao_pi')?.alive===false?'조비가 퇴각했습니다.':undefined},
   'S2-01':{
     sealNames:['반란 진압','수비대 전원 생환','신속한 진압'],
     labels:[{region:'citadel',text:'무위 성채'}],

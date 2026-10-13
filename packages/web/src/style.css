@@ -2289,3 +2289,22 @@ dialog:has(.title-screen),dialog:has(.lobby){width:min(1240px,calc(100vw - 24px)
 @media(max-width:700px){.sh-body{grid-template-columns:1fr}.sh-roster{max-height:none;flex-direction:row;overflow-x:auto}.sh-unit{min-width:180px}}
 /* 이야기 무대의 겹(장소 이름·눈발·대화창)은 무대 안에서만 겹친다 — 그 위에 뜨는 일기토·설전 화면을 뚫고 나오지 않게. */
 .ss-stage{isolation:isolate}
+/* 보물 획득 장면(결과 화면 다음에 한 점씩) */
+dialog.treasure-reveal{width:min(560px,calc(100vw - 24px));padding:0;border:1px solid #b89a5e;background:radial-gradient(ellipse at 50% 0,#3a3020 0,#1d2220 62%);overflow:auto}
+dialog.treasure-reveal::backdrop{background:#05090cc4;backdrop-filter:blur(3px)}
+.treasure-reveal-card{padding:26px 30px 22px;animation:scene-reveal .35s ease-out}
+.treasure-reveal-card .eyebrow{text-align:center}
+.tr-body{display:flex;gap:22px;align-items:center;margin:16px 0 14px}
+.tr-art{flex:none;width:128px;height:128px;display:grid;place-items:center;border:1px solid #c6a468;background:radial-gradient(circle,#4a3d24 0,#191c1a 70%);box-shadow:0 0 28px #e4c07a33;animation:tr-glow 2.4s ease-in-out infinite}
+.tr-art .treasure-icon{width:116px;height:116px}
+.g4 .tr-art{border-color:#e2b85a;box-shadow:0 0 34px #f0c96a55}.g3 .tr-art{border-color:#a585c4}.g2 .tr-art{border-color:#6f9ec0}
+.tr-text{min-width:0}.tr-text h2{font-size:30px;color:#f0dcaa;margin:0 0 4px;letter-spacing:2px}
+.tr-rank{color:#c9b98e;font-size:calc(14px*var(--fs,1))}.tr-stars{color:#f0c96a;letter-spacing:1px}
+.tr-power{margin-top:8px;color:#e6d6b0;font-size:calc(14px*var(--fs,1));line-height:1.7;border-left:2px solid #c6a468;padding-left:10px}
+.tr-lines{border-top:1px solid #6f6243;padding-top:12px;display:grid;gap:8px}
+.tr-line{display:flex;gap:10px;font-size:calc(14px*var(--fs,1));line-height:1.75;color:#d8d4c2}.tr-line b{flex:none;color:#e7c98c;font-weight:600}.tr-line.narrate{font-family:LocalSerif,'Batang',serif;color:#c5bfa8;font-style:italic}
+.treasure-reveal-card .modal-actions{margin-top:18px}
+@keyframes tr-glow{50%{box-shadow:0 0 40px #f0c96a55}}
+@media(max-height:500px){.treasure-reveal-card{padding:14px 20px 12px}.tr-body{margin:8px 0;gap:16px}.tr-art{width:84px;height:84px}.tr-art .treasure-icon{width:76px;height:76px}.tr-text h2{font-size:22px}.tr-lines{padding-top:8px;gap:4px}.tr-line{font-size:calc(13px*var(--fs,1));line-height:1.6}.treasure-reveal-card .modal-actions{margin-top:10px}.treasure-reveal-card .modal-actions button{padding:7px 14px}}
+@media(max-width:480px){.tr-body{flex-direction:column;text-align:center}.tr-power{text-align:left}}
+@media(prefers-reduced-motion:reduce){.treasure-reveal-card,.tr-art{animation:none}}
