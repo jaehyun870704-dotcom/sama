@@ -44,7 +44,7 @@
     {"id":"huang_gai","name":"황개","aliases":[],"battle":{"infantry":{"sheet":"huang_gai-battle-infantry-v1.webp","cell":[280,224],"rows":1}},"duel":"huang_gai-duel-v1.webp"},
     {"id":"meng_huo","name":"맹획","aliases":[],"battle":{"sd":{"sheet":"meng_huo-sd-v2.webp","cell":[350,280],"rows":1}},"duel":"meng_huo-duel-v3.webp"},
     {"id":"zhu_rong","name":"축융","aliases":[],"battle":{"sd":{"sheet":"zhu_rong-sd-v1.webp","cell":[350,280],"rows":1}},"duel":"zhu_rong-duel-v2.webp"},
-    {"id":"gongsun_yuan","name":"공손연","aliases":["공손연의 환영"],"battle":{"lord":{"sheet":"gongsun_yuan-battle-lord-v1.webp","cell":[350,280],"rows":1}},"duel":"gongsun_yuan-duel-v2.webp"},
+    {"id":"gongsun_yuan","name":"공손연","aliases":["공손연의 환영"],"battle":{"sd":{"sheet":"gongsun_yuan-sd-v1.webp","cell":[350,280],"rows":1},"lord":{"sheet":"gongsun_yuan-battle-lord-v1.webp","cell":[350,280],"rows":1}},"duel":"gongsun_yuan-duel-v3.webp"},
     {"id":"yuan_tan","name":"원담","aliases":["원담의 환영"],"battle":{"lord":{"sheet":"yuan_tan-battle-lord-v1.webp","cell":[350,280],"rows":1}},"duel":"yuan_tan-duel-v1.webp"},
     {"id":"yuan_shang","name":"원상","aliases":["원상의 환영"],"battle":{"lord":{"sheet":"yuan_shang-battle-lord-v1.webp","cell":[350,280],"rows":1}},"duel":"yuan_shang-duel-v1.webp"},
     {"id":"liu_bang","name":"유방","aliases":["유방의 환영"],"battle":{"lord":{"sheet":"liu_bang-battle-lord-v1.webp","cell":[350,280],"rows":1}}},
