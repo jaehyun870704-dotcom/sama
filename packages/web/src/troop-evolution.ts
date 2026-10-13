@@ -15,6 +15,7 @@ import {NPC_ROSTER} from './npc-roster.ts';
 import {singleStageCorrectionRows} from './complete-troops.ts';
 import {LORD_NAMES} from './lords.ts';
 import {officerFaction,OFFICER_FACTIONS,type OfficerFaction} from './officer-factions.ts';
+import {byRank,rankTier,rankLabel,RANK_LABEL} from './officer-ranks.ts';
 import {paintedTroopArt} from './painted-troops.ts';
 import {spriteAtlas,type AtlasFit} from './sprite-atlas.ts';
 
@@ -73,8 +74,11 @@ function officerNote(name:string,c?:UnitClass){
 const namedManifest=()=>officerManifest.filter(e=>!!signatureSkill(e.name));
 export const namedOfficerCount=()=>namedManifest().length;
 function officerCards(f:OfficerFaction){
-  const list=namedManifest().filter(e=>officerFaction(e.name)===f);if(!list.length)return '';
-  return `<section class="evo-line"><h3>${f} <small>${list.length}명</small></h3><div class="evo-grid">${list.map(e=>{const c=officerClass(e),b=officerSheet(e,c);return personCard(b?officerArt(e.name,b):classArt(c),'장수',e.name,c,officerNote(e.name,c),FAMED_OFFICERS.includes(e.name));}).join('')}</div></section>`;
+  const list=byRank(namedManifest().filter(e=>officerFaction(e.name)===f),e=>e.name);if(!list.length)return '';
+  const card=(e:OfficerEntry)=>{const c=officerClass(e),b=officerSheet(e,c);return personCard(b?officerArt(e.name,b):classArt(c),rankLabel(e.name),e.name,c,officerNote(e.name,c),FAMED_OFFICERS.includes(e.name));};
+  // 연의 계급 순: 군주 → 재상·대장군 → 장군 → 참모·장수 → 인물. 단계마다 작은 머리글을 단다.
+  const tiers=[...new Set(list.map(e=>rankTier(e.name)))];
+  return `<section class="evo-line"><h3>${f} <small>${list.length}명 · 연의 계급 순</small></h3>${tiers.map(t=>{const g=list.filter(e=>rankTier(e.name)===t);return `<h4 class="evo-rank">${RANK_LABEL[t]} <small>${g.length}명</small></h4><div class="evo-grid">${g.map(card).join('')}</div>`;}).join('')}</section>`;
 }
 /** 장수 도감 화면 본문: 위·촉·오·군웅·초·한 탭과 고른 진영의 장수 카드. */
 export function officerGallery(f:OfficerFaction='위'){
@@ -143,7 +147,7 @@ function rawSheet(url:string){
 /** 진화표·장수 도감의 그림 시트를 미리 받아 둔다(도감 첫 화면에서 부른다). 실패해도 화면은 그대로 열린다. */
 export function preloadOfficerGallery(f:OfficerFaction='위',limit=16){
   if(typeof Image==='undefined')return;
-  for(const e of namedManifest().filter(x=>officerFaction(x.name)===f).slice(0,limit)){const b=officerSheet(e,officerClass(e));const def=b&&evolutionSheet(b.sheet);if(def)void rawSheet(def.url);}
+  for(const e of byRank(namedManifest().filter(x=>officerFaction(x.name)===f),x=>x.name).slice(0,limit)){const b=officerSheet(e,officerClass(e));const def=b&&evolutionSheet(b.sheet);if(def)void rawSheet(def.url);}
 }
 const FIT_W=320,FIT_H=256;
 /** 원본 시트의 대기 자세 칸을 그대로 재서 그린다(아틀라스가 오기 전의 빠른 그림). 키 맞춤(fit)이 있는 시트는 아틀라스와 같은 키로. */
