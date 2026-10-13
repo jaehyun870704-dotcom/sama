@@ -118,29 +118,32 @@ function group(state:BattleState,conds:readonly VictoryCondition[],lose:boolean)
   return [...any,...seq];
 }
 
-export interface BattleConditions {win:string[];lose:string[]}
+export interface BattleConditions {win:string[];lose:string[];
+  /** 극한 턴 제한(새 극한 전투): 「극한: N턴 안에 승리」 */
+  limit?:string}
 /**
  * 지금 전장의 승리·패배 조건.
  * extraLose: 규칙표 실패 조건처럼 스테이지 데이터 밖에 있는 패배(지켜야 할 장수 등) — 이름 목록.
  */
-export function battleConditions(state:BattleState,o:{guarded?:readonly string[];deadline?:number;maxTurns?:number}={}):BattleConditions{
+export function battleConditions(state:BattleState,o:{guarded?:readonly string[];deadline?:number;maxTurns?:number;extreme?:number}={}):BattleConditions{
   // 지금 걸린 조건(state.victory)으로 만든다: 전투 중 목표가 바뀌는 장(change_victory)에서 처음 목표가 남아 있으면 안 된다.
   const win=group(state,state.victory,false);
   const lose=group(state,state.defeat,true);
   for(const n of o.guarded??[]){const t=`${n} 퇴각`;if(!lose.includes(t))lose.push(t);}
   const limit=o.deadline??o.maxTurns;
-  if(limit)lose.push(`${limit}턴 안에 끝내지 못함`);
+  if(o.extreme)lose.push(`극한: ${o.extreme}턴 안에 승리하지 못함`);
+  else if(limit)lose.push(`${limit}턴 안에 끝내지 못함`);
   // 패배 조건의 '모두'는 이름만 모아 짧게: '동문 피난민 퇴각·북문 피난민 퇴각 모두' → '동문 피난민·북문 피난민 모두 퇴각'
   for(let i=0;i<lose.length;i++){const m=/^(.+) 모두$/.exec(lose[i]!);if(m&&m[1]!.split('·').every(x=>x.endsWith(' 퇴각')))lose[i]=`${m[1]!.split('·').map(x=>x.slice(0,-3)).join('·')} 모두 퇴각`;}
   // 피난민·민중을 지키는 장: 데려갈 곳이 승리 조건에 없으면 "지키기만 하면 된다"고 밝힌다.
   const civ=state.living().filter(u=>u.unitClass==='civilian'&&u.side!=='enemy');
   if(civ.length&&!state.victory.some(c=>civ.some(u=>u.id===c.unit))){const i=lose.findIndex(l=>civ.some(u=>l.includes(u.name)));if(i>=0)lose[i]+=' (피난민은 데려갈 곳 없이 지키기만 하면 된다)';}
-  return {win:win.length?win:['적 전멸'],lose};
+  return {win:win.length?win:['적 전멸'],lose,...(o.extreme?{limit:`극한: ${o.extreme}턴 안에 승리`}:{})};
 }
 /** 승리 조건 여러 줄은 아무거나 하나만 이루면 된다(또는). */
 export const winText=(c:BattleConditions)=>c.win.join(' 또는 ');
 /** 화면용 한 덩어리 HTML(이스케이프는 부르는 쪽이 이미 안전한 이름만 넣는다는 전제로 최소 처리). */
 export function conditionsHtml(c:BattleConditions){
   const esc=(s:string)=>s.replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]!));
-  return `<div class="battle-conditions"><p class="cond-win"><b>승리</b> ${c.win.map(esc).join(' <i>또는</i> ')}</p><p class="cond-lose"><b>패배</b> ${c.lose.map(esc).join(' · ')}</p></div>`;
+  return `<div class="battle-conditions"><p class="cond-win"><b>승리</b> ${c.win.map(esc).join(' <i>또는</i> ')}</p><p class="cond-lose"><b>패배</b> ${c.lose.map(esc).join(' · ')}</p>${c.limit?`<p class="cond-limit"><b>기한</b> ${esc(c.limit)}</p>`:''}</div>`;
 }

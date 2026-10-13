@@ -26,7 +26,7 @@ import tongguanStage from '../../data/stages/S1-06.json';
 import tongguanMap from '../../data/maps/tongguan-pass.json';
 import retreatStage from '../../data/stages/S1-05.json';
 import retreatMap from '../../data/maps/yangtze-retreat.json';
-import {stageRules,weatherLine,foeEdges,foeEdges6,foeEdges7,foeEdges8,foeEdgesWide,foeEdges13,EXTREME_EDGE,foeEdgesExtreme,toughWide,tough8,foeLevelCap6} from './stage-rules.ts';
+import {stageRules,weatherLine,foeEdges,foeEdges6,foeEdges7,foeEdges8,foeEdgesWide,foeEdges13,EXTREME_EDGE,foeEdgesExtreme,turnLimitsExtreme,toughWide,tough8,foeLevelCap6} from './stage-rules.ts';
 import {campaignStage,addFortifications,addSiegeCompany,structureKind,encircled,encounterLevels} from './campaign-rules.ts';
 import {applyTreasure,equippedItems,treasureInfo,gearKey,validGearKey,type Deployment,OFFICERS} from './progression.ts';
 import {legacyGear} from './gear-migration.ts';
@@ -507,7 +507,8 @@ export class Session {
     const st=this.state,rules=stageRules[st.stage.id];
     const ids=new Set([...(rules?.protect??[]).map(p=>p.unit),...MUST_SURVIVE,...(this.chapter===8||this.chapter===9?['cao_cao']:[])]);
     const guarded=[...ids].map(id=>st.find(id)).filter(u=>u&&u.side!=='enemy').map(u=>u!.name);
-    const c=battleConditions(st,{guarded,deadline:this.deadline??60});
+    const x=this.extremeLimit,d=this.deadline;
+    const c=battleConditions(st,{guarded,deadline:d??60,...(x!==undefined&&d===x?{extreme:x}:{})});
     const m=this.deployment?.mission;if(m&&(m.version??1)>=3)c.win=[trialGoalText(m.id)];
     return c;
   }
@@ -649,6 +650,8 @@ export class Session {
     // Breach rally belongs to the revision-4 siege rules (ram company, engineers).
     if(this.revision>=4)for(const gate of s.units.values())if(structureKind(gate.id)==='gate'&&!gate.alive&&!this.breached.has(gate.id)){this.breached.add(gate.id);breachRally(s,gate);}
     const rules=stageRules[s.stage.id],view={state:s,difficulty:this.difficulty,journalLength:this.journal.length,scouted:this.scouted};
+    // 극한 턴 제한(새 극한 전투만): 기한이 지나도록 이기지 못하면 패배.
+    {const x=this.extremeLimit;if(x!==undefined&&s.outcome==='ongoing'&&s.turn>x){this.failure=`극한: ${x}턴 안에 승리하지 못했습니다.`;s.outcome='defeat';s.push({t:'outcome',outcome:'defeat'});}}
     if(rules){
       const lost=s.outcome==='ongoing'?rules.tick?.(view):undefined;if(lost){this.failure=lost;s.outcome='defeat';s.push({t:'outcome',outcome:'defeat'});}
       if(rules.deadline&&s.outcome==='ongoing'&&s.turn>rules.deadline){this.failure=rules.deadlineText??`${rules.deadline}턴 안에 작전을 마치지 못했습니다.`;s.outcome='defeat';s.push({t:'outcome',outcome:'defeat'});}
@@ -728,7 +731,9 @@ export class Session {
   /** The turn by which the stage must be won, when its rules set one. */
   /** 규칙판 6은 비율 피해라 성 안 적을 베어 나가는 데 턴이 더 든다. */
   get escapeDeadline(){return this.revision>=6?ESCAPE_DEADLINE_6:ESCAPE_DEADLINE;}
-  get deadline(){return stageRules[this.state.stage.id]?.deadline??(this.chapter===0&&this.difficulty==='extreme'?this.escapeDeadline:undefined);}
+  /** 극한 턴 제한(새 극한 전투만): 이 턴 안에 이기지 못하면 패배. */
+  get extremeLimit(){return this.hardened?turnLimitsExtreme[this.state.stage.id]:undefined;}
+  get deadline(){const base=stageRules[this.state.stage.id]?.deadline??(this.chapter===0&&this.difficulty==='extreme'?this.escapeDeadline:undefined),x=this.extremeLimit;return x!==undefined&&(base===undefined||x<base)?x:base;}
   get somber(){return stageRules[this.state.stage.id]?.somber===true;}
   get canCalm(){return stageRules[this.state.stage.id]?.calm===true;}
   get weather(){return this.chapter===4?'☾ 흉몽 · 짙은 안개':weatherLine(this.state,stageRules[this.state.stage.id],'☀ 맑음 · 바람 약함');}

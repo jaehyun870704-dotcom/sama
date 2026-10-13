@@ -2345,3 +2345,9 @@ dialog.treasure-reveal::backdrop{background:#05090cc4;backdrop-filter:blur(3px)}
 @media(max-width:480px){.tr-body{flex-direction:column;text-align:center}.tr-power{text-align:left}}
 @media(prefers-reduced-motion:reduce){.treasure-reveal-card,.tr-art{animation:none}}
 .zhuge-map .zg-meta{margin-top:12px;display:grid;gap:8px}.zhuge-map .zg-meta .zg-seals{margin:0}
+
+/* 극한 턴 제한(새 극한 전투): 조건 창·목표 띠·턴 표시에서 눈에 띄게 */
+.battle-conditions .cond-limit b,.mo-limit b{background:#7a4a12;color:#fff1d6}
+.cond-limit,.mo-limit{color:#f3c77a;font-weight:700}
+.mo-short-limit{margin-left:.5em;padding:0 .4em;border-radius:3px;background:#7a4a12;color:#fff1d6;font-weight:700;white-space:nowrap}
+#turn-limit.extreme-limit{color:#f3c77a;font-weight:700}
