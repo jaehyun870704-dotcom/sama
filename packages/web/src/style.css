@@ -2381,17 +2381,28 @@ dialog.treasure-reveal::backdrop{background:#05090cc4;backdrop-filter:blur(3px)}
 @media (orientation:landscape) and (max-height:520px){.title-hero{width:min(48%,430px);right:1%;opacity:1}}
 @media (max-width:600px) and (orientation:portrait){.title-hero{width:94%;right:3%;top:auto;bottom:2%;transform:none;opacity:.35}}
 
-/* 첫 화면 인물: 인물열전 초상 여섯 장(족자 카드). 윗줄 위·촉·오 군주, 아랫줄 여포와 두 주인공(사마의·제갈량). */
-.title-hero.title-heroes{position:absolute;top:50%;right:3%;bottom:auto;left:auto;transform:translateY(-50%);width:min(50%,620px);height:auto;max-width:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;z-index:-1;-webkit-mask-image:none;mask-image:none;opacity:1;filter:none}
-.th-card{margin:0;position:relative;aspect-ratio:3/4;border:2px solid #8a6d3b;border-radius:4px;overflow:hidden;background:#140f0a;box-shadow:0 10px 24px #000b,inset 0 0 0 1px #f3e3bd22;animation:th-in .7s ease-out both;animation-delay:calc(var(--i)*90ms)}
-.th-card img{width:100%;height:100%;object-fit:cover;object-position:50% 18%;display:block}
-.th-card::after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,#0b0f12f0 0%,#0b0f1200 42%);pointer-events:none}
-.th-card figcaption{position:absolute;left:0;right:0;bottom:8px;z-index:1;display:flex;align-items:baseline;justify-content:center;gap:6px;color:#f3e3bd;text-shadow:0 1px 3px #000}
-.th-card figcaption b{font:700 calc(19px*var(--fs,1))/1 LocalSerif,'Batang',serif;letter-spacing:3px}
-.th-card figcaption small{font:400 calc(12.5px*var(--fs,1))/1 LocalSerif,'Batang',serif;color:#c9a96a;letter-spacing:2px}
-.th-card.lead{border-color:#d8b45f;box-shadow:0 10px 26px #000c,0 0 0 1px #d8b45f66,0 0 22px #c9953f55}
-@keyframes th-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
-@media(prefers-reduced-motion:reduce){.th-card{animation:none}}
-@media(max-width:900px){.title-hero.title-heroes{width:min(52%,520px);gap:10px;opacity:1}}
-@media (orientation:landscape) and (max-height:520px){.title-hero.title-heroes{width:min(46%,400px);right:1.5%;gap:7px}.th-card figcaption{bottom:4px}.th-card figcaption b{font-size:14px;letter-spacing:1px}.th-card figcaption small{font-size:10px}}
-@media (max-width:600px) and (orientation:portrait){.title-hero.title-heroes{width:92%;right:4%;top:auto;bottom:2%;transform:none;opacity:.35}}
+/* 첫 화면 인물: 인물열전 초상을 한 사람씩 크게. 그림 왼쪽·아래는 전장 배경으로 스며들고, 오른쪽에 세로 이름 족자. */
+.title-showcase{position:absolute;top:0;right:0;bottom:0;width:62%;z-index:-1;pointer-events:none}
+.ts-slide{position:absolute;inset:0;margin:0;opacity:0;transition:opacity 1.4s ease;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 42%),linear-gradient(0deg,transparent 2%,#000 34%);-webkit-mask-composite:source-in;
+  mask-image:linear-gradient(90deg,transparent 0%,#000 42%),linear-gradient(0deg,transparent 2%,#000 34%);mask-composite:intersect}
+.ts-slide.on{opacity:1}
+.ts-slide img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 20%;
+  filter:saturate(.92) contrast(1.04);transform:scale(1.07);transform-origin:60% 30%;transition:transform 7.5s ease-out}
+.ts-slide.on img{transform:scale(1)}
+.ts-slide::after{content:'';position:absolute;inset:0;background:radial-gradient(110% 95% at 68% 32%,transparent 60%,#0b0f1288 100%);pointer-events:none}
+.ts-name{position:absolute;top:9%;right:3.5%;display:flex;flex-direction:column;align-items:center;gap:12px;padding:18px 10px 16px;writing-mode:vertical-rl;text-orientation:upright;
+  background:linear-gradient(180deg,#1a120bdd,#0e0a07cc);border:1px solid #8a6d3b;border-top:3px solid #c9a96a;border-bottom:3px solid #c9a96a;box-shadow:0 8px 22px #000a;
+  opacity:0;transform:translateY(-10px);transition:opacity .9s ease .35s,transform .9s ease .35s}
+.ts-slide.on .ts-name{opacity:1;transform:none}
+.ts-name b{font:700 calc(34px*var(--fs,1))/1 LocalSerif,'Batang',serif;letter-spacing:8px;color:#f3e3bd;text-shadow:0 2px 6px #000}
+.ts-name small{font:400 calc(15px*var(--fs,1))/1 LocalSerif,'Batang',serif;letter-spacing:4px;color:#c9a96a}
+.ts-name em{font:400 calc(13.5px*var(--fs,1))/1.2 LocalSerif,'Batang',serif;font-style:normal;letter-spacing:3px;color:#e7dcc2cc;border-top:1px solid #8a6d3b88;padding-top:10px}
+.ts-dots{position:absolute;right:3.5%;bottom:5%;display:flex;gap:8px;pointer-events:auto}
+.ts-dots button{width:38px;height:38px;min-height:0;padding:0;border-radius:50%;border:2px solid #5a4528;background-color:#140f0a;background-size:170%;background-position:50% 34%;filter:grayscale(.7) brightness(.7);cursor:pointer;transition:filter .3s,border-color .3s,transform .3s}
+.ts-dots button.on,.ts-dots button:hover:not(:disabled){filter:none;border-color:#d8b45f;transform:translateY(-2px);background-color:#140f0a;background-size:170%;background-position:50% 34%}
+.ts-dots button:focus-visible{outline:2px solid #f3e3bd;outline-offset:2px}
+@media(prefers-reduced-motion:reduce){.ts-slide,.ts-slide img,.ts-name{transition:none}.ts-slide img{transform:none}}
+@media(max-width:900px){.title-showcase{width:66%}.ts-name b{font-size:26px;letter-spacing:5px}}
+@media (orientation:landscape) and (max-height:520px){.title-showcase{width:58%}.ts-name{top:6%;padding:10px 6px;gap:7px}.ts-name b{font-size:20px;letter-spacing:3px}.ts-name small{font-size:11px}.ts-name em{font-size:10.5px;padding-top:6px}.ts-dots{bottom:4%;gap:5px}.ts-dots button{width:26px;height:26px}}
+@media (max-width:600px) and (orientation:portrait){.title-showcase{width:100%;opacity:.4}.ts-name,.ts-dots{display:none}}

@@ -105,9 +105,23 @@ const tile=(id:string,seal:string,title:string,line:string,meta='',cls='')=>`<bu
  * 첫 화면(타이틀). 성문 앞 전장 그림 위에 제목과 시작 단추만 둔다 — 무엇을 할지는 본영에서 고른다.
  * 그림·제목은 모두 이 게임이 직접 만든 것이다(다른 게임의 로고·그림을 쓰지 않는다).
  */
-/** 첫 화면 인물: 인물열전 초상 여섯 장(위·촉·오 군주와 여포, 두 이야기의 주인공 사마의·제갈량). */
-const TITLE_HEROES:Array<[string,string]>=[['조조','cao-cao'],['유비','liu-bei'],['손권','sun-quan'],['여포','lu-bu'],['사마의','sima-yi'],['제갈량','zhuge-liang']];
-const titleHeroes=()=>`<div class="title-hero title-heroes" aria-hidden="true">${TITLE_HEROES.map(([n,f],i)=>`<figure class="th-card${n==='사마의'||n==='제갈량'?' lead':''}" style="--i:${i}"><img src="portraits/${f}.webp" alt="" loading="eager" decoding="async"><figcaption><b>${esc(n)}</b>${COURTESY[n]?`<small>${esc(COURTESY[n])}</small>`:''}</figcaption></figure>`).join('')}</div>`;
+/** 첫 화면 인물: 인물열전 초상을 한 사람씩 크게 — 그림이 전장 배경에 스며들고, 세로 이름 족자와 함께 천천히 넘어간다. 두 이야기의 주인공(사마의·제갈량)부터. */
+const TITLE_HEROES:Array<[string,string,string]>=[
+  ['사마의','sima-yi','때를 기다린 자'],['제갈량','zhuge-liang','누운 용'],['조조','cao-cao','난세의 간웅'],['유비','liu-bei','인덕으로 일어선 황숙'],
+  ['손권','sun-quan','강동을 지킨 젊은 군주'],['주유','zhou-yu','적벽의 불꽃'],['여포','lu-bu','천하무쌍'],
+];
+const titleHeroes=()=>`<div class="title-showcase">${TITLE_HEROES.map(([n,f,tag],i)=>`<figure class="ts-slide${i===0?' on':''}" aria-hidden="true"><img src="portraits/${f}.webp" alt="" decoding="async"${i?' loading="lazy"':''}><figcaption class="ts-name"><b>${esc(n)}</b>${COURTESY[n]?`<small>${esc(COURTESY[n])}</small>`:''}<em>${esc(tag)}</em></figcaption></figure>`).join('')}
+  <div class="ts-dots" role="group" aria-label="첫 화면 인물">${TITLE_HEROES.map(([n,f],i)=>`<button type="button" data-ts="${i}" class="${i===0?'on':''}" aria-label="${esc(n)}" style="background-image:url(portraits/${f}.webp)"></button>`).join('')}</div></div>`;
+/** 첫 화면 인물 넘기기: 6.5초마다 다음 사람. 움직임 줄이기 설정이면 넘기지 않는다(점을 눌러 고른다). 화면을 떠나면 멈춘다. */
+function runTitleShowcase(){
+  const root=document.querySelector<HTMLElement>('.title-showcase');if(!root)return;
+  const slides=[...root.querySelectorAll<HTMLElement>('.ts-slide')],dots=[...root.querySelectorAll<HTMLButtonElement>('[data-ts]')];
+  let at=0,timer:number|undefined;
+  const show=(k:number)=>{at=(k+slides.length)%slides.length;slides.forEach((s,j)=>s.classList.toggle('on',j===at));dots.forEach((d,j)=>d.classList.toggle('on',j===at));};
+  const reduce=typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const restart=()=>{clearInterval(timer);if(!reduce)timer=window.setInterval(()=>{if(!root.isConnected){clearInterval(timer);return;}show(at+1);},6500);};
+  dots.forEach((d,j)=>d.onclick=()=>{show(j);restart();});restart();
+}
 export function showTitle(host:RunHost){
   const c=host.chronicleSummary(),resume=host.resumeSaved,last=host.lastBattle();
   const item=(id:string,label:string,sub:string,cls='')=>`<button id="${id}" class="${cls}"><span>${label}</span><small>${sub}</small></button>`;
@@ -118,6 +132,7 @@ export function showTitle(host:RunHost){
     <div class="tm-group">${item('title-recruit','등용','계보마다 조건을 채워 장수를 휘하로 · 연의에 데려간다')}${item('title-codex','도감 보기','인물 · 장수 · 병종 · 책략 · 보물 · 갈림길')}${item('title-lobby','본영','수련장 · 도전 · 연구')}</div>
   </nav>
   <p class="title-note">비상업 팬 창작 게임 · 등장인물은 『삼국지연의』와 정사를 바탕으로 새로 그렸다</p></div></div>`,false);
+  runTitleShowcase();
   const on=(id:string,f:()=>void)=>{const el=document.getElementById(id);if(el)el.onclick=f;};
   on('title-start',()=>showStoryPick(host,()=>showTitle(host)));on('title-resume',()=>host.resumeSaved?.());on('title-load',()=>host.showSlots(()=>showTitle(host)));
   on('title-codex',()=>showCollections(host,()=>showTitle(host)));
