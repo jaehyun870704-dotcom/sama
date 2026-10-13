@@ -46,20 +46,22 @@ export const LEGEND_TREASURE_SHEETS=[
   ['fiveFireFan','sageSword','darkRobe','phoenixRobe','windWheel','zhugeTurban','azureJewel','vermilionJewel','blackTortoiseJewel','whiteTigerJewel'],
 ] as const;
 /**
- * 상점 장비 그림판(shop-items/shop-items-01·02-v1.webp, 3×4, 2026-10-13 납품). 그림을 보고 게임 등급 이름에 맞춘 칸 이름이다.
- * 장갑 첫 칸은 가죽 장갑이라 2등급(가죽장갑)에, 놋쇠 장갑 칸은 맞는 등급이 없어 쓰지 않는다(무명장갑은 글자 패).
- * 02판 뒤 다섯 칸(소모품)은 그림이 물건과 맞지 않아 쓰지 않는다(null).
+ * 상점 그림판(shop-items/treasures-shop-01-v1·02-v2·03-v2.webp, 3×4, 2026-10-13 재납품). 칸 순서는 납품 색인(treasures-shop-manifest.json) 그대로다.
+ * 01판: 투석기·부채·장갑 4등급(무명장갑 포함). 02판: 두건 4등급·돌보검·구리/철 기마갑옷·소모품 다섯(콩·쌀·복숭아·물·술).
+ * 03판: 소모품 여섯(해독약·각성약·도포약·양치약·만능약·인수), 뒤 여섯 칸은 비었다. 소모품 칸 이름은 `supply-<소모품 id>`.
  */
 export const SHOP_ITEM_SHEETS=[
-  ['shop-catapult-1','shop-catapult-2','shop-catapult-3','shop-catapult-4','shop-fan-1','shop-fan-2','shop-fan-3','shop-fan-4','shop-gloves-2',null,'shop-gloves-3','shop-gloves-4'],
-  ['shop-hood-1','shop-hood-2','shop-hood-3','shop-hood-4','shop-sacredSword-1','shop-barding-2','shop-barding-3',null,null,null,null,null],
+  ['shop-catapult-1','shop-catapult-2','shop-catapult-3','shop-catapult-4','shop-fan-1','shop-fan-2','shop-fan-3','shop-fan-4','shop-gloves-1','shop-gloves-2','shop-gloves-3','shop-gloves-4'],
+  ['shop-hood-1','shop-hood-2','shop-hood-3','shop-hood-4','shop-sacredSword-1','shop-barding-2','shop-barding-3','supply-bean','supply-rice','supply-peach','supply-water','supply-wine'],
+  ['supply-antidote','supply-awaken','supply-salve','supply-gargle','supply-panacea','supply-promotion',null,null,null,null,null,null],
 ] as const;
+const SHOP_ITEM_FILES=['shop-items/treasures-shop-01-v1.webp','shop-items/treasures-shop-02-v2.webp','shop-items/treasures-shop-03-v2.webp'] as const;
 type Cell={file:string;cell:number};
 const CELLS=new Map<string,Cell>([
   ...EXTRA_TREASURE_SHEETS.flatMap((items,sheet)=>items.map((id,cell)=>[id,{file:`treasures-extra-${String(sheet+1).padStart(2,'0')}-v1.webp`,cell}] as const)),
   ...UNIQUE_TREASURE_SHEETS.flatMap((items,sheet)=>items.map((id,cell)=>[id,{file:`treasures-unique-${String(sheet+1).padStart(2,'0')}-v1.webp`,cell}] as const)),
   ...LEGEND_TREASURE_SHEETS.flatMap((items,sheet)=>items.map((id,cell)=>[id,{file:`treasures-legend-${String(sheet+1).padStart(2,'0')}-v1.webp`,cell}] as const)),
-  ...SHOP_ITEM_SHEETS.flatMap((items,sheet)=>items.flatMap((id,cell)=>id?[[id,{file:`shop-items/shop-items-${String(sheet+1).padStart(2,'0')}-v1.webp`,cell}] as const]:[])),
+  ...SHOP_ITEM_SHEETS.flatMap((items,sheet)=>items.flatMap((id,cell)=>id?[[id,{file:SHOP_ITEM_FILES[sheet]!,cell}] as const]:[])),
 ]);
 /**
  * 상점 장비 종류 × 등급 → 다시 쓰는 그림 칸(지운 보물이 그려진 칸). 없으면 글자 패.
@@ -78,7 +80,7 @@ export const SHOP_ART:Readonly<Partial<Record<GearKind,readonly [string|null,str
   barding:['swiftSaddle','shop-barding-2','shop-barding-3','horseBarding'],
   catapult:['shop-catapult-1','shop-catapult-2','shop-catapult-3','shop-catapult-4'],
   fan:['shop-fan-1','shop-fan-2','shop-fan-3','shop-fan-4'],
-  gloves:[null,'shop-gloves-2','shop-gloves-3','shop-gloves-4'],
+  gloves:['shop-gloves-1','shop-gloves-2','shop-gloves-3','shop-gloves-4'],
   hood:['shop-hood-1','shop-hood-2','shop-hood-3','shop-hood-4'],
 };
 /** 장비 id(고유 보물 또는 상점 장비)가 쓰는 그림 칸 이름. 없으면 undefined. */
@@ -87,13 +89,13 @@ export function artKey(id:string):string|undefined{
   if(d.named)return d.id;
   return SHOP_ART[d.kind]?.[d.grade-1]??undefined;
 }
-/** 실제 그림이 있는 칸 이름(그림 판 + 추가 그림판). */
-export const TREASURE_ART:ReadonlySet<string>=new Set([...ATLAS_CELLS,...CELLS.keys()]);
+/** 실제 그림이 있는 칸 이름(그림 판 + 추가 그림판, 소모품 칸 제외). */
+export const TREASURE_ART:ReadonlySet<string>=new Set([...ATLAS_CELLS,...[...CELLS.keys()].filter(k=>!k.startsWith('supply-'))]);
 
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const EDGES=[0,150,306,458,610,764,919,1072,1228,1387,1619];
 function atlasIcon(i:number){const row=Math.floor(i/6),top=EDGES[row]!,height=EDGES[row+1]!-top;return `<i class="treasure-icon" style="background-size:600% ${1619/height*100}%;background-position:${i%6/5*100}% ${top/(1619-height)*100}%"></i>`;}
-const sheetIcon=(c:Cell)=>{const col=c.cell%3,row=Math.floor(c.cell/3);return `<i class="treasure-icon sheet" style="background-image:url(${c.file});background-size:300% 400%;background-position:${col*50}% ${row*100/3}%;background-repeat:no-repeat"></i>`;};
+const sheetIcon=(c:Cell,cls='')=>{const col=c.cell%3,row=Math.floor(c.cell/3);return `<i class="treasure-icon sheet${cls}" style="background-image:url(${c.file});background-size:300% 400%;background-position:${col*50}% ${row*100/3}%;background-repeat:no-repeat"></i>`;};
 const pendingIcon=(glyph:string,grade:number,label:string)=>`<i class="treasure-icon pending g${grade}" title="${esc(label)}">${esc(glyph)}</i>`;
 function cellIcon(key:string){const c=CELLS.get(key);if(c)return sheetIcon(c);const k=ATLAS_CELLS.indexOf(key);return k>=0?atlasIcon(k):'';}
 
@@ -110,4 +112,9 @@ export function relicIcon(id:string,name:string){
   const key='relic-'+id;if(CELLS.has(key))return cellIcon(key);
   const same=RELIC_ATLAS[id];if(same)return cellIcon(same);
   return pendingIcon(name.slice(0,1),RELIC_GRADE[id]??1,'회차 보물');
+}
+/** 소모품(도구)의 그림: 상점 그림판의 소모품 칸. 그림이 없는 id는 첫 글자 패. */
+export function supplyIcon(id:string,name=id){
+  const c=CELLS.get('supply-'+id);if(c)return sheetIcon(c,' supply-icon').replace('<i ',`<i role="img" aria-label="${esc(name)}" `);
+  return pendingIcon(name.slice(0,1),1,name).replace('treasure-icon pending','treasure-icon pending supply-icon');
 }

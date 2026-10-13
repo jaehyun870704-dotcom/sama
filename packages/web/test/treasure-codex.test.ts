@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { filterTreasures, defaultFilter, treasureSource } from "../src/treasure-codex.ts";
-import { TREASURE_ART, SHOP_ART, ATLAS_CELLS, artKey, formOf, FORMS, relicIcon, treasureIcon } from "../src/treasure-art.ts";
+import { TREASURE_ART, SHOP_ART, ATLAS_CELLS, artKey, formOf, FORMS, relicIcon, supplyIcon, treasureIcon } from "../src/treasure-art.ts";
 import { treasures } from "../src/progression.ts";
 import { RELICS } from "../src/roguelike.ts";
-import { SHOP_GEAR } from "../../core/src/index.ts";
+import { CONSUMABLES, SHOP_GEAR } from "../../core/src/index.ts";
 
 const h = { owned: new Set(["yitian", "silverShield"]), wearer: new Map<string, string>(), relics: new Set(["drum"]) };
 
@@ -51,9 +51,14 @@ describe("장비 그림", () => {
       else expect(treasureIcon(d.id + "#3")).toContain("pending");
     }
     expect(Object.keys(SHOP_ART).length).toBeGreaterThanOrEqual(8);
-    // 상점 그림판(2026-10-13): 투석기·부채·두건 4등급, 장갑 2~4등급, 돌보검, 구리·철 기마갑옷
-    for (const id of ["catapult:1", "fan:2", "hood:4", "gloves:3", "sacredSword:1", "barding:2", "barding:3"]) expect(treasureIcon(`shop:${id}`), id).toContain("shop-items/shop-items-0");
-    expect(treasureIcon("shop:gloves:1")).toContain("pending");
+    // 상점 그림판(2026-10-13 재납품): 투석기·부채·두건·장갑 4등급(무명장갑 포함), 돌보검, 구리·철 기마갑옷
+    for (const id of ["catapult:1", "fan:2", "hood:4", "gloves:1", "gloves:3", "sacredSword:1", "barding:2", "barding:3"]) expect(treasureIcon(`shop:${id}`), id).toContain("shop-items/treasures-shop-0");
+    expect(treasureIcon("shop:gloves:1")).toContain("treasures-shop-01-v1.webp");
+    // 소모품 11종은 모두 그림판 칸이 있다(02판 뒤 다섯 칸 · 03판 앞 여섯 칸).
+    for (const d of CONSUMABLES) { const icon = supplyIcon(d.id, d.name); expect(icon, d.id).toContain("supply-icon"); expect(icon, d.id).not.toContain("pending"); }
+    expect(supplyIcon("bean")).toContain("treasures-shop-02-v2.webp");
+    expect(supplyIcon("promotion")).toContain("treasures-shop-03-v2.webp");
+    expect(supplyIcon("nothing", "없는 것")).toContain("pending");
     for (const r of RELICS) expect(relicIcon(r.id, r.name), r.id).not.toContain("pending");
   });
 });

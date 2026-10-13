@@ -1,10 +1,11 @@
 import {describe,expect,it} from 'vitest';
 import {existsSync,readFileSync} from 'node:fs';
-// 장수 그림 한 벌(디자인 지시서: {id}-sd-v1.webp 1400×280)이 들어온 장수는 병종과 무관하게 그 시트를 쓴다.
-// 새 일기토(-duel-v2)가 들어온 장수는 그 시트를 쓴다(옛 -v1은 지운다).
-const duelFile=(id:string)=>existsSync(new URL(`../public/officers/${id}-duel-v2.webp`,import.meta.url))?`${id}-duel-v2.webp`:`${id}-duel-v1.webp`;
-const hasSd=(id:string)=>existsSync(new URL(`../public/officers/${id}-sd-v1.webp`,import.meta.url));
-import {UNIFIED_SD_IDS,officerBattleSheet,officerDuelModel,officerDuelModelStyle,officerDuelMounted,officerEntry,officerManifest,officerModelSheets} from '../src/officer-models.ts';
+// 장수 그림 한 벌(디자인 지시서: SD 1400×280)이 들어온 장수는 병종과 무관하게 그 시트를 쓴다.
+// 새 일기토가 들어온 장수는 그 시트를 쓴다(옛 -v1은 지운다). 파일 이름(판 번호)은 장수마다 UNIFIED_SD_FILES에 적혀 있다.
+import {UNIFIED_SD_FILES,UNIFIED_SD_IDS,officerBattleSheet,officerDuelModel,officerDuelModelStyle,officerDuelMounted,officerEntry,officerManifest,officerModelSheets} from '../src/officer-models.ts';
+const duelFile=(id:string)=>UNIFIED_SD_FILES[id]?.duel??`${id}-duel-v1.webp`;
+const hasSd=(id:string)=>!!UNIFIED_SD_FILES[id];
+const sdFile=(id:string)=>UNIFIED_SD_FILES[id]!.sd;
 
 const lordIds=['cao_cao','cao_pi','cao_rui','liu_bei','sun_quan','gongsun_yuan','yuan_tan','yuan_shang','liu_bang','xiang_yu'] as const;
 const priorityDuelIds=['huang_zhong','zhao_yun','sun_quan','lu_meng','wei_yan','lu_xun','gongsun_yuan','yang_ang','lu_fan','sun_shao','meng_da','ma_su','wang_ping','gao_xiang','meng_yan','bi_yan','zhu_ran','zhuge_ke','wang_ling'] as const;
@@ -37,7 +38,7 @@ describe('장수별 전투 SD와 대결 모델',()=>{
   const players=[['sima_yi','사마의'],['cao_zhen','조진'],['sima_lang','사마랑'],['sima_fang','사마방'],['sima_shi','사마사'],['sima_zhao','사마소']] as const;
 
   it('대상 94명(이야기 전신 전용 인물 2명 포함)과 모든 공개 시트를 색인한다',()=>{
-    expect(officerManifest).toHaveLength(161);
+    expect(officerManifest).toHaveLength(163);
     const sheets=new Set(officerModelSheets.map(s=>s.id));
     for(const entry of officerManifest)for(const battle of Object.values(entry.battle))expect(sheets.has(battle.sheet),battle.sheet).toBe(true);
   });
@@ -45,7 +46,7 @@ describe('장수별 전투 SD와 대결 모델',()=>{
   it('플레이어 장수 6명은 전투 SD 4줄(통합 SD가 온 장수는 한 줄)이며 정확한 셀 규격을 쓴다',()=>{
     for(const [id,name] of players){
       const model=officerBattleSheet({id,name})!;
-      if(hasSd(id)){expect(model.action.sheet,id).toBe(`officers/${id}-sd-v1.webp`);expect(model.action.rows,id).toBe(1);expect(model.action.cell,id).toEqual([350,280]);continue;}
+      if(hasSd(id)){expect(model.action.sheet,id).toBe(`officers/${sdFile(id)}`);expect(model.action.rows,id).toBe(1);expect(model.action.cell,id).toEqual([350,280]);continue;}
       expect(model.action.rows,id).toBe(4);
       expect(model.action.cell?.[0],id).toBe(id==='cao_zhen'||id==='sima_zhao'?350:280);
       expect(model.action.cell?.[1],id).toBe(id==='cao_zhen'||id==='sima_zhao'?280:224);
@@ -54,10 +55,10 @@ describe('장수별 전투 SD와 대결 모델',()=>{
   });
 
   it('진화 병종도 원래 계통 시트의 같은 모습(첫 줄)을 쓴다',()=>{
-    const strategist=officerBattleSheet({id:'sima_yi',name:'사마의',unitClass:'mastermind'})!;
+    const strategist=officerBattleSheet({id:'xun_yu',name:'순욱',unitClass:'mastermind'})!;
     expect(strategist.action.sheet).toContain('battle-strategist');
     expect(strategist.action.row).toBe(0);
-    const infantry=officerBattleSheet({id:'sima_lang',name:'사마랑',unitClass:'ironInfantry'})!;
+    const infantry=officerBattleSheet({id:'xu_chu',name:'허저',unitClass:'ironInfantry'})!;
     expect(infantry.action.sheet).toContain('battle-infantry');
     expect(infantry.action.row).toBe(0);
   });
@@ -65,13 +66,13 @@ describe('장수별 전투 SD와 대결 모델',()=>{
   it('군주 10명은 군주 전 계통에서 전용 기마 시트를 찾는다',()=>{
     for(const id of lordIds)for(const unitClass of ['lord','hegemon','sovereign','sonOfHeaven'] as const){
       const model=officerBattleSheet({id,name:id,unitClass})!;
-      expect(model.action.sheet,`${id}/${unitClass}`).toBe(hasSd(id)?`officers/${id}-sd-v1.webp`:`officers/${id}-battle-lord-v1.webp`);
+      expect(model.action.sheet,`${id}/${unitClass}`).toBe(hasSd(id)?`officers/${sdFile(id)}`:`officers/${id}-battle-lord-v1.webp`);
       expect(model.action.cell,`${id}/${unitClass}`).toEqual(hasSd(id)?[350,280]:[280,224]);
     }
   });
 
   it('군주 10명의 전투 시트는 1120×224(280×224 × 4칸), 새 SD 한 벌은 1400×280이다',()=>{
-    for(const id of lordIds)if(hasSd(id))expect(webpSize(new URL(`../public/officers/${id}-sd-v1.webp`,import.meta.url)),id).toEqual([1400,280]);else expect(webpSize(new URL(`../public/officers/${id}-battle-lord-v1.webp`,import.meta.url)),id).toEqual([1120,224]);
+    for(const id of lordIds)if(hasSd(id))expect(webpSize(new URL(`../public/officers/${sdFile(id)}`,import.meta.url)),id).toEqual([1400,280]);else expect(webpSize(new URL(`../public/officers/${id}-battle-lord-v1.webp`,import.meta.url)),id).toEqual([1120,224]);
   });
 
   it('id, 환영, wooden_zhuge, boss의 연의 이름 순서로 찾는다',()=>{
@@ -119,7 +120,7 @@ describe('장수별 전투 SD와 대결 모델',()=>{
   it('2차 추가 장수 8명은 병종별 전투 시트 규격을 지킨다',()=>{
     for(const [id,unitClass,width,height] of secondaryBattle){
       const model=officerBattleSheet({id,name:id,unitClass})!;
-      if(hasSd(id)){expect(model.action.sheet,id).toBe(`officers/${id}-sd-v1.webp`);expect(model.action.cell,id).toEqual([350,280]);continue;}
+      if(hasSd(id)){expect(model.action.sheet,id).toBe(`officers/${sdFile(id)}`);expect(model.action.cell,id).toEqual([350,280]);continue;}
       expect(model.action.sheet,id).toBe(`officers/${id}-battle-${unitClass}-v1.webp`);
       expect(model.action.cell,id).toEqual([width/4,height]);
       expect(webpSize(new URL(`../public/officers/${id}-battle-${unitClass}-v1.webp`,import.meta.url)),id).toEqual([width,height]);
@@ -129,7 +130,7 @@ describe('장수별 전투 SD와 대결 모델',()=>{
   it('우선순위 장수 12명은 병종별 전투 시트 규격을 지킨다',()=>{
     for(const [id,unitClass,width,height] of priorityBattle){
       const model=officerBattleSheet({id,name:id,unitClass})!;
-      if(hasSd(id)){expect(model.action.sheet,id).toBe(`officers/${id}-sd-v1.webp`);expect(model.action.cell,id).toEqual([350,280]);continue;}
+      if(hasSd(id)){expect(model.action.sheet,id).toBe(`officers/${sdFile(id)}`);expect(model.action.cell,id).toEqual([350,280]);continue;}
       expect(model.action.sheet,id).toBe(`officers/${id}-battle-${unitClass}-v1.webp`);
       expect(model.action.cell,id).toEqual([width/4,height]);
       expect(webpSize(new URL(`../public/officers/${id}-battle-${unitClass}-v1.webp`,import.meta.url)),id).toEqual([width,height]);
@@ -140,7 +141,7 @@ describe('장수별 전투 SD와 대결 모델',()=>{
     for(const [id,unitClass] of namedBattle){
       const model=officerBattleSheet({id,name:id,unitClass})!;
       // 장수 그림 한 벌(SD)이 들어온 장수는 그 시트 하나만 쓴다(옛 병종별 시트는 지웠다).
-      if(hasSd(id)){expect(model.action.sheet,id).toBe(`officers/${id}-sd-v1.webp`);expect(model.action.cell,id).toEqual([350,280]);continue;}
+      if(hasSd(id)){expect(model.action.sheet,id).toBe(`officers/${sdFile(id)}`);expect(model.action.cell,id).toEqual([350,280]);continue;}
       expect(model.action.sheet,id).toBe(`officers/${id}-battle-${unitClass}-v1.webp`);
       expect(model.action.cell,id).toEqual([280,224]);
       expect(webpSize(new URL(`../public/officers/${id}-battle-${unitClass}-v1.webp`,import.meta.url)),id).toEqual([1120,224]);
@@ -149,22 +150,32 @@ describe('장수별 전투 SD와 대결 모델',()=>{
 
   it('기마 대결 장수만 기마 연출을 사용한다',()=>{
     for(const id of ['zhao_yun','sun_quan','lu_meng','gongsun_yuan','meng_yan','bi_yan'])expect(officerDuelMounted({id,name:id}),id).toBe(true);
-    for(const id of ['huang_zhong','wei_yan','lu_xun','ma_su','zhuge_ke','wang_ling'])expect(officerDuelMounted({id,name:id}),id).toBe(false);
+    for(const id of ['huang_zhong','lu_xun','ma_su','zhuge_ke','wang_ling'])expect(officerDuelMounted({id,name:id}),id).toBe(false);
     // 2차 통합 SD: 말 탄 일기토 그림은 마대·사마사뿐이다.
     for(const id of ['ma_dai','sima_shi'])expect(officerDuelMounted({id,name:id}),id).toBe(true);
     for(const id of ['meng_da','huang_yueying','zhang_bao','guan_xing','zhuge_jin'])expect(officerDuelMounted({id,name:id}),id).toBe(false);
+    // 3차 재납품: 조진·위연·사마사는 말 탄 일기토, 관색은 두 번째 칸만 말을 타 도보로 둔다.
+    for(const id of ['cao_zhen','wei_yan','sima_shi'])expect(officerDuelMounted({id,name:id}),id).toBe(true);
+    for(const id of ['guan_suo','sima_yi','sima_zhao','yan_yan','zhuge_jun'])expect(officerDuelMounted({id,name:id}),id).toBe(false);
   });
 
-  it('통합 SD 장수는 1400×280 SD 한 벌·1024×256 일기토 v2만 쓰고 옛 시트 파일은 없다',()=>{
-    expect(UNIFIED_SD_IDS.length).toBe(29);
+  it('통합 SD 장수는 1400×280 SD 한 벌·1024×256 일기토만 쓰고 옛 시트 파일은 없다',()=>{
+    expect(UNIFIED_SD_IDS.length).toBe(49);
     for(const id of UNIFIED_SD_IDS){
-      const e=officerEntry({id,name:id})!;expect(e,id).toBeDefined();
-      expect(officerBattleSheet({id,name:id})!.action.sheet,id).toBe(id==='wooden_zhuge'?'officers/zhuge_liang-battle-cart-v1.webp':`officers/${id}-sd-v1.webp`);
-      expect(webpSize(new URL(`../public/officers/${id}-sd-v1.webp`,import.meta.url)),id).toEqual([1400,280]);
-      expect(officerDuelModel({id,name:id})?.sheet,id).toBe(`officers/${id}-duel-v2.webp`);
-      expect(webpSize(new URL(`../public/officers/${id}-duel-v2.webp`,import.meta.url)),id).toEqual([1024,256]);
+      const e=officerEntry({id,name:id})!;expect(e,id).toBeDefined();const f=UNIFIED_SD_FILES[id]!;
+      expect(officerBattleSheet({id,name:id})!.action.sheet,id).toBe(id==='wooden_zhuge'?'officers/zhuge_liang-battle-cart-v1.webp':`officers/${f.sd}`);
+      expect(webpSize(new URL(`../public/officers/${f.sd}`,import.meta.url)),id).toEqual([1400,280]);
+      expect(officerDuelModel({id,name:id})?.sheet,id).toBe(`officers/${f.duel}`);
+      expect(webpSize(new URL(`../public/officers/${f.duel}`,import.meta.url)),id).toEqual([1024,256]);
       expect(existsSync(new URL(`../public/officers/${id}-duel-v1.webp`,import.meta.url)),id).toBe(false);
     }
+    // 재납품(07e57d5)으로 판이 바뀐 장수: 옛 병종 시트·옛 판은 지웠다.
+    for(const f of ['sima_shi-sd-v1','sima_shi-duel-v2','sima_yi-battle-strategist-v1','cao_zhen-battle-heavyCav-v1','sima_zhao-battle-crossbow-v1','wei_yan-battle-infantry-v1','yan_yan-battle-infantry-v1'])
+      expect(existsSync(new URL(`../public/officers/${f}.webp`,import.meta.url)),f).toBe(false);
+    expect(UNIFIED_SD_FILES.sima_shi).toEqual({sd:'sima_shi-sd-v2.webp',duel:'sima_shi-duel-v3.webp'});
+    // 제갈균은 파일 이름이 jun-*이고, 제갈량전 출진 id(z_jun)는 이름으로 찾는다.
+    expect(officerDuelModel({id:'z_jun',name:'제갈균'})?.sheet).toBe('officers/jun-duel-v2.webp');
+    expect(officerBattleSheet({id:'z_guan_suo',name:'관색',unitClass:'infantry'})?.action.sheet).toBe('officers/guan_suo-sd-v1.webp');
     // 색인에 없던 촉 장수도 이름으로 찾는다(촉 출진 장수 id는 z_ 접두).
     expect(officerBattleSheet({id:'z_huang_yueying',name:'황월영',unitClass:'strategist'})?.action.sheet).toBe('officers/huang_yueying-sd-v1.webp');
     expect(officerDuelModel({id:'z_fei_yi',name:'비의'})?.sheet).toBe('officers/fei_yi-duel-v2.webp');
