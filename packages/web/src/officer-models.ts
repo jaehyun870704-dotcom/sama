@@ -78,6 +78,8 @@ export const officerManifest:OfficerEntry[]=[
   E('yuan_shao','원소',c('yuan_shao','lord')),E('dong_zhuo','동탁',c('dong_zhuo','lord')),E('hua_xiong','화웅',c('hua_xiong','heavyCav')),E('gongsun_zan','공손찬',c('gongsun_zan','cavalry')),E('zhang_jiao','장각',c('zhang_jiao','strategist')),E('gao_shun','고순',c('gao_shun','infantry')),E('ma_teng','마등',c('ma_teng','cavalry')),E('liu_biao','유표',c('liu_biao','lord')),E('xu_shu','서서',{}),
   E('zhang_ren','장임',c('zhang_ren','spearman')),E('zhou_cang','주창',{}),E('jian_yong','간옹',{}),E('mi_zhu','미축',{}),E('sun_qian','손건',{}),E('liao_hua','요화',{}),E('zhang_yi','장익',{}),E('li_yan','이엄',{}),E('chen_shi','진식',{}),E('deng_zhi','등지',{}),
   E('wen_yang','문앙',c('wen_yang','cavalry')),E('zhang_chunhua','장춘화',c('zhang_chunhua','strategist')),E('zhen_shi','견씨',c('zhen_shi','dancer')),E('wang_shuang','왕쌍',{}),E('wen_qin','문흠',c('wen_qin','cavalry')),E('han_dang','한당',c('han_dang','archer')),E('zhang_qin','장흠',c('zhang_qin','infantry')),E('pan_zhang','반장',c('pan_zhang','cavalry')),E('lu_kang','육항',c('lu_kang','strategist')),E('diaochan','초선',c('diaochan','dancer')),E('li_jue','이각',c('li_jue','cavalry')),E('guo_si','곽사',c('guo_si','cavalry')),E('yuan_shu','원술',c('yuan_shu','lord')),
+  // 여성 인물 보강: 초상화·SD는 별도 제작 단계에서 연결한다.
+  E('wang_yi','왕이',{}),E('sun_shangxiang','손상향',{}),E('bian_shi','변씨',{}),E('bu_lianshi','보연사',{}),E('guan_yinping','관은병',{}),E('bao_sanliang','포삼랑',{}),E('lingqi','여령기',{}),E('ma_yunlu','마운록',{}),E('xin_xianying','신헌영',{}),E('wang_yuanji','왕원희',{}),E('da_qiao','대교',{}),E('xiao_qiao','소교',{}),E('xiahou_shi','하후씨',{}),E('dong_bai','동백',{}),E('cai_wenji','채문희',{}),
 ];
 // 완전 아트 세트가 추가된 장수: 공통 파일 규격(초상·흉상·일기토)을 색인에 연결한다.
 const COMPLETE_ART_IDS=['sun_jian','sun_ce','taishi_ci','cheng_pu','zhou_tai','ling_tong','yuan_shao','dong_zhuo','hua_xiong','gongsun_zan','zhang_jiao','gao_shun','ma_teng','liu_biao','xu_shu','zhang_ren','zhou_cang','jian_yong','mi_zhu','sun_qian','liao_hua','zhang_yi','li_yan','chen_shi','deng_zhi','wen_yang','zhang_chunhua','zhen_shi','wang_shuang','wen_qin','han_dang','zhang_qin','pan_zhang','lu_kang','diaochan','li_jue','guo_si','yuan_shu'] as const;
@@ -108,7 +110,7 @@ const SD_VERSIONS:Readonly<Record<string,readonly [number,number]>>={
   liu_bei:[2,3],wooden_zhuge:[2,3],cao_cao:[2,3],sun_quan:[3,5],lu_bu:[2,4],
   meng_huo:[2,3],zhou_yu:[2,3],wutugu:[2,3],lu_meng:[1,3],zhu_ran:[1,3],
   sun_jian:[2,2],sun_ce:[2,2],taishi_ci:[2,2],cheng_pu:[2,2],zhou_tai:[2,2],ling_tong:[2,2],zhang_chunhua:[2,2],zhang_jiao:[2,2],dong_zhuo:[2,2],
-  yuan_shu:[2,2],yuan_shao:[2,2],yue_jin:[3,3],dai_ling:[3,3],zhong_hui:[3,3],deng_ai:[3,3],li_dian:[3,3],guo_jia:[2,2],xun_you:[2,2],cheng_yu:[2,2],dian_wei:[2,2],pang_de:[2,2],gongsun_zan:[2,2],liu_biao:[2,2],ma_teng:[2,2],dong_zhuo:[2,2],gao_lan:[2,2],wen_qin:[1,2],wen_yang:[1,2],
+  yuan_shu:[2,2],yuan_shao:[2,2],yue_jin:[3,3],dai_ling:[3,3],zhong_hui:[3,3],deng_ai:[3,3],li_dian:[3,3],guo_jia:[2,2],xun_you:[2,2],cheng_yu:[2,2],dian_wei:[2,2],pang_de:[2,2],gongsun_zan:[2,2],liu_biao:[2,2],ma_teng:[2,2],gao_lan:[2,2],wen_qin:[1,2],wen_yang:[1,2],
   cao_xiu:[2,2],gongsun_yuan:[2,2],wen_chou:[2,2],xu_huang:[2,2],xu_sheng:[2,2],yu_jin:[2,2],yuan_shang:[2,2],
 };
 export const UNIFIED_SD_FILES:Readonly<Record<string,{sd:string;duel:string}>>=Object.fromEntries((UNIFIED_SD_IDS as readonly string[]).map(id=>{
