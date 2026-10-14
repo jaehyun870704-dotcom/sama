@@ -167,6 +167,22 @@ export const DUEL_CLASS_SHEETS=Object.freeze([
   'infantry','spearman','cavalry','heavyCav','archer','crossbow','strategist','fengshui','ram','catapult','engineer','navy',
   'warlock','priestess','stormSage','warriorMonk','outlaw','shaman','maiden','taoist','monk','horseArcher','bandit','assassin','elephant',
 ] as const).map(unitClass=>({unitClass,sheet:`officers/duel-class-${unitClass}-v1.webp`,cell:[256,256] as const,rows:1}));
+// v2 기준판: 핵심 계통은 새 프레임 정렬·무기 가시성 검수본을 우선 사용한다.
+const DUEL_CLASS_V2:Readonly<Record<string,string>>={
+  infantry:'duel-class-infantry-v4.png',spearman:'duel-class-spearman-v3.png',
+  cavalry:'duel-class-cavalry-v4.png',heavyCav:'duel-class-heavyCav-v3.png',
+  archer:'duel-class-archer-v4.png',crossbow:'duel-class-crossbow-v3.png',
+  strategist:'duel-class-strategist-v3.png',fengshui:'duel-class-fengshui-v3.png',
+  ram:'duel-class-ram-v3.png',catapult:'duel-class-catapult-v3.png',
+  engineer:'duel-class-engineer-v3.png',navy:'duel-class-navy-v3.png',
+  warlock:'duel-class-warlock-v2.png',priestess:'duel-class-priestess-v2.png',
+  monk:'duel-class-monk-v2.png',warriorMonk:'duel-class-warriorMonk-v2.png',
+  outlaw:'duel-class-outlaw-v2.png',shaman:'duel-class-shaman-v2.png',maiden:'duel-class-maiden-v2.png',
+  stormSage:'duel-class-stormSage-v3.png',taoist:'duel-class-taoist-v3.png',
+  horseArcher:'duel-class-horseArcher-v3.png',bandit:'duel-class-bandit-v3.png',
+  assassin:'duel-class-assassin-v3.png',elephant:'duel-class-elephant-v3.png',
+};
+for(const x of DUEL_CLASS_SHEETS){const file=DUEL_CLASS_V2[x.unitClass];if(file)x.sheet=`officers/${file}`;}
 
 /**
  * 대결 그림 맞춤: 시트마다 발끝 높이(256칸 기준)와 대기 자세 키가 달라(옛 시트 발끝 246~256, 새 시트 229~230 /
