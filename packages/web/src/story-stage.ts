@@ -51,6 +51,9 @@ function spriteFace(look:Look){
  * 먹 상자(이야기 장면)와 양피지 상자(진영 대화) 두 가지. 흉상은 넣은 그림 → 원화 → 지은 초상 순이고,
  * 이름 없는 인물(척후·병사)은 무대 그림의 윗몸을 쓴다.
  */
+/** 주인공이 단 칭호(등용 — 나라를 다 모으면 얻는다): 이야기 대화창 이름 앞에 붙인다. */
+const heroTitles=new Map<string,string>();
+export function setStoryTitle(name:string,title:string){if(title)heroTitles.set(name,title);else heroTitles.delete(name);}
 export function talkBox(speaker:string,line:string,place:'top'|'bottom',stageLook?:Look,skin:'ink'|'paper'='ink'){
   const look=officerLook(speaker),base=look?.name??speaker;
   const expression=/분노|격노|죽|베어|용서.*못|!{1,}|！/.test(line)?'angry':/하하|후후|기쁘|반갑|잘했|좋[군소다]|웃/.test(line)?'smile':'neutral';
@@ -59,7 +62,7 @@ export function talkBox(speaker:string,line:string,place:'top'|'bottom',stageLoo
     if(stageLook&&(f.includes('unknown-face')||f.includes('troop-face'))){const art=artFor(speaker,stageLook);f=art.kind==='fig'?figFace(art):f.includes('unknown-face')?spriteFace(art.look):f;}
     face=`<div class="talk-bust sprite">${f}</div>`;}
   void place;
-  return `<div class="ss-talk bottom ${skin}"><div class="ss-talk-face">${face}</div><div class="ss-talk-body"><b>${esc(displayName(base))}</b><p>${esc(line)}</p></div><span class="ss-talk-next" aria-hidden="true">⚔</span></div>`;
+  return `<div class="ss-talk bottom ${skin}"><div class="ss-talk-face">${face}</div><div class="ss-talk-body"><b>${heroTitles.has(base)?`<small class="ss-title">「${esc(heroTitles.get(base)!)}」</small> `:''}${esc(displayName(base))}</b><p>${esc(line)}</p></div><span class="ss-talk-next" aria-hidden="true">⚔</span></div>`;
 }
 
 export interface StageHooks {

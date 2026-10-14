@@ -11,6 +11,7 @@ import {readCustoms,type CustomOfficer} from './custom.ts';
 import {ZHUGE_ENDINGS} from './zhuge-ending.ts';
 import {RESEARCH} from './research.ts';
 import {LEGACIES} from './chuhan.ts';
+import {NATIONS,type Nation} from './recruit.ts';
 
 export interface MetaState {
   version:1;
@@ -34,14 +35,22 @@ export interface MetaState {
   officerPerks?:Record<string,{learned:string[];equipped:string[]}>;
   /** 장수가 어느 회차에서든 닿은 가장 높은 레벨(장수 효과의 필요 레벨) */
   officerBest?:Record<string,number>;
-  /** 등용한 장수(recruit.ts 계보) — 회차가 바뀌어도 남는다 */
+  /** 사마의전에서 등용한 장수(recruit.ts) — 사마의 휘하 */
   recruited?:string[];
-  /** 공훈 등용에 바칠 공훈(recruit.ts MERIT) — 없으면 아직 셈하지 않은 옛 저장 */
+  /** 제갈량전에서 등용한 장수 — 제갈량 휘하 */
+  recruitedZ?:string[];
+  /** 공훈 등용에 바칠 공훈(두 이야기 함께, recruit.ts MERIT) — 없으면 아직 셈하지 않은 옛 저장 */
   merit?:number;
-  /** 격파 귀순: 적장 이름 → 꺾은 횟수 */
-  defeats?:Record<string,number>;
-  /** 완성 보상을 받은 계보 id */
-  lineageRewards?:string[];
+  /** 격파 호감: '이야기:이름' → 호감('S:맹달') */
+  favor?:Record<string,number>;
+  /** 나라 명성: '이야기:나라' → 쌓인 명성('S:촉') */
+  fame?:Record<string,number>;
+  /** 위·촉·오 군주에게 바친 명성('S:위') */
+  fameSpent?:Record<string,number>;
+  /** 얻은 칭호('S:위' — 그 이야기에서 그 나라를 다 모음) */
+  titles?:string[];
+  /** 주인공이 단 칭호(이야기 → 나라) */
+  title?:{S?:Nation;Z?:Nation};
   /** 계승: 연 초한 영웅의 유산들과 지금 계승한 영웅(chuhan.ts) */
   legacies?:string[];heir?:string;
   /** 쓸 천명으로 바꿔 준 연의 천명(옛 인장) — 'S1-01:normal:2' 꼴. 같은 것을 두 번 주지 않는다. */
@@ -74,13 +83,25 @@ export function readMeta(raw:string|null):MetaState{
       tales:Array.isArray(m.tales)?m.tales.filter(x=>typeof x==='string'&&TALE_IDS.has(x)):[],
       endings:Array.isArray(m.endings)?[...new Set(m.endings.filter(x=>typeof x==='string'&&(ALL_ENDINGS.includes(x)||ZHUGE_ENDINGS.includes(x))))]:[],
       ...(Array.isArray(m.customOfficers)?{customOfficers:readCustoms(m.customOfficers)}:{}),
-      ...(Array.isArray(m.recruited)?{recruited:strList(m.recruited,80)}:{}),
+      ...(Array.isArray(m.recruited)?{recruited:strList(m.recruited,200)}:{}),
+      ...(Array.isArray(m.recruitedZ)?{recruitedZ:strList(m.recruitedZ,200)}:{}),
       ...(m.merit!==undefined?{merit:Math.min(1e7,num(m.merit))}:{}),
-      ...(m.defeats&&typeof m.defeats==='object'?{defeats:Object.fromEntries(Object.entries(m.defeats).filter(([k,v])=>isName(k)&&Number.isFinite(v)&&v>0).slice(0,60).map(([k,v])=>[k,Math.min(99,Math.floor(v))]))}:{}),
-      ...(Array.isArray(m.lineageRewards)?{lineageRewards:strList(m.lineageRewards,20)}:{}),
+      ...cleanRecruit(m as Partial<MetaState>&{defeats?:unknown}),
       ...(Array.isArray(m.sealPaid)?{sealPaid:[...new Set(m.sealPaid.filter((x):x is string=>typeof x==='string'&&SEAL_KEY.test(x)))].slice(0,400)}:{}),
       ...cleanProgress(m)};
   }catch{return freshMeta();}
+}
+/** 등용 기록(호감·명성·칭호)을 정리한다. 옛 저장의 격파 횟수(defeats)는 사마의전 호감으로 옮긴다. */
+function cleanRecruit(m:Partial<MetaState>&{defeats?:unknown}):Pick<MetaState,'favor'|'fame'|'fameSpent'|'titles'|'title'>{
+  const out:Pick<MetaState,'favor'|'fame'|'fameSpent'|'titles'|'title'>={},nat=(x:unknown):x is Nation=>typeof x==='string'&&(NATIONS as readonly string[]).includes(x);
+  const counts=(v:unknown,key:RegExp,max:number,limit:number)=>v&&typeof v==='object'?Object.fromEntries(Object.entries(v).filter(([k,n])=>key.test(k)&&Number.isFinite(n)&&(n as number)>0).slice(0,limit).map(([k,n])=>[k,Math.min(max,Math.floor(n as number))])):{};
+  const favor=m.favor!==undefined?counts(m.favor,/^[SZ]:.{1,12}$/,99,400):Object.fromEntries(Object.entries(counts(m.defeats,/^.{1,12}$/,99,60)).map(([k,n])=>['S:'+k,n]));
+  if(Object.keys(favor).length)out.favor=favor;
+  const fame=counts(m.fame,/^[SZ]:(위|촉|오|군웅|초|한)$/,9999,12);if(Object.keys(fame).length)out.fame=fame;
+  const spent=counts(m.fameSpent,/^[SZ]:(위|촉|오)$/,9999,6);if(Object.keys(spent).length)out.fameSpent=spent;
+  if(Array.isArray(m.titles)){const t=[...new Set(m.titles.filter((x):x is string=>typeof x==='string'&&/^[SZ]:(위|촉|오|군웅|초|한)$/.test(x)))];if(t.length)out.titles=t;}
+  if(m.title&&typeof m.title==='object'){const t:{S?:Nation;Z?:Nation}={};if(nat(m.title.S))t.S=m.title.S;if(nat(m.title.Z))t.Z=m.title.Z;if(t.S||t.Z)out.title=t;}
+  return out;
 }
 const SEAL_KEY=/^[SZ][1-3]-\d\d:(normal|extreme):[1-3]$/;
 const isName=(k:string)=>k.length>0&&k.length<=12;

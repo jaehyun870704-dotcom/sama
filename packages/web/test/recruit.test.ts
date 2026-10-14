@@ -1,62 +1,63 @@
 import {describe,it,expect} from 'vitest';
-import {LINEAGES,RECRUITABLE,condMet,previousOf,recruitStatus,type RecruitContext} from '../src/recruit.ts';
+import {ROSTER,NATIONS,HERO,MERIT,MERIT_COST,LORD_FAME_COST,FAVOR_NEED,battleMerit,missionMerit,retroMerit,meritCost,fameCost,fameNeed,favorNeed,isNationLord,
+  recruitStatus,settleBattle,contestWin,spareFoe,persuadeFoe,buyRecruit,catchUpStory,titleNews,heroLabel,recruitedOf,favorOf,fameOf,fameLeft,isStoryRecruit,entryOf,
+  type RecruitMeta,type BattleReport,type Nation} from '../src/recruit.ts';
+import {readMeta} from '../src/meta.ts';
 import {romanceByName} from '../src/romance.ts';
+import {officerFaction} from '../src/officer-factions.ts';
 import {chapters} from '../src/session.ts';
 import {freshScenario,trainCompanions,joinRecruits} from '../src/scenario.ts';
 import {XP_PER_LEVEL} from '../src/roguelike.ts';
 import {officerClass} from '../src/officer-perks.ts';
-function ctx(over:Partial<RecruitContext>={}):RecruitContext{
-  return {won:()=>false,extreme:()=>false,heroLevel:1,seals:0,challenges:0,trainingWins:0,endings:0,treasures:0,recruited:new Set(),stageName:s=>s,...over};
-}
-describe('recruit lineages',()=>{
-  it('lists every recruitable officer once, with roster stats, and only real stage ids',()=>{
-    expect(new Set(RECRUITABLE).size).toBe(RECRUITABLE.length);
-    for(const n of RECRUITABLE)expect(romanceByName(n),n).toBeTruthy();
+const nationOf=(n:string)=>romanceByName(n)?officerFaction(n) as Nation:undefined;
+const LORDS=['조조','조비','조예','유비','손권','원술','여포','원담','원상','공손연','맹획','항우','유방'];
+const report=(o:Partial<BattleReport>):BattleReport=>({story:'S',stage:'S1-01',win:true,extreme:false,fallen:[],enemies:[],party:[],lost:0,allies:{},...o});
+const no=()=>false;
+
+describe('등용 명부(나라별 · 이야기별)',()=>{
+  it('lists each officer once per story, with real people, real stages and every nation',()=>{
     const ids=new Set(chapters.map(c=>c.stage.id));
-    for(const o of LINEAGES.flatMap(l=>l.officers))for(const c of o.conds)if(c.kind==='stage'||c.kind==='extreme')expect(ids.has(c.stage),`${o.name} ${c.stage}`).toBe(true);
-    for(const o of LINEAGES.flatMap(l=>l.officers))for(const c of o.conds)if(c.kind==='officer')expect(RECRUITABLE).toContain(c.name);
+    for(const st of ['S','Z'] as const){const r=ROSTER[st];
+      expect(new Set(r.map(e=>e.n)).size,st).toBe(r.length);
+      expect(r.length,st).toBeGreaterThanOrEqual(140);
+      for(const e of r){if(e.s)expect(ids.has(e.s),`${st} ${e.n} ${e.s}`).toBe(true);expect(NATIONS).toContain(e.f);}
+      for(const f of NATIONS)expect(r.some(e=>e.f===f),`${st} ${f}`).toBe(true);
+      // 주인공은 제 이야기에서 들이지 않는다
+      expect(r.some(e=>e.n===HERO[st]),st).toBe(false);}
+    expect(ROSTER.S.some(e=>e.n==='제갈량')).toBe(true);
+    expect(ROSTER.Z.some(e=>e.n==='사마의')).toBe(true);
   });
-  it('varies the conditions between officers and pays no gold',()=>{
-    const sigs=LINEAGES.flatMap(l=>l.officers.map(o=>o.conds.map(c=>c.kind).sort().join('+')));
-    expect(new Set(sigs).size).toBeGreaterThanOrEqual(10);
-    expect(JSON.stringify(LINEAGES)).not.toMatch(/금화|은전|gold|coin/);
+  it('uses all six routes, and a bond partner is someone you can have in that story',()=>{
+    for(const st of ['S','Z'] as const){const r=ROSTER[st],routes=new Set(r.map(e=>e.r));
+      for(const k of ['story','defeat','merit','bond','feat'])expect(routes.has(k as never),`${st} ${k}`).toBe(true);
+      for(const e of r.filter(e=>e.r==='bond'))expect(r.some(x=>x.n===e.w),`${st} ${e.n}←${e.w}`).toBe(true);
+      for(const e of r.filter(e=>e.r==='defeat'))expect(['duel','debate']).toContain(e.c);}
+    expect(ROSTER.S.some(e=>e.r==='rescue')).toBe(true);
   });
-  it('splits officers into three routes: story, defeat and merit',()=>{
-    const by=(r:string)=>LINEAGES.flatMap(l=>l.officers).filter(o=>o.route===r);
-    expect(by('story').length).toBeGreaterThanOrEqual(8);
-    expect(by('defeat').length).toBeGreaterThanOrEqual(4);
-    expect(by('merit').length).toBeGreaterThanOrEqual(15);
-    // 연의 합류는 연의 장 하나, 격파 귀순은 격파 조건, 공훈 등용은 공훈 + 다른 공적 하나 이상
-    for(const o of by('story'))expect(o.conds.some(c=>c.kind==='stage'),o.name).toBe(true);
-    for(const o of by('defeat'))expect(o.conds.some(c=>c.kind==='defeat'),o.name).toBe(true);
-    for(const o of by('merit')){expect(o.conds.filter(c=>c.kind==='merit').length,o.name).toBe(1);expect(o.conds.length,o.name).toBeGreaterThanOrEqual(2);}
-  });
-  it('places every defeat target as an enemy in the stage it names',async()=>{
+  it('places every defeat officer as an enemy in the stage it names',async()=>{
     const fs=await import('node:fs');
-    for(const o of LINEAGES.flatMap(l=>l.officers))for(const c of o.conds)if(c.kind==='defeat'){
-      const stage=JSON.parse(fs.readFileSync(new URL(`../../data/stages/${c.stage}.json`,import.meta.url),'utf8'));
-      const enemy=(stage.difficulty?.normal?.forces??[]).some((f:{side:string;units:{name:string}[]})=>f.side==='enemy'&&f.units.some(u=>u.name===c.name))||JSON.stringify(stage).includes(`"name":"${c.name}"`)||JSON.stringify(stage).includes(`"name": "${c.name}"`);
-      expect(enemy,`${c.name} in ${c.stage}`).toBe(true);
-    }
+    for(const st of ['S','Z'] as const)for(const e of ROSTER[st].filter(e=>e.r==='defeat')){
+      const txt=fs.readFileSync(new URL(`../../data/stages/${e.s}.json`,import.meta.url),'utf8').replace(/\s+/g,'');
+      expect(txt.includes(`"name":"${e.n}"`),`${e.n} in ${e.s}`).toBe(true);}
   });
-  it('opens merit officers in lineage order, story and defeat officers on their own',()=>{
-    for(const l of LINEAGES){const merit=l.officers.filter(o=>o.route==='merit');
-      if(merit[0])expect(previousOf(merit[0].name)).toBeUndefined();
-      for(let i=1;i<merit.length;i++)expect(previousOf(merit[i]!.name)).toBe(merit[i-1]!.name);
-      for(const o of l.officers)if(o.route!=='merit')expect(previousOf(o.name)).toBeUndefined();}
-    const all=ctx({won:()=>true,extreme:()=>true,heroLevel:40,seals:999,challenges:99,trainingWins:99,endings:9,treasures:999,merit:99999,defeats:{맹달:9,왕평:9,강유:9,왕릉:9}});
-    expect(recruitStatus('조홍',all)).toBe('ready');
-    expect(recruitStatus('조휴',all)).toBe('sealed');
-    expect(recruitStatus('조휴',{...all,recruited:new Set(['조홍'])})).toBe('ready');
-    expect(recruitStatus('사마소',all)).toBe('ready');
-    expect(recruitStatus('강유',all)).toBe('ready');
-    expect(recruitStatus('조홍',{...all,merit:99})).toBe('locked');
-    expect(condMet({kind:'level',level:6},ctx({heroLevel:6}))).toBe(true);
+  it('lords come only by payment: 위·촉·오 lords pay that nation\'s fame, the rest pay more merit than anyone',()=>{
+    for(const st of ['S','Z'] as const)for(const n of LORDS){const e=entryOf(st,n)!;expect(e.r,`${st} ${n}`).toBe('merit');
+      if(['위','촉','오'].includes(e.f)){expect(isNationLord(e)).toBe(true);expect(fameCost(e)).toBe(LORD_FAME_COST);expect(meritCost(e)).toBe(0);}
+      else{expect(fameCost(e)).toBe(0);expect(meritCost(e)).toBe(MERIT_COST[1]);expect(fameNeed(st,e)).toBe(0);}}
+    expect(MERIT_COST[1]).toBeGreaterThan(Math.max(...[2,3,4,5].map(t=>MERIT_COST[t]!)));
+    expect(LORD_FAME_COST).toBeGreaterThan(30);
+  });
+  it('a full playthrough of both stories earns about enough merit for every merit officer, a single pass does not',()=>{
+    const need=(['S','Z'] as const).reduce((n,st)=>n+ROSTER[st].reduce((k,e)=>k+meritCost(e),0),0);
+    const onePass=66*MERIT.storyFirst+18*MERIT.storyFirst+66*3*MERIT.seal;
+    const everything=66*(MERIT.storyFirst+MERIT.storyFirstExtreme)+18*MERIT.storyFirst+66*6*MERIT.seal+10*MERIT.challenge+11*MERIT.quest;
+    expect(onePass).toBeLessThan(need/2);
+    expect(everything).toBeGreaterThanOrEqual(need);
   });
 });
-describe('공훈과 격파',()=>{
-  it('pays merit for wins, seals and fallen officers',async()=>{
-    const {battleMerit,missionMerit,MERIT,retroMerit}=await import('../src/recruit.ts');
+
+describe('공훈 · 명성 · 호감',()=>{
+  it('pays merit for wins, seals and fallen officers',()=>{
     expect(battleMerit({firstWin:true,extreme:false,newSeals:3,foes:2})).toBe(MERIT.storyFirst+3*MERIT.seal+2*MERIT.foe);
     expect(battleMerit({firstWin:true,extreme:true,newSeals:0,foes:0})).toBe(MERIT.storyFirstExtreme);
     expect(battleMerit({firstWin:false,extreme:false,newSeals:0,foes:0})).toBe(MERIT.storyAgain);
@@ -65,34 +66,85 @@ describe('공훈과 격파',()=>{
     expect(missionMerit('quest',false)).toBe(0);
     expect(retroMerit({storyWins:2,sealsPaid:4,challenges:1,quests:0,trainingWins:0,bountyWins:0})).toBe(2*MERIT.storyFirst+4*MERIT.seal+MERIT.challenge);
   });
-  it('a full playthrough earns enough merit for every merit officer, but one normal pass does not',async()=>{
-    const {MERIT,meritCost}=await import('../src/recruit.ts');
-    const need=LINEAGES.flatMap(l=>l.officers).reduce((n,o)=>n+meritCost(o.name),0);
-    const normalPass=32*MERIT.storyFirst+96*MERIT.seal;
-    const everything=normalPass+32*MERIT.storyFirstExtreme+10*MERIT.challenge+11*MERIT.quest;
-    expect(normalPass).toBeLessThan(need);
-    expect(everything).toBeGreaterThanOrEqual(need);
+  it('a won battle builds favor (extreme twice) and fame by nation; a lost one does nothing',()=>{
+    const m:RecruitMeta={};
+    expect(settleBattle(m,report({win:false,stage:'S2-05',fallen:['맹달']}),no,nationOf).news).toEqual([]);
+    const r=settleBattle(m,report({stage:'S2-05',fallen:['맹달','신성 수비병'],enemies:['맹달']}),no,nationOf);
+    expect(favorOf(m,'S','맹달')).toBe(1);expect(r.news.join(' ')).toMatch(/맹달 호감 1\/3/);
+    expect(fameOf(m,'S',nationOf('맹달')!)).toBe(3+1+5);// 꺾음 3 · 나온 나라 1 · 같은 장에서 합류한 사마사 5
+    settleBattle(m,report({stage:'S2-05',extreme:true,fallen:['맹달']}),no,nationOf);
+    expect(favorOf(m,'S','맹달')).toBe(3);
+    expect(recruitStatus(m,'S',entryOf('S','맹달')!)).toBe('ready');
+    // 제갈량전 호감은 따로
+    expect(favorOf(m,'Z','맹달')).toBe(0);
   });
-  it('counts defeats (extreme twice) and lets the officer defect once enough',async()=>{
-    const {recordDefeats,autoRecruits,defeatNews}=await import('../src/recruit.ts');
-    const d:Record<string,number>={};
-    expect(recordDefeats(d,['맹달','맹달','신성 수비병'],false)).toEqual(['맹달']);
-    expect(d).toEqual({맹달:1});
-    expect(defeatNews(['맹달'],ctx({defeats:d}))[0]).toMatch(/1\/2 — 1번 더/);
-    expect(autoRecruits(ctx({defeats:d}))).not.toContain('맹달');
-    recordDefeats(d,['맹달'],true);expect(d.맹달).toBe(3);
-    expect(autoRecruits(ctx({defeats:d}))).toContain('맹달');
-    // 강유는 격파 3번에 사마의 Lv.20까지
-    expect(autoRecruits(ctx({defeats:{강유:3},heroLevel:19}))).not.toContain('강유');
-    expect(autoRecruits(ctx({defeats:{강유:3},heroLevel:20}))).toContain('강유');
+  it('story, feat, rescue and bond officers join right after the win',()=>{
+    const m:RecruitMeta={};
+    expect(settleBattle(m,report({stage:'S1-02'}),no,nationOf).joined).toContain('사마방');
+    // 조건 승리: 마초는 S1-06을 아군 손실 없이
+    expect(settleBattle(m,report({stage:'S1-06',lost:1}),no,nationOf).joined).not.toContain('마초');
+    expect(settleBattle(m,report({stage:'S1-06',lost:0}),no,nationOf).joined).toContain('마초');
+    // 구출: 조휴를 체력 절반 이상으로 지키고 S2-08을 이긴다
+    expect(settleBattle(m,report({stage:'S2-08',allies:{조휴:.3}}),no,nationOf).joined).not.toContain('조휴');
+    expect(settleBattle(m,report({stage:'S2-08',allies:{조휴:.6}}),no,nationOf).joined).toContain('조휴');
+    // 인연: 마초와 함께 출진해 이기면 마대
+    expect(settleBattle(m,report({stage:'S2-10',party:['사마의','마초']}),no,nationOf).joined).toContain('마대');
+    // 제갈량전은 따로 — 제갈량 휘하
+    const z=settleBattle(m,report({story:'Z',stage:'Z1-03'}),no,nationOf);
+    expect(z.joined).toEqual(expect.arrayContaining(['관우','장비','조운']));
+    expect(recruitedOf(m,'Z')).toContain('관우');expect(recruitedOf(m,'S')).not.toContain('관우');
+    expect(isStoryRecruit('관우','Z')).toBe(true);expect(isStoryRecruit('관우','S')).toBe(false);
   });
-  it('rewards a lineage once when every officer in it is recruited',async()=>{
-    const {completedLineages}=await import('../src/recruit.ts');
-    const sima=LINEAGES.find(l=>l.id==='sima')!;
-    const names=new Set(sima.officers.map(o=>o.name));
-    expect(completedLineages(names,[]).map(l=>l.id)).toEqual(['sima']);
-    expect(completedLineages(names,['sima'])).toEqual([]);
-    expect(sima.reward).toBeGreaterThan(0);
+  it('catches up story officers whose stage was already won',()=>{
+    const m:RecruitMeta={};const won=new Set(['S1-02','S1-03','S2-05']);
+    expect(catchUpStory(m,'S',s=>won.has(s))).toEqual(expect.arrayContaining(['사마방','사마부','사마사']));
+    expect(catchUpStory(m,'S',s=>won.has(s))).toEqual([]);
+  });
+  it('after a duel win you spare the foe (favor) or ask them to join (only when favor is full)',()=>{
+    const m:RecruitMeta={},need=favorNeed(entryOf('S','왕평')!);
+    expect(contestWin(m,'S','왕평',nationOf)?.n).toBe('왕평');
+    expect(favorOf(m,'S','왕평')).toBe(1);
+    const no1=persuadeFoe(m,'S','왕평');expect(no1.ok).toBe(false);expect(no1.news[0]).toMatch(/고개를 저었다/);
+    expect(spareFoe(m,'S','왕평')).toMatch(/살려 보냈다 — 호감 2/);
+    while(favorOf(m,'S','왕평')<need)spareFoe(m,'S','왕평');
+    expect(persuadeFoe(m,'S','왕평').ok).toBe(true);
+    expect(recruitedOf(m,'S')).toContain('왕평');
+    expect(contestWin(m,'S','왕평',nationOf)).toBeUndefined();
+    // 공훈 길 장수는 명성만 오른다
+    const before=fameOf(m,'S','위');expect(contestWin(m,'S','장료',nationOf)).toBeUndefined();expect(fameOf(m,'S','위')).toBe(before+3);
+    expect(FAVOR_NEED[3]).toBe(3);
+  });
+  it('merit officers need merit and fame; nation lords spend fame without lowering the fame gauge',()=>{
+    const m:RecruitMeta={merit:1000,fame:{'S:위':100}};
+    const zhang=entryOf('S','장료')!;
+    expect(recruitStatus(m,'S',zhang)).toBe('ready');
+    expect(buyRecruit(m,'S','장료')).toBeDefined();expect(m.merit).toBe(1000-meritCost(zhang));
+    expect(buyRecruit(m,'S','조조')).toBeDefined();
+    expect(m.merit).toBe(1000-meritCost(zhang));// 조조는 공훈이 아니라 위의 공적(명성)으로
+    expect(fameLeft(m,'S','위')).toBe(100+5+5-LORD_FAME_COST);
+    expect(fameOf(m,'S','위')).toBe(110);
+    expect(recruitStatus(m,'S',entryOf('S','조비')!)).toBe('locked');// 남은 명성 50 < 60
+    expect(recruitStatus({merit:1000},'S',entryOf('S','여포')!)).toBe('ready');// 군웅 군주는 공훈만
+    expect(recruitStatus({merit:299},'S',entryOf('S','여포')!)).toBe('locked');
+  });
+});
+
+describe('칭호',()=>{
+  it('collecting every officer of a nation in a story grants its title, worn in front of the hero name',()=>{
+    const m:RecruitMeta={recruited:ROSTER.S.filter(e=>e.f==='초').map(e=>e.n)};
+    expect(titleNews(m,'S')[0]).toMatch(/칭호 「패왕의 벗」/);
+    expect(m.titles).toEqual(['S:초']);expect(titleNews(m,'S')).toEqual([]);
+    expect(heroLabel(m,'S')).toBe('사마의');
+    m.title={S:'초'};expect(heroLabel(m,'S')).toBe('「패왕의 벗」 사마의');
+    m.title={S:'위'};expect(heroLabel(m,'S')).toBe('사마의');// 얻지 않은 칭호는 달 수 없다
+    expect(heroLabel({...m,title:{Z:'초'}},'Z')).toBe('제갈량');// 이야기마다 따로
+  });
+  it('old saves move defeat counts into 사마의전 favor and keep titles clean',()=>{
+    const m=readMeta(JSON.stringify({version:1,mandate:0,earned:0,unlocks:[],chronicle:[],tales:[],endings:[],runs:0,wins:0,best:0,recruited:['사마방'],defeats:{맹달:2},lineageRewards:['sima'],titles:['S:초','X:위'],title:{S:'초',Z:'없음'},fame:{'S:위':12,'Q:위':3},fameSpent:{'S:위':60,'S:초':1}}));
+    expect(m.favor).toEqual({'S:맹달':2});
+    expect(m.titles).toEqual(['S:초']);expect(m.title).toEqual({S:'초'});
+    expect(m.fame).toEqual({'S:위':12});expect(m.fameSpent).toEqual({'S:위':60});
+    expect('defeats' in m).toBe(false);expect('lineageRewards' in m).toBe(false);
   });
 });
 describe('companions grow and join',()=>{
@@ -110,14 +162,3 @@ describe('companions grow and join',()=>{
   });
 });
 
-describe('이야기를 하면서 들이는 장수',()=>{
-  it('연의 합류 장수만 그 장을 이기면 저절로 들어오고, 공훈 등용 장수는 들어오지 않는다',async()=>{
-    const {autoRecruits}=await import('../src/recruit.ts');
-    const won=new Set(['S1-02','S1-03','S1-05','S1-06']);
-    const got=autoRecruits(ctx({won:s=>won.has(s),heroLevel:3,merit:9999,trainingWins:99}));
-    expect(got).toEqual(expect.arrayContaining(['사마방','사마부','장제']));
-    expect(got).not.toContain('악진');// 공훈 등용은 등용 화면에서 공훈을 바쳐야
-    expect(got).not.toContain('조홍');
-    expect(got).not.toContain('사마사');// S2-05를 아직 이기지 않았다
-  });
-});

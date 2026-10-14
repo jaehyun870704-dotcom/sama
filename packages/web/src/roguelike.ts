@@ -539,8 +539,8 @@ export function stageOfficerNames(stage:StageDef):Set<string>{
   for(const n of SUPPORT_OFFICERS[stage.id]??[])names.add(n);
   return names;
 }
-export function addRecruits(state:BattleState,recruits:RunUnit[],rev=12){
-  const hero=state.find('sima_yi');if(!hero)return;
+export function addRecruits(state:BattleState,recruits:RunUnit[],rev=12,heroId='sima_yi'){
+  const hero=state.find(heroId);if(!hero)return;
   // 같은 장수가 둘 서지 않게: 이미 전장에 있거나 이 전장이 나중에 세우는 이름은 건너뛴다(예: 연의 장의 사마랑·조진).
   const taken=new Set([...state.units.values()].map(u=>u.name));for(const n of stageOfficerNames(state.stage))taken.add(n);
   recruits=recruits.filter(r=>!taken.has(r.name));

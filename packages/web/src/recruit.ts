@@ -1,114 +1,100 @@
 /**
- * 등용(계보) — 이름난 장수를 사마의 휘하로 들인다. 들이는 길은 셋이다.
+ * 등용 — 이름난 장수를 나라마다 모은다. 두 이야기가 따로 모은다:
+ * 사마의전에서 들인 장수는 사마의 휘하로, 제갈량전에서 들인 장수는 제갈량 휘하로 들어 그 이야기의 출진 「등용 장수」 칸에 선다(나라와 상관없이).
  *
- * 1. 연의 합류(story) — 사마 일가와 사마의 곁에서 싸운 막료. 그 장을 이기면 이야기 속에서 저절로 들어온다.
- * 2. 격파 귀순(defeat) — 사마의와 맞선 적장. 그 장수를 전장에서 몇 번 꺾어(퇴각시키고 이긴 전투) 그릇을 보여 줘야 무릎을 꿇는다.
- *    극한에서 꺾으면 두 번으로 친다.
- * 3. 공훈 등용(merit) — 위의 명장·책사·종실. 싸워 쌓은 공훈을 바쳐 모셔 온다. 장수마다 공훈과 함께 '해낸 일' 하나가 더 필요하다.
+ * 들이는 길(장수마다 하나 — recruit-roster.ts):
+ * 1. 연의 합류(story) — 이야기 속에서 주인공 곁에 서는 사람. 그 장을 이기면 저절로 들어온다.
+ * 2. 격파(defeat) — 맞선 적장. 꺾을 때마다 호감이 쌓인다. 일기토·설전에서 이기면 「살려 보낸다」(호감 더)와
+ *    「등용을 권한다」(호감이 가득 찼을 때만 받아들임) 가운데 고른다. 호감이 가득 차면 본영 「등용」에서도 받아들일 수 있다.
+ * 3. 공훈(merit) — 싸워 모은 공훈을 바쳐 모셔 온다. 그 나라 명성도 정해진 만큼 쌓여야 한다. 군주는 모두 이 길로만 온다:
+ *    위·촉·오 군주(조조·조비·조예·유비·손권)는 그 나라의 공적(명성)을 바치고, 나머지 군주는 공훈만 바친다 — 어느 쪽이든 일반 장수보다 비싸다.
+ *    바친 명성은 따로 적어 두어, 다른 장수의 명성 조건(쌓인 명성)은 줄지 않는다.
+ * 4. 인연(bond) — 인연 있는 장수와 함께 출진해 이기면 따라온다.
+ * 5. 조건 승리(feat) — 그 장을 정해진 조건(손실 없이·극한)으로 이기면 그 솜씨를 보고 들어온다.
+ * 6. 구출(rescue) — 그 장에서 지켜야 할 아군을 살려(체력 절반 이상) 이기면 은혜를 갚으러 온다.
  *
- * 구조(조조전 Online의 '계보'를 구조만 참고, 이름·조건·수치는 이 게임이 정함):
- * - 장수는 인연이 닿는 무리(계보)로 묶인다. 공훈 등용 장수는 같은 계보의 앞 공훈 장수를 먼저 들여야 열린다.
- * - 계보 하나를 다 모으면 계보 완성 보상(천명)을 한 번 받는다.
- * - 들인 장수는 연의 출진의 「등용 장수」 칸과 천명의 길 동료로 합류한다(meta.recruited).
+ * 나라 하나를 다 모으면 그 이야기의 칭호를 얻는다. 칭호를 달면 주인공 이름 앞에 붙는다(꾸밈 — 능력치는 그대로).
+ * 공훈은 두 이야기가 함께 쓰는 하나의 주머니, 명성·호감은 이야기마다 따로다.
  */
-export type RecruitCond=
-  |{kind:'stage';stage:string}
-  |{kind:'extreme';stage:string}
-  |{kind:'level';level:number}
-  |{kind:'officer';name:string}
-  |{kind:'seals';count:number}
-  |{kind:'challenge';step:number}
-  |{kind:'training';wins:number}
-  |{kind:'ending';count:number}
-  |{kind:'treasures';count:number}
-  /** 그 장수를 전장에서 count번 꺾기(퇴각시키고 이긴 전투, 극한은 2번) — stage는 만나는 곳 */
-  |{kind:'defeat';name:string;stage:string;count:number}
-  /** 공훈 cost를 바친다(등용할 때 빠진다) */
-  |{kind:'merit';cost:number};
-export type RecruitRoute='story'|'defeat'|'merit';
-export interface RecruitOfficer {name:string;route:RecruitRoute;conds:readonly RecruitCond[];line:string}
-export interface Lineage {id:string;name:string;seal:string;blurb:string;/** 계보를 다 모으면 받는 천명 */reward:number;officers:readonly RecruitOfficer[]}
+import {ROSTER_S,ROSTER_Z,FAME_NATIONS} from './recruit-roster.ts';
+import {을를,이가,과와} from './josa.ts';
 
-export const ROUTE_LABEL:Record<RecruitRoute,string>={story:'연의 합류',defeat:'격파 귀순',merit:'공훈 등용'};
+export type Story='S'|'Z';
+export type Nation='위'|'촉'|'오'|'군웅'|'초'|'한';
+export const NATIONS:readonly Nation[]=['위','촉','오','군웅','초','한'];
+export type RecruitRoute='story'|'defeat'|'merit'|'bond'|'feat'|'rescue';
+export interface RosterEntry {
+  n:string;f:Nation;
+  /** 계급(1 군주 … 5) — officer-ranks.ts */
+  t:number;r:RecruitRoute;
+  /** 만나는 장(연의 합류·격파·조건·구출) */
+  s?:string;
+  /** 격파: 겨룸의 종류(무력이 높으면 일기토, 지력이 높으면 설전) */
+  c?:'duel'|'debate';
+  /** 조건 승리: noLoss 아군 손실 없이 · extreme 극한으로 */
+  k?:'noLoss'|'extreme';
+  /** 인연: 함께 출진해야 할 장수 */
+  w?:string;
+}
+export const ROSTER:Record<Story,readonly RosterEntry[]>={S:ROSTER_S,Z:ROSTER_Z};
+export const HERO:Record<Story,string>={S:'사마의',Z:'제갈량'};
+export const STORY_NAME:Record<Story,string>={S:'사마의전',Z:'제갈량전'};
+
+export const ROUTE_LABEL:Record<RecruitRoute,string>={story:'연의 합류',defeat:'격파',merit:'공훈',bond:'인연',feat:'조건 승리',rescue:'구출'};
+export const ROUTE_MARK:Record<RecruitRoute,string>={story:'연',defeat:'격',merit:'공',bond:'인',feat:'조',rescue:'구'};
+export const ROUTES:readonly RecruitRoute[]=['story','defeat','merit','bond','feat','rescue'];
 export const ROUTE_NOTE:Record<RecruitRoute,string>={
-  story:'연의에서 사마의 곁에 서는 사람이다. 그 장을 이기면 저절로 합류한다.',
-  defeat:'사마의와 맞선 적장이다. 전장에서 꺾고 이길 때마다 마음이 기운다. 정해진 횟수를 채우면 스스로 귀순한다. 극한에서 꺾으면 두 번으로 친다.',
-  merit:'싸워 쌓은 공훈을 바쳐 모셔 온다. 공훈과 함께 그 장수가 눈여겨볼 공적이 하나 더 필요하다.',
+  story:'이야기 속에서 주인공 곁에 서는 사람이다. 그 장을 이기면 저절로 합류한다.',
+  defeat:'맞선 적장이다. 전장에서 꺾고 이길 때마다 호감이 쌓인다(극한은 두 배). 일기토·설전에서 이기면 「살려 보낸다」나 「등용을 권한다」를 고른다. 호감이 가득 차면 등용을 받아들인다.',
+  merit:'싸워 모은 공훈을 바쳐 모셔 온다. 그 나라 명성도 정해진 만큼 쌓여야 한다. 군주는 이 길로만 온다 — 위·촉·오 군주는 그 나라 공적(명성)을, 나머지 군주는 공훈을 일반 장수보다 많이 바친다.',
+  bond:'인연 있는 장수와 함께 출진해 이기면 따라온다.',
+  feat:'그 장을 정해진 조건으로 이기면 그 솜씨를 보고 찾아온다.',
+  rescue:'그 장에서 지켜야 할 사람을 살려서 이기면 은혜를 갚으러 온다.',
+};
+/** 공훈 등용 값(계급별). */
+export const MERIT_COST:Readonly<Record<number,number>>={1:300,2:120,3:80,4:50,5:30};
+/** 위·촉·오 군주: 공훈 대신 그 나라 공적(명성)을 바친다. */
+export const LORD_FAME_COST=60;
+const NATION_LORD_LANDS:readonly Nation[]=['위','촉','오'];
+/** 그 나라 공적(명성)으로 모셔 오는 군주인가(위·촉·오 군주). */
+export const isNationLord=(e:RosterEntry)=>e.r==='merit'&&e.t===1&&NATION_LORD_LANDS.includes(e.f);
+/** 격파 등용에 필요한 호감(계급별). */
+export const FAVOR_NEED:Readonly<Record<number,number>>={1:5,2:4,3:3,4:2,5:2};
+/** 공훈 등용에 필요한 그 나라 명성(계급별). */
+export const FAME_NEED:Readonly<Record<number,number>>={1:50,2:30,3:20,4:10,5:5};
+/** 명성: 이긴 전투에서 꺾은 그 나라 이름난 장수(극한) · 일기토·설전 승리 · 그 나라 장수를 들임 · 이긴 전투에 나온 적 나라마다. */
+export const FAME={foe:3,foeExtreme:5,contest:3,recruit:5,battle:1} as const;
+/** 칭호: 이야기마다 한 나라를 다 모으면 얻는다. */
+export const TITLES:Readonly<Record<Nation,{name:string;note:string}>>={
+  위:{name:'위의 기둥',note:'위의 장수를 모두 모았다'},
+  촉:{name:'한실의 충신',note:'촉의 장수를 모두 모았다'},
+  오:{name:'강동의 호걸',note:'오의 장수를 모두 모았다'},
+  군웅:{name:'난세의 패자',note:'군웅을 모두 모았다'},
+  초:{name:'패왕의 벗',note:'초의 장수를 모두 모았다'},
+  한:{name:'개국의 공신',note:'한의 장수를 모두 모았다'},
 };
 
-const S=(stage:string):RecruitCond=>({kind:'stage',stage});
-const M=(cost:number):RecruitCond=>({kind:'merit',cost});
-const D=(name:string,stage:string,count:number):RecruitCond=>({kind:'defeat',name,stage,count});
-
-/** 계보 여덟. 공훈 등용 장수는 같은 계보 안에서 위에서부터 차례로 들인다. */
-export const LINEAGES:readonly Lineage[]=[
-  {id:'sima',name:'사마 일가',seal:'사',blurb:'하내 사마씨 — 아버지·형제·아들',reward:5,officers:[
-    {name:'사마방',route:'story',conds:[S('S1-02')],line:'엄한 아비가 아들의 길을 지켜보마.'},
-    {name:'사마부',route:'story',conds:[S('S1-03')],line:'형님, 집안일은 제게 맡기고 큰일을 보십시오.'},
-    {name:'사마사',route:'story',conds:[S('S2-05')],line:'아버님의 뜻이 곧 제 칼끝입니다.'},
-    {name:'사마소',route:'story',conds:[S('S2-08')],line:'형님 곁에서, 아버님의 그림을 완성하겠습니다.'},
-  ]},
-  {id:'sima_staff',name:'사마의의 막료',seal:'막',blurb:'사마의의 군막에서 함께 싸운 장수와 책사',reward:6,officers:[
-    {name:'장제',route:'story',conds:[S('S1-05')],line:'벗이여, 그대의 때를 함께 기다리겠네.'},
-    {name:'장합',route:'story',conds:[S('S2-06')],line:'교변의 재주, 도독을 위해 쓰겠소.'},
-    {name:'곽회',route:'story',conds:[S('S2-07')],line:'옹주의 바람은 내가 가장 잘 아오.'},
-    {name:'호준',route:'story',conds:[S('S2-09')],line:'태위의 군령이라면 어디든 가겠습니다.'},
-    {name:'가충',route:'story',conds:[S('S3-06')],line:'사마씨의 일이라면 무엇이든.'},
-  ]},
-  {id:'turncoats',name:'항장',seal:'항',blurb:'적이었으나 사마의에게 꺾이고 그 그릇에 돌아선 장수들',reward:10,officers:[
-    {name:'맹달',route:'defeat',conds:[D('맹달','S2-05',2)],line:'네 번째 주인은… 끝까지 모시리다.'},
-    {name:'왕평',route:'defeat',conds:[D('왕평','S2-06',2)],line:'산 위에 진을 치지 말라 했건만. 이제 그대의 군을 따르겠소.'},
-    {name:'강유',route:'defeat',conds:[D('강유','S2-14',3),{kind:'level',level:20}],line:'승상의 뜻을 이을 곳이 여기라면.'},
-    {name:'왕릉',route:'defeat',conds:[D('왕릉','S3-07',2)],line:'수춘의 깃발을 내리겠소. 태부의 군을 따르리다.'},
-    {name:'황권',route:'merit',conds:[M(120),S('S2-03')],line:'촉을 등진 것이 아니라, 길이 끊겼을 뿐이오.'},
-  ]},
-  {id:'wei_clan',name:'위의 종실',seal:'조',blurb:'조씨·하후씨 — 위 황실의 피붙이',reward:6,officers:[
-    {name:'조홍',route:'merit',conds:[M(100),{kind:'training',wins:3}],line:'재물은 아끼되 사람은 아끼지 않는다? 내가 그랬던가.'},
-    {name:'조휴',route:'merit',conds:[M(160),S('S2-08')],line:'천리구라 불린 몸, 이번엔 꾀에 빠지지 않겠소.'},
-    {name:'조상',route:'merit',conds:[M(200),S('S3-05'),{kind:'extreme',stage:'S3-04'}],line:'대장군의 자리… 태부께서 곁에 계시다면야.'},
-    {name:'하후패',route:'merit',conds:[M(220),{kind:'level',level:18}],line:'아버지 하후연의 이름을 더럽히지 않겠다.'},
-  ]},
-  {id:'wei_generals',name:'위의 명장',seal:'장',blurb:'전장에서 이름을 얻은 장수들',reward:8,officers:[
-    {name:'악진',route:'merit',conds:[M(80),S('S1-06')],line:'선봉은 언제나 내 몫이었소.'},
-    {name:'서황',route:'merit',conds:[M(160),{kind:'level',level:10}],line:'주아부처럼 군율로 싸우겠소.'},
-    {name:'장료',route:'merit',conds:[M(300),{kind:'challenge',step:6}],line:'요래요래 — 합비의 이름을 다시 떨치리다.'},
-  ]},
-  {id:'cao_veterans',name:'조조의 옛 장수',seal:'위',blurb:'창업기의 맹장 — 조조 곁에서 사마의를 지켜본 사람들',reward:8,officers:[
-    {name:'하후돈',route:'merit',conds:[M(120),S('S1-07')],line:'눈 하나로도 전장은 다 보이네.'},
-    {name:'하후연',route:'merit',conds:[M(160),{kind:'seals',count:20}],line:'사흘에 오백 리, 천 리라도 달려가지.'},
-    {name:'조인',route:'merit',conds:[M(200),{kind:'training',wins:8}],line:'성 하나를 맡기면 끝까지 지켜 내겠소.'},
-    {name:'방덕',route:'merit',conds:[M(260),{kind:'extreme',stage:'S1-06'}],line:'관을 짊어지고 왔소. 물러설 생각은 없소.'},
-  ]},
-  {id:'wei_minds',name:'위의 책사',seal:'책',blurb:'붓과 꾀로 나라를 받친 사람들',reward:8,officers:[
-    {name:'가규',route:'merit',conds:[M(100),{kind:'treasures',count:10}],line:'예주를 다스리던 법도로 군량을 맡지요.'},
-    {name:'가후',route:'merit',conds:[M(220),{kind:'treasures',count:15}],line:'살아남는 계책이라면 내가 조금 아오.'},
-    {name:'순욱',route:'merit',conds:[M(320),{kind:'seals',count:60},{kind:'ending',count:1}],line:'왕좌를 보좌할 재목을 보았소.'},
-  ]},
-  {id:'late_pillars',name:'후대의 기둥',seal:'진',blurb:'사마의가 길러 낸 장수들 — 촉을 막고 진의 터를 닦다',reward:10,officers:[
-    {name:'진태',route:'merit',conds:[M(140),S('S3-02')],line:'옹주는 제가 지키겠습니다.'},
-    {name:'왕기',route:'merit',conds:[M(180),{kind:'training',wins:5}],line:'군량과 길을 먼저 살피는 것이 제 버릇입니다.'},
-    {name:'등애',route:'merit',conds:[M(260),{kind:'challenge',step:5}],line:'사, 사마 태부… 저, 저를 써 주십시오.'},
-    {name:'종회',route:'merit',conds:[M(340),{kind:'seals',count:90}],line:'제 꾀가 태부의 그릇에 닿을지 보시지요.'},
-  ]},
-];
-export const RECRUITABLE=LINEAGES.flatMap(l=>l.officers.map(o=>o.name));
-const ALL=LINEAGES.flatMap(l=>l.officers);
-export const officerOf=(name:string)=>ALL.find(o=>o.name===name);
-export const lineageOf=(name:string)=>LINEAGES.find(l=>l.officers.some(o=>o.name===name));
-/** 격파 귀순 대상 이름(전투가 끝나면 이 이름만 격파 수를 센다). */
-export const DEFEAT_TARGETS:readonly string[]=[...new Set(ALL.flatMap(o=>o.conds.flatMap(c=>c.kind==='defeat'?[c.name]:[])))];
-export const meritCost=(name:string)=>{for(const c of officerOf(name)?.conds??[])if(c.kind==='merit')return c.cost;return 0;};
+export const entryOf=(story:Story,name:string)=>ROSTER[story].find(e=>e.n===name);
+export const meritCost=(e:RosterEntry)=>e.r==='merit'&&!isNationLord(e)?MERIT_COST[e.t]??80:0;
+/** 바칠 그 나라 공적(명성) — 위·촉·오 군주만. */
+export const fameCost=(e:RosterEntry)=>isNationLord(e)?LORD_FAME_COST:0;
+export const favorNeed=(e:RosterEntry)=>FAVOR_NEED[e.t]??3;
+/** 쌓인 명성 조건(군주는 없음 — 위·촉·오 군주는 명성을 바치고, 나머지 군주는 공훈만). 그 이야기에서 적으로 나오는 장수가 없는 나라는 명성을 쌓을 수 없으니 공훈만 본다. */
+export const fameNeed=(story:Story,e:RosterEntry)=>e.r==='merit'&&e.t>1&&FAME_NATIONS[story].includes(e.f)?FAME_NEED[e.t]??10:0;
+export const favorKey=(story:Story,name:string)=>`${story}:${name}`;
+export const fameKey=(story:Story,nation:Nation)=>`${story}:${nation}`;
+export const titleKey=fameKey;
 
 /**
- * 공훈 — 싸워서 쌓고 공훈 등용에 바친다.
+ * 공훈 — 싸워서 쌓고 공훈 등용에 바친다(두 이야기 함께).
  * 연의 첫 승리(극한은 더 크게) · 다시 이긴 연의 · 새로 얻은 천명 · 쓰러뜨린 이름난 적장 · 수련 · 보물 사냥 · 도전 첫 돌파 · 보물 외전 첫 승리.
  */
-export const MERIT={storyFirst:30,storyFirstExtreme:50,storyAgain:8,seal:5,foe:4,training:6,bounty:6,challenge:40,quest:20} as const;
+export const MERIT={storyFirst:60,storyFirstExtreme:100,storyAgain:15,seal:10,foe:6,training:10,bounty:10,challenge:60,quest:30} as const;
 /** 전투 한 번에 받는 공훈. foes는 쓰러뜨린 이름난 적장 수. */
 export function battleMerit(o:{firstWin:boolean;extreme:boolean;newSeals:number;foes:number}):number{
   return (o.firstWin?(o.extreme?MERIT.storyFirstExtreme:MERIT.storyFirst):MERIT.storyAgain)+o.newSeals*MERIT.seal+o.foes*MERIT.foe;
 }
-/** 외전 승리 공훈(수련·보물 사냥은 매번, 도전·보물 외전은 첫 승리만 — 이미 넘은 곳은 first=false). */
+/** 외전 승리 공훈(수련·보물 사냥은 매번, 도전·보물 외전은 첫 승리만). */
 export function missionMerit(kind:'training'|'bounty'|'challenge'|'quest',first:boolean):number{
   return kind==='training'?MERIT.training:kind==='bounty'?MERIT.bounty:first?(kind==='challenge'?MERIT.challenge:MERIT.quest):0;
 }
@@ -116,115 +102,149 @@ export function missionMerit(kind:'training'|'bounty'|'challenge'|'quest',first:
 export function retroMerit(o:{storyWins:number;sealsPaid:number;challenges:number;quests:number;trainingWins:number;bountyWins:number}):number{
   return o.storyWins*MERIT.storyFirst+o.sealsPaid*MERIT.seal+o.challenges*MERIT.challenge+o.quests*MERIT.quest+o.trainingWins*MERIT.training+o.bountyWins*MERIT.bounty;
 }
-/** 이긴 전투에서 쓰러진 적 장수 이름 → 격파 귀순 기록에 더한다(극한은 2). 더한 이름을 돌려준다. */
-export function recordDefeats(defeats:Record<string,number>,fallen:readonly string[],extreme:boolean):string[]{
-  const got:string[]=[];
-  for(const n of new Set(fallen))if(DEFEAT_TARGETS.includes(n)){defeats[n]=Math.min(99,(defeats[n]??0)+(extreme?2:1));got.push(n);}
-  return got;
+
+/** 등용 기록(meta.ts MetaState의 일부). recruited는 사마의전, recruitedZ는 제갈량전. */
+export interface RecruitMeta {
+  recruited?:string[];recruitedZ?:string[];merit?:number;
+  /** 'S:맹달' → 호감 */
+  favor?:Record<string,number>;
+  /** 'S:촉' → 쌓인 명성 */
+  fame?:Record<string,number>;
+  /** 'S:촉' → 군주에게 바친 명성 */
+  fameSpent?:Record<string,number>;
+  /** 얻은 칭호 'S:위' */
+  titles?:string[];
+  /** 주인공이 단 칭호(나라) */
+  title?:Partial<Record<Story,Nation>>;
+}
+export const recruitedOf=(m:RecruitMeta,story:Story):readonly string[]=>(story==='S'?m.recruited:m.recruitedZ)??[];
+export const favorOf=(m:RecruitMeta,story:Story,name:string)=>m.favor?.[favorKey(story,name)]??0;
+export const fameOf=(m:RecruitMeta,story:Story,nation:Nation)=>m.fame?.[fameKey(story,nation)]??0;
+/** 바칠 수 있는 명성(쌓인 명성 − 바친 명성). */
+export const fameLeft=(m:RecruitMeta,story:Story,nation:Nation)=>Math.max(0,fameOf(m,story,nation)-(m.fameSpent?.[fameKey(story,nation)]??0));
+const addFame=(m:RecruitMeta,story:Story,nation:Nation,n:number)=>{const f=m.fame??={},k=fameKey(story,nation);f[k]=Math.min(9999,(f[k]??0)+n);};
+const addFavor=(m:RecruitMeta,story:Story,name:string,n:number)=>{const f=m.favor??={},k=favorKey(story,name);f[k]=Math.min(99,(f[k]??0)+n);return f[k]!;};
+
+export type RecruitStatus='recruited'|'ready'|'locked';
+/** 등용함 · 들일 수 있음(공훈·격파는 본영에서) · 조건 남음 */
+export function recruitStatus(m:RecruitMeta,story:Story,e:RosterEntry):RecruitStatus{
+  if(recruitedOf(m,story).includes(e.n))return 'recruited';
+  if(e.r==='merit')return (m.merit??0)>=meritCost(e)&&fameOf(m,story,e.f)>=fameNeed(story,e)&&fameLeft(m,story,e.f)>=fameCost(e)?'ready':'locked';
+  if(e.r==='defeat')return favorOf(m,story,e.n)>=favorNeed(e)?'ready':'locked';
+  return 'locked';
+}
+export interface CondLine {ok:boolean;text:string;p:number}
+/** 장수 한 명의 등용 조건 줄(진척 막대 포함). won은 장을 이겼는지, stageName은 장 이름. */
+export function condLines(m:RecruitMeta,story:Story,e:RosterEntry,won:(stage:string)=>boolean,stageName:(stage:string)=>string):CondLine[]{
+  const r=(have:number,need:number)=>Math.max(0,Math.min(1,need>0?have/need:1)),got=recruitedOf(m,story).includes(e.n);
+  const at=e.s?`「${stageName(e.s)}」`:'';
+  switch(e.r){
+    case 'story':return [{ok:got||(!!e.s&&won(e.s)),text:`연의 ${at} 승리`,p:got?1:0}];
+    case 'defeat':{const f=favorOf(m,story,e.n),need=favorNeed(e);
+      return [{ok:got||f>=need,text:`호감 ${Math.min(f,need)}/${need} — ${at}에서 만난다 · 꺾고 이기면 +1(극한 +2) · ${e.c==='debate'?'설전':'일기토'}에서 이기면 +1`,p:got?1:r(f,need)}];}
+    case 'merit':{const c=meritCost(e),need=fameNeed(story,e),fm=fameOf(m,story,e.f),mt=m.merit??0;
+      if(isNationLord(e)){const fc=fameCost(e),left=fameLeft(m,story,e.f);return [{ok:got||left>=fc,text:`${e.f}의 공적(명성) ${fc} 바치기 (바칠 수 있는 명성 ${left})`,p:got?1:r(left,fc)}];}
+      return [{ok:got||mt>=c,text:`공훈 ${c} 바치기 (지금 ${mt})`,p:got?1:r(mt,c)},...(need?[{ok:got||fm>=need,text:`${e.f} 명성 ${need} (지금 ${fm})`,p:got?1:r(fm,need)}]:[])];}
+    case 'bond':return [{ok:got,text:`${과와(e.w??'')} 함께 출진해 ${STORY_NAME[story]} 전투에서 이기기`,p:got?1:recruitedOf(m,story).includes(e.w??'')?.5:0}];
+    case 'feat':return [{ok:got,text:`${at}${e.k==='extreme'?'을 극한으로':'을 아군 손실 없이'} 이기기`,p:got?1:0}];
+    case 'rescue':return [{ok:got,text:`${at}에서 ${을를(e.n)} 지켜(체력 절반 이상) 이기기`,p:got?1:0}];
+  }
+}
+/** 장수 한 명의 진척(0~1) — 목록 칸의 작은 막대. */
+export function recruitProgress(m:RecruitMeta,story:Story,e:RosterEntry,won:(stage:string)=>boolean):number{
+  const lines=condLines(m,story,e,won,s=>s);return lines.reduce((n,l)=>n+(l.ok?1:l.p),0)/Math.max(1,lines.length);
+}
+/** 공훈·격파로 지금 본영에서 들일 수 있는 장수. */
+export function readyList(m:RecruitMeta,story:Story):RosterEntry[]{return ROSTER[story].filter(e=>(e.r==='merit'||e.r==='defeat')&&recruitStatus(m,story,e)==='ready');}
+
+/** 장수 하나를 들인다(값은 부른 쪽이 치른다). 명성·칭호를 갱신하고 칭호 알림을 돌려준다. */
+export function joinRecruit(m:RecruitMeta,story:Story,name:string):string[]{
+  const e=entryOf(story,name);if(!e||recruitedOf(m,story).includes(name))return [];
+  if(story==='S')m.recruited=[...(m.recruited??[]),name];else m.recruitedZ=[...(m.recruitedZ??[]),name];
+  addFame(m,story,e.f,FAME.recruit);
+  return titleNews(m,story);
+}
+/** 다 모은 나라의 칭호를 준다(새로 얻은 것만 알린다). */
+export function titleNews(m:RecruitMeta,story:Story):string[]{
+  const got=new Set(recruitedOf(m,story)),out:string[]=[];
+  for(const f of NATIONS){const k=titleKey(story,f);if((m.titles??[]).includes(k))continue;
+    const list=ROSTER[story].filter(e=>e.f===f);if(list.length&&list.every(e=>got.has(e.n))){m.titles=[...(m.titles??[]),k];out.push(`칭호 「${TITLES[f].name}」 — ${STORY_NAME[story]}에서 ${f}의 장수를 모두 모았다`);}}
+  return out;
+}
+/** 본영에서 들이기(공훈은 값을 치른다 · 격파는 호감이 찼을 때). 못 들이면 undefined. */
+export function buyRecruit(m:RecruitMeta,story:Story,name:string):string[]|undefined{
+  const e=entryOf(story,name);if(!e||recruitStatus(m,story,e)!=='ready')return undefined;
+  if(e.r==='merit'){m.merit=(m.merit??0)-meritCost(e);const fc=fameCost(e);if(fc){const sp=m.fameSpent??={},k=fameKey(story,e.f);sp[k]=(sp[k]??0)+fc;}}
+  return joinRecruit(m,story,name);
+}
+/** 단 칭호(얻은 것만). */
+export function heroTitle(m:RecruitMeta,story:Story):string{const t=m.title?.[story];return t&&(m.titles??[]).includes(titleKey(story,t))?TITLES[t].name:'';}
+/** 칭호를 이름 앞에 붙인 주인공 이름. */
+export function heroLabel(m:RecruitMeta,story:Story):string{const t=heroTitle(m,story);return t?`「${t}」 ${HERO[story]}`:HERO[story];}
+
+/** 전투가 끝났을 때의 기록(등용 정산에 쓴다). */
+export interface BattleReport {
+  story:Story;stage:string;win:boolean;extreme:boolean;
+  /** 쓰러진(퇴각한) 적 장수 이름 */
+  fallen:readonly string[];
+  /** 이 전투에 나온 적 장수 이름(쓰러지지 않은 이도) */
+  enemies:readonly string[];
+  /** 출진한 내 편 장수 이름 */
+  party:readonly string[];
+  /** 퇴각한 내 편 부대 수 */
+  lost:number;
+  /** 내 편·우군 장수 이름 → 남은 체력 비율(퇴각했으면 0) */
+  allies:Readonly<Record<string,number>>;
+}
+export type NationOf=(name:string)=>Nation|undefined;
+/**
+ * 이긴 전투 뒤 등용 정산(공훈은 부른 쪽이 따로 더한다):
+ * 꺾은 적장의 호감·명성 · 연의 합류(그 장을 이김 — 지난 승리도 셈한다) · 조건 승리 · 구출 · 인연. 알림 문구와 새로 들어온 이름을 돌려준다.
+ */
+export function settleBattle(m:RecruitMeta,r:BattleReport,won:(stage:string)=>boolean,nationOf:NationOf):{news:string[];joined:string[]}{
+  const news:string[]=[],joined:string[]=[],st=r.story;if(!r.win)return {news,joined};
+  const has=(n:string)=>recruitedOf(m,st).includes(n);
+  // 명성: 꺾은 이름난 적장(나라별) + 이 전투에 나온 적 나라마다 1.
+  const fame:Partial<Record<Nation,number>>={};
+  for(const n of new Set(r.fallen)){const f=nationOf(n);if(f)fame[f]=(fame[f]??0)+(r.extreme?FAME.foeExtreme:FAME.foe);}
+  for(const f of new Set(r.enemies.map(nationOf)))if(f)fame[f]=(fame[f]??0)+FAME.battle;
+  for(const [f,v] of Object.entries(fame) as Array<[Nation,number]>)addFame(m,st,f,v);
+  const fameText=(Object.entries(fame) as Array<[Nation,number]>).map(([f,v])=>`${f} +${v}`).join(' · ');
+  if(fameText)news.push(`명성 ${fameText}`);
+  // 격파: 꺾은 적장의 호감.
+  for(const n of new Set(r.fallen)){const e=entryOf(st,n);if(!e||e.r!=='defeat'||has(n))continue;
+    const v=addFavor(m,st,n,r.extreme?2:1),need=favorNeed(e);
+    news.push(v>=need?`${n} 호감 ${need}/${need} — 본영 「등용」에서 받아들일 수 있다`:`${n} 호감 ${v}/${need}`);}
+  const join=(n:string,why:string)=>{if(has(n))return;const t=joinRecruit(m,st,n);joined.push(n);news.push(`등용 · ${n}(${why}) — ${HERO[st]} 휘하에 들었다`,...t);};
+  for(const e of ROSTER[st]){if(has(e.n))continue;
+    if(e.r==='story'&&e.s&&(e.s===r.stage||won(e.s)))join(e.n,ROUTE_LABEL.story);
+    else if(e.r==='feat'&&e.s===r.stage&&(e.k==='extreme'?r.extreme:r.lost===0))join(e.n,ROUTE_LABEL.feat);
+    else if(e.r==='rescue'&&e.s===r.stage&&(r.allies[e.n]??0)>=.5)join(e.n,ROUTE_LABEL.rescue);
+    else if(e.r==='bond'&&e.w&&r.party.includes(e.w))join(e.n,`${ROUTE_LABEL.bond} · ${e.w}`);}
+  return {news,joined};
+}
+/** 지난 기록 따라잡기: 이미 이긴 장의 연의 합류 장수를 들인다(새 길이 생기기 전 저장). 들인 이름을 돌려준다. */
+export function catchUpStory(m:RecruitMeta,story:Story,won:(stage:string)=>boolean):string[]{
+  const out:string[]=[];for(const e of ROSTER[story])if(e.r==='story'&&e.s&&won(e.s)&&!recruitedOf(m,story).includes(e.n)){joinRecruit(m,story,e.n);out.push(e.n);}
+  return out;
 }
 
-export interface RecruitContext {
-  /** 연의 장을 이겼나(일반 이상) */
-  won(stage:string):boolean;
-  /** 극한으로 이겼나 */
-  extreme(stage:string):boolean;
-  heroLevel:number;seals:number;challenges:number;trainingWins:number;endings:number;treasures:number;
-  recruited:ReadonlySet<string>;
-  /** 장 id → 화면에 보일 이름 */
-  stageName(stage:string):string;
-  /** 지금 가진 공훈 */
-  merit?:number;
-  /** 격파 귀순 기록(이름 → 꺾은 횟수) */
-  defeats?:Readonly<Record<string,number>>;
+/** 일기토·설전에서 이긴 직후: 명성과 호감 +1. 등용을 고를 수 있는 상대(격파 길 · 아직 안 들임)면 그 항목을 돌려준다. */
+export function contestWin(m:RecruitMeta,story:Story,foe:string,nationOf:NationOf):RosterEntry|undefined{
+  const f=nationOf(foe);if(f)addFame(m,story,f,FAME.contest);
+  const e=entryOf(story,foe);if(!e||e.r!=='defeat'||recruitedOf(m,story).includes(foe))return undefined;
+  addFavor(m,story,foe,1);return e;
 }
-export function condMet(c:RecruitCond,x:RecruitContext):boolean{
-  switch(c.kind){
-    case 'stage':return x.won(c.stage);
-    case 'extreme':return x.extreme(c.stage);
-    case 'level':return x.heroLevel>=c.level;
-    case 'officer':return x.recruited.has(c.name);
-    case 'seals':return x.seals>=c.count;
-    case 'challenge':return x.challenges>=c.step;
-    case 'training':return x.trainingWins>=c.wins;
-    case 'ending':return x.endings>=c.count;
-    case 'treasures':return x.treasures>=c.count;
-    case 'defeat':return (x.defeats?.[c.name]??0)>=c.count;
-    case 'merit':return (x.merit??0)>=c.cost;
-  }
+/** 「살려 보낸다」: 호감을 한 번 더 쌓는다. */
+export function spareFoe(m:RecruitMeta,story:Story,foe:string):string{
+  const e=entryOf(story,foe);if(!e)return '';const v=addFavor(m,story,foe,1),need=favorNeed(e);
+  return `${을를(foe)} 살려 보냈다 — 호감 ${Math.min(v,need)}/${need}${v>=need?' · 이제 등용을 받아들인다':''}`;
 }
-export function condText(c:RecruitCond,x:RecruitContext):string{
-  switch(c.kind){
-    case 'stage':return `연의 「${x.stageName(c.stage)}」 승리`;
-    case 'extreme':return `「${x.stageName(c.stage)}」 극한 승리`;
-    case 'level':return `사마의 Lv.${c.level} (지금 ${x.heroLevel})`;
-    case 'officer':return `${c.name} 먼저 등용`;
-    case 'seals':return `연의 천명 ${c.count}개 (지금 ${x.seals})`;
-    case 'challenge':return `도전의 관문 ${c.step}단계 돌파 (지금 ${x.challenges})`;
-    case 'training':return `수련 ${c.wins}승 (지금 ${x.trainingWins})`;
-    case 'ending':return `결말 ${c.count}개 보기 (지금 ${x.endings})`;
-    case 'treasures':return `보물 ${c.count}점 모으기 (지금 ${x.treasures})`;
-    case 'defeat':return `「${x.stageName(c.stage)}」에서 ${c.name} 격파 ${Math.min(c.count,x.defeats?.[c.name]??0)}/${c.count}`;
-    case 'merit':return `공훈 ${c.cost} 바치기 (지금 ${x.merit??0})`;
-  }
-}
-/** 조건 하나의 진척(0~1). 막대로 보여 준다. */
-export function condProgress(c:RecruitCond,x:RecruitContext):number{
-  const r=(have:number,need:number)=>Math.max(0,Math.min(1,need>0?have/need:1));
-  switch(c.kind){
-    case 'level':return r(x.heroLevel,c.level);
-    case 'seals':return r(x.seals,c.count);
-    case 'challenge':return r(x.challenges,c.step);
-    case 'training':return r(x.trainingWins,c.wins);
-    case 'ending':return r(x.endings,c.count);
-    case 'treasures':return r(x.treasures,c.count);
-    case 'defeat':return r(x.defeats?.[c.name]??0,c.count);
-    case 'merit':return r(x.merit??0,c.cost);
-    default:return condMet(c,x)?1:0;
-  }
-}
-/** 장수 한 명의 진척(조건 진척의 평균, 0~1) — 목록 칸의 작은 막대. */
-export function recruitProgress(name:string,x:RecruitContext):number{
-  const o=officerOf(name);if(!o)return 0;if(x.recruited.has(name))return 1;
-  return o.conds.reduce((n,c)=>n+condProgress(c,x),0)/Math.max(1,o.conds.length);
-}
-/** 계보 안 앞 단계: 공훈 등용 장수만, 같은 계보의 바로 앞 공훈 등용 장수를 먼저 들여야 한다. */
-export function previousOf(name:string):string|undefined{
-  const l=lineageOf(name),o=officerOf(name);if(!l||!o||o.route!=='merit')return undefined;
-  const merit=l.officers.filter(x=>x.route==='merit'),i=merit.findIndex(x=>x.name===name);
-  return i>0?merit[i-1]!.name:undefined;
-}
-export type RecruitStatus='recruited'|'ready'|'locked'|'sealed';
-/** 등용함 · 들일 수 있음 · 조건 남음 · 앞 단계가 아직(계보 순서) */
-export function recruitStatus(name:string,x:RecruitContext):RecruitStatus{
-  if(x.recruited.has(name))return 'recruited';
-  const prev=previousOf(name);if(prev&&!x.recruited.has(prev))return 'sealed';
-  const o=officerOf(name);if(!o)return 'locked';
-  return o.conds.every(c=>condMet(c,x))?'ready':'locked';
+/** 「등용을 권한다」: 호감이 가득 찼으면 들인다. */
+export function persuadeFoe(m:RecruitMeta,story:Story,foe:string):{ok:boolean;news:string[]}{
+  const e=entryOf(story,foe);if(!e)return {ok:false,news:[]};const v=favorOf(m,story,foe),need=favorNeed(e);
+  if(v<need)return {ok:false,news:[`${이가(foe)} 고개를 저었다 — 호감 ${v}/${need}. 더 꺾거나 살려 보내 마음을 얻어야 한다`]};
+  return {ok:true,news:[`등용 · ${foe}(격파) — ${HERO[story]} 휘하에 들었다`,...joinRecruit(m,story,foe)]};
 }
 /** 연의 합류 장수인가(연의 장 대결의 사기 효과를 같이 받는다). */
-export function isStoryRecruit(name:string):boolean{return officerOf(name)?.route==='story';}
-/**
- * 전투가 끝난 뒤 저절로 들어오는 장수: 연의 합류(그 장을 이김)와 격파 귀순(정해진 횟수를 꺾음).
- * 공훈 등용은 등용 화면에서 공훈을 바쳐야 한다. 새로 들어온 이름을 돌려준다.
- */
-export function autoRecruits(x:RecruitContext):string[]{
-  const rec=new Set(x.recruited),got:string[]=[];let changed=true;
-  while(changed){changed=false;
-    for(const o of ALL){
-      if(rec.has(o.name)||o.route==='merit')continue;
-      if(recruitStatus(o.name,{...x,recruited:rec})==='ready'){rec.add(o.name);got.push(o.name);changed=true;}
-    }}
-  return got;
-}
-/** 옛 이름(연의 합류만 보던 때) — 같은 동작. */
-export const storyRecruits=autoRecruits;
-/** 다 모았지만 아직 보상을 받지 않은 계보. */
-export function completedLineages(recruited:ReadonlySet<string>,rewarded:readonly string[]):Lineage[]{
-  return LINEAGES.filter(l=>!rewarded.includes(l.id)&&l.officers.every(o=>recruited.has(o.name)));
-}
-/** 격파 진척 알림 문구(전투 뒤): 아직 귀순하지 않은 대상만. */
-export function defeatNews(names:readonly string[],x:RecruitContext):string[]{
-  return names.flatMap(n=>{const o=ALL.find(a=>a.route==='defeat'&&a.conds.some(c=>c.kind==='defeat'&&c.name===n));if(!o||x.recruited.has(o.name))return [];
-    const c=o.conds.find(c=>c.kind==='defeat') as Extract<RecruitCond,{kind:'defeat'}>,have=Math.min(c.count,x.defeats?.[n]??0);
-    return [have>=c.count?(o.conds.every(k=>condMet(k,x))?`${n} 격파 ${have}/${c.count} — 귀순한다`:`${n} 격파 ${have}/${c.count} — 남은 조건을 채우면 귀순한다`):`${n} 격파 ${have}/${c.count} — ${c.count-have}번 더 꺾으면 귀순한다`];});
-}
+export function isStoryRecruit(name:string,story:Story='S'):boolean{return entryOf(story,name)?.r==='story';}

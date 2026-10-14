@@ -2443,3 +2443,34 @@ dialog.treasure-reveal::backdrop{background:#05090cc4;backdrop-filter:blur(3px)}
 /* 인물열전: 진영 탭에서 연의 계급 머리글 */
 .cx-people>.cx-rank{grid-column:1/-1;margin:6px 0 0;padding-bottom:3px;border-bottom:1px solid #4d4a3a;color:#e4cf9c;font-size:calc(13px*var(--fs,1))}
 .cx-people>.cx-rank small{color:#9e978a;font-weight:400}
+
+/* 등용 v2: 이야기(사마의전·제갈량전) · 나라 탭 · 나라 안 장수 칸 · 칭호 · 겨룸 뒤 등용 고르기 */
+.recruit-screen.v2 .rc-tree{display:block;overflow:visible;padding:0}
+.recruit-screen.v2 .rc-steps{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;align-content:start}
+.rc-stories,.rc-nations{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}
+.rc-stories button,.rc-nations button{padding:6px 14px;border-radius:999px;border:1px solid #5a6a58;background:#1c2620;color:#c9d6c4;display:inline-flex;align-items:center;gap:6px}
+.rc-stories button small,.rc-nations button small{color:inherit;opacity:.8;font-variant-numeric:tabular-nums}
+.rc-stories button.on,.rc-nations button.on{background:#b8893e;border-color:#d6aa55;color:#1b130a;font-weight:700}
+.rc-nations button.titled{box-shadow:inset 0 -2px 0 #e0bd75}
+.rc-nations .rc-dot{margin-left:0}
+.rc-fame{padding:6px 12px;background:#151d1f;border:1px solid #4d4a3a;color:#cfc4a6;font-size:calc(12.5px*var(--fs,1))}
+.rc-fame b{color:#f6dc98;font-variant-numeric:tabular-nums}.rc-fame small{color:#9e978a}
+.rc-titles{display:flex;flex-wrap:wrap;align-items:center;gap:5px;font-size:calc(12.5px*var(--fs,1));color:#cbb98a}
+.rc-titles>small{color:#9e978a}.rc-titles em{color:#8f8a7a}
+.rc-titles button{padding:3px 10px;border:1px solid #5d5134;background:#151d1f;color:#e4cf9c}
+.rc-titles button.on{background:#e0bd75;border-color:#e0bd75;color:#10171a;font-weight:700}
+.recruit-screen.v2 .rc-routes{align-items:center;margin:4px 0}
+.recruit-screen.v2 .rc-reward{margin-left:auto;padding:2px 10px;border:1px solid #5d5134;color:#cbb98a;font-size:calc(12px*var(--fs,1))}
+.route-bond .rc-route{background:#c58fc9}.route-feat .rc-route{background:#7fb0d6}.route-rescue .rc-route{background:#e3c25b}
+.rc-node.lord{border-color:#8a6a3a;background:linear-gradient(180deg,#22201a,#182224)}
+.rc-lord{margin-left:5px;padding:0 5px;font-style:normal;font-weight:400;font-size:calc(10px*var(--fs,1));color:#10171a;background:#e0bd75;border-radius:3px;flex:none}
+.hero-title{display:inline-block;margin-left:8px;padding:1px 9px;border:1px solid #e0bd75;color:#f6dc98;background:#2a2414;font-size:calc(12px*var(--fs,1));font-weight:400;letter-spacing:.02em;white-space:nowrap}
+.ss-title{color:#e0bd75;font-weight:400;font-size:.78em}
+.contest-recruit{position:relative;z-index:30;display:flex;gap:12px;align-items:flex-start;margin:10px auto 0;max-width:560px;padding:12px 14px;background:linear-gradient(90deg,#2a2414,#151d1f);border:1px solid #e0bd75;color:#efe2c0;text-align:left}
+.ss-host>.contest-recruit{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,calc(100% - 32px));margin:0;box-shadow:0 10px 40px #000a}
+.contest-recruit b{color:#f6dc98}.contest-recruit small{display:block;color:#cbb98a;margin-top:2px}
+.cr-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.cr-actions button{display:flex;flex-direction:column;align-items:flex-start;padding:6px 14px}
+.cr-actions button small{margin:0;color:inherit;opacity:.8;font-size:calc(11px*var(--fs,1))}
+.cr-note{margin:8px 0 0;color:#d6e8c8}
+@media (max-width:760px),(orientation:landscape) and (max-height:520px){.recruit-screen.v2 .rc-steps{grid-template-columns:repeat(auto-fill,minmax(124px,1fr))}.rc-stories button,.rc-nations button{padding:4px 10px}}

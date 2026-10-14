@@ -322,9 +322,11 @@ export class Session {
     const storyMods=this.deployment?.storyMods&&!this.deployment.scenario&&!this.deployment.run&&!this.deployment.mission?this.deployment.storyMods:undefined;
     if(storyMods)applyBattleMods(state,storyMods);
     // 연의(본편) 장: 등용한 장수를 사마의 곁에 세운다(이미 그 장에 나오는 이름은 건너뛴다).
-    if(this.deployment?.retinue?.length&&!this.deployment.scenario&&!this.deployment.run&&!this.deployment.runStory&&!this.deployment.mission&&!soloStage(entry.stage))addRecruits(state,this.deployment.retinue,this.revision);
+    // 제갈량전 장은 제갈량이 나서는 장이면 제갈량 곁에 세운다.
+    const zStory=isZhugeStage(entry.stage.id)||isZhugeBranch(entry.stage.id);
+    if(this.deployment?.retinue?.length&&!this.deployment.scenario&&!this.deployment.run&&!this.deployment.runStory&&!this.deployment.mission&&(zStory?entry.stage.deployment.forced.includes('z_liang'):!soloStage(entry.stage)))addRecruits(state,this.deployment.retinue,this.revision,zStory?'z_liang':'sima_yi');
     // 등용 장수는 연의 기반(연의 장을 이겨 합류한) 장수만 이야기 효과(사기·방어 태세)를 함께 받는다.
-    if(storyMods&&(storyMods.rally||storyMods.guard))for(const r of this.deployment?.retinue??[]){const u=state.find(r.id);if(!u?.alive||!isStoryRecruit(u.name))continue;
+    if(storyMods&&(storyMods.rally||storyMods.guard))for(const r of this.deployment?.retinue??[]){const u=state.find(r.id);if(!u?.alive||!isStoryRecruit(u.name,zStory?'Z':'S'))continue;
       if(storyMods.rally)state.applyStatus(u,{kind:'rally',turns:2,magnitude:1});if(storyMods.guard)state.applyStatus(u,{kind:'guard',turns:1,magnitude:1});}
     // 원정의 연의 전장: 사마의는 원정에서 남은 체력으로 나서고, 원정 보물이 본대에 실린다.
     if(this.deployment?.runStory){const r=this.deployment.runStory,h=state.find('sima_yi');if(h)h.hp=Math.max(1,Math.round(h.stats.maxHp*r.heroHp));applyRelics(state,r.relics);}
