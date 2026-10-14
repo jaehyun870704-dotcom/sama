@@ -98,7 +98,7 @@ export const UNIFIED_SD_IDS=['liu_bei','ma_chao','guan_yu','zhang_fei','zhao_yun
   'cao_cao','sun_quan','lu_bu',
   'meng_huo','zhou_yu','wutugu','cao_shuang','zhang_zhao','yan_liang','guo_huai','cao_hong','lu_meng','zhu_ran',
   'sun_jian','sun_ce','taishi_ci','cheng_pu','zhou_tai','ling_tong','zhang_chunhua','zhang_jiao','dong_zhuo',
-  'yuan_shu','yuan_shao','yue_jin','dai_ling','zhong_hui','deng_ai','li_dian','guo_jia','xun_you','cheng_yu','dian_wei','pang_de','gongsun_zan','liu_biao','ma_teng','dong_zhuo','gao_lan','wen_qin','wen_yang','cao_xiu','gongsun_yuan','wen_chou','xu_huang','xu_sheng','yu_jin','yuan_shang'] as const;
+  'yuan_shu','yuan_shao','yue_jin','dai_ling','zhong_hui','deng_ai','li_dian','guo_jia','xun_you','cheng_yu','dian_wei','pang_de','gongsun_zan','liu_biao','ma_teng','dong_zhuo','gao_lan','wen_qin','wen_yang','cao_xiu','gongsun_yuan','wen_chou','xu_huang','xu_sheng','yu_jin','yuan_shang','yuan_tan','hua_xiong','zhang_ren','jia_xu','gao_shun','gao_shou','sun_jian','sun_ce','taishi_ci','zhou_tai','ling_tong','lu_kang'] as const;
 /** 통합 SD 장수의 파일 판 번호 [SD, 일기토]. 납품마다 판 번호가 달라 장수별로 적는다(적지 않은 장수는 `{id}-sd-v1`·`{id}-duel-v2`).
  * 4차 납품(6d66aeb)에서 일기토만 SD 비례로 다시 그린 장수는 일기토 판이 올랐다. 제갈균은 파일 이름이 `jun-*`이다. */
 const SD_VERSIONS:Readonly<Record<string,readonly [number,number]>>={
@@ -113,8 +113,9 @@ const SD_VERSIONS:Readonly<Record<string,readonly [number,number]>>={
   yuan_shu:[2,2],yuan_shao:[2,2],yue_jin:[3,3],dai_ling:[3,3],zhong_hui:[3,3],deng_ai:[3,3],li_dian:[3,3],guo_jia:[2,2],xun_you:[2,2],cheng_yu:[2,2],dian_wei:[2,2],pang_de:[2,2],gongsun_zan:[2,2],liu_biao:[2,2],ma_teng:[2,2],gao_lan:[2,2],wen_qin:[1,2],wen_yang:[1,2],
   cao_xiu:[3,2],gongsun_yuan:[3,2],wen_chou:[2,2],xu_huang:[2,2],xu_sheng:[3,2],yu_jin:[3,2],yuan_shang:[3,2],
 };
+const SD_VERSION_OVERRIDES:Readonly<Record<string,readonly [number,number]>>={yuan_shu:[3,2],yuan_shao:[3,2],yuan_tan:[3,2],dong_zhuo:[3,2],hua_xiong:[3,2],gongsun_zan:[3,2],zhang_jiao:[3,2],gao_shun:[3,2],ma_teng:[3,2],liu_biao:[3,2],zhang_ren:[3,2],gao_lan:[3,2],jia_xu:[3,2],pang_de:[3,2],guo_jia:[3,2],dian_wei:[3,2],xun_you:[3,2],cheng_yu:[3,2],wen_qin:[3,2],wen_yang:[3,2],cao_zhang:[3,2],lu_su:[3,2],gan_ning:[3,2],taishi_ci:[3,2],sun_jian:[3,2],sun_ce:[3,2],zhou_tai:[3,2],ling_tong:[3,2],lu_kang:[3,2],gao_shou:[3,2]};
 export const UNIFIED_SD_FILES:Readonly<Record<string,{sd:string;duel:string}>>=Object.fromEntries((UNIFIED_SD_IDS as readonly string[]).map(id=>{
-  const [sd,duel]=SD_VERSIONS[id]??[1,2],file=id==='zhuge_jun'?'jun':id;
+  const [sd,duel]=SD_VERSION_OVERRIDES[id]??SD_VERSIONS[id]??[1,2],file=id==='zhuge_jun'?'jun':id;
   return [id,{sd:`${file}-sd-v${sd}.webp`,duel:`${file}-duel-v${duel}.webp`}];
 }));
 for(const [id,name] of [['liu_feng','유봉'],['huang_quan','황권'],['wu_ban','오반'],['wu_yi','오의'],['fei_yi','비의'],['mi_fang','미방'],['yi_ji','이적'],['jiang_wan','장완'],['yang_yi','양의'],['huang_yueying','황월영'],['guan_suo','관색'],['zhuge_jun','제갈균']] as const)
