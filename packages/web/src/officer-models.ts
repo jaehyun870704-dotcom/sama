@@ -111,7 +111,7 @@ const SD_VERSIONS:Readonly<Record<string,readonly [number,number]>>={
   meng_huo:[2,3],zhou_yu:[2,3],wutugu:[2,3],lu_meng:[1,3],zhu_ran:[1,3],
   sun_jian:[2,2],sun_ce:[2,2],taishi_ci:[2,2],cheng_pu:[2,2],zhou_tai:[2,2],ling_tong:[2,2],zhang_chunhua:[2,2],zhang_jiao:[2,2],dong_zhuo:[2,2],
   yuan_shu:[2,2],yuan_shao:[2,2],yue_jin:[3,3],dai_ling:[3,3],zhong_hui:[3,3],deng_ai:[3,3],li_dian:[3,3],guo_jia:[2,2],xun_you:[2,2],cheng_yu:[2,2],dian_wei:[2,2],pang_de:[2,2],gongsun_zan:[2,2],liu_biao:[2,2],ma_teng:[2,2],gao_lan:[2,2],wen_qin:[1,2],wen_yang:[1,2],
-  cao_xiu:[2,2],gongsun_yuan:[2,2],wen_chou:[2,2],xu_huang:[2,2],xu_sheng:[2,2],yu_jin:[2,2],yuan_shang:[2,2],
+  cao_xiu:[3,2],gongsun_yuan:[3,2],wen_chou:[2,2],xu_huang:[2,2],xu_sheng:[3,2],yu_jin:[3,2],yuan_shang:[3,2],
 };
 export const UNIFIED_SD_FILES:Readonly<Record<string,{sd:string;duel:string}>>=Object.fromEntries((UNIFIED_SD_IDS as readonly string[]).map(id=>{
   const [sd,duel]=SD_VERSIONS[id]??[1,2],file=id==='zhuge_jun'?'jun':id;
