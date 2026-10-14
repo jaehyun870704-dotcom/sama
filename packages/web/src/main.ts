@@ -18,7 +18,7 @@ import {watchCssAtlases} from './css-atlas.ts';
 import {actionNames,duelActionNames,duelLine,temperNames,type DuelAction,type DuelKind} from './duel.ts';
 import {spriteAtlas} from './sprite-atlas.ts';
 import {paintedTroopArt} from './painted-troops.ts';
-import {officerDuelModelStyle,officerDuelMounted,officerBattleSheet,officerDuelSheetUrl} from './officer-models.ts';
+import {officerDuelModelStyle,officerDuelMounted,officerBattleSheet,officerDuelSheetUrl,hasUnifiedSd} from './officer-models.ts';
 import {MOUNTED_FAMILIES} from './armor.ts';
 import {coachStep,COACH_KEY} from './tutorial.ts';
 import {dueLines} from './battle-lines.ts';
@@ -1059,11 +1059,13 @@ function consumeLog(){const logs=session.state.log.slice(lastLog);lastLog=sessio
 function portraitFor(u:Unit,reaction=false,contestKind?:DuelKind):string{
   // 설전은 궁정·군막에서 말없이 논하는 장면이다. 기마 장수의 전용 일기토 시트 대신
   // 같은 비율의 도보 책사 모델을 세워 마초 같은 장수가 말을 탄 채 궁정에 들어오지 않게 한다.
-  if(contestKind==='debate'&&officerDuelMounted(u))return '<span class="battle-model" role="img" aria-label="설전 도보 모델" style="background-image:var(--four-stage-strategist-atlas);background-size:400% 400%;background-position:0 0"></span>';
-  const officer=officerDuelModelStyle(u);
+  if(contestKind==='debate'&&(officerDuelMounted(u)||(!hasUnifiedSd(u)&&(MOUNTED_FAMILIES.has(familyOf(u.unitClass))||u.unitClass.startsWith('mounted')))))return '<span class="battle-model" role="img" aria-label="설전 도보 모델" style="background-image:var(--four-stage-strategist-atlas);background-size:400% 400%;background-position:0 0"></span>';
+  // 일기토·설전은 SD 화풍으로 통일한다: 통합 SD가 없는 장수는 옛 일기토·전투 그림(실사 비례) 대신 그 병종의 SD 그림으로 세운다.
+  const legacyContest=!!contestKind&&!hasUnifiedSd(u);
+  const officer=legacyContest?undefined:officerDuelModelStyle(u);
   if(officer)return `<span class="battle-model officer-battle-model" role="img" aria-label="${unitName(u)} 전신"${officerDuelMounted(u)?' data-mounted':''} style="${officer}"></span>`;
   // 전용 대결 그림이 없는 장수(유비·손권·조예 등)는 병종 그림 대신 자기 전투 그림 첫 칸(대기)을 세운다. 칸이 가로로 길어 폭에 맞추고 발끝을 아래에 붙인다.
-  const sd=officerBattleSheet(u)?.action;
+  const sd=legacyContest?undefined:officerBattleSheet(u)?.action;
   if(sd&&sd.rows===1)return `<span class="battle-model sheet-model" role="img" aria-label="${unitName(u)}"${MOUNTED_FAMILIES.has(familyOf(u.unitClass))||u.unitClass.startsWith('mounted')?' data-mounted':''} style="background-image:url(${sd.sheet});background-size:400% auto;background-repeat:no-repeat;background-position:${reaction?100:0}% 100%"></span>`;
   const painted=paintedTroopArt[u.unitClass];
   // 말·전차를 탄 병종 그림은 일기토에서 말 탄 크기로 세운다(duelModel이 data-mounted를 본다).

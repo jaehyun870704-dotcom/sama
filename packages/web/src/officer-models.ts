@@ -155,6 +155,8 @@ const duelRows:Record<string,{sheet:string;row:number;rows:number}>={
 };
 for(const id of COMPLETE_ART_IDS)duelRows[id]={sheet:`officers/${id}-duel-v1.webp`,row:0,rows:1};
 for(const id of UNIFIED_SD_IDS)duelRows[id]={sheet:`officers/${UNIFIED_SD_FILES[id]!.duel}`,row:0,rows:1};
+/** 통합 SD 한 벌(SD·일기토가 같은 화풍)을 받은 장수인가. */
+export function hasUnifiedSd(u:OfficerLike){const e=officerEntry(u);return !!e&&(UNIFIED_SD_IDS as readonly string[]).includes(e.id);}
 export function officerDuelModel(u:OfficerLike){const e=officerEntry(u);return e?duelRows[e.id]:undefined;}
 /** 말을 탄 대결 모델(일기토에서 말 탄 크기·말 흔들림). 나머지 대결 모델은 걸어서 싸운다. 관색은 두 번째 칸만 말을 타서 도보로 둔다. */
 const MOUNTED_DUEL=new Set(['zhang_fei','wooden_zhuge','ma_chao','lu_bu','xiang_yu','sima_shi','cao_cao','cao_pi','zhao_yun','sun_quan','gongsun_yuan','meng_yan','bi_yan','guan_yu','zhang_liao','zhang_he','xiahou_dun','jiang_wei','xiahou_yuan','xu_huang','cao_ren','liu_bei','cao_rui','yuan_tan','yuan_shang','zhang_ba','cao_xiu','cao_shuang','ma_dai','cao_zhen','wei_yan','meng_huo','yan_liang']);
