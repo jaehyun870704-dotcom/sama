@@ -95,7 +95,8 @@ export const UNIFIED_SD_IDS=['liu_bei','ma_chao','guan_yu','zhang_fei','zhao_yun
   'cao_pi','cao_rui','xu_chu','sima_fu','hu_zun','zhang_he','cao_ren','xiahou_dun','xiahou_yuan','zhang_liao','wang_shuang','lu_xun','chen_gong','zhu_rong','xu_shu',
   'cao_cao','sun_quan','lu_bu',
   'meng_huo','zhou_yu','wutugu','cao_shuang','zhang_zhao','yan_liang','guo_huai','cao_hong','lu_meng','zhu_ran',
-  'sun_jian','sun_ce','taishi_ci','cheng_pu','zhou_tai','ling_tong','zhang_chunhua','zhang_jiao','dong_zhuo'] as const;
+  'sun_jian','sun_ce','taishi_ci','cheng_pu','zhou_tai','ling_tong','zhang_chunhua','zhang_jiao','dong_zhuo',
+  'gongsun_zan','liu_biao','ma_teng','wen_qin','wen_yang'] as const;
 /** 통합 SD 장수의 파일 판 번호 [SD, 일기토]. 납품마다 판 번호가 달라 장수별로 적는다(적지 않은 장수는 `{id}-sd-v1`·`{id}-duel-v2`).
  * 4차 납품(6d66aeb)에서 일기토만 SD 비례로 다시 그린 장수는 일기토 판이 올랐다. 제갈균은 파일 이름이 `jun-*`이다. */
 const SD_VERSIONS:Readonly<Record<string,readonly [number,number]>>={
@@ -107,6 +108,7 @@ const SD_VERSIONS:Readonly<Record<string,readonly [number,number]>>={
   liu_bei:[2,3],wooden_zhuge:[2,3],cao_cao:[2,3],sun_quan:[3,5],lu_bu:[2,4],
   meng_huo:[2,3],zhou_yu:[2,3],wutugu:[2,3],lu_meng:[1,3],zhu_ran:[1,3],
   sun_jian:[2,2],sun_ce:[2,2],taishi_ci:[2,2],cheng_pu:[2,2],zhou_tai:[2,2],ling_tong:[2,2],zhang_chunhua:[2,2],zhang_jiao:[2,2],dong_zhuo:[2,2],
+  gongsun_zan:[2,2],liu_biao:[2,2],ma_teng:[2,2],wen_qin:[1,2],wen_yang:[1,2],
 };
 export const UNIFIED_SD_FILES:Readonly<Record<string,{sd:string;duel:string}>>=Object.fromEntries((UNIFIED_SD_IDS as readonly string[]).map(id=>{
   const [sd,duel]=SD_VERSIONS[id]??[1,2],file=id==='zhuge_jun'?'jun':id;
