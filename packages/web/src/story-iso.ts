@@ -1144,6 +1144,10 @@ const PAINTED:Painted[]=[
   // 장소 전용 최신 배경: 기존 범용 패널보다 먼저 선택되어 실제 시나리오에 사용된다.
   storyRoom('scene-residence-inn-v1.webp',['home','hall','study'],/장수 거처|장수의 거처|객잔|여관|숙소|저택/,300,{figScale:1.16,
     floor:[[80,300],[1510,300],[1600,900],[0,900]],blocks:[[[0,0],[260,0],[260,330],[0,330]],[[1320,0],[1600,0],[1600,380],[1320,380]]]}),
+  storyRoom('scene-wei-camp-strategy-v8.webp',['tent','hall'],/전략 군막|작전 회의|작전회의|군략 회의|군략회의|전략 회의/,300,{figScale:1.14,
+    floor:[[70,300],[1530,300],[1600,900],[0,900]],blocks:[[[540,330],[1060,330],[1060,610],[540,610]]]}),
+  storyRoom('scene-luoyang-palace-v4.webp',['palace','throne','hall'],/궁정 알현실|알현실|알현|어전|황궁|황궁 알현|옥좌|조회/,280,{figScale:1.12,
+    floor:[[80,280],[1520,280],[1600,900],[0,900]],blocks:[[[570,0],[1030,360],[1030,430],[570,430]]]}),
   storyRoom('scene-outdoor-camp-v2.webp',['camp'],/야외 주둔지|야외 진영|병영|주둔지|군영/,300,{figScale:1.12,
     floor:[[80,300],[1520,300],[1600,900],[0,900]],blocks:[]}),
   storyRoom('scene-wall-top-v1.webp',['wall','fort','gatehouse'],/성벽 위|성벽|성루|망루|성문 위/,280,{figScale:1.12,
