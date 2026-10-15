@@ -1,5 +1,6 @@
 {
   "wei-camp": { "file": "scene-wei-camp-v1.webp", "size": [1600, 900], "people": false },
   "shu-camp": { "file": "scene-shu-camp-v1.webp", "size": [1600, 900], "people": false },
-  "luoyang-palace": { "file": "scene-luoyang-palace-v1.webp", "size": [1600, 900], "people": false }
+  "luoyang-palace": { "file": "scene-luoyang-palace-v1.webp", "size": [1600, 900], "people": false },
+  "wei-camp-strategy": { "file": "scene-wei-camp-strategy-v1.webp", "size": [1600, 900], "people": false, "largeTable": true }
 }
