@@ -315,11 +315,15 @@ function paintWalls(ctx:CanvasRenderingContext2D,state:BattleState){
     ctx.strokeStyle='rgba(60,54,44,.3)';ctx.lineWidth=1;for(let k=12;k<T;k+=12){ctx.beginPath();ctx.moveTo(px,py+k);ctx.lineTo(px+T,py+k);ctx.stroke();}
     for(let r=0;r<4;r++)for(let k=(r%2)*8;k<T;k+=16){ctx.beginPath();ctx.moveTo(px+k,py+r*12);ctx.lineTo(px+k,py+r*12+12);ctx.stroke();}
     if(gate){
-      const across=L||Rr;// 성벽이 가로로 이어지면 문은 위아래로 지난다
+      // 성문은 이웃 성벽의 실제 연결 방향을 따라 회전한다. 가로 성벽의
+      // 문은 세로 통로, 세로 성벽의 문은 가로 통로가 되며 코너에서도
+      // 한 방향으로 고정되지 않고 이어진다.
+      const across=(L||Rr)&&!(U||D);
       // 성문 방벽이 서 있거나, 이벤트가 닫아 둔 성문(close_gate)이면 문짝이 닫혀 있다.
       const intact=!!state.find(`gate_${x}_${y}`)||!!state.map.tileAt({x,y}).locked;
-      ctx.fillStyle='rgb(120,110,92)';if(across)ctx.fillRect(px+10,py,T-20,T);else ctx.fillRect(px,py+10,T,T-20);
-      if(!intact){ctx.fillStyle='rgba(20,14,8,.35)';if(across)ctx.fillRect(px+12,py,T-24,T);else ctx.fillRect(px,py+12,T,T-24);}
+      ctx.fillStyle='rgb(120,110,92)';
+      if(across)ctx.fillRect(px+6,py-4,T-12,T+8);else ctx.fillRect(px-4,py+6,T+8,T-12);
+      if(!intact){ctx.fillStyle='rgba(20,14,8,.35)';if(across)ctx.fillRect(px+8,py-2,T-16,T+4);else ctx.fillRect(px-2,py+8,T+4,T-16);}
       else for(const side of [0,1]){const dx=across?(side?T/2:12):0,dy=across?0:(side?T/2:12);ctx.fillStyle='rgb(110,34,22)';if(across)ctx.fillRect(px+dx,py+6,T/2-12,T-12);else ctx.fillRect(px+6,py+dy,T-12,T/2-12);
         ctx.fillStyle='rgb(222,184,90)';for(let a=0;a<3;a++)for(let b=0;b<4;b++){const sx=across?px+dx+4+a*((T/2-20)/2):px+10+b*((T-20)/3),sy=across?py+10+b*((T-20)/3):py+dy+4+a*((T/2-20)/2);ctx.beginPath();ctx.arc(sx,sy,1.6,0,7);ctx.fill();}}
     }
@@ -413,11 +417,15 @@ export function terrainLayer(state:BattleState,atlas:Texture){
   };
   // Landmarks keep the existing painted buildings: towers, halls, camps and villages.
   if(state.stage.id==='S1-08'){
-    object(6,39,7,155,145);
-    for(const [x,y] of [[33,5],[44,5],[33,16],[44,16]])if(!state.find(`tower_${x}_${y}`))object(3,x!,y!,85,118);
+    object(6,39,7,188,172);
+    for(const [x,y] of [[33,5],[44,5],[33,16],[44,16]])if(!state.find(`tower_${x}_${y}`))object(3,x!,y!,92,126);
   }
   for(const region of ['camp','village']){
-    const cells=map.regions.get(region);if(cells)for(const [i,at] of cells.entries())if(i%2===0)object(region==='camp'?5:6,at.x,at.y,90,94);
+    const cells=map.regions.get(region);
+    // 군막은 병력 집결·보급 상황에서 크게, 마을 가옥은 전투 시야를
+    // 가리지 않도록 작게 그린다. 소품의 크기도 지형 용도에 맞춘다.
+    if(cells)for(const [i,at] of cells.entries())if(i%2===0)
+      object(region==='camp'?5:6,at.x,at.y,region==='camp'?108:78,region==='camp'?108:82);
   }
   for(const at of map.regions.get('objective')??[]){const g=new Graphics();g.rect(at.x*S,at.y*S,S,S).fill({color:0xf5d48e,alpha:.14}).stroke({color:0xf4d493,width:2,alpha:.8});layer.addChild(g);}
   return {layer,texture,frames};
