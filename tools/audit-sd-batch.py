@@ -49,6 +49,8 @@ for entry in entries:
             # Long weapons alone may widen action poses; the idle is the card.
             if frame==0 and ratio > (1.55 if entry['mounted'] else 1.45):
                 issues.append(f'{path.name}: idle is excessively wide ({ratio:.2f})')
+            if frame>0 and ratio > 1.8:
+                issues.append(f'{path.name}/{frame}: action is excessively wide ({ratio:.2f})')
             results.append({'id':ident,'kind':kind,'frame':frame,'box':box,'transparent':round(transparent,3),'aspect':round(ratio,3)})
 print(json.dumps({'officers':len(entries),'frames':len(results),'issues':issues,'results':results},ensure_ascii=False,indent=2))
 sys.exit(bool(issues))

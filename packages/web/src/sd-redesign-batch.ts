@@ -12,3 +12,66 @@ export const SD_REDESIGN_BATCH = [
   ['ling_tong','능통',true],['lu_kang','육항',false],['gao_shou','고수',false],
 ] as const;
 export const SD_REDESIGN_VERSION=4;
+
+/** 2차 50명: 누락 15명과 배경·체형 오류 장수. 1차/승인본은 유지한다. */
+export const SD_REDESIGN_BATCH_02 = [
+  ['wang_yi','왕이',false],
+  ['sun_shangxiang','손상향',true],
+  ['bian_shi','변씨',false],
+  ['bu_lianshi','보연사',false],
+  ['guan_yinping','관은병',false],
+  ['bao_sanliang','포삼랑',false],
+  ['lingqi','여령기',true],
+  ['ma_yunlu','마운록',true],
+  ['xin_xianying','신헌영',false],
+  ['wang_yuanji','왕원희',false],
+  ['da_qiao','대교',false],
+  ['xiao_qiao','소교',false],
+  ['xiahou_shi','하후씨',false],
+  ['dong_bai','동백',false],
+  ['cai_wenji','채문희',false],
+  ['gongsun_yuan','공손연',true],
+  ['yuan_shang','원상',true],
+  ['cao_xiu','조휴',true],
+  ['yu_jin','우금',false],
+  ['xu_sheng','서성',false],
+  ['lu_bu','여포',true],
+  ['sun_quan','손권',true],
+  ['ma_chao','마초',true],
+  ['guan_yu','관우',true],
+  ['zhang_fei','장비',true],
+  ['liu_bei','유비',true],
+  ['xu_huang','서황',true],
+  ['xun_yu','순욱',false],
+  ['huang_gai','황개',false],
+  ['hao_zhao','학소',false],
+  ['wen_ping','문빙',false],
+  ['ding_feng','정봉',false],
+  ['zhuge_ke','제갈각',false],
+  ['wang_ling','왕릉',false],
+  ['zhang_ba','장패',true],
+  ['meng_yan','맹염',true],
+  ['bi_yan','비연',true],
+  ['ju_shou','저수',false],
+  ['tian_feng','전풍',false],
+  ['shen_pei','심배',false],
+  ['cao_zhi','조식',false],
+  ['feng_ji','봉기',false],
+  ['han_dang','한당',false],
+  ['zhang_qin','장흠',false],
+  ['pan_zhang','반장',true],
+  ['diaochan','초선',false],
+  ['zhen_shi','견씨',false],
+  ['li_jue','이각',true],
+  ['guo_si','곽사',true],
+  ['xiang_yu','항우',true]
+] as const;
+export const SD_REDESIGN_VERSION_02=6;
+export const SD_REDESIGN_OFFICERS=[...SD_REDESIGN_BATCH,...SD_REDESIGN_BATCH_02] as const;
+export const SD_REDESIGN_GROUPS=[
+  {version:SD_REDESIGN_VERSION,officers:SD_REDESIGN_BATCH},
+  {version:SD_REDESIGN_VERSION_02,officers:SD_REDESIGN_BATCH_02},
+] as const;
+export const SD_REDESIGN_VERSIONS:Readonly<Record<string,readonly [number,number]>>=Object.fromEntries(
+  SD_REDESIGN_GROUPS.flatMap(group=>group.officers.map(([id])=>[id,[group.version,group.version] as const])),
+);
