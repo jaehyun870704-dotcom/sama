@@ -32,6 +32,7 @@ const LEVELS=[5,10,15,20,28],COSTS=[3,4,6,8,12],SCALE=[1,1.1,1.2,1.35,1.5];
 const COMPANION_CLASS:Record<string,UnitClass>={조진:'cavalry',장합:'cavalry',곽회:'archer',사마랑:'fengshui',사마의:'strategist',사마부:'fengshui',사마방:'spearman'};
 /** 본편 NPC·이야기·가상 전장에 같은 병종으로 나오도록 고정한 장수(능력치로 정하면 다른 병종이 나온다). */
 const FIXED_CLASS:Record<string,UnitClass>={조상:'cavalry',허저:'infantry',조휴:'cavalry',사마사:'cavalry',
+  곽가:'strategist',순유:'strategist',정욱:'strategist',전위:'infantry',손견:'cavalry',손책:'cavalry',태사자:'cavalry',주태:'infantry',능통:'cavalry',원소:'lord',동탁:'lord',화웅:'heavyCav',공손찬:'cavalry',장각:'strategist',고순:'infantry',마등:'cavalry',유표:'lord',왕이:'archer',손상향:'horseArcher',변씨:'maiden',보연사:'maiden',관은병:'infantry',포삼랑:'spearman',여령기:'cavalry',마운록:'cavalry',신헌영:'strategist',왕원희:'strategist',대교:'dancer',소교:'dancer',하후씨:'maiden',동백:'dancer',채문희:'fengshui',
   장임:'archer',초선:'dancer',견씨:'maiden',장춘화:'maiden',이각:'cavalry',곽사:'cavalry',원술:'lord',
   ...Object.fromEntries(ZHUGE_PEOPLE_ALL.filter(p=>p.unitClass).map(p=>[p.name,p.unitClass!]))};
 export function officerClass(name:string):UnitClass{

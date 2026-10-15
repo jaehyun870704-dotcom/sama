@@ -111,7 +111,7 @@ const SD_VERSIONS:Readonly<Record<string,readonly [number,number]>>={
   huang_zhong:[1,3],zhao_yun:[1,3],lu_xun:[1,3],
   liu_bei:[2,3],wooden_zhuge:[2,3],cao_cao:[2,3],sun_quan:[3,5],lu_bu:[2,4],
   meng_huo:[2,3],zhou_yu:[2,3],wutugu:[2,3],lu_meng:[1,3],zhu_ran:[1,3],
-  sun_jian:[2,2],sun_ce:[2,2],taishi_ci:[2,2],cheng_pu:[2,2],zhou_tai:[2,2],ling_tong:[2,2],zhang_chunhua:[2,2],zhang_jiao:[2,2],dong_zhuo:[2,2],
+  sun_jian:[2,2],sun_ce:[2,2],taishi_ci:[2,2],cheng_pu:[2,2],zhou_tai:[2,2],ling_tong:[2,2],zhang_chunhua:[2,1],zhang_jiao:[2,2],dong_zhuo:[2,2],
   yuan_shu:[2,2],yuan_shao:[2,2],yue_jin:[3,3],dai_ling:[3,3],zhong_hui:[3,3],deng_ai:[3,3],li_dian:[3,3],guo_jia:[2,2],xun_you:[2,2],cheng_yu:[2,2],dian_wei:[2,2],pang_de:[2,2],gongsun_zan:[2,2],liu_biao:[2,2],ma_teng:[2,2],gao_lan:[2,2],wen_qin:[1,2],wen_yang:[1,2],
   cao_xiu:[3,2],gongsun_yuan:[3,2],wen_chou:[2,2],xu_huang:[2,2],xu_sheng:[3,2],yu_jin:[3,2],yuan_shang:[3,2],
 };
@@ -122,7 +122,9 @@ export const UNIFIED_SD_FILES:Readonly<Record<string,{sd:string;duel:string}>>=O
 }));
 for(const [id,name] of [['liu_feng','유봉'],['huang_quan','황권'],['wu_ban','오반'],['wu_yi','오의'],['fei_yi','비의'],['mi_fang','미방'],['yi_ji','이적'],['jiang_wan','장완'],['yang_yi','양의'],['huang_yueying','황월영'],['guan_suo','관색'],['zhuge_jun','제갈균']] as const)
   if(!officerManifest.some(x=>x.id===id))officerManifest.push(E(id,name,{}));
-for(const id of UNIFIED_SD_IDS){const e=officerManifest.find(x=>x.id===id);if(!e)continue;const f=UNIFIED_SD_FILES[id]!,cart=e.battle.cart;e.battle={sd:{sheet:`officers/${f.sd}`,cell:[350,280],rows:1},...(cart?{cart}:{})};e.duel=`officers/${f.duel}`;}
+/** 통합 SD는 왔지만 일기토(1024×256) 그림이 아직 없는 장수: 일기토는 전투 SD로 대신 선다(없는 파일을 부르지 않게). */
+export const DUEL_PENDING:ReadonlySet<string>=new Set(['yue_jin','zhong_hui','deng_ai','li_dian','wen_chou']);
+for(const id of UNIFIED_SD_IDS){const e=officerManifest.find(x=>x.id===id);if(!e)continue;const f=UNIFIED_SD_FILES[id]!,cart=e.battle.cart;e.battle={sd:{sheet:`officers/${f.sd}`,cell:[350,280],rows:1},...(cart?{cart}:{})};if(DUEL_PENDING.has(id))delete e.duel;else e.duel=`officers/${f.duel}`;}
 
 // 묶음 시트(옛 맞수 판)는 마초·주유까지 통합 SD로 옮겨 모두 지웠다(6차).
 const legacySheets:readonly {id:string;url:string;rows:number;strictGrid:true;alphaCutoff:number}[]=[];
@@ -164,7 +166,7 @@ const duelRows:Record<string,{sheet:string;row:number;rows:number}>={
   gao_shou:{sheet:'officers/gao_shou-duel-v1.webp',row:0,rows:1},guo_huai:{sheet:'officers/guo_huai-duel-v1.webp',row:0,rows:1},dai_ling:{sheet:'officers/dai_ling-duel-v1.webp',row:0,rows:1},zhang_zhao:{sheet:'officers/zhang_zhao-duel-v1.webp',row:0,rows:1},zhang_ba:{sheet:'officers/zhang_ba-duel-v1.webp',row:0,rows:1},cao_xiu:{sheet:'officers/cao_xiu-duel-v1.webp',row:0,rows:1},cao_shuang:{sheet:'officers/cao_shuang-duel-v1.webp',row:0,rows:1},
 };
 for(const id of COMPLETE_ART_IDS)duelRows[id]={sheet:`officers/${id}-duel-v1.webp`,row:0,rows:1};
-for(const id of UNIFIED_SD_IDS)duelRows[id]={sheet:`officers/${UNIFIED_SD_FILES[id]!.duel}`,row:0,rows:1};
+for(const id of UNIFIED_SD_IDS){if(DUEL_PENDING.has(id)){delete duelRows[id];continue;}duelRows[id]={sheet:`officers/${UNIFIED_SD_FILES[id]!.duel}`,row:0,rows:1};}
 /** 통합 SD 한 벌(SD·일기토가 같은 화풍)을 받은 장수인가. */
 export function hasUnifiedSd(u:OfficerLike){const e=officerEntry(u);return !!e&&(UNIFIED_SD_IDS as readonly string[]).includes(e.id);}
 export function officerDuelModel(u:OfficerLike){const e=officerEntry(u);return e?duelRows[e.id]:undefined;}

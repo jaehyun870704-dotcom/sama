@@ -125,7 +125,7 @@ describe('공훈 · 명성 · 호감',()=>{
     expect(fameOf(m,'S','위')).toBe(110);
     expect(recruitStatus(m,'S',entryOf('S','조비')!)).toBe('locked');// 남은 명성 50 < 60
     expect(recruitStatus({merit:1000},'S',entryOf('S','여포')!)).toBe('ready');// 군웅 군주는 공훈만
-    expect(recruitStatus({merit:299},'S',entryOf('S','여포')!)).toBe('locked');
+    expect(recruitStatus({merit:279},'S',entryOf('S','여포')!)).toBe('locked');
   });
 });
 

@@ -18,6 +18,7 @@ import extraA from "./signatures-a.ts";
 import extraB from "./signatures-b.ts";
 import extraC from "./signatures-c.ts";
 import extraD from "./signatures-d.ts";
+import extraE from "./signatures-e.ts";
 
 const S: Record<string, Signature> = {
   // ── 위·진
@@ -442,8 +443,8 @@ const MORE: Record<string, [Signature, Signature]> = {
     sig2("오로 달아나다", (t) => `이번 차례 움직였다면 회피 +${T(t, 12)}%p, 받는 물리 피해 ${T(t, 8)}% 감소.`, both(dodge(12, (_c, s) => !!s.movedThisTurn), def(8, (c, s) => phys(c) && !!s.movedThisTurn)))],
 };
 
-// 장수 묶음 파일(signatures-a~d.ts): 제갈량전과 사마의전 편입 장수 등 나중에 더한 이름있는 장수의 고유특성 셋.
-for (const extra of [extraA, extraB, extraC, extraD]) for (const [who, [first, second, third]] of Object.entries(extra)) {
+// 장수 묶음 파일(signatures-a~e.ts): 제갈량전과 사마의전 편입 장수 등 나중에 더한 이름있는 장수의 고유특성 셋.
+for (const extra of [extraA, extraB, extraC, extraD, extraE]) for (const [who, [first, second, third]] of Object.entries(extra)) {
   if (MORE[who]) throw new Error(`고유특성 중복: ${who}`);
   // 첫째만 있던 장수(우희)는 첫째를 그대로 두고 둘째·셋째를 채운다.
   if (!S[who]) S[who] = first;

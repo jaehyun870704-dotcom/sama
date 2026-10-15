@@ -22,12 +22,12 @@ const unit = (name: string, side: "player" | "enemy", x: number, y: number, unit
 const hit = (a: Unit, d: Unit) => { const ctx = createDamageContext(a, d, "physical"); applyTraitHooks(ctx); return ctx; };
 
 describe("이름있는 장수 고유특성", () => {
-  it("게임에 나오는 이름있는 장수 238명이 셋씩, 714개 모두 다른 이름·다른 효과를 갖는다", () => {
-    expect(SIGNATURE_NAMES).toHaveLength(238);
+  it("게임에 나오는 이름있는 장수 270명이 셋씩, 810개 모두 다른 이름·다른 효과를 갖는다", () => {
+    expect(SIGNATURE_NAMES).toHaveLength(270);
     const all = SIGNATURE_NAMES.flatMap((k) => signatureSet(k));
-    expect(all).toHaveLength(714);
-    expect(new Set(all.map((g) => g.name)).size).toBe(714);
-    expect(new Set(all.map((g) => g.text(1))).size).toBe(714);
+    expect(all).toHaveLength(810);
+    expect(new Set(all.map((g) => g.name)).size).toBe(810);
+    expect(new Set(all.map((g) => g.text(1))).size).toBe(810);
     for (const k of SIGNATURE_NAMES) signatureSet(k).forEach((g, i) => expect(getTrait(signatureTraitId(k, i + 1)).name).toBe(g.name));
   });
 

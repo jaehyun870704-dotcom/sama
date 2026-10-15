@@ -988,7 +988,7 @@ function showRecruit(story:Story=recruitStory,nation?:Nation,focus?:string,joine
   const m=ensureMerit(),roster=ROSTER[story],got=new Set(recruitedOf(m,story));
   const focusEntry=focus?entryOf(story,focus):undefined;
   const nat:Nation=nation??focusEntry?.f??NATIONS.find(f=>roster.some(e=>e.f===f&&recruitStatus(m,story,e)==='ready'))??'위';
-  const list=roster.filter(e=>e.f===nat);
+  const list=roster.filter(e=>e.f===nat).sort((a,b)=>a.t-b.t);
   const sel=focusEntry&&focusEntry.f===nat?focusEntry:list.find(e=>recruitStatus(m,story,e)==='ready')??list.find(e=>!got.has(e.n))??list[0]!;
   const pct=(v:number)=>Math.round(v*100),tierName=(t:number)=>t===1?'군주':'';
   const tip=(e:RosterEntry)=>{const st=recruitStatus(m,story,e);if(st==='recruited')return `Lv.${story==='S'?retinueLevel(e.n):zRetinueLevel(e.n)}`;

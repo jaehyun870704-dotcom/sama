@@ -52,7 +52,7 @@ export const ROUTE_NOTE:Record<RecruitRoute,string>={
   rescue:'그 장에서 지켜야 할 사람을 살려서 이기면 은혜를 갚으러 온다.',
 };
 /** 공훈 등용 값(계급별). */
-export const MERIT_COST:Readonly<Record<number,number>>={1:300,2:120,3:80,4:50,5:30};
+export const MERIT_COST:Readonly<Record<number,number>>={1:280,2:100,3:60,4:40,5:25};
 /** 위·촉·오 군주: 공훈 대신 그 나라 공적(명성)을 바친다. */
 export const LORD_FAME_COST=60;
 const NATION_LORD_LANDS:readonly Nation[]=['위','촉','오'];
