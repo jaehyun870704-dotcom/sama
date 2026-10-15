@@ -101,10 +101,14 @@ const V2_SHEETS=new Set([
 ]);
 // 화풍 재통일: 보병·등갑병의 픽셀 비율과 명암으로 교정한 v3를 쓴다.
 const SHEET_FILES:Readonly<Record<string,string>>={
+  'four-stage-catapult':'troops-four-stage-catapult-v2.webp',
+  'four-stage-horse-archer':'troops-four-stage-horse-archer-v2.webp',
+  'four-stage-shaman':'troops-four-stage-shaman-v2.webp',
+  'four-stage-strategist':'troops-four-stage-strategist-v2.webp',
+  'four-stage-taoist':'troops-four-stage-taoist-v3.webp',
   'four-stage-cavalry':'troops-four-stage-cavalry-v2.webp',
   'four-stage-infantry':'troops-four-stage-infantry-v2.webp',
   'four-stage-dancer':'troops-four-stage-dancer-v2.webp',
-  'four-stage-taoist':'troops-four-stage-taoist-v2.webp',
   'four-stage-mounted-strategist':'troops-four-stage-mounted-strategist-v3.webp',
   'four-stage-monk':'troops-four-stage-monk-v3.webp',
   'four-stage-maiden':'troops-four-stage-maiden-v3.webp',
