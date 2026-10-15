@@ -84,7 +84,8 @@ export const officerManifest:OfficerEntry[]=[
 ];
 // 완전 아트 세트가 추가된 장수: 공통 파일 규격(초상·흉상·일기토)을 색인에 연결한다.
 const COMPLETE_ART_IDS=['sun_jian','sun_ce','taishi_ci','cheng_pu','zhou_tai','ling_tong','yuan_shao','dong_zhuo','hua_xiong','gongsun_zan','zhang_jiao','gao_shun','ma_teng','liu_biao','xu_shu','zhang_ren','zhou_cang','jian_yong','mi_zhu','sun_qian','liao_hua','zhang_yi','li_yan','chen_shi','deng_zhi','wen_yang','zhang_chunhua','zhen_shi','wang_shuang','wen_qin','han_dang','zhang_qin','pan_zhang','lu_kang','diaochan','li_jue','guo_si','yuan_shu'] as const;
-for(const id of COMPLETE_ART_IDS){const e=officerManifest.find(x=>x.id===id);if(e){e.bust=`${id}-bust-v1.webp`;e.duel=`officers/${id}-duel-v1.webp`;}}
+// 흉상(-bust-v1)은 38장 모두 같은 여성 대체 그림이 잘못 들어가 지웠다(2026-10-15) — 대화창은 각자의 초상으로 선다.
+for(const id of COMPLETE_ART_IDS){const e=officerManifest.find(x=>x.id===id);if(e)e.duel=`officers/${id}-duel-v1.webp`;}
 // 장수 그림 한 벌(디자인 지시서 docs/design/장수-디자인-긴급지시.md): 병종과 무관한 SD 시트 하나(1400×280, 칸 350×280)와
 // 일기토 하나(1024×256). 이 장수들은 옛 병종별 시트·옛 일기토를 쓰지 않는다(파일도 지웠다). 목상 제갈량의 수레는 그대로 둔다.
 // 2차(2026-10-13 납품 중 칸·일기토가 맞는 19명). 촉 문관·무장 가운데 색인에 없던 10명은 이름으로 찾도록 새로 넣는다.
