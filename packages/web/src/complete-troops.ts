@@ -101,6 +101,8 @@ const V2_SHEETS=new Set([
 ]);
 // 화풍 재통일: 보병·등갑병의 픽셀 비율과 명암으로 교정한 v3를 쓴다.
 const SHEET_FILES:Readonly<Record<string,string>>={
+  'four-stage-chariot':'troops-four-stage-chariot-v2.webp',
+  'four-stage-nanman':'troops-four-stage-nanman-v2.webp',
   'four-stage-catapult':'troops-four-stage-catapult-v2.webp',
   'four-stage-horse-archer':'troops-four-stage-horse-archer-v2.webp',
   'four-stage-shaman':'troops-four-stage-shaman-v2.webp',
@@ -109,9 +111,9 @@ const SHEET_FILES:Readonly<Record<string,string>>={
   'four-stage-cavalry':'troops-four-stage-cavalry-v2.webp',
   'four-stage-infantry':'troops-four-stage-infantry-v2.webp',
   'four-stage-dancer':'troops-four-stage-dancer-v2.webp',
+  'four-stage-maiden':'troops-four-stage-maiden-v3.webp',
   'four-stage-mounted-strategist':'troops-four-stage-mounted-strategist-v3.webp',
   'four-stage-monk':'troops-four-stage-monk-v3.webp',
-  'four-stage-maiden':'troops-four-stage-maiden-v3.webp',
   'four-stage-pirate':'troops-four-stage-pirate-v3.webp',
 };
 /** 큰 몸집(MOUNT_HEIGHT)으로 맞출 계통. 나머지(보병·궁병·책사·기병 등)는 모두 FOOT_HEIGHT로 맞춰 계통 안 키가 같다. */
