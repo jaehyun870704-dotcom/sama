@@ -12,5 +12,12 @@
     "grid": [4, 4],
     "transparent": true,
     "use": "story-command-tent"
+  },
+  "palace": {
+    "file": "palace-v1.webp",
+    "canvas": [1024, 1024],
+    "grid": [4, 4],
+    "transparent": true,
+    "use": "story-palace"
   }
 }
