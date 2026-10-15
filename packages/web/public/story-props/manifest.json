@@ -19,5 +19,12 @@
     "grid": [4, 4],
     "transparent": true,
     "use": "story-palace"
+  },
+  "residence": {
+    "file": "residence-v1.webp",
+    "canvas": [1024, 1024],
+    "grid": [4, 4],
+    "transparent": true,
+    "use": "story-residence"
   }
 }
