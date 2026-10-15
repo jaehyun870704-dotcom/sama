@@ -1,0 +1,14 @@
+{
+  "plains": {
+    "file": "battle-props-plains-v1.webp",
+    "size": 1024,
+    "grid": [4, 4],
+    "transparent": true,
+    "props": [
+      "grass-tuft", "wildflowers", "small-rock", "wheel-ruts",
+      "discarded-spear", "broken-cart", "hay-bale", "marker-post",
+      "grass-cluster", "flower-cluster", "flat-stone", "deep-ruts",
+      "fallen-spear", "cart-fragment", "straw-bundle", "boundary-marker"
+    ]
+  }
+}
