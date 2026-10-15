@@ -34,5 +34,17 @@
       "scree-slope", "mountain-shrub", "exposed-roots", "ledge-stone",
       "mossy-rock", "broken-stone", "hill-grass", "narrow-ridge"
     ]
+  },
+  "water": {
+    "file": "battle-props-water-v1.webp",
+    "size": 1024,
+    "grid": [4, 4],
+    "transparent": true,
+    "props": [
+      "reed-clump", "tall-reeds", "lotus-leaves", "lotus-flowers",
+      "small-ferry", "large-ferry", "broken-bridge", "broken-planks",
+      "waterside-stones", "wet-rock", "driftwood", "mooring-post",
+      "water-grass", "dock-fragment", "fishing-basket", "water-jar"
+    ]
   }
 }
