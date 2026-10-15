@@ -22,5 +22,17 @@
       "mossy-stone", "fern-patch", "exposed-roots", "sapling",
       "leafy-bush", "broken-branch", "forest-rock", "vines"
     ]
+  },
+  "mountain": {
+    "file": "battle-props-mountain-v1.webp",
+    "size": 1024,
+    "grid": [4, 4],
+    "transparent": true,
+    "props": [
+      "large-boulder-1", "large-boulder-2", "large-boulder-3", "rock-pile",
+      "pine-tree", "small-pine", "cliff-edge", "layered-cliff",
+      "scree-slope", "mountain-shrub", "exposed-roots", "ledge-stone",
+      "mossy-rock", "broken-stone", "hill-grass", "narrow-ridge"
+    ]
   }
 }
