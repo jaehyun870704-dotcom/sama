@@ -58,5 +58,17 @@
       "armor-rack", "grain-sacks", "campfire", "tethered-horse",
       "supply-chest", "water-barrel", "rolled-mat", "wooden-stakes"
     ]
+  },
+  "aftermath": {
+    "file": "battle-props-aftermath-v1.webp",
+    "size": 1024,
+    "grid": [4, 4],
+    "transparent": true,
+    "props": [
+      "arrow-cluster", "planted-arrow", "fallen-banner", "torn-flag",
+      "scorched-mark", "burnt-patch", "smoke-column", "smoke-wisp",
+      "broken-shield", "cracked-shield", "dropped-helmet", "broken-spear",
+      "arrow-shafts", "shattered-wood", "debris-pile", "abandoned-drum"
+    ]
   }
 }
