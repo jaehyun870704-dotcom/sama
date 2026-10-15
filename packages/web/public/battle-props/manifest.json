@@ -10,5 +10,17 @@
       "grass-cluster", "flower-cluster", "flat-stone", "deep-ruts",
       "fallen-spear", "cart-fragment", "straw-bundle", "boundary-marker"
     ]
+  },
+  "forest": {
+    "file": "battle-props-forest-v1.webp",
+    "size": 1024,
+    "grid": [4, 4],
+    "transparent": true,
+    "props": [
+      "large-tree-1", "large-tree-2", "large-tree-3", "dense-shrub",
+      "thorn-bush", "fallen-log", "tree-stump", "mushroom-cluster",
+      "mossy-stone", "fern-patch", "exposed-roots", "sapling",
+      "leafy-bush", "broken-branch", "forest-rock", "vines"
+    ]
   }
 }
