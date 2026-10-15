@@ -64,7 +64,7 @@ describe('새 화풍 전체 병종 원화',()=>{
       expect(new Set(fourStageCorrectionRows[id]).size).toBe(4);
     }
     for(const id of ['javelin','qiang','sniper']){
-      expect(webpSize(new URL(`../public/troops-four-stage-${id}-v1.webp`,import.meta.url)),id).toEqual([1120,896]);
+      expect(webpSize(new URL(`../public/troops-four-stage-${id}-v1.webp`,import.meta.url)),id).toEqual([1400,1120]);
       expect(new Set(fourStageCorrectionRows[`four-stage-${id}` as keyof typeof fourStageCorrectionRows]).size,id).toBe(4);
     }
   });
