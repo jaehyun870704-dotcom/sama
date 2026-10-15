@@ -26,5 +26,12 @@
     "grid": [4, 4],
     "transparent": true,
     "use": "story-residence"
+  },
+  "outdoor-camp": {
+    "file": "outdoor-camp-v1.webp",
+    "canvas": [1024, 1024],
+    "grid": [4, 4],
+    "transparent": true,
+    "use": "story-outdoor-camp"
   }
 }
