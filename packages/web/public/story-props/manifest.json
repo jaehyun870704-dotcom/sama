@@ -40,5 +40,13 @@
     "grid": [4, 4],
     "transparent": true,
     "use": "story-wall-top"
+  },
+  "command-tent-strategy": {
+    "file": "command-tent-strategy-v1.webp",
+    "canvas": [1024, 1024],
+    "grid": [4, 4],
+    "transparent": true,
+    "use": "story-command-tent-strategy",
+    "scaleNotes": "map tables are intentionally larger than ordinary furniture"
   }
 }
