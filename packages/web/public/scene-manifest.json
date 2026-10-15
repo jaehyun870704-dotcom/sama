@@ -2,5 +2,5 @@
   "wei-camp": { "file": "scene-wei-camp-v1.webp", "size": [1600, 900], "people": false },
   "shu-camp": { "file": "scene-shu-camp-v1.webp", "size": [1600, 900], "people": false },
   "luoyang-palace": { "file": "scene-luoyang-palace-v1.webp", "size": [1600, 900], "people": false },
-  "wei-camp-strategy": { "file": "scene-wei-camp-strategy-v7.webp", "size": [1600, 900], "people": false, "largeTable": true, "style": "unified-sd", "backgroundScale": "character-priority", "lightingZones": true, "centerTable": true, "edgeProps": true, "propsScale": "large" }
+  "wei-camp-strategy": { "file": "scene-wei-camp-strategy-v8.webp", "size": [1600, 900], "people": false, "largeTable": true, "style": "unified-sd", "backgroundScale": "character-priority", "lightingZones": true, "centerTable": true, "edgeProps": true, "propsScale": "large", "tableScale": "extra-large" }
 }
