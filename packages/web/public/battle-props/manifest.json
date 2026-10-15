@@ -46,5 +46,17 @@
       "waterside-stones", "wet-rock", "driftwood", "mooring-post",
       "water-grass", "dock-fragment", "fishing-basket", "water-jar"
     ]
+  },
+  "camp": {
+    "file": "battle-props-camp-v1.webp",
+    "size": 1024,
+    "grid": [4, 4],
+    "transparent": true,
+    "props": [
+      "command-tent-1", "command-tent-2", "palisade", "watchtower",
+      "plain-banner", "decorated-banner", "torch-stand", "weapon-rack",
+      "armor-rack", "grain-sacks", "campfire", "tethered-horse",
+      "supply-chest", "water-barrel", "rolled-mat", "wooden-stakes"
+    ]
   }
 }
