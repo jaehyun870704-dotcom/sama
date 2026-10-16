@@ -2475,6 +2475,30 @@ dialog.treasure-reveal::backdrop{background:#05090cc4;backdrop-filter:blur(3px)}
 .cr-note{margin:8px 0 0;color:#d6e8c8}
 @media (max-width:760px),(orientation:landscape) and (max-height:520px){.recruit-screen.v2 .rc-steps{grid-template-columns:repeat(auto-fill,minmax(124px,1fr))}.rc-stories button,.rc-nations button{padding:4px 10px}}
 
+/* 보상·결과 UI 마감: 승패와 실제 획득 내용을 먼저 읽히게 한다. */
+.result{background:radial-gradient(ellipse at 50% 0,#3a302055,transparent 55%);border:1px solid #6b5a3c;box-shadow:0 8px 26px #0005}
+.result-character{font-size:96px;color:#e0bd68;text-shadow:0 3px 8px #000,0 0 18px #b3843d66}
+.result h2{font-size:36px;color:#f0dfb8;letter-spacing:.05em;text-shadow:0 2px 3px #000}
+.result>p{font-size:calc(14px*var(--fs,1));color:#b6c5b0}
+.result .run-news{max-width:620px;margin:18px auto;padding:10px 16px;background:#101b1888;border-left:3px solid #c09a55;border-top:1px solid #65583c;border-bottom:1px solid #65583c;text-align:left}
+.result .growth-summary{max-width:620px;margin:8px auto;padding:10px 14px;text-align:left;background:#b69e6510;border-left:3px solid #739a78}
+.result .growth-summary b{color:#f0d49b}
+.result .seals{gap:24px;margin:24px auto;padding:12px 8px;max-width:620px;border-top:1px solid #6b5a3c55;border-bottom:1px solid #6b5a3c55}
+.result .seals>div{min-width:90px;padding:5px 4px;border:1px solid #4f5345;background:#111a18;gap:5px}
+.result .seals .earned{border-color:#c6a85f;background:#c6a85f16;box-shadow:0 0 10px #c6a85f22}
+.result .modal-actions{justify-content:center;margin-top:20px}
+@media(max-width:600px){
+  .result{padding:24px 12px 18px}
+  .result-character{font-size:72px}
+  .result h2{font-size:27px;margin:10px 0 6px}
+  .result .seals{gap:5px;margin:16px auto;overflow-x:auto;justify-content:flex-start}
+  .result .seals>div{min-width:78px}
+  .result .seals b{font-size:27px}
+  .result .seals span{font-size:calc(11px*var(--fs,1));word-break:keep-all}
+  .result .modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .result .modal-actions .primary{grid-column:1/-1}
+}
+
 /* 시나리오 선택 UI 마감: 현재 위치·완료·잠금 상태와 진입 행동을 선명하게 한다. */
 .scenario-screen{background:radial-gradient(ellipse at 70% 20%,#35463755,transparent 52%);border:1px solid #4f5949;box-shadow:0 8px 24px #0004}
 .sc-top{padding-bottom:10px;border-bottom:1px solid #76634255}
