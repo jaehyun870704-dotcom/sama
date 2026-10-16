@@ -36,15 +36,34 @@ const BY_LOOK:Record<Look,Sheet>={
   physician:S(SPECIAL,4,0,'w'),monk:S(SPECIAL,4,1,'w'),horseArcher:S(SPECIAL,4,2,'w'),bandit:S(SPECIAL,4,3,'w'),assassin:S(SPECIAL,4,3,'w'),
   elephant:S('units-extra-v1.webp',4,1),
 };
+const NPC_SHEETS:Record<string,Sheet>={
+  messenger:S('npc-messenger-sd-v1.webp',1,0),merchant:S('npc-merchant-sd-v1.webp',1,0),
+  artisan:S('npc-artisan-sd-v1.webp',1,0),horseKeeper:S('npc-horse-keeper-sd-v1.webp',1,0),
+  fisherman:S('npc-fisherman-sd-v1.webp',1,0),palaceMaid:S('npc-palace-maid-sd-v1.webp',1,0),
+  grainCarrier:S('npc-grain-carrier-sd-v1.webp',1,0),scout:S('npc-scout-sd-v1.webp',1,0),
+  spy:S('npc-spy-sd-v1.webp',1,0),refugee:S('npc-refugee-sd-v1.webp',1,0),
+  commoner:S('npc-commoner-sd-v1.webp',1,0),envoy:S('npc-envoy-sd-v1.webp',1,0),
+};
 for(const s of Object.values(BY_LOOK))if(s.walk)s.walk.url=s.url.replace('-v1','-walk-v1');
 const OFFICERS={url:'officer-story-v1.webp',rows:2};
 
-export type FigArt={kind:'fig';slot:number;tint:number}|{kind:'sheet';look:Look};
+export type FigArt={kind:'fig';slot:number;tint:number}|{kind:'sheet';look:Look}|{kind:'npc';role:string};
 const ON_FOOT:Partial<Record<Look,Look>>={cavalry:'infantry',heavy:'infantry',horseArcher:'archer',elephant:'infantry'};
 const ROBE=new Set<Look>(['strategist','civil','sage','physician','taoist']);
 const nameHash=(s:string)=>{let h=0;for(const ch of s)h=(h*31+ch.charCodeAt(0))>>>0;return h;};
 /** 이 인물을 어떤 그림으로 세우나. */
 export function figArtFor(name:string,look:Look):FigArt{
+  if(/^(전령|사자|조조의 사자)$/.test(name))return {kind:'npc',role:'messenger'};
+  if(/^(사신|외교 사자)$/.test(name))return {kind:'npc',role:'envoy'};
+  if(/(척후|정탐병|정탐)/.test(name)&&!name.includes('기마'))return {kind:'npc',role:name.includes('정탐')?'spy':'scout'};
+  if(/(피난민|난민)/.test(name))return {kind:'npc',role:'refugee'};
+  if(/(백성|농부|마을 사람|민가 주민)/.test(name))return {kind:'npc',role:'commoner'};
+  if(/^(상인|피난 상인)$/.test(name))return {kind:'npc',role:'merchant'};
+  if(/(장인|석공|목수)/.test(name))return {kind:'npc',role:'artisan'};
+  if(/(군마 관리인|마구간지기)/.test(name))return {kind:'npc',role:'horseKeeper'};
+  if(/(어부|파양 어부)/.test(name))return {kind:'npc',role:'fisherman'};
+  if(/(궁녀|시녀)/.test(name))return {kind:'npc',role:'palaceMaid'};
+  if(/(수송병|수송대|군량 수송대|목우 수송대|유마 수송대|군량 수레|무구 수레|교량 수송대)/.test(name))return {kind:'npc',role:'grainCarrier'};
   const p=officerLook(name);if(p&&p.slot<8)return {kind:'fig',slot:p.slot,tint:0};
   // 황제는 관을 쓴 군주 그림(조조)을 누런 곤룡포 빛으로
   if(/^(헌제|황제|천자|꿈속의 황제|조예|조방|조모|조환|유선)$/.test(name))return {kind:'fig',slot:5,tint:name==='조예'||name==='조방'||name==='조모'||name==='조환'?-150:36};
@@ -72,6 +91,7 @@ const atlasKey=(url:string,rows:number)=>url+':'+rows;
 export async function loadFigures(){
   const want=new Map<string,{url:string;rows:number}>([[atlasKey(OFFICERS.url,OFFICERS.rows),OFFICERS]]);
   for(const s of Object.values(BY_LOOK)){want.set(atlasKey(s.url,s.rows),s);if(s.walk)want.set(atlasKey(s.walk.url,s.walk.rows),s.walk);}
+  for(const s of Object.values(NPC_SHEETS))want.set(atlasKey(s.url,s.rows),s);
   await Promise.all([
     ...[...want].map(async([k,s])=>{try{ready.set(k,await spriteAtlas(s.url,s.rows));}catch{/* 없는 그림은 건너뛴다 */}}),
     ...officerManifest.filter(e=>e.story).map(e=>new Promise<void>(resolve=>{const url=`officers/${e.story}`,img=new Image();img.onload=()=>{const cv=canvas(img.naturalWidth,img.naturalHeight);cv.getContext('2d')!.drawImage(img,0,0);storyReady.set(url,cv);resolve();};img.onerror=()=>resolve();img.src=url;})),
@@ -214,7 +234,7 @@ function paintedStorySheet(url:string,src:HTMLCanvasElement){
   }
   const out=cv.toDataURL('image/png');sheets.set(key,out);return out;
 }
-const artKey=(a:FigArt,tint:number)=>a.kind==='fig'?`f${a.slot}:${a.tint+tint}`:`s${a.look}:${tint}`;
+const artKey=(a:FigArt,tint:number)=>a.kind==='fig'?`f${a.slot}:${a.tint+tint}`:a.kind==='npc'?`n${a.role}`:`s${a.look}:${tint}`;
 /** 무대 인물 시트(data URL). 그림이 아직 안 읽혔으면 undefined. */
 export function figSheet(name:string,look:Look):string|undefined{
   const entry=officerEntry({id:'story_actor',name}),story=entry?.story?`officers/${entry.story}`:undefined;
@@ -231,12 +251,12 @@ function figFrames(art:FigArt,tint:number){
   const key=artKey(art,tint),hit=frameCache.get(key);if(hit)return hit;
   let stand:HTMLCanvasElement,walkA:HTMLCanvasElement|undefined,walkB:HTMLCanvasElement|undefined,point:HTMLCanvasElement|undefined;
   if(art.kind==='fig'){const src=ready.get(atlasKey(OFFICERS.url,OFFICERS.rows));if(!src)return undefined;stand=standFrom(src,art.slot%4,Math.floor(art.slot/4),art.slot,art.tint);}
-  else{const s=BY_LOOK[art.look]??BY_LOOK.infantry,src=ready.get(atlasKey(s.url,s.rows));if(!src)return undefined;
+  else{const s=art.kind==='npc'?NPC_SHEETS[art.role]!:BY_LOOK[art.look]??BY_LOOK.infantry,src=ready.get(atlasKey(s.url,s.rows));if(!src)return undefined;
     stand=standFrom(src,0,s.row,undefined,tint);
     // 병종 그림에 걷는 그림이 따로 있으면 그것을 쓴다
     const w=s.walk&&ready.get(atlasKey(s.walk.url,s.walk.rows));if(w){walkA=standFrom(w,1,s.row,undefined,tint);walkB=standFrom(w,3,s.row,undefined,tint);}
     // 책사·문관은 부채로 가리키는 그림이 있다
-    if(art.look==='strategist'||art.look==='civil')point=standFrom(src,2,s.row,undefined,tint);}
+    if(art.kind==='sheet'&&(art.look==='strategist'||art.look==='civil'))point=standFrom(src,2,s.row,undefined,tint);}
   const f={} as Record<PxPose,HTMLCanvasElement>;
   for(const pose of Object.keys(PX_POSE) as PxPose[])f[pose]=poseFrom(stand,pose,pose==='walkA'?walkA:pose==='walkB'?walkB:pose==='point'?point:undefined);
   frameCache.set(key,f);return f;

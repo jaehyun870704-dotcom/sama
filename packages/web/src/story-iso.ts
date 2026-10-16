@@ -1107,6 +1107,10 @@ function storyRoom(url:string,kinds:Kind[],places:RegExp,yTop:number,o:{figScale
   return {url,w:1600,h:900,cropTop:0,kinds,places,room:true,back:[800,yTop],right:[1560,yTop+190],figScale:o.figScale??1.08,
     floor:o.floor??[[45,yTop],[1555,yTop],[1600,900],[0,900]],blocks:o.blocks??[]};
 }
+function compactRoom(url:string,kinds:Kind[],places:RegExp,yTop:number,o:{figScale?:number;floor?:Array<[number,number]>;blocks?:Array<Array<[number,number]>>}={}):Painted{
+  return {url,w:1280,h:720,cropTop:0,kinds,places,room:true,back:[640,yTop],right:[1240,yTop+150],figScale:o.figScale??1.04,
+    floor:o.floor??[[35,yTop],[1245,yTop],[1280,720],[0,720]],blocks:o.blocks??[]};
+}
 const ROOMS:Painted[]=[
   storyRoom('story-council-day-v1.webp',['tent','hall'],/군의|작전 회의|군략 회의/,360,{floor:[[60,360],[1430,360],[1560,900],[40,900]]}),
   storyRoom('story-banquet-day-v1.webp',['hall','palace','home','tent'],/연회|잔치|주연|술자리/,300,{floor:[[330,300],[1250,300],[1600,900],[0,900]],
@@ -1141,6 +1145,31 @@ export function specialBackdropCell(art:number,place:string){
 }
 const PAINTED:Painted[]=[
   ...ROOMS,
+  compactRoom('scenario-backgrounds-v2/audience-hall-v2.webp',['palace','throne','hall'],/궁정 알현실|알현실|皇宮 알현|황궁 알현|어전|옥좌/,250,{figScale:1.08,blocks:[[[500,0],[780,0],[780,250],[500,250]]]}),
+  compactRoom('scenario-backgrounds-v2/command-tent-v2.webp',['tent','hall'],/전략 군막|전략 회의|군략 회의|작전 회의/,270,{figScale:1.06,blocks:[[[450,260],[830,260],[830,470],[450,470]]]}),
+  compactRoom('scenario-backgrounds-v2/city-gate-v2.webp',['wall','fort','gatehouse'],/성문|성문 앞|성문 위|성벽 위|관문/,250,{figScale:1.08,blocks:[[[440,0],[840,0],[840,300],[440,300]]]}),
+  compactRoom('scenario-backgrounds-v2/market-street-v2.webp',['town','home','hall'],/시장|저자|장터|마을|거리|민가/,285,{figScale:1.06,blocks:[[[0,250],[250,250],[250,520],[0,520]],[[1030,250],[1280,250],[1280,520],[1030,520]]]}),
+  compactRoom('scenario-backgrounds-v2/prison-room-v2.webp',['store','hall','home'],/감옥|옥사|옥중|뇌옥|포로실/,300,{figScale:1.02,blocks:[[[0,180],[260,180],[260,500],[0,500]],[[1020,180],[1280,180],[1280,500],[1020,500]]]}),
+  compactRoom('scenario-backgrounds-v2/residence-inn-v1.webp',['home','hall','study'],/장수 거처|장수의 거처|객잔|여관|숙소|저택|사저/,280,{figScale:1.06,blocks:[[[0,220],[250,220],[250,500],[0,500]],[[1030,220],[1280,220],[1280,500],[1030,500]]]}),
+  compactRoom('scenario-backgrounds-v2/temple-monastery-v1.webp',['hall','home','study'],/사찰|도관|도사|절|사원|암자|승려/,280,{figScale:1.04,blocks:[[[480,0],[800,0],[800,300],[480,300]]]}),
+  compactRoom('scenario-backgrounds-v2/river-harbor-v1.webp',['deck','river','camp'],/항구|수채|부두|나루|선착장|수송대 집결지/,270,{figScale:1.04,blocks:[[[0,250],[300,250],[300,520],[0,520]],[[980,250],[1280,250],[1280,520],[980,520]]]}),
+  compactRoom('scenario-backgrounds-v2/forest-road-v1.webp',['forest','hill','field'],/숲길|산길|고갯길|갈림길|들머리|길목/,275,{figScale:1.06,blocks:[[[0,0],[240,0],[240,380],[0,380]],[[1040,0],[1280,0],[1280,380],[1040,380]]]}),
+  compactRoom('scenario-backgrounds-v2/mountain-pass-v1.webp',['gatehouse','wall','fort','valley'],/관문|산문|협곡|고개|잔도|골짜기 어귀/,270,{figScale:1.06,blocks:[[[430,0],[850,0],[850,300],[430,300]]]}),
+  compactRoom('scenario-backgrounds-v2/armory-workshop-v1.webp',['store','home','hall'],/무기고|무기 창고|공방|대장간|병기고/,280,{figScale:1.04,blocks:[[[0,180],[300,180],[300,500],[0,500]],[[980,180],[1280,180],[1280,500],[980,500]]]}),
+  compactRoom('scenario-backgrounds-v2/grain-warehouse-v1.webp',['store','camp','hall'],/군량 창고|군수고|곡창|보급고|창고 앞/,280,{figScale:1.04,blocks:[[[0,160],[300,160],[300,500],[0,500]],[[980,160],[1280,160],[1280,500],[980,500]]]}),
+  compactRoom('scenario-backgrounds-v2/riverside-camp-v1.webp',['camp','bank','river'],/강변 야영지|강가 야영지|강둑 진영|강변 진영|수송대 야영지/,275,{figScale:1.04,blocks:[[[0,180],[260,180],[260,480],[0,480]],[[1020,180],[1280,180],[1280,480],[1020,480]]]}),
+  compactRoom('scenario-backgrounds-v2/snow-fortress-v1.webp',['wall','fort','gatehouse'],/설원 성채|눈 덮인 성|얼어붙은 성문|겨울 성채/,260,{figScale:1.06,blocks:[[[430,0],[850,0],[850,300],[430,300]]]}),
+  compactRoom('scenario-backgrounds-v2/palace-corridor-v1.webp',['corridor','palace','study'],/궁궐 회랑|궁정 회랑|동궁|서재|침전|어좌로 가는 회랑/,275,{figScale:1.04,blocks:[[[0,180],[230,180],[230,500],[0,500]],[[1050,180],[1280,180],[1280,500],[1050,500]]]}),
+  compactRoom('scenario-backgrounds-v2/village-farmhouse-v1.webp',['home','hall','field'],/농가|민가|마을 집|시골|농촌|마을 뜰/,285,{figScale:1.05,blocks:[[[0,180],[300,180],[300,500],[0,500]],[[980,180],[1280,180],[1280,500],[980,500]]]}),
+  compactRoom('scenario-backgrounds-v2/banquet-hall-v1.webp',['hall','palace','home'],/연회장|연회|잔치|주연|술자리|연회실/,270,{figScale:1.06,blocks:[[[0,220],[360,220],[360,500],[0,500]],[[920,220],[1280,220],[1280,500],[920,500]]]}),
+  compactRoom('scenario-backgrounds-v2/archive-study-v1.webp',['study','hall','home'],/서재|문서고|기록 보관소|병서 보관소|서고/,285,{figScale:1.04,blocks:[[[0,120],[260,120],[260,500],[0,500]],[[1020,120],[1280,120],[1280,500],[1020,500]]]}),
+  compactRoom('scenario-backgrounds-v2/battle-aftermath-v1.webp',['field','wall','fort'],/전투 후|싸움이 끝난|폐허|무너진 성문|불길이 지난|무너진 본채/,285,{figScale:1.06,blocks:[[[0,180],[250,180],[250,480],[0,480]],[[1030,180],[1280,180],[1280,480],[1030,480]]]}),
+  compactRoom('scenario-backgrounds-v2/mountain-camp-v1.webp',['camp','hill','forest'],/산악 야영지|산골 야영|산길 야영|고개 아래 쉼터|산마루 야영/,280,{figScale:1.04,blocks:[[[0,180],[260,180],[260,480],[0,480]],[[1020,180],[1280,180],[1280,480],[1020,480]]]}),
+  compactRoom('scenario-backgrounds-v2/burned-city-v1.webp',['town','field','home'],/불타는 거리|불탄 대로|불길이 지난 거리|버려진 저택|불탄 저택/,285,{figScale:1.05,blocks:[[[0,170],[270,170],[270,480],[0,480]],[[1010,170],[1280,170],[1280,480],[1010,480]]]}),
+  compactRoom('scenario-backgrounds-v2/river-warship-v1.webp',['deck','river','camp'],/누선|강 위|수상 전장|배 위|장강 위|수채 전장/,270,{figScale:1.04,blocks:[[[0,100],[270,100],[270,480],[0,480]],[[1010,100],[1280,100],[1280,480],[1010,480]]]}),
+  compactRoom('scenario-backgrounds-v2/forest-ambush-v1.webp',['forest','hill','field'],/숲속 복병|갈대숲|숲길 복병|매복지|복병지/,280,{figScale:1.05,blocks:[[[0,0],[260,0],[260,430],[0,430]],[[1020,0],[1280,0],[1280,430],[1020,430]]]}),
+  compactRoom('scenario-backgrounds-v2/fortress-courtyard-v1.webp',['fort','wall','gatehouse'],/성채 안뜰|성 안뜰|본영 안뜰|군수고 성채|성내 광장/,270,{figScale:1.06,blocks:[[[430,0],[850,0],[850,300],[430,300]]]}),
+  compactRoom('scenario-backgrounds-v2/memorial-tomb-v1.webp',['hill','home','field'],/묘역|무덤|제단|추모|장례|승상의 무덤/,285,{figScale:1.04,blocks:[[[470,0],[810,0],[810,320],[470,320]]]}),
   // 장소 전용 최신 배경: 기존 범용 패널보다 먼저 선택되어 실제 시나리오에 사용된다.
   storyRoom('scene-residence-inn-v1.webp',['home','hall','study'],/장수 거처|장수의 거처|객잔|여관|숙소|저택/,300,{figScale:1.16,
     floor:[[80,300],[1510,300],[1600,900],[0,900]],blocks:[[[0,0],[260,0],[260,330],[0,330]],[[1320,0],[1600,0],[1600,380],[1320,380]]]}),

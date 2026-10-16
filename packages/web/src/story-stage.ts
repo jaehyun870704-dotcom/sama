@@ -59,7 +59,7 @@ export function talkBox(speaker:string,line:string,place:'top'|'bottom',stageLoo
   const expression=/분노|격노|죽|베어|용서.*못|!{1,}|！/.test(line)?'angry':/하하|후후|기쁘|반갑|잘했|좋[군소다]|웃/.test(line)?'smile':'neutral';
   let face=bustFace(base,expression);
   if(!face){let f=officerPortrait(speaker);
-    if(stageLook&&(f.includes('unknown-face')||f.includes('troop-face'))){const art=artFor(speaker,stageLook);f=art.kind==='fig'?figFace(art):f.includes('unknown-face')?spriteFace(art.look):f;}
+    if(stageLook&&(f.includes('unknown-face')||f.includes('troop-face'))){const art=artFor(speaker,stageLook);f=art.kind==='fig'?figFace(art):art.kind==='sheet'&&f.includes('unknown-face')?spriteFace(art.look):f;}
     face=`<div class="talk-bust sprite">${f}</div>`;}
   void place;
   return `<div class="ss-talk bottom ${skin}"><div class="ss-talk-face">${face}</div><div class="ss-talk-body"><b>${heroTitles.has(base)?`<small class="ss-title">「${esc(heroTitles.get(base)!)}」</small> `:''}${esc(displayName(base))}</b><p>${esc(line)}</p></div><span class="ss-talk-next" aria-hidden="true">⚔</span></div>`;
