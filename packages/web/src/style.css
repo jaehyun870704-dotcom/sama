@@ -2475,6 +2475,40 @@ dialog.treasure-reveal::backdrop{background:#05090cc4;backdrop-filter:blur(3px)}
 .cr-note{margin:8px 0 0;color:#d6e8c8}
 @media (max-width:760px),(orientation:landscape) and (max-height:520px){.recruit-screen.v2 .rc-steps{grid-template-columns:repeat(auto-fill,minmax(124px,1fr))}.rc-stories button,.rc-nations button{padding:4px 10px}}
 
+/* 시나리오 선택 UI 마감: 현재 위치·완료·잠금 상태와 진입 행동을 선명하게 한다. */
+.scenario-screen{background:radial-gradient(ellipse at 70% 20%,#35463755,transparent 52%);border:1px solid #4f5949;box-shadow:0 8px 24px #0004}
+.sc-top{padding-bottom:10px;border-bottom:1px solid #76634255}
+.sc-top h2{font-size:32px;letter-spacing:.04em;text-shadow:0 2px 3px #000}
+.sc-route span{background:#101b19;transition:border-color .16s,background .16s}
+.sc-route span.now{background:#c2a36b18;box-shadow:0 0 0 1px #c2a36b33}
+.sc-list{padding-right:8px}
+.sc-card{background:linear-gradient(90deg,#15231e,#101a19);transition:transform .16s,border-color .16s,background .16s;box-shadow:0 2px 7px #0002}
+.sc-card:hover,.sc-card:focus-visible{transform:translateX(2px);border-color:#b99b62;outline:none}
+.sc-card[aria-pressed="true"]{box-shadow:inset 3px 0 #e3c183,0 3px 9px #0004}
+.sc-card.locked{filter:saturate(.55)}
+.sc-card.done{border-left:3px solid #779d83}
+.sc-card.now{border-left:3px solid #d9b15e}
+.sc-thumb{background-color:#1a2922;box-shadow:inset 0 0 12px #0008}
+.sc-detail{background:rgba(10,18,16,.38);padding:10px;border:1px solid #596049}
+.sc-banner{box-shadow:0 4px 14px #0006}
+.sc-banner-title h3{font-size:30px;text-shadow:0 2px 4px #000}
+.sc-synopsis{background:#0d171499;border-left:3px solid #b08d50;padding:9px 12px}
+.sc-rows{background:#111c1988;padding:9px 11px;border:1px solid #485342}
+.sc-actions .primary{box-shadow:0 3px 10px #0005}
+@media(max-width:760px){
+  .scenario-screen{padding:16px 10px;border-left:0;border-right:0}
+  .sc-top h2{font-size:26px}
+  .sc-list{max-height:38vh;max-height:38dvh;padding-right:3px}
+  .sc-card{min-height:54px;padding:5px 7px 5px 5px}
+  .sc-thumb{flex-basis:62px;height:40px}
+  .sc-detail{padding:7px}
+  .sc-banner-title{left:12px;bottom:8px}
+  .sc-banner-title h3{font-size:23px}
+  .sc-synopsis{font-size:calc(13px*var(--fs,1));line-height:1.7}
+  .sc-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .sc-actions .primary{min-width:0;grid-column:1/-1}
+}
+
 /* 병종·편성 UI 마감: 병종 그림, 진화 단계, 출진 고정 상태를 한눈에 구분한다. */
 .prep-rules,.sortie-picker{background:linear-gradient(135deg,rgba(24,34,28,.95),rgba(12,20,18,.88));border-color:#776542;box-shadow:0 3px 12px #0003}
 .prep-officer{background:rgba(17,28,23,.8);transition:background .16s,border-color .16s,transform .16s}
