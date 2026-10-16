@@ -93,14 +93,14 @@ for(const id of COMPLETE_ART_IDS){const e=officerManifest.find(x=>x.id===id);if(
 // 4차(2927c61, 30명 중 검수 합격 15명): 조비·조예·허저·사마부·호준·장합·조인·하후돈·하후연·장료·왕쌍·육손·진궁·축융·서서.
 // 5차(f13bbec, 군주 기마): 조조·손권·여포를 새로, 유비·목상 제갈량(사륜거)은 새 판으로.
 // 6차(9e662ab까지, 검수 합격): 맹획(코끼리)·주유·올돌골 다시 그린 판, 조상·장소·안량 새로, 4차 도보 판으로 합격한 곽회·조홍·여몽·주연.
-const PREVIOUS_UNIFIED_SD_IDS=['liu_bei','ma_chao','guan_yu','zhang_fei','zhao_yun','huang_zhong','jiang_wei','pang_tong','wooden_zhuge','guan_ping',
+const PREVIOUS_UNIFIED_SD_IDS=['liu_bang','liu_bei','ma_chao','guan_yu','zhang_fei','zhao_yun','huang_zhong','jiang_wei','pang_tong','wooden_zhuge','guan_ping',
   'meng_da','ma_su','wang_ping','gao_xiang','liu_feng','ma_dai','huang_quan','wu_ban','wu_yi','fei_yi','mi_fang','yi_ji','jiang_wan','yang_yi','huang_yueying','zhang_bao','guan_xing','zhuge_jin','sima_shi',
   'cao_zhen','chen_shi','deng_zhi','fa_zheng','guan_suo','jian_yong','zhuge_jun','li_yan','liao_hua','ma_liang','mi_zhu','sima_fang','sima_lang','sima_yi','sima_zhao','sun_qian','wei_yan','yan_yan','zhang_yi','zhou_cang',
   'cao_pi','cao_rui','xu_chu','sima_fu','hu_zun','zhang_he','cao_ren','xiahou_dun','xiahou_yuan','zhang_liao','wang_shuang','lu_xun','chen_gong','zhu_rong','xu_shu',
   'cao_cao','sun_quan','lu_bu',
   'meng_huo','zhou_yu','wutugu','cao_shuang','zhang_zhao','yan_liang','guo_huai','cao_hong','lu_meng','zhu_ran',
   'sun_jian','sun_ce','taishi_ci','cheng_pu','zhou_tai','ling_tong','zhang_chunhua','zhang_jiao','dong_zhuo',
-  'yuan_shu','yuan_shao','yue_jin','dai_ling','zhong_hui','deng_ai','li_dian','guo_jia','xun_you','cheng_yu','dian_wei','pang_de','gongsun_zan','liu_biao','ma_teng','dong_zhuo','gao_lan','wen_qin','wen_yang','cao_xiu','gongsun_yuan','wen_chou','xu_huang','xu_sheng','yu_jin','yuan_shang','yuan_tan','hua_xiong','zhang_ren','jia_xu','gao_shun','gao_shou','sun_jian','sun_ce','taishi_ci','zhou_tai','ling_tong','lu_kang','yang_ang','lu_fan','sun_shao'] as const;
+  'yuan_shu','yuan_shao','yue_jin','dai_ling','zhong_hui','deng_ai','li_dian','guo_jia','xun_you','cheng_yu','dian_wei','pang_de','gongsun_zan','liu_biao','ma_teng','dong_zhuo','gao_lan','wen_qin','wen_yang','cao_xiu','gongsun_yuan','wen_chou','xu_huang','xu_sheng','yu_jin','yuan_shang','yuan_tan','hua_xiong','zhang_ren','jia_xu','gao_shun','gao_shou','sun_jian','sun_ce','taishi_ci','zhou_tai','ling_tong','lu_kang','yang_ang','lu_fan','sun_shao','yu_ji'] as const;
 export const UNIFIED_SD_IDS=[...new Set<string>([...PREVIOUS_UNIFIED_SD_IDS,...SD_REDESIGN_OFFICERS.map(([id])=>id)])];
 /** 통합 SD 장수의 파일 판 번호 [SD, 일기토]. 납품마다 판 번호가 달라 장수별로 적는다(적지 않은 장수는 `{id}-sd-v1`·`{id}-duel-v2`).
  * 4차 납품(6d66aeb)에서 일기토만 SD 비례로 다시 그린 장수는 일기토 판이 올랐다. 제갈균은 파일 이름이 `jun-*`이다. */
@@ -110,11 +110,11 @@ const SD_VERSIONS:Readonly<Record<string,readonly [number,number]>>={
   meng_da:[2,4],ma_su:[2,4],wang_ping:[2,4],gao_xiang:[2,4],wei_yan:[2,4],guan_suo:[2,4],zhuge_jun:[2,4],sima_zhao:[3,5],
   liu_feng:[1,3],ma_dai:[1,3],huang_quan:[1,3],wu_ban:[1,3],wu_yi:[1,3],fei_yi:[1,3],mi_fang:[1,3],yi_ji:[1,3],jiang_wan:[1,3],yang_yi:[1,3],huang_yueying:[1,3],zhang_bao:[1,3],guan_xing:[1,3],zhuge_jin:[1,3],
   huang_zhong:[1,3],zhao_yun:[1,3],lu_xun:[1,3],
-  liu_bei:[2,3],wooden_zhuge:[2,3],cao_cao:[2,3],sun_quan:[3,5],lu_bu:[2,4],
+  liu_bang:[1,2],liu_bei:[2,3],wooden_zhuge:[2,3],cao_cao:[2,3],sun_quan:[3,5],lu_bu:[2,4],
   meng_huo:[2,3],zhou_yu:[2,3],wutugu:[2,3],lu_meng:[1,3],zhu_ran:[1,3],
   sun_jian:[2,2],sun_ce:[2,2],taishi_ci:[2,2],cheng_pu:[2,2],zhou_tai:[2,2],ling_tong:[2,2],zhang_chunhua:[2,1],zhang_jiao:[2,2],dong_zhuo:[2,2],
-  yuan_shu:[2,2],yuan_shao:[2,2],yue_jin:[3,3],dai_ling:[3,3],zhong_hui:[3,3],deng_ai:[3,3],li_dian:[3,3],guo_jia:[2,2],xun_you:[2,2],cheng_yu:[2,2],dian_wei:[2,2],pang_de:[2,2],gongsun_zan:[2,2],liu_biao:[2,2],ma_teng:[2,2],gao_lan:[2,2],wen_qin:[1,2],wen_yang:[1,2],yang_ang:[2,2],lu_fan:[2,2],sun_shao:[2,2],
-  cao_xiu:[3,2],gongsun_yuan:[3,2],wen_chou:[2,2],xu_huang:[2,2],xu_sheng:[3,2],yu_jin:[3,2],yuan_shang:[3,2],
+  yuan_shu:[2,2],yuan_shao:[2,2],yue_jin:[3,3],dai_ling:[3,3],zhong_hui:[4,7],deng_ai:[3,3],li_dian:[3,3],guo_jia:[2,2],xun_you:[2,2],cheng_yu:[2,2],dian_wei:[2,2],pang_de:[2,2],gongsun_zan:[2,2],liu_biao:[2,2],ma_teng:[2,2],gao_lan:[2,2],wen_qin:[1,2],wen_yang:[1,2],yang_ang:[1,2],lu_fan:[1,2],sun_shao:[1,2],yu_ji:[1,2],han_xin:[1,2],
+  cao_xiu:[3,2],gongsun_yuan:[3,2],wen_chou:[4,7],xu_huang:[2,2],xu_sheng:[3,2],yu_jin:[3,2],yuan_shang:[3,2],
 };
 const SD_VERSION_OVERRIDES:Readonly<Record<string,readonly [number,number]>>={...SD_REDESIGN_VERSIONS,yue_jin:[3,7],zhong_hui:[3,7],deng_ai:[3,7],li_dian:[3,7],wen_chou:[2,7]};
 export const UNIFIED_SD_FILES:Readonly<Record<string,{sd:string;duel:string}>>=Object.fromEntries((UNIFIED_SD_IDS as readonly string[]).map(id=>{
@@ -124,7 +124,7 @@ export const UNIFIED_SD_FILES:Readonly<Record<string,{sd:string;duel:string}>>=O
 for(const [id,name] of [['liu_feng','유봉'],['huang_quan','황권'],['wu_ban','오반'],['wu_yi','오의'],['fei_yi','비의'],['mi_fang','미방'],['yi_ji','이적'],['jiang_wan','장완'],['yang_yi','양의'],['huang_yueying','황월영'],['guan_suo','관색'],['zhuge_jun','제갈균']] as const)
   if(!officerManifest.some(x=>x.id===id))officerManifest.push(E(id,name,{}));
 /** 통합 SD는 왔지만 일기토(1024×256) 그림이 아직 없는 장수: 일기토는 전투 SD로 대신 선다(없는 파일을 부르지 않게). */
-export const DUEL_PENDING:ReadonlySet<string>=new Set();
+export const DUEL_PENDING:ReadonlySet<string>=new Set(['liu_bang','yu_ji']);
 for(const id of UNIFIED_SD_IDS){const e=officerManifest.find(x=>x.id===id);if(!e)continue;const f=UNIFIED_SD_FILES[id]!,cart=e.battle.cart;e.battle={sd:{sheet:`officers/${f.sd}`,cell:[350,280],rows:1},...(cart?{cart}:{})};if(DUEL_PENDING.has(id))delete e.duel;else e.duel=`officers/${f.duel}`;}
 
 // 묶음 시트(옛 맞수 판)는 마초·주유까지 통합 SD로 옮겨 모두 지웠다(6차).
