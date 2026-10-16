@@ -2475,6 +2475,23 @@ dialog.treasure-reveal::backdrop{background:#05090cc4;backdrop-filter:blur(3px)}
 .cr-note{margin:8px 0 0;color:#d6e8c8}
 @media (max-width:760px),(orientation:landscape) and (max-height:520px){.recruit-screen.v2 .rc-steps{grid-template-columns:repeat(auto-fill,minmax(124px,1fr))}.rc-stories button,.rc-nations button{padding:4px 10px}}
 
+/* 공통 모달 마감: 모든 확인·설정·정보창의 외곽과 버튼 위계를 통일한다. */
+dialog:not(:has(.duel-stage)):not(:has(.duel-splash)):not(:has(.ss-root)):not(:has(.yeon-map)){border:1px solid #94784b;background:linear-gradient(145deg,#202b2a,#151f20);box-shadow:0 18px 70px #000b,inset 0 0 0 1px #d1ad5b18}
+dialog:not(:has(.duel-stage)):not(:has(.duel-splash)):not(:has(.ss-root)):not(:has(.yeon-map)) .briefing,
+dialog:not(:has(.duel-stage)):not(:has(.duel-splash)):not(:has(.ss-root)):not(:has(.yeon-map)) .dialogue,
+dialog:not(:has(.duel-stage)):not(:has(.duel-splash)):not(:has(.ss-root)):not(:has(.yeon-map)) .help-content,
+dialog:not(:has(.duel-stage)):not(:has(.duel-splash)):not(:has(.ss-root)):not(:has(.yeon-map)) .result{scrollbar-color:#8b7048 #182221}
+.modal-actions{align-items:center;padding-top:12px;border-top:1px solid #806a4655}
+.modal-actions button{min-height:40px;transition:transform .14s,background .14s,border-color .14s}
+.modal-actions button:hover:not(:disabled){transform:translateY(-1px)}
+.modal-actions button.primary{box-shadow:0 3px 9px #0005}
+dialog::backdrop{background:#071416d9;backdrop-filter:blur(7px) saturate(.8)}
+@media(max-width:600px){
+  dialog:not(:has(.duel-stage)):not(:has(.duel-splash)):not(:has(.ss-root)):not(:has(.yeon-map)){width:calc(100vw - 16px);max-height:calc(100dvh - 20px);margin:auto}
+  .modal-actions{gap:6px;padding-top:10px}
+  .modal-actions button{min-height:38px;padding:8px 11px}
+}
+
 /* 보상·결과 UI 마감: 승패와 실제 획득 내용을 먼저 읽히게 한다. */
 .result{background:radial-gradient(ellipse at 50% 0,#3a302055,transparent 55%);border:1px solid #6b5a3c;box-shadow:0 8px 26px #0005}
 .result-character{font-size:96px;color:#e0bd68;text-shadow:0 3px 8px #000,0 0 18px #b3843d66}
