@@ -2646,3 +2646,20 @@ dialog::backdrop{background:#071416d9;backdrop-filter:blur(7px) saturate(.8)}
   .ss-stage.iso .ss-talk-body p{font-size:calc(13.5px*var(--fs,1));line-height:1.55}
   .ss-stage.iso .ss-talk-next{right:10px;bottom:8px}
 }
+
+/* 공통 시각 토큰: 정보·아군·우군·적군·잠금의 색을 화면 전체에서 동일하게 쓴다. */
+:root{--gold:#c2a36b;--gold-hi:#f0d79c;--ally:#6fa8ff;--npc:#62c783;--enemy:#e07b68;--muted:#91a095;--panel:#172523}
+body{font-family:'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:#dddccf}
+h1,h2,.tagline,blockquote,.result h2,.sc-banner-title h3{font-family:LocalSerif,'Batang','Noto Serif KR',serif}
+.eyebrow,.section-label,.sc-route,.sc-kind,.prep-rules,.sortie-picker{letter-spacing:.03em}
+button.primary{background:var(--gold);border-color:var(--gold);color:#152324}
+button.primary:hover:not(:disabled){background:var(--gold-hi);border-color:var(--gold-hi)}
+.unit-symbol.ally,.roster-unit.ally{color:#d4e4ff;border-color:var(--ally)}
+.unit-symbol.allyAi,.roster-unit.allyAi{color:#cff5d8;border-color:var(--npc)}
+.unit-symbol.enemy,.roster-unit.enemy{color:#ffd6d0;border-color:var(--enemy)}
+.muted,small{color:var(--muted)}
+button>span:first-child,button>i:first-child,.commands button>span:first-child,.battle-toolbar button>span:first-child{display:inline-grid;place-items:center;flex:0 0 auto;min-width:1.25em;line-height:1}
+.supply-icon,.treasure-icon,.cx-sprite,.rs-icon{image-rendering:auto}
+.supply-icon{border:1px solid #a58a52;box-shadow:0 1px 3px #0008}
+.tag,.badge,.status-list,.stage-status{border-color:var(--gold);color:var(--gold-hi)}
+@media(max-width:600px){body{font-size:calc(13.5px*var(--fs,1))}h1{font-size:25px}h2{font-size:23px}button{min-height:38px}}
