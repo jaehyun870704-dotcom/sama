@@ -2475,6 +2475,36 @@ dialog.treasure-reveal::backdrop{background:#05090cc4;backdrop-filter:blur(3px)}
 .cr-note{margin:8px 0 0;color:#d6e8c8}
 @media (max-width:760px),(orientation:landscape) and (max-height:520px){.recruit-screen.v2 .rc-steps{grid-template-columns:repeat(auto-fill,minmax(124px,1fr))}.rc-stories button,.rc-nations button{padding:4px 10px}}
 
+/* 장수 관리 UI 마감: 장수 얼굴과 현재 선택 상태를 먼저 읽히게 한다. */
+.camp-workbench{gap:20px}
+.camp-roster,.camp-detail,.treasury{background:linear-gradient(145deg,rgba(18,30,25,.94),rgba(10,19,17,.86));box-shadow:0 5px 18px #0003}
+.officer-grid{gap:10px}
+.officer-card{border:1px solid #465a4b;transition:transform .16s,border-color .16s,box-shadow .16s;background:linear-gradient(160deg,#344837,#17261f)}
+.officer-card:hover,.officer-card:focus-visible{transform:translateY(-2px);border-color:#c5a663;box-shadow:0 5px 12px #0006;outline:none}
+.officer-card .battle-model{background:radial-gradient(ellipse at 50% 80%,#65745b55,transparent 68%)}
+.officer-card strong{color:#f0dfb5;line-height:1.45;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.officer-card small{color:#b8c6ae}
+.officer-card.chosen{border:2px solid #e2bd68;box-shadow:inset 0 0 18px #d9b7672d,0 0 0 2px #6a512466}
+.camp-hero{padding:10px 0 14px;border-bottom:1px solid #75634655}
+.camp-hero>.battle-model{width:156px;height:156px;filter:drop-shadow(0 5px 5px #0008)}
+.camp-hero h3{font-size:27px;letter-spacing:.04em}
+.camp-stats{margin-top:14px;gap:7px}
+.camp-stats span{border:1px solid #53614c;background:rgba(255,255,255,.045);padding:7px 10px}
+.camp-stats b{color:#f0dba9;font-variant-numeric:tabular-nums}
+.gear-slots>div{background:rgba(0,0,0,.14);transition:border-color .16s,background .16s}
+.gear-slots>div:hover,.gear-slots>div.on{background:#c69f3b12;border-color:#e0bc68;box-shadow:0 0 0 1px #e0bc6844}
+@media(max-width:700px){
+  .camp-workbench{gap:12px}
+  .officer-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .officer-card{padding:4px}
+  .officer-card strong{font-size:calc(13px*var(--fs,1))}
+  .officer-card em{font-size:calc(11.5px*var(--fs,1))}
+  .camp-hero>.battle-model{width:112px;height:112px}
+  .camp-hero h3{font-size:22px}
+  .camp-stats{grid-template-columns:repeat(2,1fr)}
+  .gear-slots{grid-template-columns:repeat(3,1fr);gap:5px}
+}
+
 /* 전투 UI 마감: 턴·목표·명령의 위계를 선명하게 하고 선택 상태를 세력색으로 구분한다. */
 .battle-heading{padding-top:20px}
 .turn-card{background:linear-gradient(135deg,rgba(13,25,27,.94),rgba(27,43,37,.82));border-color:#776642;box-shadow:inset 0 0 0 1px #c19b4a22,0 4px 12px #0003}
