@@ -2663,3 +2663,16 @@ button>span:first-child,button>i:first-child,.commands button>span:first-child,.
 .supply-icon{border:1px solid #a58a52;box-shadow:0 1px 3px #0008}
 .tag,.badge,.status-list,.stage-status{border-color:var(--gold);color:var(--gold-hi)}
 @media(max-width:600px){body{font-size:calc(13.5px*var(--fs,1))}h1{font-size:25px}h2{font-size:23px}button{min-height:38px}}
+
+/* 모바일 마감: 노치·가로 넘침·하단 고정 버튼을 공통 처리한다. */
+html,body{overflow-x:hidden}
+body{padding-bottom:env(safe-area-inset-bottom)}
+@media(max-width:600px){
+  .topbar{height:auto;min-height:58px;padding:8px 12px;gap:8px}
+  .brand{font-size:19px;letter-spacing:2px;gap:8px}.brand small{display:none}.seal-logo{width:34px;height:36px;font-size:22px}
+  .topbar nav{gap:2px}.topbar nav button{padding:6px;font-size:0}.topbar nav button span{display:none}.topbar nav button::first-letter{font-size:18px}
+  footer{height:auto;min-height:30px;padding:5px 10px;font-size:10px;line-height:1.3}
+  .modal-actions,.run-actions{padding-bottom:calc(6px + env(safe-area-inset-bottom))}
+  .battle-toolbar{padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+  .sc-list,.cx-list,.cx-detail,.treasure-grid{scrollbar-width:thin}
+}
