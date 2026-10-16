@@ -2475,6 +2475,28 @@ dialog.treasure-reveal::backdrop{background:#05090cc4;backdrop-filter:blur(3px)}
 .cr-note{margin:8px 0 0;color:#d6e8c8}
 @media (max-width:760px),(orientation:landscape) and (max-height:520px){.recruit-screen.v2 .rc-steps{grid-template-columns:repeat(auto-fill,minmax(124px,1fr))}.rc-stories button,.rc-nations button{padding:4px 10px}}
 
+/* 전투 UI 마감: 턴·목표·명령의 위계를 선명하게 하고 선택 상태를 세력색으로 구분한다. */
+.battle-heading{padding-top:20px}
+.turn-card{background:linear-gradient(135deg,rgba(13,25,27,.94),rgba(27,43,37,.82));border-color:#776642;box-shadow:inset 0 0 0 1px #c19b4a22,0 4px 12px #0003}
+.turn-number strong{font-size:38px;text-shadow:0 2px 3px #000}
+.turn-number span:last-child{color:#cbb27a}
+.phase{color:#d2d9bd;font-weight:600}
+.phase-track i.active{height:4px;background:linear-gradient(90deg,#98723b,#e0c37e);box-shadow:0 0 5px #d8af5a88}
+.battle-toolbar{position:relative;z-index:7;box-shadow:0 -4px 12px #0003}
+.battle-toolbar button{min-height:40px}
+.battle-toolbar button[aria-pressed=true]{box-shadow:inset 0 0 0 1px #d6ad6a55,0 0 8px #b8874a22}
+.battle-toolbar button.primary{box-shadow:0 2px 8px #0005}
+.map-legend{padding:5px 8px;background:rgba(12,24,21,.68);border:1px solid #66725666;border-radius:3px}
+#phase-banner{border:1px solid #d7b76c;border-left:5px solid #d7b76c;background:linear-gradient(90deg,#132925f5,#201d13f5,#132925f5);box-shadow:0 5px 24px #0009;font-size:calc(24px*var(--fs,1));letter-spacing:.08em}
+@media(max-width:700px){
+  .battle-toolbar{gap:5px;padding:8px 8px;overflow-x:auto;scrollbar-width:none}
+  .battle-toolbar::-webkit-scrollbar{display:none}
+  .battle-toolbar button{min-height:38px;padding:7px 8px;white-space:nowrap}
+  .battle-toolbar button.primary{min-width:132px;margin-left:auto}
+  .map-legend{left:10px;bottom:44px;max-width:calc(100% - 80px);font-size:calc(10.5px*var(--fs,1));gap:4px;white-space:nowrap;overflow:hidden}
+  #phase-banner{padding:12px 24px;font-size:calc(18px*var(--fs,1))}
+}
+
 /* 시나리오 UI 마감: 장소 표시는 화면 안쪽, 대화창은 장면을 가리지 않게 정돈한다. */
 .ss-stage.iso .ss-place{left:14px;top:14px;padding:5px 12px;background:linear-gradient(135deg,rgba(20,17,13,.9),rgba(42,31,20,.78));border:1px solid rgba(225,190,116,.78);border-left:3px solid #d9a84d;border-radius:2px;color:#f4d89a;font:700 calc(13px*var(--fs,1))/1.35 'Malgun Gothic',sans-serif;letter-spacing:.04em;text-shadow:0 1px 2px #000;box-shadow:0 2px 8px #0007}
 .ss-stage.iso .ss-talk{left:3%;right:3%;bottom:3%;min-height:112px;padding:17px 34px 17px 0;border-radius:2px;filter:drop-shadow(0 4px 7px #0008)}
