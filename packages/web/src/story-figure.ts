@@ -52,7 +52,13 @@ const ON_FOOT:Partial<Record<Look,Look>>={cavalry:'infantry',heavy:'infantry',ho
 const ROBE=new Set<Look>(['strategist','civil','sage','physician','taoist']);
 const nameHash=(s:string)=>{let h=0;for(const ch of s)h=(h*31+ch.charCodeAt(0))>>>0;return h;};
 /** 이 인물을 어떤 그림으로 세우나. */
+/** NPC 전용 SD(npc-*-sd-v1) 12장은 검수 불합격(한 그림을 확대·잘라 네 칸에 복사, 2026-10-17) — 다시 그려질 때까지 쓰지 않는다. */
+const NPC_ART_READY=false;
 export function figArtFor(name:string,look:Look):FigArt{
+  if(NPC_ART_READY){const a=npcArtFor(name);if(a)return a;}
+  return figArtBase(name,look);
+}
+function npcArtFor(name:string):FigArt|undefined{
   if(/^(전령|사자|조조의 사자)$/.test(name))return {kind:'npc',role:'messenger'};
   if(/^(사신|외교 사자)$/.test(name))return {kind:'npc',role:'envoy'};
   if(/(척후|정탐병|정탐)/.test(name)&&!name.includes('기마'))return {kind:'npc',role:name.includes('정탐')?'spy':'scout'};
@@ -64,6 +70,9 @@ export function figArtFor(name:string,look:Look):FigArt{
   if(/(어부|파양 어부)/.test(name))return {kind:'npc',role:'fisherman'};
   if(/(궁녀|시녀)/.test(name))return {kind:'npc',role:'palaceMaid'};
   if(/(수송병|수송대|군량 수송대|목우 수송대|유마 수송대|군량 수레|무구 수레|교량 수송대)/.test(name))return {kind:'npc',role:'grainCarrier'};
+  return undefined;
+}
+function figArtBase(name:string,look:Look):FigArt{
   const p=officerLook(name);if(p&&p.slot<8)return {kind:'fig',slot:p.slot,tint:0};
   // 황제는 관을 쓴 군주 그림(조조)을 누런 곤룡포 빛으로
   if(/^(헌제|황제|천자|꿈속의 황제|조예|조방|조모|조환|유선)$/.test(name))return {kind:'fig',slot:5,tint:name==='조예'||name==='조방'||name==='조모'||name==='조환'?-150:36};

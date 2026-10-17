@@ -124,7 +124,9 @@ export const UNIFIED_SD_FILES:Readonly<Record<string,{sd:string;duel:string}>>=O
 for(const [id,name] of [['liu_feng','유봉'],['huang_quan','황권'],['wu_ban','오반'],['wu_yi','오의'],['fei_yi','비의'],['mi_fang','미방'],['yi_ji','이적'],['jiang_wan','장완'],['yang_yi','양의'],['huang_yueying','황월영'],['guan_suo','관색'],['zhuge_jun','제갈균']] as const)
   if(!officerManifest.some(x=>x.id===id))officerManifest.push(E(id,name,{}));
 /** 통합 SD는 왔지만 일기토(1024×256) 그림이 아직 없는 장수: 일기토는 전투 SD로 대신 선다(없는 파일을 부르지 않게). */
-export const DUEL_PENDING:ReadonlySet<string>=new Set(['liu_bang','yu_ji']);
+export const DUEL_PENDING:ReadonlySet<string>=new Set(['liu_bang','yu_ji',
+  // 2026-10-17 검수 불합격: v7 일기토는 체크무늬가 그림에 박혀 있고(종회는 다른 사람), 장춘화 v1은 임시 도형이다.
+  'yue_jin','deng_ai','zhong_hui','wen_chou','li_dian','zhang_chunhua']);
 for(const id of UNIFIED_SD_IDS){const e=officerManifest.find(x=>x.id===id);if(!e)continue;const f=UNIFIED_SD_FILES[id]!,cart=e.battle.cart;e.battle={sd:{sheet:`officers/${f.sd}`,cell:[350,280],rows:1},...(cart?{cart}:{})};if(DUEL_PENDING.has(id))delete e.duel;else e.duel=`officers/${f.duel}`;}
 
 // 묶음 시트(옛 맞수 판)는 마초·주유까지 통합 SD로 옮겨 모두 지웠다(6차).
