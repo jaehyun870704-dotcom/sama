@@ -101,6 +101,8 @@ export interface Scene {
   art:number;
   cast:CastMember[];
   steps:ScriptStep[];
+  /** 장면 분위기: dream = 꿈(색이 바래고 안개·일렁임). 장소가 「흉몽」으로 시작하면 저절로 꿈이다. */
+  mood?:'dream';
 }
 
 /**

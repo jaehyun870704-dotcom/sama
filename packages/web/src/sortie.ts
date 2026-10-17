@@ -77,9 +77,11 @@ export function pickExtras(stage:StageDef,map:MapFile,wanted:readonly string[],d
 }
 /** 화면용: 필수·선택 장수별 병종·COST, 합계와 남은 예산. */
 /** retinue: 함께 나서는 등용 장수(이름·병종) — 같은 COST 안에 든다. */
-export function storyCostSheet(stage:StageDef,ids:readonly string[],levels:Readonly<Record<string,number>>,difficulty:'normal'|'extreme'='extreme',retinue:ReadonlyArray<{name:string;unitClass:UnitClass}>=[]){
+/** 다른 나라 장수(사마의전에서 위가 아닌 장수)를 데려갈 때 더 드는 COST. */
+export const FOREIGN_COST=2;
+export function storyCostSheet(stage:StageDef,ids:readonly string[],levels:Readonly<Record<string,number>>,difficulty:'normal'|'extreme'='extreme',retinue:ReadonlyArray<{name:string;unitClass:UnitClass;extraCost?:number}>=[]){
   const cap=storyCostCap(stage.id,difficulty),forcedIds=stage.deployment.forced.filter(id=>STORY_BASE_CLASS[id]);
-  const rows=[...forcedIds,...ids.filter(id=>!forcedIds.includes(id))].map(id=>{const c=storyClassAt(id,levels[id]??1);return {id,unitClass:c,cost:unitCost(c),forced:forcedIds.includes(id)};}).concat(retinue.map(r=>({id:'rt:'+r.name,unitClass:r.unitClass,cost:unitCost(r.unitClass),forced:false})));
+  const rows=[...forcedIds,...ids.filter(id=>!forcedIds.includes(id))].map(id=>{const c=storyClassAt(id,levels[id]??1);return {id,unitClass:c,cost:unitCost(c),forced:forcedIds.includes(id)};}).concat(retinue.map(r=>({id:'rt:'+r.name,unitClass:r.unitClass,cost:unitCost(r.unitClass)+(r.extraCost??0),forced:false})));
   const used=rows.reduce((n,r)=>n+r.cost,0);
   return {cap,rows,used,left:Math.max(0,cap-used)};
 }

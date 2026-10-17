@@ -22,6 +22,9 @@ describe('고유 보물 50점의 획득처',()=>{
   it('사마의전을 끝까지 이기고 외전을 모두 넘으면 50점을 모두 얻는다',()=>{
     const c=freshCampaign();
     for(const i of campaignOrder){const st=chapters[i]!.stage;award(c,st.id,'normal',st.deployment.forced,[1]);}
+    // 이른 전설 보물(상편 4등급)은 극한 승리에서만 나온다.
+    expect(c.treasures).not.toContain('yitian');
+    for(const i of campaignOrder){const st=chapters[i]!.stage;award(c,st.id,'extreme',st.deployment.forced,[1]);}
     for(const m of expeditions.filter(m=>m.kind==='quest'||m.kind==='challenge').sort((a,b)=>a.id.localeCompare(b.id)))expect(expeditionReward(c,m.id,'r-'+m.id,true).xp).toBeGreaterThan(0);
     expect(treasures.filter(t=>!c.treasures.includes(t.id)).map(t=>t.id)).toEqual([]);
     for(const [id,r] of Object.entries(MISSION_REWARDS))if(r.named)expect(treasures.find(t=>t.id===r.named)!.stage,id).toBe(id);
@@ -70,7 +73,9 @@ describe('장비를 전장에 입히기',()=>{
 
 describe('상점 · 금',()=>{
   it('이야기마다 금을 따로 쓰고, 사면 낱개가 보관함에, 팔면 절반을 돌려받는다',()=>{
-    const c=freshCampaign();expect(goldOf(c,'S')).toBe(1000);expect(goldOf(c,'Z')).toBe(1000);
+    expect(goldOf(freshCampaign(),'S')).toBe(3000);expect(goldOf(freshCampaign(),'Z')).toBe(3000);
+    // 아래는 금 1000에서 시작해 모자랄 때를 본다(시작 금은 3000 · 2026-10-17).
+    const c=freshCampaign();c.gold={S:1000,Z:1000};expect(goldOf(c,'S')).toBe(1000);expect(goldOf(c,'Z')).toBe(1000);
     const id=buyGear(c,'S','shop:sword:2')!;expect(id).toBe('shop:sword:2#1');expect(goldOf(c,'S')).toBe(400);expect(goldOf(c,'Z')).toBe(1000);
     expect(buyGear(c,'S','shop:sword:2')).toBeUndefined();
     expect(buyGear(c,'Z','shop:sword:1')).toBe('shop:sword:1#2');
@@ -130,7 +135,11 @@ describe('예전 저장 옮기기',()=>{
   });
   it('이미 이긴 장의 고유 보물은 불러올 때 받는다(획득처가 바뀐 보물 포함)',()=>{
     store.set(CAMPAIGN_KEYS.main,JSON.stringify({version:1,xp:{},rewards:['S1-04:normal'],quests:['Q01'],challenges:['C06'],treasures:[],equipped:{}}));
-    const c=readCampaign() as Campaign;expect(c.treasures).toEqual(expect.arrayContaining(['halberd','mengde','lubuBow','ironHelm','azureJewel']));
+    const c=readCampaign() as Campaign;expect(c.treasures).toEqual(expect.arrayContaining(['ironHelm','azureJewel']));
+    // 상편의 4등급 전설 보물은 극한으로 이긴 기록이 있어야 받는다.
+    expect(c.treasures).not.toContain('halberd');
+    store.set(CAMPAIGN_KEYS.main,JSON.stringify({version:1,xp:{},rewards:['S1-04:normal','S1-04:extreme'],quests:['Q01'],challenges:['C06'],treasures:[],equipped:{}}));
+    expect((readCampaign() as Campaign).treasures).toEqual(expect.arrayContaining(['halberd','mengde','lubuBow','ironHelm','azureJewel']));
     for(const id of c.treasures)expect(gearDef(id),id).toBeDefined();
   });
 });

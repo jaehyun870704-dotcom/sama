@@ -12,6 +12,7 @@ import {bustFace,displayName} from './faces.ts';
 import {pxStyle,type PxDir,type PxPose} from './story-pixel.ts';
 import {figSheet,figArtFor,loadFigures,type FigArt} from './story-figure.ts';
 import {inkChoice} from './ink-choice.ts';
+import {lineMood,bustExpression,moodReaction,type LineMood} from './line-mood.ts';
 import {을를,이가} from './josa.ts';
 
 /** 겉모습 → 병사 그림(시트·줄). 시트는 main.ts가 CSS 변수(--이름-atlas)로 올려 둔다. */
@@ -54,15 +55,15 @@ function spriteFace(look:Look){
 /** 주인공이 단 칭호(등용 — 나라를 다 모으면 얻는다): 이야기 대화창 이름 앞에 붙인다. */
 const heroTitles=new Map<string,string>();
 export function setStoryTitle(name:string,title:string){if(title)heroTitles.set(name,title);else heroTitles.delete(name);}
-export function talkBox(speaker:string,line:string,place:'top'|'bottom',stageLook?:Look,skin:'ink'|'paper'='ink'){
+export function talkBox(speaker:string,line:string,place:'top'|'bottom',stageLook?:Look,skin:'ink'|'paper'='ink',mood:LineMood=lineMood(line)){
   const look=officerLook(speaker),base=look?.name??speaker;
-  const expression=/분노|격노|죽|베어|용서.*못|!{1,}|！/.test(line)?'angry':/하하|후후|기쁘|반갑|잘했|좋[군소다]|웃/.test(line)?'smile':'neutral';
+  const expression=bustExpression(mood);
   let face=bustFace(base,expression);
   if(!face){let f=officerPortrait(speaker);
     if(stageLook&&(f.includes('unknown-face')||f.includes('troop-face'))){const art=artFor(speaker,stageLook);f=art.kind==='fig'?figFace(art):art.kind==='sheet'&&f.includes('unknown-face')?spriteFace(art.look):f;}
     face=`<div class="talk-bust sprite">${f}</div>`;}
   void place;
-  return `<div class="ss-talk bottom ${skin}"><div class="ss-talk-face">${face}</div><div class="ss-talk-body"><b>${heroTitles.has(base)?`<small class="ss-title">「${esc(heroTitles.get(base)!)}」</small> `:''}${esc(displayName(base))}</b><p>${esc(line)}</p></div><span class="ss-talk-next" aria-hidden="true">⚔</span></div>`;
+  return `<div class="ss-talk bottom ${skin} mood-${mood}"><div class="ss-talk-face">${face}</div><div class="ss-talk-body"><b>${heroTitles.has(base)?`<small class="ss-title">「${esc(heroTitles.get(base)!)}」</small> `:''}${esc(displayName(base))}</b><p>${esc(line)}</p></div><span class="ss-talk-next" aria-hidden="true">⚔</span></div>`;
 }
 
 export interface StageHooks {
@@ -203,18 +204,20 @@ export class Stage {
   bubble(name:string,text:string,kind:'emote'|'talk'){const a=this.actors.get(name);if(a)bubble(a.el,text,kind);}
   /** 화자가 말한다: 화자 쪽 반대편(위/아래)에 대화창. */
   async say(speaker:string,line:string,to?:string){
-    this.lastLine={speaker,line};
+    this.lastLine={speaker,line};const mood=lineMood(line);
     const a=this.actors.get(speaker);for(const o of this.actors.values())o.el.classList.remove('speaking');
     if(a){
       a.el.classList.add('speaking');if(to)this.faceTo(speaker,to);
       // 듣는 사람들은 말하는 사람 쪽으로 몸을 돌린다.
       for(const [n,o] of this.actors)if(n!==speaker&&o.on&&!o.el.classList.contains('walking'))this.faceTo(n,speaker);
       if(!to){const near=[...this.actors.entries()].filter(([n,o])=>n!==speaker&&o.on).sort((p,q)=>Math.abs(p[1].cell[0]-a.cell[0])+Math.abs(p[1].cell[1]-a.cell[1])-Math.abs(q[1].cell[0]-a.cell[0])-Math.abs(q[1].cell[1]-a.cell[1]))[0];if(near)this.faceTo(speaker,near[0]);}
-      this.gesture(speaker,/[!！]{1}$|이놈|닥쳐|물러서/.test(line)?ANGER_FRAME(a.look):TALK_FRAME(a.look),1000);
+      // 몸짓·표정·대화창 빛깔을 같은 판단(lineMood)으로 맞춘다: 성난 말엔 부들부들, 놀란 말엔 펄쩍, 슬픈 말엔 축 처짐, 웃는 말엔 들썩, 아뢰는 말엔 끄덕.
+      this.gesture(speaker,mood==='angry'||mood==='surprise'?ANGER_FRAME(a.look):TALK_FRAME(a.look),1000);
+      const r=moodReaction(mood);if(r&&!this.skipping)setTimeout(()=>this.react(speaker,r),mood==='deferent'?0:120);
     }
     // 대화창(과 위로 솟은 흉상)이 무대 아래(또는 위)를 덮는다: 말하는 동안 무대 카메라를 옮겨 서 있는 사람이 가리지 않게 한다(fitTalk).
     this.el.classList.add('talking');
-    this.talk.innerHTML=talkBox(speaker,'',a&&this.scene.toPct(a.cell)[1]>58?'top':'bottom',a?.look,this.skin);
+    this.talk.innerHTML=talkBox(speaker,'',a&&this.scene.toPct(a.cell)[1]>58?'top':'bottom',a?.look,this.skin,mood);
     this.fitTalk();
     // 흉상 그림이 늦게 읽히면 창의 크기가 바뀐다 — 다 읽은 뒤·잠시 뒤에 다시 맞춘다.
     {const box=this.talk.querySelector('.ss-talk'),refit=()=>{if(box&&box.isConnected)this.fitTalk();};
@@ -459,6 +462,8 @@ export async function playScenes(root:HTMLElement,scenes:Scene[],hooks:StageHook
       <div class="ss-controls"><button type="button" class="ss-skip">장면 건너뛰기 ⏭</button><button type="button" class="primary ss-next">다음 ▶</button></div></div>`;
     const spots=scene.steps.flatMap(st=>'move' in st?[st.to]:'enter' in st?[st.at]:[]);
     const stage=new Stage(root.querySelector<HTMLElement>('.ss-frame')!,scene.art,scene.place,scene.cast,spots);stage.skipping=skipping;
+    // 꿈 장면(장소 이름이 「흉몽」으로 시작하거나 mood:'dream'): 색이 바래고 안개가 흐르며 화면이 천천히 일렁인다.
+    if(scene.mood==='dream'||/^흉몽/.test(scene.place)){const el=root.querySelector<HTMLElement>('.ss-stage');if(el){el.classList.add('mood-dream');const veil=document.createElement('div');veil.className='ss-dream';veil.setAttribute('aria-hidden','true');veil.innerHTML='<i class="dr-fog a"></i><i class="dr-fog b"></i><i class="dr-ring"></i><i class="dr-flicker"></i>';el.appendChild(veil);}}
     root.querySelector<HTMLButtonElement>('.ss-skip')!.onclick=()=>{skipping=true;stage.skipping=true;stage.next();};
     root.querySelector<HTMLButtonElement>('.ss-next')!.onclick=()=>stage.next();
     await stage.run(scene.steps,hooks);skipping=stage.skipping;
@@ -468,4 +473,17 @@ export async function playScenes(root:HTMLElement,scenes:Scene[],hooks:StageHook
 function bubble(el:HTMLElement,text:string,kind:'emote'|'talk'){
   const b=el.querySelector<HTMLElement>('.ss-bubble')!;b.textContent=text;b.className='ss-bubble '+kind;b.hidden=false;
   clearTimeout(Number(b.dataset.t??0));b.dataset.t=String(setTimeout(()=>{b.hidden=true;},kind==='emote'?1300:2600));
+}
+
+/** 능력치를 건드리는 선택 효과와 그 안내 문구(2026-10-17: 연의 이야기의 선택지는 능력치를 주지 않는다 — 분기 표식과 대사만 남긴다). */
+const STAT_EFFECT=new Set(['rally','guard','insight']);
+const STAT_NOTE=/^(?!이기면).*(사기 상승|방어 태세|MP \+\d+)/;
+/** 연의 이야기의 선택지에서 능력치 효과를 걷어 낸 대본. 남는 안내가 없고 뒤에 남는 표식이 있으면 「뒤 이야기에 남는다」고 밝힌다. */
+export function plainChoices(scenes:readonly Scene[]):Scene[]{
+  return scenes.map(sc=>({...sc,steps:sc.steps.map(st=>'choice' in st?{...st,options:st.options.map(o=>{
+    const effects=(o.effects??[]).filter(e=>!STAT_EFFECT.has(e.kind)),parts=(o.note??'').split(' · ').map(x=>x.trim()).filter(x=>x&&!STAT_NOTE.test(x));
+    const remembered=effects.some(e=>e.kind==='flag');
+    const note=parts.length?parts.join(' · '):remembered?'이 선택은 뒤 이야기에 남는다':'';
+    const {note:_n,effects:_e,...rest}=o;void _n;void _e;
+    return {...rest,...(effects.length?{effects}:{}),...(note?{note}:{})} as ChoiceOption;})}:st)}));
 }

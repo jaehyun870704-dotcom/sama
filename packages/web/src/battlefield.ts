@@ -62,6 +62,17 @@ export function hitStyle(family:string,unitClass:string,strategy?:string,weapon?
  * 48px 전투 칸에 인접한 병종의 실루엣이 침범하지 않도록 투명 여백을 포함한 프레임을 64px로 제한한다.
  * 실제 인물 키는 보병 38px(0.6), 기마·수레·배 46px(0.72)라 한 칸 안에서 읽힌다. */
 const TROOP_CELL_SIZE=64;
+/** 이름표 옆 작은 상태 표식: 이로운 상태는 초록, 해로운 상태는 붉게, 한 글자로(최대 4개). 일기토·설전 승패의 버프·디버프도 여기 보인다. */
+const STATUS_GLYPH:Record<string,[string,boolean]>={rally:['기',true],guard:['방',true],haste:['강',true],swift:['경',true],spirited:['고',true],weaken:['약',false],slow:['둔',false],confusion:['혼',false],seal:['봉',false],breach:['파',false],sluggish:['지',false],dispirit:['낙',false],burn:['화',false],bleed:['혈',false],shock:['감',false],immobile:['정',false],bound:['박',false]};
+export function statusGlyphs(unit:Pick<Unit,'statuses'>){return [...new Set(unit.statuses.map(x=>x.kind as string))].filter(k=>STATUS_GLYPH[k]).sort((a,b)=>Number(STATUS_GLYPH[b]![1])-Number(STATUS_GLYPH[a]![1])).slice(0,4).map(k=>({kind:k,glyph:STATUS_GLYPH[k]![0],good:STATUS_GLYPH[k]![1]}));}
+function statusChips(unit:Unit){
+  const list=statusGlyphs(unit);if(!list.length)return undefined;
+  const row=new Container();row.label='hud';
+  list.forEach((g,i)=>{const chip=new Graphics().circle(0,0,6.5).fill({color:g.good?0x2f8a4e:0xb3402f,alpha:.95}).stroke({color:0x0d1411,width:1.5});
+    const t=new Text({text:g.glyph,style:{fontFamily:'Malgun Gothic',fontSize:9,fontWeight:'800',fill:0xffffff}});t.anchor.set(.5);
+    const c=new Container();c.addChild(chip,t);c.position.set(7+i*14,0);row.addChild(c);});
+  return row;
+}
 export class Battlefield {
   app=new Application();
   world=new Container();
@@ -438,9 +449,13 @@ export class Battlefield {
       for(const at of state.map.regionCoords(goal.target)){const p=iso(at);diamond(this.ranges,p.x,p.y,color,.35).stroke({color,width:3});}
     }
     if(state.stage.id==='S1-03'&&!state.activeDialogue){const target=state.victory.find(c=>c.type==='reach')?.target;if(target)for(const at of state.map.regionCoords(target)){const p=iso(at);diamond(this.ranges,p.x,p.y,0xffdf84,.3).stroke({color:0xffe3a0,width:3});}}
-    if(scouted)for(const enemy of state.living('enemy')){
-      const route=enemy.patrolRoute??[];
-      if(route.length){const first=iso(enemy.pos);this.ranges.moveTo(first.x,first.y);for(const at of route){const p=iso(at);this.ranges.lineTo(p.x,p.y);}this.ranges.stroke({color:0xffd082,width:2,alpha:.7});}
+    // 순찰대: 도는 길과 살피는 범위(시야)를 늘 보인다 — 정찰을 마치면 더 또렷하게.
+    for(const enemy of state.living('enemy')){
+      const route=enemy.patrolRoute??[];if(!route.length)continue;
+      const sight=enemy.visionRange??Math.max(2,enemy.range[1]+1),seen=new Set<string>();
+      for(const at of [enemy.pos,...route])for(let dy=-sight;dy<=sight;dy++)for(let dx=-sight;dx<=sight;dx++){const c={x:at.x+dx,y:at.y+dy},k=key(c);if(Math.abs(dx)+Math.abs(dy)>sight||seen.has(k)||!state.map.inBounds(c))continue;seen.add(k);const p=iso(c);diamond(this.ranges,p.x,p.y,0xe8a24a,scouted?.12:.07);}
+      const first=iso(enemy.pos);this.ranges.moveTo(first.x,first.y);for(const at of route){const p=iso(at);this.ranges.lineTo(p.x,p.y);}this.ranges.stroke({color:0xffd082,width:2,alpha:scouted?.85:.55});
+      for(const at of route){const p=iso(at);this.ranges.circle(p.x,p.y,3).fill({color:0xffd082,alpha:scouted?.9:.6});}
     }
     // S1-08 racers: a gold ring under each competing ally instead of a line across the map.
     if(state.stage.id==='S1-08')for(const racer of state.living('allyAi').filter(u=>u.behavior==='race')){const p=iso(racer.pos);diamond(this.ranges,p.x,p.y,0xf4cc75,.12).stroke({color:0xf4cc75,width:1.5,alpha:.7});}
@@ -523,6 +538,7 @@ export class Battlefield {
           const below=state.unitAt({x:unit.pos.x,y:unit.pos.y+1});
           if(below?.alive){name.anchor.set(.5,1);name.position.set(actor.piece.x,actor.piece.y-50);}else{name.anchor.set(.5,0);name.position.set(actor.piece.x,actor.piece.y+20);}
           actor.name=name;this.labels.addChild(name);
+          const chips=statusChips(unit);if(chips){chips.position.set(name.width/2+3,below?.alive?-50-name.height/2:20+name.height/2);actor.piece.addChild(chips);}
         }
       }
       this.pieces.sortableChildren=true;

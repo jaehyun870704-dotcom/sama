@@ -43,6 +43,8 @@ export interface MetaState {
   merit?:number;
   /** 격파 호감: '이야기:이름' → 호감('S:맹달') */
   favor?:Record<string,number>;
+  /** 인연 장수와 함께 이긴 횟수('S:관흥', recruit.ts BOND_WINS) */
+  bondWins?:Record<string,number>;
   /** 나라 명성: '이야기:나라' → 쌓인 명성('S:촉') */
   fame?:Record<string,number>;
   /** 위·촉·오 군주에게 바친 명성('S:위') */
@@ -92,11 +94,12 @@ export function readMeta(raw:string|null):MetaState{
   }catch{return freshMeta();}
 }
 /** 등용 기록(호감·명성·칭호)을 정리한다. 옛 저장의 격파 횟수(defeats)는 사마의전 호감으로 옮긴다. */
-function cleanRecruit(m:Partial<MetaState>&{defeats?:unknown}):Pick<MetaState,'favor'|'fame'|'fameSpent'|'titles'|'title'>{
-  const out:Pick<MetaState,'favor'|'fame'|'fameSpent'|'titles'|'title'>={},nat=(x:unknown):x is Nation=>typeof x==='string'&&(NATIONS as readonly string[]).includes(x);
+function cleanRecruit(m:Partial<MetaState>&{defeats?:unknown}):Pick<MetaState,'favor'|'fame'|'fameSpent'|'titles'|'title'|'bondWins'>{
+  const out:Pick<MetaState,'favor'|'fame'|'fameSpent'|'titles'|'title'|'bondWins'>={},nat=(x:unknown):x is Nation=>typeof x==='string'&&(NATIONS as readonly string[]).includes(x);
   const counts=(v:unknown,key:RegExp,max:number,limit:number)=>v&&typeof v==='object'?Object.fromEntries(Object.entries(v).filter(([k,n])=>key.test(k)&&Number.isFinite(n)&&(n as number)>0).slice(0,limit).map(([k,n])=>[k,Math.min(max,Math.floor(n as number))])):{};
   const favor=m.favor!==undefined?counts(m.favor,/^[SZ]:.{1,12}$/,99,400):Object.fromEntries(Object.entries(counts(m.defeats,/^.{1,12}$/,99,60)).map(([k,n])=>['S:'+k,n]));
   if(Object.keys(favor).length)out.favor=favor;
+  const bond=counts(m.bondWins,/^[SZ]:.{1,12}$/,9,400);if(Object.keys(bond).length)out.bondWins=bond;
   const fame=counts(m.fame,/^[SZ]:(위|촉|오|군웅|초|한)$/,9999,12);if(Object.keys(fame).length)out.fame=fame;
   const spent=counts(m.fameSpent,/^[SZ]:(위|촉|오)$/,9999,6);if(Object.keys(spent).length)out.fameSpent=spent;
   if(Array.isArray(m.titles)){const t=[...new Set(m.titles.filter((x):x is string=>typeof x==='string'&&/^[SZ]:(위|촉|오|군웅|초|한)$/.test(x)))];if(t.length)out.titles=t;}

@@ -1,7 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import {ROSTER,NATIONS,HERO,MERIT,MERIT_COST,LORD_FAME_COST,FAVOR_NEED,battleMerit,missionMerit,retroMerit,meritCost,fameCost,fameNeed,favorNeed,isNationLord,
   recruitStatus,settleBattle,contestWin,spareFoe,persuadeFoe,buyRecruit,catchUpStory,titleNews,heroLabel,recruitedOf,favorOf,fameOf,fameLeft,isStoryRecruit,entryOf,
-  type RecruitMeta,type BattleReport,type Nation} from '../src/recruit.ts';
+  BOND_WINS,type RecruitMeta,type BattleReport,type Nation} from '../src/recruit.ts';
 import {readMeta} from '../src/meta.ts';
 import {romanceByName} from '../src/romance.ts';
 import {officerFaction} from '../src/officer-factions.ts';
@@ -87,7 +87,8 @@ describe('공훈 · 명성 · 호감',()=>{
     // 구출: 조휴를 체력 절반 이상으로 지키고 S2-08을 이긴다
     expect(settleBattle(m,report({stage:'S2-08',allies:{조휴:.3}}),no,nationOf).joined).not.toContain('조휴');
     expect(settleBattle(m,report({stage:'S2-08',allies:{조휴:.6}}),no,nationOf).joined).toContain('조휴');
-    // 인연: 마초와 함께 출진해 이기면 마대
+    // 인연: 마초와 함께 출진해 세 번 이기면 마대(한 번으로는 따라오지 않는다 · 극한 승리는 한 번에)
+    for(let i=0;i<BOND_WINS-1;i++)expect(settleBattle(m,report({stage:'S2-10',party:['사마의','마초']}),no,nationOf).joined).not.toContain('마대');
     expect(settleBattle(m,report({stage:'S2-10',party:['사마의','마초']}),no,nationOf).joined).toContain('마대');
     // 제갈량전은 따로 — 제갈량 휘하
     const z=settleBattle(m,report({story:'Z',stage:'Z1-03'}),no,nationOf);

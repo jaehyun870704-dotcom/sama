@@ -1,5 +1,5 @@
 import type {RunBattleRef,RunStoryRef} from './roguelike.ts';
-import {NAMED_GEAR,GEAR_KINDS,GRADE_NAMES,gearDef,gearStats,gearAllowed,gearLevelFromExp,gearPowerText,isShopGear,shopEquivalent,consumable,CONSUMABLES,maxLevelOf} from '../../core/src/index.ts';
+import {NAMED_GEAR,GEAR_KINDS,GRADE_NAMES,gearDef,gearStats,gearMilestone,GEAR_MILESTONES,gearAllowed,gearLevelFromExp,gearPowerText,isShopGear,shopEquivalent,consumable,CONSUMABLES,maxLevelOf} from '../../core/src/index.ts';
 import type {Difficulty,Unit,UnitClass,GearSlot as CoreGearSlot,GearGrade,GearKind,GearStat} from '../../core/src/index.ts';
 import {NAMED_ENTRIES} from './treasure-catalogue.ts';
 import {legacyGear} from './gear-migration.ts';
@@ -20,7 +20,9 @@ export interface Campaign {version:1; xp:Record<string,number>; rewards:string[]
   /** 다음에 살 상점 장비의 낱개 번호 */
   shopSerial?:number;
   /** 첫 승리 보상을 받은 수련장(T01 꼴) */
-  trained?:string[]}
+  trained?:string[];
+  /** 조기 승급에 쓴 승급 포인트(promotion.ts) */
+  promoSpent?:number}
 export interface Growth {storyWins:number;trainingWins:number;questWins:number}
 /** 시나리오 모드의 장: 장 id와 대사 선택이 남긴 전투 효과. */
 export interface ScenarioDeployment {chapter:string;mods?:import('./roguelike.ts').BattleMods;/** 가상 전장을 극한으로 */difficulty?:'extreme';/** 로그라이크 회차: 연의 장에 들고 가는 보물과 사마의의 남은 체력 */relics?:string[];heroHp?:number;/** 회차에서 영입한 장수(연의 장에 함께 나선다, 최대 3) */recruits?:import('./roguelike.ts').RunUnit[]}
@@ -54,7 +56,9 @@ export const gearName=(id:string)=>gearDef(id)?.name??id;
 /** 장비의 지금 레벨(장비 경험치로). */
 export function gearLevel(c:Pick<Campaign,'gearExp'>,id:string){const d=gearDef(id);return d?gearLevelFromExp(d,c.gearExp?.[id]??0):1;}
 /** 장비의 능력·고유 기능 한 줄(레벨에 맞춰). */
-export function gearEffectText(id:string,level=1){const d=gearDef(id);if(!d)return '';return [statText(gearStats(d,level)),gearPowerText(id)].filter(Boolean).join(' · ');}
+export function gearEffectText(id:string,level=1){const d=gearDef(id);if(!d)return '';return [statText(gearStats(d,level,true)),gearPowerText(id),gearMilestoneText(id,level)].filter(Boolean).join(' · ');}
+/** 고유 보물 단련 단계 안내: 「단련 Lv.4 ✓ · 숙련 Lv.7 · 각성 Lv.9」(이룬 단계에 ✓). */
+export function gearMilestoneText(id:string,level=1){const d=gearDef(id);if(!d?.named||maxLevelOf(d)<9)return '';return GEAR_MILESTONES.map(m=>`${m.name} Lv.${m.level}${level>=m.level?' ✓':''}(${m.text})`).join(' · ');}
 export function equippedItems(c:Pick<Campaign,'equipped'|'loadouts'>,id:string){return c.loadouts?.[id]?Object.values(c.loadouts[id]!).filter((x):x is string=>!!x):c.equipped[id]?[c.equipped[id]!]:[];}
 /** 보물을 다는 자리: 연의 장수는 id, 영입 장수·편입 장수 등 그 밖의 사람은 이름. 누구든 장비를 달 수 있다(계통에 맞는 것만). */
 const OFFICER_BY_NAME:Record<string,string>={사마의:'sima_yi',사마랑:'sima_lang',사마방:'sima_fang',조진:'cao_zhen'};
@@ -96,13 +100,23 @@ export function award(c:Campaign,stage:string,difficulty:Difficulty,participants
   const id=stage+':'+difficulty;if(c.rewards.includes(id)||!seals.includes(1))return {xp:0,treasure:null as Treasure|null,levels:[] as string[],got:[] as Treasure[]};
   const amount=difficulty==='normal'?140:70,levels:string[]=[];c.rewards.push(id);
   for(const officer of OFFICERS){if(officer!=='sima_yi'&&!participants.includes(officer))continue;const before=levelInfo(c.xp[officer]??0).level;c.xp[officer]=(c.xp[officer]??0)+amount;if(levelInfo(c.xp[officer]!).level>before)levels.push(officer);}
-  const treasure=treasures.find(t=>t.stage===stage&&!c.treasures.includes(t.id))??null;
+  const ok=(t:Treasure)=>difficulty==='extreme'||!earlyLegend(t,'S');
+  const treasure=treasures.find(t=>t.stage===stage&&ok(t)&&!c.treasures.includes(t.id))??null;
   // 이번에 새로 얻은 보물(획득 장면 차례): 이미 가진 것은 빠진다.
-  const got=treasures.filter(t=>t.stage===stage&&grantTreasure(c,t.id));
+  const got=treasures.filter(t=>t.stage===stage&&ok(t)&&grantTreasure(c,t.id));
   return {xp:amount,treasure,levels,got};
 }
 /** 제갈량전 장을 처음 이겼을 때의 고유 보물(이미 가진 것은 건너뛴다). 새로 얻은 보물을 돌려준다. */
-export function awardZhugeTreasures(c:Campaign,stage:string){const got:Treasure[]=[];for(const t of treasures.filter(x=>x.zstage===stage))if(grantTreasure(c,t.id))got.push(t);return got;}
+export function awardZhugeTreasures(c:Campaign,stage:string,difficulty:Difficulty='extreme'){const got:Treasure[]=[];for(const t of treasures.filter(x=>x.zstage===stage))if((difficulty==='extreme'||!earlyLegend(t,'Z'))&&grantTreasure(c,t.id))got.push(t);return got;}
+/**
+ * 이른 전설 보물(2026-10-17): 4등급 고유 보물 가운데 이야기 첫머리(사마의전 상편 S1 · 제갈량전 Z1-01~Z1-08)에서 나오는 것은
+ * 그 장을 극한으로 이겨야 얻는다. 일반으로만 이기면 받지 못한다(이미 가진 것은 그대로).
+ */
+export function earlyLegend(t:Pick<Treasure,'grade'|'stage'|'zstage'>,story:Story){
+  if(t.grade<4)return false;
+  if(story==='S')return /^S1-/.test(t.stage);
+  const m=/^Z1-(\d\d)$/.exec(t.zstage);return !!m&&Number(m[1])<=8;
+}
 export function equip(c:Campaign,officer:string,id:string){
   if(!OFFICERS.includes(officer as typeof OFFICERS[number]))return false;
   if(!id){delete c.equipped[officer];return true;}
@@ -114,11 +128,12 @@ export function equip(c:Campaign,officer:string,id:string){
  * 장비 한 점을 전장의 부대에 입힌다: 레벨에 맞는 능력 + 고유 기능(`gear:*` 특성).
  * 계통에 맞지 않는 장비(병종이 바뀌어 못 쓰게 된 것)는 입히지 않는다. 입혔으면 true.
  */
-export function applyTreasure(unit:Unit,id:string|undefined,_uniqueEffects=true,level=1){
+export function applyTreasure(unit:Unit,id:string|undefined,_uniqueEffects=true,level=1,structured=false){
   const d=id?gearDef(id):undefined;if(!d||!gearAllowed(id!,unit.unitClass).ok)return false;
-  const bonus=gearStats(d,level),gb=unit.gearBonus??={};
+  const bonus=gearStats(d,level,structured),gb=unit.gearBonus??={},tm=structured?gearMilestone(d,level).traitMul:1;
   for(const [stat,value] of Object.entries(bonus) as Array<[GearStat,number]>){unit.stats[stat]+=value;gb[stat]=(gb[stat]??0)+value;}
-  for(const [t,p] of d.traits??[]){if(!unit.traits.includes(t))unit.traits.push(t);unit.traitParams[t]=Math.max(unit.traitParams[t]??0,p);}
+  // 숙련(Lv.7): 수치가 있는 고유 기능(확률·비율 %)만 키운다 — 켜고 끄는 기능(1)은 그대로.
+  for(const [t,p] of d.traits??[]){if(!unit.traits.includes(t))unit.traits.push(t);const v=p>1?Math.round(p*tm):p;unit.traitParams[t]=Math.max(unit.traitParams[t]??0,v);}
   if(unit.traits.includes('gear:sling'))unit.range=[unit.range[0],Math.max(unit.range[1],2)];
   unit.hp=unit.stats.maxHp;unit.mp=unit.stats.maxMp;return true;
 }
@@ -135,7 +150,7 @@ export function mergeCampaigns(a:Campaign,b:Campaign):Campaign{
   const out=structuredClone(a),union=(x?:string[],y?:string[])=>[...new Set([...(x??[]),...(y??[])])];
   for(const [id,v] of Object.entries(b.xp))out.xp[id]=Math.max(out.xp[id]??0,v);
   out.treasures=union(a.treasures,b.treasures);out.completedRuns=union(a.completedRuns,b.completedRuns);out.quests=union(a.quests,b.quests);if(a.trained||b.trained)out.trained=union(a.trained,b.trained);out.challenges=union(a.challenges,b.challenges);out.sealRewards=union(a.sealRewards,b.sealRewards);
-  out.trainingWins=Math.max(a.trainingWins??0,b.trainingWins??0);out.bountyWins=Math.max(a.bountyWins??0,b.bountyWins??0);
+  out.trainingWins=Math.max(a.trainingWins??0,b.trainingWins??0);if(a.promoSpent||b.promoSpent)out.promoSpent=Math.max(a.promoSpent??0,b.promoSpent??0);out.bountyWins=Math.max(a.bountyWins??0,b.bountyWins??0);
   if(b.retinueXp){const r=out.retinueXp??={};for(const [k,v] of Object.entries(b.retinueXp))r[k]=Math.max(r[k]??0,v);}
   return out;
 }
@@ -176,10 +191,11 @@ export function readCampaign(key:string=CAMPAIGN_KEYS.main):Campaign{
     clean.rewards=[...new Set(value.rewards.filter(id=>typeof id==='string'&&/^[SZ][123]-\d{2}:(normal|extreme)$/.test(id)))];
     if(Number.isSafeInteger(value.shopSerial)&&value.shopSerial!>0)clean.shopSerial=value.shopSerial!;
     if(Array.isArray(value.trained)){const t=[...new Set(value.trained.filter(x=>typeof x==='string'&&/^T\d{2}$/.test(x)))];if(t.length)clean.trained=t;}
+    if(Number.isSafeInteger(value.promoSpent)&&value.promoSpent!>0)clean.promoSpent=Math.min(9999,value.promoSpent!);
     const {swap}=migrateGear(value,clean);
     clean.completedRuns=Array.isArray(value.completedRuns)?[...new Set(value.completedRuns.filter(x=>typeof x==='string'&&x.length<100))]:[];clean.trainingWins=Number.isSafeInteger(value.trainingWins)?Math.max(0,value.trainingWins!):0;clean.quests=Array.isArray(value.quests)?[...new Set(value.quests.filter(x=>typeof x==='string'&&/^Q\d{2}$/.test(x)))]:[];clean.challenges=Array.isArray(value.challenges)?[...new Set(value.challenges.filter(x=>typeof x==='string'&&/^C\d{2}$/.test(x)))]:[];clean.bountyWins=Number.isSafeInteger(value.bountyWins)?Math.max(0,value.bountyWins!):0;if(value.retinueXp&&typeof value.retinueXp==='object'){const r:Record<string,number>={};for(const [k,v] of Object.entries(value.retinueXp).slice(0,80))if(k.length>0&&k.length<=12&&Number.isFinite(v)&&v>=0)r[k]=Math.min(100000,Math.floor(v));if(Object.keys(r).length)clean.retinueXp=r;}clean.sealRewards=Array.isArray(value.sealRewards)?[...new Set(value.sealRewards.filter(x=>typeof x==='string'&&/^(S[123]|Z[12]):\d{1,3}$/.test(x)))]:[];
     // 이미 넘은 장·외전의 고유 보물(획득처를 새로 정한 보물도 여기서 받는다).
-    for(const item of treasures){const src=item.stage;if(clean.rewards.some(r=>r.startsWith(src+':'))||clean.quests.includes(src)||clean.challenges.includes(src))grantTreasure(clean,item.id);}
+    for(const item of treasures){const src=item.stage,early=earlyLegend(item,'S');if(clean.rewards.some(r=>r.startsWith(src+':')&&(!early||r.endsWith(':extreme')))||clean.quests.includes(src)||clean.challenges.includes(src))grantTreasure(clean,item.id);}
     if(value.gold&&typeof value.gold==='object'){const g:Partial<Record<Story,number>>={};for(const s of ['S','Z'] as const){const n=value.gold[s];if(typeof n==='number'&&Number.isFinite(n)&&n>=0)g[s]=Math.min(99_999_999,Math.floor(n));}clean.gold=g;}
     if(value.supplies&&typeof value.supplies==='object'){const sp:Record<string,number>={};for(const [k,n] of Object.entries(value.supplies))if(consumable(k)&&Number.isSafeInteger(n)&&n>0)sp[k]=Math.min(999,n);if(Object.keys(sp).length)clean.supplies=sp;}
     if(value.gearExp&&typeof value.gearExp==='object'){const gx:Record<string,number>={};for(const [k,n] of Object.entries(value.gearExp))if(clean.treasures.includes(k)&&Number.isFinite(n)&&n>0)gx[k]=Math.min(100000,Math.floor(n));if(Object.keys(gx).length)clean.gearExp=gx;}
@@ -194,7 +210,7 @@ export function writeCampaign(c:Campaign,key:string=CAMPAIGN_KEYS.main){localSto
 // ─────────────────────────────────────────────────────────── 금 · 상점
 
 /** 시작 금. */
-export const START_GOLD=1000;
+export const START_GOLD=3000;
 export const goldOf=(c:Pick<Campaign,'gold'>,story:Story)=>c.gold?.[story]??START_GOLD;
 export function addGold(c:Campaign,story:Story,n:number){const g=c.gold??={};g[story]=Math.max(0,goldOf(c,story)+Math.round(n));return g[story]!;}
 /** 이 이야기의 몇째 장(0부터)을 이긴 금: 처음은 크게, 다시 이기면 1/3. */

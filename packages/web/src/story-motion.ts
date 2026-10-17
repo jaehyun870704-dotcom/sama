@@ -10,6 +10,7 @@
 import {storySheetOf} from './officer-art.ts';
 import {pxSheet,PX_COLS} from './story-pixel.ts';
 import type {Look} from './scenario-types.ts';
+import {lineMood} from './line-mood.ts';
 
 const F={stand:0,walkA:1,walkB:2,talk:3,bow:4,kneel:5,surprise:6,point:7,sit:8} as const;
 type Frame=keyof typeof F;
@@ -40,10 +41,10 @@ export interface BeatPlan {
 }
 /** 대사에서 몸짓을 고른다. */
 export function gestureFor(line:string,pose:string,deferent:boolean){
-  const kneel=/무릎|엎드|조아리|죽여 주|죄를 청|용서하/.test(line);
-  const surprise=/[!！]|무엇이|어찌 이런|설마|큰일/.test(line);
+  const kneel=/무릎|엎드|조아리|죽여 주|죄를 청|용서하/.test(line),mood=lineMood(line);
+  const surprise=mood==='surprise'||mood==='angry';
   const point=pose==='resolve'||/가라|나가라|쳐라|베어라|배를 내어라|출진/.test(line);
-  return {kneel,surprise:surprise&&!kneel,bow:deferent&&!kneel,point:point&&!kneel};
+  return {kneel,surprise:surprise&&!kneel,bow:(deferent||mood==='deferent'||mood==='sad')&&!kneel,point:point&&!kneel};
 }
 
 /**

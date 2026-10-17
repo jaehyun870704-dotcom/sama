@@ -135,7 +135,13 @@ export function specialization(grade: Grade, ability: number): -1 | 0 | 1 {
 }
 
 /** 조조전 규칙의 부대 능력치. 우군·적군(side가 player가 아니면)은 한 레벨 낮은 값을 쓴다. */
-export function ccStatsFor(unitClass: UnitClass, level: number, ability: Ability, side: string, movement: number, ratio = false): UnitStats {
+/** 지력형 병종(책사·풍수사·도사·주술사 계통): 규칙판 14에서 물리 공격을 낮추고 책략 피해를 높인다. */
+const SCHOLAR_LINES = new Set(["책사계", "풍수사계", "도사계", "주술사"]);
+export const isScholarClass = (c: UnitClass) => SCHOLAR_LINES.has(gradeProfileOf(c).name);
+/** 규칙판 14: 지력형 병종의 물리 공격 배율 · 책략 피해 배율. */
+export const SCHOLAR_ATTACK_MUL = 0.75;
+export const SCHOLAR_STRATEGY_MUL = 1.3;
+export function ccStatsFor(unitClass: UnitClass, level: number, ability: Ability, side: string, movement: number, ratio = false, r14 = false): UnitStats {
   const npc = ratio ? NPC_GRADES[unitClass] ?? NPC_GRADES[lineRoot(unitClass)] : undefined;
   const p = npc ?? gradeProfileOf(unitClass), tier = tierOf(unitClass);
   const L = Math.max(0, side === "player" ? level : level - 1);
@@ -147,7 +153,7 @@ export function ccStatsFor(unitClass: UnitClass, level: number, ability: Ability
     // 균형 규칙 6의 체력 바닥(기본 95·레벨당 5): 책사·풍수사·궁병도 보병 체력의 8할은 넘게 — 약한 병종이 한두 대에 녹지 않게.
     maxHp: ratio ? Math.max(95, p.hp[0]) + Math.max(5, p.hp[1]) * (Math.max(0, L - 1) + up) + hpBonus : p.hp[0] + p.hp[1] * Math.max(0, L - 1) + p.hp[1] * up + hpBonus,
     maxMp: p.mp[0] + p.mp[1] * Math.max(0, L - 1) + p.mp[1] * up + mpBonus,
-    attack: stat(atk, ability.war),
+    attack: r14 && SCHOLAR_LINES.has(p.name) ? Math.max(1, Math.round(stat(atk, ability.war) * SCHOLAR_ATTACK_MUL)) : stat(atk, ability.war),
     intellect: stat(spi, ability.int),
     spirit: stat(spi, ability.int),
     defense: stat(def, ability.lead),
@@ -242,7 +248,8 @@ export function ccStrategyBase(caster: Unit, target: Unit, power: number, attack
   // 비율식(균형 규칙 6): 지력과 상대 정신력이 같으면 위력 100 책략이 같은 레벨 병사 체력의 약 25%. MP를 쓰므로 물리보다 조금 세다.
   if (caster.ratioRules) {
     const int = Math.max(1, caster.stats.intellect * attackMul), spi = Math.max(1, target.stats.spirit);
-    return Math.max(1, CC_STRATEGY_SCALE * 1.25 * (Math.max(1, target.level) + 20) * int / (int + spi) * (power / 100));
+    const scholar = caster.rules14 && isScholarClass(caster.unitClass) ? SCHOLAR_STRATEGY_MUL : 1;
+    return Math.max(1, CC_STRATEGY_SCALE * 1.25 * (Math.max(1, target.level) + 20) * int / (int + spi) * (power / 100) * scholar);
   }
   return Math.max(1, (L + 12 + (caster.stats.intellect * attackMul) / 3 - target.stats.spirit / 3) * (power / 100) * CC_STRATEGY_SCALE);
 }

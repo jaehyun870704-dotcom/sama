@@ -42,6 +42,8 @@ export const HISTORIC_BATTLES:Record<string,HistoricBattle>={
 
 /** 전투 시작 때 서 있는 이름 없는 적 부대를 이만큼 더 세운다. */
 export const SOLDIER_GROWTH=.5;
+/** 규칙판 14: 대규모 전투는 더 크게 — 병사를 원래의 80%만큼 더 세운다. */
+export const SOLDIER_GROWTH_14=.8;
 
 /**
  * 늘어난 적을 감안한 적 전체 공격·체력 보정(%). 자동 플레이(SIM_WIDE=2, 50회)로 예전 클리어율에 맞췄다.
@@ -53,6 +55,11 @@ export const HISTORIC_EDGE:Record<string,{normal:number;extreme:number}>={
   'S2-10':{normal:-55,extreme:-38},'S3-01':{normal:-30,extreme:-44},'S3-02':{normal:-18,extreme:-36},
   'S3-05':{normal:-50,extreme:-48},
 };
+
+/** 규칙판 14: 병사를 80%만큼 더 세우는 대신(SOLDIER_GROWTH_14) 적 하나하나를 이만큼(%) 약하게 — 더 많이, 더 길게 싸우되 클리어율은 예전 수준. */
+export const HISTORIC_EDGE_14=-10;
+/** 규칙판 14에서 장마다 더 거는 보정(%) — 자동 플레이(24회)로 규칙판 13 클리어율에 맞췄다. */
+export const HISTORIC_EDGE_14_STAGE:Record<string,{normal?:number;extreme?:number}>={'S1-07':{normal:-6,extreme:-10},'S1-10':{extreme:-18},'S3-01':{extreme:-10}};
 
 // 다리·나루 같은 길목에는 세우지 않는다(건너는 길을 막으면 싸움이 아니라 교착이 된다).
 const OPEN=new Set(['plain','road','fort','forest','hill','grass','sand','town','camp']);
@@ -76,7 +83,7 @@ function freeNear(state:BattleState,from:Coord,unitClass:UnitClass,taken:Set<str
 }
 
 /** 대규모 전투의 적 증원을 전장에 세운다. 늘린 부대 id를 돌려준다. */
-export function reinforceHistoric(state:BattleState,stageId:string,skip:ReadonlySet<string>=new Set()):string[]{
+export function reinforceHistoric(state:BattleState,stageId:string,skip:ReadonlySet<string>=new Set(),growth=SOLDIER_GROWTH):string[]{
   const plan=HISTORIC_BATTLES[stageId];if(!plan)return [];
   const enemies=state.living('enemy').filter(u=>!fixed(u));if(!enemies.length)return [];
   const taken=new Set<string>(),added:string[]=[];let n=0;
@@ -90,7 +97,7 @@ export function reinforceHistoric(state:BattleState,stageId:string,skip:Readonly
   const lead=steady.find(u=>romanceOf(u))??[...steady].sort((a,b)=>b.level-a.level)[0];
   // 병사: 이름 없는(연의 장수록에 없는) 부대를 절반만큼, 같은 병종·레벨로 곁에(rear면 우두머리 곁에).
   const rank=enemies.filter(u=>!romanceOf(u)&&u.behavior!=='race'&&u.behavior!=='follow'&&!u.goalRegion&&!skip.has(u.id)&&!/depot|convoy|decoy|target|boss|guard_post/.test(u.id));
-  const extra=Math.round(rank.length*SOLDIER_GROWTH);
+  const extra=Math.round(rank.length*growth);
   for(let i=0;i<extra;i++){const src=rank[i%rank.length]!;place(plan.rear&&lead?lead:src,{name:src.name,unitClass:src.unitClass,level:src.level});}
   // 장수: 병사 대열 사이사이에(대열이 없으면 우두머리 곁에). 우두머리 바로 곁에 세우면, 달아나는 우두머리를 쫓는 길을 막아 버린다.
   if(!lead)return added;

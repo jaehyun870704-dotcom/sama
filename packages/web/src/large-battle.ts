@@ -13,19 +13,19 @@ import type {StageDef} from '../../core/src/index.ts';
 export const LARGE_BATTLES=new Set(['S2-06','S2-07','S2-08','S2-09','S2-11','S2-12','S3-01','S3-02','S3-03','S3-04','S3-05','S3-06','S3-07']);
 /** 이름 없는 병사 무리를 늘리는 비율. */
 const ENEMY_GROWTH=.4;
-/** 더 주는 편입 부대 수. */
+/** 더 주는 편입 부대 수(규칙판 14부터 3). */
 const EXTRA_GRANTED=2;
 
 type SpawnAction={type:string;side?:string;units?:{count?:number;region?:string}[]};
 const spawns=(stage:StageDef)=>(stage.events??[]).flatMap(e=>(e.actions??[]) as SpawnAction[]).filter(a=>a.type==='spawn_units');
 
 /** 아군·적군을 늘린 대본(원래 좌표 그대로). */
-export function enlargeStage(stage:StageDef):StageDef{
+export function enlargeStage(stage:StageDef,extraGranted=EXTRA_GRANTED):StageDef{
   const s=structuredClone(stage);
   const granted=s.deployment.grantedUnits??[];
   if(granted.length){
     const level=Math.max(...granted.map(g=>g.level??1));
-    const extra=Array.from({length:EXTRA_GRANTED},(_,i)=>{const g=granted[i%granted.length]!;return {type:g.type,count:1,level,countsTowardAllyLoss:false};});
+    const extra=Array.from({length:extraGranted},(_,i)=>{const g=granted[i%granted.length]!;return {type:g.type,count:1,level,countsTowardAllyLoss:false};});
     s.deployment={...s.deployment,grantedUnits:[...granted,...extra]};
   }
   for(const a of spawns(s))if((a.side??'enemy')==='enemy')for(const u of a.units??[])if((u.count??1)>=2)u.count=u.count!+Math.max(1,Math.round(u.count!*ENEMY_GROWTH));

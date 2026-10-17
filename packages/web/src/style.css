@@ -1923,7 +1923,7 @@ dialog:has(.title-screen),dialog:has(.lobby){width:min(1240px,calc(100vw - 24px)
 @keyframes sr-glow{50%{box-shadow:0 0 0 3px #9fd18a33}}
 @media (orientation:landscape) and (max-height:520px){.seal-rewards{grid-template-columns:1fr;gap:4px;padding:5px 8px;margin-bottom:6px}.sr-tier{padding:3px 6px}.stage-seals li{padding:2px 6px}}
 /* 정비: 연의에 데려가는 등용 장수 */
-.retinue-pick{margin-top:10px;padding:8px 10px;border:1px dashed #6c5a36;background:#151a17}
+.retinue-pick,.promo-pick{margin-top:10px;padding:8px 10px;border:1px dashed #6c5a36;background:#151a17}
 .rp-head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.rp-head b{color:#e4cf9c}.rp-head small{color:#9e978a}
 .rp-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .rp-chip{display:flex;gap:8px;align-items:center;min-height:0;padding:4px 10px 4px 4px;background:#182224;border:1px solid #3d4038;text-align:left}
@@ -2688,3 +2688,50 @@ body{padding-bottom:env(safe-area-inset-bottom)}
   .command-hint,.sc-synopsis,.result>p,.run-news p{line-height:1.75}
   .cx-person b,.cx-class b,.officer-card strong,.sc-card-text strong{line-height:1.45}
 }
+
+/* 흉몽: 꿈 장면 — 색이 바래고 푸른 보랏빛, 가장자리가 어둡고, 안개가 흐르고, 물결처럼 일렁이며 이따금 깜빡인다 */
+.ss-stage.mood-dream .ss-world{filter:saturate(.45) hue-rotate(-18deg) brightness(.78) contrast(1.08);animation:dr-sway 9s ease-in-out infinite}
+.ss-dream{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:3;background:radial-gradient(ellipse at 50% 48%,transparent 38%,#0b0718cc 100%)}
+.ss-dream .dr-fog{position:absolute;left:-30%;width:160%;height:40%;background:radial-gradient(ellipse at center,#b9a8e655 0%,transparent 70%);filter:blur(14px);animation:dr-drift 22s linear infinite}
+.ss-dream .dr-fog.a{top:52%}.ss-dream .dr-fog.b{top:8%;opacity:.6;animation-duration:31s;animation-direction:reverse}
+.ss-dream .dr-ring{position:absolute;left:50%;top:50%;width:30%;aspect-ratio:1;border:2px solid #cfc2ff33;border-radius:50%;transform:translate(-50%,-50%) scale(.2);animation:dr-ring 6s ease-out infinite}
+.ss-dream .dr-flicker{position:absolute;inset:0;background:#e9e2ff;opacity:0;animation:dr-flicker 7.5s steps(1) infinite}
+@keyframes dr-sway{0%,100%{transform:scale(1.02) translateX(0)}50%{transform:scale(1.04) translateX(-.6%)}}
+@keyframes dr-drift{from{transform:translateX(-12%)}to{transform:translateX(12%)}}
+@keyframes dr-ring{0%{transform:translate(-50%,-50%) scale(.2);opacity:.9}100%{transform:translate(-50%,-50%) scale(3.2);opacity:0}}
+@keyframes dr-flicker{0%,93%,100%{opacity:0}94%{opacity:.14}95%{opacity:0}96%{opacity:.08}}
+@media (prefers-reduced-motion:reduce){.ss-stage.mood-dream .ss-world,.ss-dream i{animation:none}}
+
+/* 대사 분위기(line-mood.ts): 대화창 테두리 빛깔로도 표정을 보인다 */
+.ss-talk.mood-angry{box-shadow:inset 0 0 0 2px #c4503c88,0 0 18px #c4503c44}
+.ss-talk.mood-smile{box-shadow:inset 0 0 0 2px #e0bd7588}
+.ss-talk.mood-sad{box-shadow:inset 0 0 0 2px #7a92c288}
+.ss-talk.mood-surprise{box-shadow:inset 0 0 0 2px #f0e3a088}
+
+/* 출진 부대 덱: 위에는 편성된 카드, 아래에는 고를 수 있는 장수 카드 */
+.sortie-deck .deck-title{margin:0 0 6px;font-size:15px;color:#e4cf9c}.sortie-deck .deck-title small{font-size:11px;color:#9e978a;margin-left:6px;font-weight:400}
+.deck-row{display:flex;gap:6px;overflow-x:auto;padding:6px 2px 8px;margin-bottom:8px;border-bottom:1px solid #3d4038}
+.deck-card{position:relative;flex:0 0 74px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 4px 6px;background:linear-gradient(#22201a,#15140f);border:1px solid #6c5a36;border-radius:6px;text-align:center}
+.deck-card.forced{border-color:#e0bd75;box-shadow:0 0 0 1px #e0bd7544}
+.deck-card .dc-face{width:46px;height:46px;overflow:hidden;border-radius:4px}.deck-card .dc-face>*{width:100%;height:100%}
+.deck-card b{font-size:12px;color:#efe2c0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}.deck-card small{font-size:10px;color:#9e978a}
+.deck-card .dc-cost{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;border-radius:10px;background:#8a6a2e;color:#fff4da;font:700 11px/20px sans-serif;font-style:normal}
+.deck-card.empty{border-style:dashed;opacity:.5;justify-content:center;min-height:86px}.deck-card.empty span{font-size:11px;color:#9e978a}
+.rp-chip.busy{opacity:.55}.rp-chip em.foreign{color:#f0b38a;font-style:normal}
+
+.brief-tabs{position:sticky;top:0;z-index:4;display:flex;gap:6px;margin:8px 0;padding:6px;background:#121611ee;border:1px solid #3d4038;border-radius:6px}
+.brief-tabs button{flex:1;min-height:34px;font-weight:700}.brief-tabs .shop-tab{background:#3a2c14;border-color:#e0bd75;color:#ffe9b0}
+
+#map-objective .mo-seals span{display:inline-block;margin-right:6px;color:#bdb4a0}#map-objective .mo-seals span.got{color:#e8c06a}
+#map-objective .mo-contest{color:#d8cfb8}
+.dot.amber{background:#e8a24a}
+
+/* 결과 화면: 천명 조건을 먼저 크게, 보상은 그 아래 한 묶음으로 */
+.result-seals{margin:10px auto;max-width:520px;text-align:left}.result-seals .rs-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #6c5a36;padding-bottom:4px;margin-bottom:6px}
+.result-seals .rs-head b{color:#e4cf9c;font-size:15px}.result-seals .rs-head span{color:#e8c06a;font-weight:700}
+.result-seals ol{list-style:none;margin:0;padding:0;display:grid;gap:4px}.result-seals li{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:8px;padding:6px 8px;border:1px solid #3d4038;border-radius:5px;background:#151a17}
+.result-seals li i{font-style:normal;font-size:18px;font-weight:800;text-align:center}.result-seals li.earned{border-color:#c79a4a;background:#2a2414}.result-seals li.earned i{color:#9fd18a}.result-seals li.missed{opacity:.7}.result-seals li.missed i{color:#c4503c}
+.result-seals li small{color:#9e978a}.result-rewards{max-width:520px;margin:6px auto;text-align:left}
+
+.help-guide details{border-top:1px solid #3d4038;padding:6px 0}.help-guide summary{cursor:pointer;font-weight:800;color:#e4cf9c}
+.help-guide ul{margin:6px 0 0;padding-left:18px;display:grid;gap:4px}.help-guide li{line-height:1.5}

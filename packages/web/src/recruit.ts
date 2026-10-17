@@ -9,7 +9,7 @@
  * 3. 공훈(merit) — 싸워 모은 공훈을 바쳐 모셔 온다. 그 나라 명성도 정해진 만큼 쌓여야 한다. 군주는 모두 이 길로만 온다:
  *    위·촉·오 군주(조조·조비·조예·유비·손권)는 그 나라의 공적(명성)을 바치고, 나머지 군주는 공훈만 바친다 — 어느 쪽이든 일반 장수보다 비싸다.
  *    바친 명성은 따로 적어 두어, 다른 장수의 명성 조건(쌓인 명성)은 줄지 않는다.
- * 4. 인연(bond) — 인연 있는 장수와 함께 출진해 이기면 따라온다.
+ * 4. 인연(bond) — 인연 있는 장수와 함께 출진해 세 번 이기면(극한 승리는 한 번에) 따라온다.
  * 5. 조건 승리(feat) — 그 장을 정해진 조건(손실 없이·극한)으로 이기면 그 솜씨를 보고 들어온다.
  * 6. 구출(rescue) — 그 장에서 지켜야 할 아군을 살려(체력 절반 이상) 이기면 은혜를 갚으러 온다.
  *
@@ -22,6 +22,8 @@ import {을를,이가,과와} from './josa.ts';
 export type Story='S'|'Z';
 export type Nation='위'|'촉'|'오'|'군웅'|'초'|'한';
 export const NATIONS:readonly Nation[]=['위','촉','오','군웅','초','한'];
+/** 인연 장수가 따라오기까지 함께 이겨야 하는 횟수(극한 승리는 한 번에 채운다). */
+export const BOND_WINS=3;
 export type RecruitRoute='story'|'defeat'|'merit'|'bond'|'feat'|'rescue';
 export interface RosterEntry {
   n:string;f:Nation;
@@ -47,7 +49,7 @@ export const ROUTE_NOTE:Record<RecruitRoute,string>={
   story:'이야기 속에서 주인공 곁에 서는 사람이다. 그 장을 이기면 저절로 합류한다.',
   defeat:'맞선 적장이다. 전장에서 꺾고 이길 때마다 호감이 쌓인다(극한은 두 배). 일기토·설전에서 이기면 「살려 보낸다」나 「등용을 권한다」를 고른다. 호감이 가득 차면 등용을 받아들인다.',
   merit:'싸워 모은 공훈을 바쳐 모셔 온다. 그 나라 명성도 정해진 만큼 쌓여야 한다. 군주는 이 길로만 온다 — 위·촉·오 군주는 그 나라 공적(명성)을, 나머지 군주는 공훈을 일반 장수보다 많이 바친다.',
-  bond:'인연 있는 장수와 함께 출진해 이기면 따라온다.',
+  bond:'인연 있는 장수와 함께 출진해 세 번 이기면(극한은 한 번) 따라온다.',
   feat:'그 장을 정해진 조건으로 이기면 그 솜씨를 보고 찾아온다.',
   rescue:'그 장에서 지켜야 할 사람을 살려서 이기면 은혜를 갚으러 온다.',
 };
@@ -108,6 +110,8 @@ export interface RecruitMeta {
   recruited?:string[];recruitedZ?:string[];merit?:number;
   /** 'S:맹달' → 호감 */
   favor?:Record<string,number>;
+  /** 'S:관흥' → 인연 장수와 함께 이긴 횟수(극한 승리는 BOND_WINS로 셈한다) */
+  bondWins?:Record<string,number>;
   /** 'S:촉' → 쌓인 명성 */
   fame?:Record<string,number>;
   /** 'S:촉' → 군주에게 바친 명성 */
@@ -145,7 +149,7 @@ export function condLines(m:RecruitMeta,story:Story,e:RosterEntry,won:(stage:str
     case 'merit':{const c=meritCost(e),need=fameNeed(story,e),fm=fameOf(m,story,e.f),mt=m.merit??0;
       if(isNationLord(e)){const fc=fameCost(e),left=fameLeft(m,story,e.f);return [{ok:got||left>=fc,text:`${e.f}의 공적(명성) ${fc} 바치기 (바칠 수 있는 명성 ${left})`,p:got?1:r(left,fc)}];}
       return [{ok:got||mt>=c,text:`공훈 ${c} 바치기 (지금 ${mt})`,p:got?1:r(mt,c)},...(need?[{ok:got||fm>=need,text:`${e.f} 명성 ${need} (지금 ${fm})`,p:got?1:r(fm,need)}]:[])];}
-    case 'bond':return [{ok:got,text:`${과와(e.w??'')} 함께 출진해 ${STORY_NAME[story]} 전투에서 이기기`,p:got?1:recruitedOf(m,story).includes(e.w??'')?.5:0}];
+    case 'bond':{const k=m.bondWins?.[story+':'+e.n]??0;return [{ok:got,text:`${과와(e.w??'')} 함께 출진해 ${STORY_NAME[story]} 전투에서 ${BOND_WINS}번 이기기 (${Math.min(k,BOND_WINS)}/${BOND_WINS} · 극한 승리는 한 번에)`,p:got?1:r(k,BOND_WINS)}];}
     case 'feat':return [{ok:got,text:`${at}${e.k==='extreme'?'을 극한으로':'을 아군 손실 없이'} 이기기`,p:got?1:0}];
     case 'rescue':return [{ok:got,text:`${at}에서 ${을를(e.n)} 지켜(체력 절반 이상) 이기기`,p:got?1:0}];
   }
@@ -220,7 +224,10 @@ export function settleBattle(m:RecruitMeta,r:BattleReport,won:(stage:string)=>bo
     if(e.r==='story'&&e.s&&(e.s===r.stage||won(e.s)))join(e.n,ROUTE_LABEL.story);
     else if(e.r==='feat'&&e.s===r.stage&&(e.k==='extreme'?r.extreme:r.lost===0))join(e.n,ROUTE_LABEL.feat);
     else if(e.r==='rescue'&&e.s===r.stage&&(r.allies[e.n]??0)>=.5)join(e.n,ROUTE_LABEL.rescue);
-    else if(e.r==='bond'&&e.w&&r.party.includes(e.w))join(e.n,`${ROUTE_LABEL.bond} · ${e.w}`);}
+    else if(e.r==='bond'&&e.w&&r.party.includes(e.w)){
+      // 인연(2026-10-17): 한 번 이겨서는 따라오지 않는다 — 함께 BOND_WINS번 이기거나 극한으로 한 번 이겨야 한다.
+      const b=m.bondWins??={},k=st+':'+e.n,v=Math.min(BOND_WINS,(b[k]??0)+(r.extreme?BOND_WINS:1));b[k]=v;
+      if(v>=BOND_WINS)join(e.n,`${ROUTE_LABEL.bond} · ${e.w}`);else news.push(`인연 · ${e.n} ${v}/${BOND_WINS} — ${과와(e.w)} 함께 더 이기면 따라온다`);}}
   return {news,joined};
 }
 /** 지난 기록 따라잡기: 이미 이긴 장의 연의 합류 장수를 들인다(새 길이 생기기 전 저장). 들인 이름을 돌려준다. */

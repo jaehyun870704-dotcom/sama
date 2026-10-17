@@ -46,7 +46,7 @@ describe('연의 인장',()=>{
     const c=freshCampaign(),before=c.xp.sima_lang!;
     expect(claimSealTier(c,tiers[0]!,21)).toBeNull();
     expect(sealRewardText(tiers[0]!)).toContain('금 400');expect(sealRewardText(tiers[2]!)).toContain('인수');
-    const got=claimSealTier(c,tiers[0]!,22)!;expect(got.gold).toBe(400);expect(c.gold?.S).toBe(1400);expect(c.supplies?.bean).toBe(3);
+    const got=claimSealTier(c,tiers[0]!,22)!;expect(got.gold).toBe(400);expect(c.gold?.S).toBe(3400);expect(c.supplies?.bean).toBe(3);
     for(const id of OFFICERS)expect(c.xp[id]).toBeGreaterThan(id==='sima_lang'?before:0);
     expect(sealClaimed(c,tiers[0]!.key)).toBe(true);expect(claimSealTier(c,tiers[0]!,66)).toBeNull();
   });

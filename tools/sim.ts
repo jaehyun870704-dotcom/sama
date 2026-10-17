@@ -289,7 +289,7 @@ function withoutCaptureGoals(state: any) {
 /** 측정할 규칙판(기본: 새 전투가 쓰는 규칙판). SIM_REVISION=4로 예전 규칙과 비교한다. */
 /** 측정할 전장 크기(기본 2: 실제 새 전투). SIM_WIDE=0이면 예전 좁은 전장. */
 const SIM_WIDE = process.env.SIM_WIDE === undefined ? 2 : Number(process.env.SIM_WIDE);
-const SIM_REVISION = (Number(process.env.SIM_REVISION) || 13) as 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
+const SIM_REVISION = (Number(process.env.SIM_REVISION) || 13) as 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14;
 
 /** AI 자동 플레이 1회. 사람 실력의 하한선 근사치로 쓴다. */
 function play(chapter: number, difficulty: Difficulty, seed: number) {

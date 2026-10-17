@@ -77,16 +77,16 @@ describe('제갈량전 천명 보상',()=>{
     const c=freshCampaign(),t=zhugeSealTiers(0,15)[0]!;c.retinueXp={제갈량:500};
     expect(claimZhugeSealTier(c,t,29,['제갈량'])).toBeNull();expect(c.sealRewards??[]).toEqual([]);
     const got=claimZhugeSealTier(c,t,30,['제갈량','조운','제갈량'])!;
-    expect(got.gold).toBe(400);expect(c.gold?.Z).toBe(1400);expect(c.gold?.S).toBeUndefined();
+    expect(got.gold).toBe(400);expect(c.gold?.Z).toBe(3400);expect(c.gold?.S).toBeUndefined();
     expect(got.items).toHaveLength(1);expect(got.items[0]).toMatch(/^shop:fan:2#\d+$/);expect(c.treasures).toContain(got.items[0]);
     expect(c.supplies?.bean).toBe(3);expect(c.retinueXp).toEqual({제갈량:500+t.xp,조운:t.xp});
-    expect(sealClaimed(c,'Z1:30')).toBe(true);expect(claimZhugeSealTier(c,t,90,['제갈량'])).toBeNull();expect(c.gold?.Z).toBe(1400);
+    expect(sealClaimed(c,'Z1:30')).toBe(true);expect(claimZhugeSealTier(c,t,90,['제갈량'])).toBeNull();expect(c.gold?.Z).toBe(3400);
     // 사마의전 보상 칸과 섞이지 않는다
     expect(sealClaimed(c,'S1:30')).toBe(false);
   });
   it('받은 칸은 저장에 남고, 예전 저장(칸 기록 없음)도 그대로 열린다',()=>{
     const c=freshCampaign();claimZhugeSealTier(c,zhugeSealTiers(1,19)[0]!,40,['제갈량']);c.sealRewards!.push('S1:22','Z9:1','bad');writeCampaign(c);
-    const back=readCampaign();expect(back.sealRewards).toEqual(['Z2:38','S1:22']);expect(back.treasures.some(x=>x.startsWith('shop:armor:3#'))).toBe(true);expect(back.gold?.Z).toBe(1800);
+    const back=readCampaign();expect(back.sealRewards).toEqual(['Z2:38','S1:22']);expect(back.treasures.some(x=>x.startsWith('shop:armor:3#'))).toBe(true);expect(back.gold?.Z).toBe(3800);
     const old=freshCampaign();delete (old as {sealRewards?:string[]}).sealRewards;writeCampaign(old);expect(readCampaign().sealRewards).toEqual([]);
   });
 });

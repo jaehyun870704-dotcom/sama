@@ -51,7 +51,7 @@ describe('반복 퀘스트(보물 사냥)와 도전 퀘스트(10단계)',()=>{
   expect(c.challenges).toHaveLength(10);expect(c.treasures).toEqual(expect.arrayContaining(['azureJewel','vermilionJewel','blackTortoiseJewel','whiteTigerJewel']));expect(c.supplies?.promotion).toBe(1);
  });
  it('gives gold and one bundle item per bounty win, every time, and never twice for the same run',()=>{
-  const c=campaign(),gold=c.gold?.S??1000;
+  const c=campaign(),gold=c.gold?.S??3000;
   for(let i=0;i<12;i++){const r=expeditionReward(c,'R01','b'+i,true);expect(r.items).toHaveLength(2);expect(r.xp).toBeGreaterThan(0);}
   expect(c.bountyWins).toBe(12);expect(c.gold!.S).toBe(gold+12*(150+expeditions.find(m=>m.id==='R01')!.level*10));
   expect(expeditionReward(c,'R01','b11',true).xp).toBe(0);

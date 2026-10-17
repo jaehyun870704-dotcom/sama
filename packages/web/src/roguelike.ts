@@ -30,7 +30,7 @@ export const XP_PER_LEVEL=100;
 /** 쓰러진 부대가 돌아올 때의 체력(중상). 원정·본편 공통. */
 export const WOUNDED=.25;
 
-export interface RunUnit {id:string;name:string;unitClass:UnitClass;level:number;xp:number;/** 체력 비율 0~1 */hp:number;hero?:true;/** 이름 있는 장수(연의 장수록 능력을 받고, 진화해도 이름이 바뀌지 않는다) */officer?:true}
+export interface RunUnit {id:string;name:string;unitClass:UnitClass;level:number;xp:number;/** 체력 비율 0~1 */hp:number;hero?:true;/** 이름 있는 장수(연의 장수록 능력을 받고, 진화해도 이름이 바뀌지 않는다) */officer?:true;/** 출진 COST 가산(다른 나라 장수 +2, sortie.ts FOREIGN_COST) */extraCost?:number}
 export type NodeKind='battle'|'elite'|'boss'|'recruit'|'rest'|'treasure'|'training'|'story'|'fate'|'tale';
 export interface RunNode {kind:NodeKind;label:string;detail:string;/** 연의 전장의 스테이지 id */stage?:string;/** 가상 전장 id */tale?:string}
 export interface Relic {id:string;name:string;effect:string}

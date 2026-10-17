@@ -51,7 +51,9 @@ describe('보물 획득 장면 — 대사 데이터',()=>{
 describe('보물 획득 장면 — 획득 시 장면 큐',()=>{
   it('사마의전 연의 장을 처음 이기면 새로 얻은 보물마다 한 장씩, 다시 이기면 없다',()=>{
     const c=freshCampaign();
-    const first=award(c,'S1-04','normal',['sima_yi'],[1]);
+    // 상편의 4등급 전설 보물은 일반 승리로는 나오지 않는다.
+    expect(award(c,'S1-04','normal',['sima_yi'],[1]).got).toEqual([]);
+    const first=award(c,'S1-04','extreme',['sima_yi'],[1]);
     expect(first.got.map(t=>t.id).sort()).toEqual(['halberd','lubuBow','mengde']);
     const q=revealQueue(first.got.map(t=>t.id),'S');
     expect(q.map(x=>x.id)).toEqual(first.got.map(t=>t.id));

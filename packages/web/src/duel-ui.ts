@@ -117,12 +117,12 @@ export function duelArena(d:DuelState,o:{models:{player:string;enemy:string};bac
     return `<div class="duel-round ${cls}${i===d.round&&!d.result?' now':''}"><span class="duel-round-no">${n}</span><div class="duel-round-tile">${h?icon(d.kind,h.action):''}</div>${h?`<small>${h.dealt}:${h.taken}</small>`:''}</div>${i<4?'<i class="duel-arrow">➜</i>':''}`;}).join('');
   const actions=(Object.keys(labels) as DuelAction[]).map(a=>{const off=a==='special'&&d.player.energy<2;
     return `<button type="button" class="duel-act${off?' off':''}" data-duel-action="${a}" ${off||d.result?'disabled':''}>${icon(d.kind,a)}<b>${labels[a]}</b><small>${HELP[d.kind][a]}</small></button>`;}).join('');
-  const result=d.result?`<div class="duel-result ${d.result}"><span>${d.result==='win'?'승리':d.result==='lose'?'패배':'무승부'}</span><p>${d.result==='win'?'승리':d.result==='lose'?'패배':'무승부'} · 전투 체력: 승자 15% · 패자 45% · 무승부 양쪽 25% 피해(최소 1). 패자는 2턴 ${d.kind==='duel'?'쇠약·둔화':'혼란·책략 봉인'}.</p><button id="duel-return" class="primary">전장으로 돌아가기</button></div>`:'';
+  const result=d.result?`<div class="duel-result ${d.result}"><span>${d.result==='win'?'승리':d.result==='lose'?'패배':'무승부'}</span><p>${d.result==='win'?'승리':d.result==='lose'?'패배':'무승부'} · 전투 체력: 승자 15% · 패자 45% · 무승부 양쪽 25% 피해(최소 1). 패자는 2턴 ${d.kind==='duel'?'쇠약·둔화':'혼란·책략 봉인'}${d.edgeBonus?`, 승자는 2턴 ${d.kind==='duel'?'사기·고양':'고양·경신'}`:''} — 전장의 이름표 옆 작은 표식으로 보인다.</p><button id="duel-return" class="primary">전장으로 돌아가기</button></div>`:'';
   // 타격 연출: 맞은 쪽에 베기·불꽃(일기토) 또는 먹물·글자 충격파(설전), 막으면 방패 번쩍임, 필살기는 화면 번쩍임·크게 흔들림.
   const special=!!last&&((last.action==='special'&&last.dealt>0)||(last.enemyAction==='special'&&last.taken>0));
   const shake=!last?'':special?' shake-big':last.dealt||last.taken?' shake':'';
   const edge=last?duelAdvantage(last.action,last.enemyAction):0;
-  const clash=last?`<div class="duel-clash ${edge>0?'won':edge<0?'lost':'even'}"><b>${edge>0?'상성 우세':edge<0?'상성 열세':'정면 승부'}</b><small>${labels[last.action]} ↔ ${labels[last.enemyAction]}</small></div>`:'';
+  const clash=last?`<div class="duel-clash ${edge>0?'won':edge<0?'lost':'even'}"><b>${edge>0?`상성 우세 · 추가 피해 ×${d.edgeBonus??1.25}`:edge<0?'상성 열세 · 피해 ×0.35':'정면 승부'}</b><small>${labels[last.action]} ↔ ${labels[last.enemyAction]}</small></div>`:'';
   const cutin=last?[last.action==='special'?{side:'player',name:d.player.name}:undefined,last.enemyAction==='special'?{side:'enemy',name:d.enemy.name}:undefined]
     .filter((x):x is {side:string;name:string}=>!!x).map(x=>`<div class="duel-cutin ${x.side}" aria-hidden="true"><span>${face(x.name)}</span><b>${esc(displayName(x.name))}<small>${d.kind==='duel'?'필살기':'논파'}</small></b></div>`).join(''):'';
   const endClass=(player:boolean)=>!d.result?'':d.result==='draw'?' result-draw':(d.result==='win')===player?' result-winner':' result-loser';

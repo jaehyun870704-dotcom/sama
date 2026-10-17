@@ -2,9 +2,13 @@ export type DuelAction='attack'|'guard'|'rally'|'feint'|'special';
 export type DuelKind='duel'|'debate';
 export interface DuelFighter {id:string;name:string;stat:number;hp:number;maxHp:number;energy:number}
 export interface DuelRound {round:number;action:DuelAction;enemyAction:DuelAction;dealt:number;taken:number}
-export interface DuelState {kind:DuelKind;round:number;player:DuelFighter;enemy:DuelFighter;history:DuelRound[];result?:'win'|'lose'|'draw';/** 연의의 맞수가 붙어 저절로 열린 대결 */auto?:boolean}
+export interface DuelState {kind:DuelKind;round:number;player:DuelFighter;enemy:DuelFighter;history:DuelRound[];result?:'win'|'lose'|'draw';/** 규칙판 14: 상성으로 이긴 합의 추가 피해 배율(없으면 ×1.25) */edgeBonus?:number;/** 연의의 맞수가 붙어 저절로 열린 대결 */auto?:boolean}
 /** 대결에서 진 쪽에 거는 술법 디버프(2턴). */
 export const DUEL_LOSS_DEBUFF:Record<DuelKind,readonly ('weaken'|'slow'|'confusion'|'seal')[]>={duel:['weaken','slow'],debate:['confusion','seal']};
+/** 규칙판 14: 대결에서 이긴 쪽에 거는 버프(2턴). 일기토는 사기·고양(기세가 오른다), 설전은 고양·경신(말이 막힘없이 풀린다). */
+export const DUEL_WIN_BUFF:Record<DuelKind,readonly ('rally'|'spirited'|'swift')[]>={duel:['rally','spirited'],debate:['spirited','swift']};
+/** 규칙판 14: 상성 우세 합은 ×1.5(예전 ×1.25) — 가위바위보를 이기면 확실히 더 아프다. */
+export const DUEL_EDGE_14=1.5;
 export const actionNames={attack:'공격',guard:'방어',rally:'기합',feint:'간파',special:'필살기'};
 export const debateNames={attack:'논박',guard:'반론',rally:'숙고',feint:'유도',special:'논파'};
 export function duelActionNames(kind:DuelKind){return kind==='debate'?debateNames:actionNames;}
@@ -32,17 +36,17 @@ export const DUEL_HP=300;
  * 한 합의 피해. 능력치가 곧 피해다 — 일기토는 무력, 설전은 지력(레벨 포함)을 그대로 준다.
  * 필살기(논파)는 ×1.5, 기합(논거)이 쌓일수록 +10%씩, 상대가 막으면(반론) 35%만 들어간다.
  */
-export function duelDamage(stat:number,move:DuelAction,defend:DuelAction,energy=0){
+export function duelDamage(stat:number,move:DuelAction,defend:DuelAction,energy=0,edgeBonus=1.25){
   if(move==='guard'||move==='rally')return 0;
   const edge=duelAdvantage(move,defend),base=move==='special'?1.5:move==='feint'?0.8:1;
-  return Math.max(1,Math.round(stat*base*(1+energy*.1)*(edge>0?1.25:edge<0?.35:1)));
+  return Math.max(1,Math.round(stat*base*(1+energy*.1)*(edge>0?edgeBonus:edge<0?.35:1)));
 }
 export function duelRound(s:DuelState,action:DuelAction){
   if(s.result||s.round>=5)return false;
   if(!Object.hasOwn(actionNames,action)||action==='special'&&s.player.energy<2)return false;
   const deck=(['attack','guard','rally','feint','attack'] as DuelAction[]),pick=deck[s.round%deck.length]!;
   const enemyAction:DuelAction=s.enemy.energy>=2&&(s.round+s.enemy.stat)%3===0?'special':pick;
-  const dealt=duelDamage(s.player.stat,action,enemyAction,s.player.energy),taken=duelDamage(s.enemy.stat,enemyAction,action,s.enemy.energy);
+  const dealt=duelDamage(s.player.stat,action,enemyAction,s.player.energy,s.edgeBonus),taken=duelDamage(s.enemy.stat,enemyAction,action,s.enemy.energy,s.edgeBonus);
   const playerHp=s.player.hp-taken,enemyHp=s.enemy.hp-dealt;
   // 반드시 다섯 합을 모두 겨룬다. 마지막 합 전에는 쓰러질 피해를 받아도 1로 버틴다.
   s.player.hp=s.round<4?Math.max(1,playerHp):Math.max(0,playerHp);s.enemy.hp=s.round<4?Math.max(1,enemyHp):Math.max(0,enemyHp);

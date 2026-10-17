@@ -5,7 +5,8 @@ import {CONTROLLABLE,decide,key,manhattan} from '../../core/src/index.ts';
 
 function create(difficulty:'normal'|'extreme',seed=215){
   const campaign=freshCampaign();
-  for(const i of [2,0,3,4,5,6])award(campaign,chapters[i]!.stage.id,'normal',chapters[i]!.stage.deployment.forced,[1]);
+  // 상편의 4등급 전설 보물(백우선·사모)은 극한 승리에서만 나온다 — 앞 장을 극한으로도 이긴 기록으로 준비한다.
+  for(const i of [2,0,3,4,5,6])for(const d of ['normal','extreme'] as const)award(campaign,chapters[i]!.stage.id,d,chapters[i]!.stage.deployment.forced,[1]);
   if(difficulty==='extreme')award(campaign,'S1-07','normal',['sima_yi','cao_zhen'],[1]);
   expect(equip(campaign,'sima_yi','fan')).toBe(true);expect(equip(campaign,'cao_zhen','serpentSpear')).toBe(true);
   return new Session(7,difficulty,seed,'strategy',3,deployment(campaign));

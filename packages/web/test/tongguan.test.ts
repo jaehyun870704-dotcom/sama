@@ -4,7 +4,8 @@ import {Session,campaignOrder,chapters} from '../src/session.ts';
 import {freshCampaign,deployment,award,equip} from '../src/progression.ts';
 import {CONTROLLABLE,decide,key,manhattan} from '../../core/src/index.ts';
 function create(difficulty:'normal'|'extreme'='normal',preparation:'strategy'|'survival'='strategy'){
- const c=freshCampaign();for(const index of [2,0,3,4,5])award(c,chapters[index]!.stage.id,'normal',chapters[index]!.stage.deployment.forced,[1]);if(difficulty==='extreme')award(c,'S1-06','normal',['sima_yi','cao_zhen'],[1]);expect(equip(c,'sima_yi','fan')).toBe(true);expect(equip(c,'cao_zhen',difficulty==='extreme'?'greenDragon':'serpentSpear')).toBe(true);return new Session(6,difficulty,215,preparation,3,deployment(c));
+ // 상편의 4등급 전설 보물은 극한 승리에서만 나온다 — 앞 장을 극한으로도 이긴 기록으로 준비한다.
+ const c=freshCampaign();for(const index of [2,0,3,4,5])for(const d of ['normal','extreme'] as const)award(c,chapters[index]!.stage.id,d,chapters[index]!.stage.deployment.forced,[1]);if(difficulty==='extreme')award(c,'S1-06','extreme',['sima_yi','cao_zhen'],[1]);expect(equip(c,'sima_yi','fan')).toBe(true);expect(equip(c,'cao_zhen',difficulty==='extreme'?'greenDragon':'serpentSpear')).toBe(true);return new Session(6,difficulty,215,preparation,3,deployment(c));
 }
 function play(s:Session,guardId:string){for(let i=0;i<1800&&s.state.outcome==='ongoing';i++){
  const st=s.state;if(!CONTROLLABLE.has(st.currentSide)){s.tick();continue;}const u=st.living(st.currentSide).find(u=>!u.hasActed);if(!u){s.tick();continue;}

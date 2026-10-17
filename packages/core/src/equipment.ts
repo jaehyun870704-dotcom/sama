@@ -257,13 +257,28 @@ export function gearSlotOf(id: string): GearSlot | undefined {
   return d ? GEAR_KINDS[d.kind].slot : undefined;
 }
 
-/** 레벨에 맞는 능력 보너스(주 능력 + 고정 보너스). */
-export function gearStats(def: GearDef, level = 1): Partial<Record<GearStat, number>> {
-  const out: Partial<Record<GearStat, number>> = { ...(def.bonus ?? {}) };
+/**
+ * 고유 보물 단련 단계(규칙판 14 · 2026-10-17): 레벨이 오르면 주 능력만 오르던 것을 단계로 나눴다.
+ * Lv.4 「단련」 고정 보너스 ×1.5 · Lv.7 「숙련」 고유 기능 수치 ×1.25 · Lv.9 「각성」 주 능력 +20%.
+ */
+export const GEAR_MILESTONES = [
+  { level: 4, name: "단련", text: "고정 보너스 ×1.5" },
+  { level: 7, name: "숙련", text: "고유 기능 수치 ×1.25" },
+  { level: 9, name: "각성", text: "주 능력 +20%" },
+] as const;
+export function gearMilestone(def: Pick<GearDef, "named">, level: number) {
+  const on = (n: number) => !!def.named && level >= n;
+  return { bonusMul: on(4) ? 1.5 : 1, traitMul: on(7) ? 1.25 : 1, mainMul: on(9) ? 1.2 : 1 };
+}
+/** 레벨에 맞는 능력 보너스(주 능력 + 고정 보너스). structured: 단련 단계(GEAR_MILESTONES)를 더한다. */
+export function gearStats(def: GearDef, level = 1, structured = false): Partial<Record<GearStat, number>> {
+  const m = structured ? gearMilestone(def, level) : { bonusMul: 1, mainMul: 1 };
+  const out: Partial<Record<GearStat, number>> = {};
+  for (const [k, v] of Object.entries(def.bonus ?? {}) as Array<[GearStat, number]>) out[k] = Math.round(v * m.bonusMul);
   if (def.main) {
     const top = maxLevelOf(def), l = Math.max(1, Math.min(top, Math.floor(level)));
     const v = top <= 1 ? def.main.base : Math.round(def.main.base + (def.main.max - def.main.base) * (l - 1) / (top - 1));
-    out[def.main.stat] = (out[def.main.stat] ?? 0) + v;
+    out[def.main.stat] = (out[def.main.stat] ?? 0) + Math.round(v * m.mainMul);
   }
   return out;
 }
