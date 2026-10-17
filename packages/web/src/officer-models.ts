@@ -118,7 +118,7 @@ const SD_VERSIONS:Readonly<Record<string,readonly [number,number]>>={
   yuan_shu:[2,2],yuan_shao:[2,2],yue_jin:[3,3],dai_ling:[3,3],zhong_hui:[4,7],deng_ai:[3,3],li_dian:[3,3],guo_jia:[2,2],xun_you:[2,2],cheng_yu:[2,2],dian_wei:[2,2],pang_de:[2,2],gongsun_zan:[2,2],liu_biao:[2,2],ma_teng:[2,2],gao_lan:[2,2],wen_qin:[1,2],wen_yang:[1,2],yang_ang:[1,2],lu_fan:[1,2],sun_shao:[1,2],yu_ji:[1,2],han_xin:[1,2],
   cao_xiu:[3,2],gongsun_yuan:[3,2],wen_chou:[4,7],xu_huang:[2,2],xu_sheng:[3,2],yu_jin:[3,2],yuan_shang:[3,2],
 };
-const SD_VERSION_OVERRIDES:Readonly<Record<string,readonly [number,number]>>={...SD_REDESIGN_VERSIONS,yue_jin:[3,7],zhong_hui:[3,7],deng_ai:[3,7],li_dian:[3,7],wen_chou:[2,7]};
+const SD_VERSION_OVERRIDES:Readonly<Record<string,readonly [number,number]>>={...SD_REDESIGN_VERSIONS,yue_jin:[3,8],zhong_hui:[3,8],deng_ai:[3,8],li_dian:[3,8],wen_chou:[2,8],zhang_chunhua:[2,8],liu_bang:[1,8],yu_ji:[1,8]};
 export const UNIFIED_SD_FILES:Readonly<Record<string,{sd:string;duel:string}>>=Object.fromEntries((UNIFIED_SD_IDS as readonly string[]).map(id=>{
   const [sd,duel]=SD_VERSION_OVERRIDES[id]??SD_VERSIONS[id]??[1,2],file=id==='zhuge_jun'?'jun':id;
   return [id,{sd:`${file}-sd-v${sd}.webp`,duel:`${file}-duel-v${duel}.webp`}];
@@ -126,9 +126,8 @@ export const UNIFIED_SD_FILES:Readonly<Record<string,{sd:string;duel:string}>>=O
 for(const [id,name] of [['liu_feng','유봉'],['huang_quan','황권'],['wu_ban','오반'],['wu_yi','오의'],['fei_yi','비의'],['mi_fang','미방'],['yi_ji','이적'],['jiang_wan','장완'],['yang_yi','양의'],['huang_yueying','황월영'],['guan_suo','관색'],['zhuge_jun','제갈균']] as const)
   if(!officerManifest.some(x=>x.id===id))officerManifest.push(E(id,name,{}));
 /** 통합 SD는 왔지만 일기토(1024×256) 그림이 아직 없는 장수: 일기토는 전투 SD로 대신 선다(없는 파일을 부르지 않게). */
-export const DUEL_PENDING:ReadonlySet<string>=new Set(['liu_bang','yu_ji',
-  // 2026-10-17 검수 불합격: v7 일기토는 체크무늬가 그림에 박혀 있고(종회는 다른 사람), 장춘화 v1은 임시 도형이다.
-  'yue_jin','deng_ai','zhong_hui','wen_chou','li_dian','zhang_chunhua']);
+// 2026-10-17 우선순위 ①의 8명 v8 일기토 검수 완료.
+export const DUEL_PENDING:ReadonlySet<string>=new Set();
 for(const id of UNIFIED_SD_IDS){const e=officerManifest.find(x=>x.id===id);if(!e)continue;const f=UNIFIED_SD_FILES[id]!,cart=e.battle.cart;e.battle={sd:{sheet:`officers/${f.sd}`,cell:[350,280],rows:1},...(cart?{cart}:{})};if(DUEL_PENDING.has(id))delete e.duel;else e.duel=`officers/${f.duel}`;}
 
 // 묶음 시트(옛 맞수 판)는 마초·주유까지 통합 SD로 옮겨 모두 지웠다(6차).

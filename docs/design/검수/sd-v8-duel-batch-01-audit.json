@@ -1,0 +1,839 @@
+{
+  "officers": 8,
+  "frames": 64,
+  "issues": [],
+  "results": [
+    {
+      "id": "yue_jin",
+      "kind": "sd",
+      "frame": 0,
+      "box": [
+        100,
+        69,
+        250,
+        268
+      ],
+      "transparent": 0.823,
+      "aspect": 0.754
+    },
+    {
+      "id": "yue_jin",
+      "kind": "sd",
+      "frame": 1,
+      "box": [
+        54,
+        72,
+        296,
+        268
+      ],
+      "transparent": 0.798,
+      "aspect": 1.235
+    },
+    {
+      "id": "yue_jin",
+      "kind": "sd",
+      "frame": 2,
+      "box": [
+        57,
+        76,
+        293,
+        268
+      ],
+      "transparent": 0.766,
+      "aspect": 1.229
+    },
+    {
+      "id": "yue_jin",
+      "kind": "sd",
+      "frame": 3,
+      "box": [
+        79,
+        86,
+        270,
+        268
+      ],
+      "transparent": 0.805,
+      "aspect": 1.049
+    },
+    {
+      "id": "yue_jin",
+      "kind": "duel",
+      "frame": 0,
+      "box": [
+        59,
+        49,
+        196,
+        230
+      ],
+      "transparent": 0.779,
+      "aspect": 0.757
+    },
+    {
+      "id": "yue_jin",
+      "kind": "duel",
+      "frame": 1,
+      "box": [
+        18,
+        52,
+        238,
+        230
+      ],
+      "transparent": 0.751,
+      "aspect": 1.236
+    },
+    {
+      "id": "yue_jin",
+      "kind": "duel",
+      "frame": 2,
+      "box": [
+        20,
+        55,
+        235,
+        230
+      ],
+      "transparent": 0.708,
+      "aspect": 1.229
+    },
+    {
+      "id": "yue_jin",
+      "kind": "duel",
+      "frame": 3,
+      "box": [
+        41,
+        64,
+        214,
+        230
+      ],
+      "transparent": 0.759,
+      "aspect": 1.042
+    },
+    {
+      "id": "deng_ai",
+      "kind": "sd",
+      "frame": 0,
+      "box": [
+        107,
+        69,
+        242,
+        268
+      ],
+      "transparent": 0.825,
+      "aspect": 0.678
+    },
+    {
+      "id": "deng_ai",
+      "kind": "sd",
+      "frame": 1,
+      "box": [
+        100,
+        69,
+        249,
+        268
+      ],
+      "transparent": 0.838,
+      "aspect": 0.749
+    },
+    {
+      "id": "deng_ai",
+      "kind": "sd",
+      "frame": 2,
+      "box": [
+        81,
+        68,
+        268,
+        268
+      ],
+      "transparent": 0.82,
+      "aspect": 0.935
+    },
+    {
+      "id": "deng_ai",
+      "kind": "sd",
+      "frame": 3,
+      "box": [
+        95,
+        73,
+        255,
+        268
+      ],
+      "transparent": 0.834,
+      "aspect": 0.821
+    },
+    {
+      "id": "deng_ai",
+      "kind": "duel",
+      "frame": 0,
+      "box": [
+        66,
+        49,
+        189,
+        230
+      ],
+      "transparent": 0.783,
+      "aspect": 0.68
+    },
+    {
+      "id": "deng_ai",
+      "kind": "duel",
+      "frame": 1,
+      "box": [
+        60,
+        49,
+        196,
+        230
+      ],
+      "transparent": 0.799,
+      "aspect": 0.751
+    },
+    {
+      "id": "deng_ai",
+      "kind": "duel",
+      "frame": 2,
+      "box": [
+        42,
+        48,
+        213,
+        230
+      ],
+      "transparent": 0.776,
+      "aspect": 0.94
+    },
+    {
+      "id": "deng_ai",
+      "kind": "duel",
+      "frame": 3,
+      "box": [
+        55,
+        52,
+        201,
+        230
+      ],
+      "transparent": 0.793,
+      "aspect": 0.82
+    },
+    {
+      "id": "zhong_hui",
+      "kind": "sd",
+      "frame": 0,
+      "box": [
+        123,
+        68,
+        226,
+        268
+      ],
+      "transparent": 0.86,
+      "aspect": 0.515
+    },
+    {
+      "id": "zhong_hui",
+      "kind": "sd",
+      "frame": 1,
+      "box": [
+        95,
+        70,
+        254,
+        268
+      ],
+      "transparent": 0.833,
+      "aspect": 0.803
+    },
+    {
+      "id": "zhong_hui",
+      "kind": "sd",
+      "frame": 2,
+      "box": [
+        75,
+        71,
+        275,
+        268
+      ],
+      "transparent": 0.757,
+      "aspect": 1.015
+    },
+    {
+      "id": "zhong_hui",
+      "kind": "sd",
+      "frame": 3,
+      "box": [
+        85,
+        70,
+        265,
+        268
+      ],
+      "transparent": 0.793,
+      "aspect": 0.909
+    },
+    {
+      "id": "zhong_hui",
+      "kind": "duel",
+      "frame": 0,
+      "box": [
+        81,
+        48,
+        175,
+        230
+      ],
+      "transparent": 0.825,
+      "aspect": 0.516
+    },
+    {
+      "id": "zhong_hui",
+      "kind": "duel",
+      "frame": 1,
+      "box": [
+        55,
+        50,
+        200,
+        230
+      ],
+      "transparent": 0.793,
+      "aspect": 0.806
+    },
+    {
+      "id": "zhong_hui",
+      "kind": "duel",
+      "frame": 2,
+      "box": [
+        37,
+        51,
+        219,
+        230
+      ],
+      "transparent": 0.7,
+      "aspect": 1.017
+    },
+    {
+      "id": "zhong_hui",
+      "kind": "duel",
+      "frame": 3,
+      "box": [
+        46,
+        49,
+        210,
+        230
+      ],
+      "transparent": 0.742,
+      "aspect": 0.906
+    },
+    {
+      "id": "wen_chou",
+      "kind": "sd",
+      "frame": 0,
+      "box": [
+        85,
+        75,
+        265,
+        268
+      ],
+      "transparent": 0.785,
+      "aspect": 0.933
+    },
+    {
+      "id": "wen_chou",
+      "kind": "sd",
+      "frame": 1,
+      "box": [
+        61,
+        74,
+        288,
+        268
+      ],
+      "transparent": 0.753,
+      "aspect": 1.17
+    },
+    {
+      "id": "wen_chou",
+      "kind": "sd",
+      "frame": 2,
+      "box": [
+        15,
+        80,
+        335,
+        268
+      ],
+      "transparent": 0.75,
+      "aspect": 1.702
+    },
+    {
+      "id": "wen_chou",
+      "kind": "sd",
+      "frame": 3,
+      "box": [
+        78,
+        73,
+        271,
+        268
+      ],
+      "transparent": 0.774,
+      "aspect": 0.99
+    },
+    {
+      "id": "wen_chou",
+      "kind": "duel",
+      "frame": 0,
+      "box": [
+        63,
+        91,
+        193,
+        230
+      ],
+      "transparent": 0.831,
+      "aspect": 0.935
+    },
+    {
+      "id": "wen_chou",
+      "kind": "duel",
+      "frame": 1,
+      "box": [
+        46,
+        90,
+        209,
+        230
+      ],
+      "transparent": 0.807,
+      "aspect": 1.164
+    },
+    {
+      "id": "wen_chou",
+      "kind": "duel",
+      "frame": 2,
+      "box": [
+        13,
+        95,
+        243,
+        230
+      ],
+      "transparent": 0.805,
+      "aspect": 1.704
+    },
+    {
+      "id": "wen_chou",
+      "kind": "duel",
+      "frame": 3,
+      "box": [
+        58,
+        90,
+        197,
+        230
+      ],
+      "transparent": 0.823,
+      "aspect": 0.993
+    },
+    {
+      "id": "li_dian",
+      "kind": "sd",
+      "frame": 0,
+      "box": [
+        88,
+        49,
+        262,
+        268
+      ],
+      "transparent": 0.774,
+      "aspect": 0.795
+    },
+    {
+      "id": "li_dian",
+      "kind": "sd",
+      "frame": 1,
+      "box": [
+        50,
+        65,
+        300,
+        268
+      ],
+      "transparent": 0.728,
+      "aspect": 1.232
+    },
+    {
+      "id": "li_dian",
+      "kind": "sd",
+      "frame": 2,
+      "box": [
+        15,
+        65,
+        335,
+        268
+      ],
+      "transparent": 0.73,
+      "aspect": 1.576
+    },
+    {
+      "id": "li_dian",
+      "kind": "sd",
+      "frame": 3,
+      "box": [
+        70,
+        52,
+        279,
+        268
+      ],
+      "transparent": 0.711,
+      "aspect": 0.968
+    },
+    {
+      "id": "li_dian",
+      "kind": "duel",
+      "frame": 0,
+      "box": [
+        65,
+        72,
+        190,
+        230
+      ],
+      "transparent": 0.826,
+      "aspect": 0.791
+    },
+    {
+      "id": "li_dian",
+      "kind": "duel",
+      "frame": 1,
+      "box": [
+        38,
+        84,
+        217,
+        230
+      ],
+      "transparent": 0.792,
+      "aspect": 1.226
+    },
+    {
+      "id": "li_dian",
+      "kind": "duel",
+      "frame": 2,
+      "box": [
+        13,
+        84,
+        243,
+        230
+      ],
+      "transparent": 0.793,
+      "aspect": 1.575
+    },
+    {
+      "id": "li_dian",
+      "kind": "duel",
+      "frame": 3,
+      "box": [
+        53,
+        75,
+        203,
+        230
+      ],
+      "transparent": 0.779,
+      "aspect": 0.968
+    },
+    {
+      "id": "zhang_chunhua",
+      "kind": "sd",
+      "frame": 0,
+      "box": [
+        117,
+        69,
+        232,
+        268
+      ],
+      "transparent": 0.853,
+      "aspect": 0.578
+    },
+    {
+      "id": "zhang_chunhua",
+      "kind": "sd",
+      "frame": 1,
+      "box": [
+        96,
+        68,
+        254,
+        268
+      ],
+      "transparent": 0.809,
+      "aspect": 0.79
+    },
+    {
+      "id": "zhang_chunhua",
+      "kind": "sd",
+      "frame": 2,
+      "box": [
+        79,
+        71,
+        271,
+        268
+      ],
+      "transparent": 0.763,
+      "aspect": 0.975
+    },
+    {
+      "id": "zhang_chunhua",
+      "kind": "sd",
+      "frame": 3,
+      "box": [
+        102,
+        71,
+        248,
+        268
+      ],
+      "transparent": 0.806,
+      "aspect": 0.741
+    },
+    {
+      "id": "zhang_chunhua",
+      "kind": "duel",
+      "frame": 0,
+      "box": [
+        75,
+        49,
+        180,
+        230
+      ],
+      "transparent": 0.817,
+      "aspect": 0.58
+    },
+    {
+      "id": "zhang_chunhua",
+      "kind": "duel",
+      "frame": 1,
+      "box": [
+        56,
+        48,
+        200,
+        230
+      ],
+      "transparent": 0.764,
+      "aspect": 0.791
+    },
+    {
+      "id": "zhang_chunhua",
+      "kind": "duel",
+      "frame": 2,
+      "box": [
+        40,
+        50,
+        215,
+        230
+      ],
+      "transparent": 0.705,
+      "aspect": 0.972
+    },
+    {
+      "id": "zhang_chunhua",
+      "kind": "duel",
+      "frame": 3,
+      "box": [
+        61,
+        51,
+        194,
+        230
+      ],
+      "transparent": 0.759,
+      "aspect": 0.743
+    },
+    {
+      "id": "liu_bang",
+      "kind": "sd",
+      "frame": 0,
+      "box": [
+        68,
+        28,
+        282,
+        268
+      ],
+      "transparent": 0.77,
+      "aspect": 0.892
+    },
+    {
+      "id": "liu_bang",
+      "kind": "sd",
+      "frame": 1,
+      "box": [
+        59,
+        33,
+        290,
+        268
+      ],
+      "transparent": 0.723,
+      "aspect": 0.983
+    },
+    {
+      "id": "liu_bang",
+      "kind": "sd",
+      "frame": 2,
+      "box": [
+        69,
+        31,
+        281,
+        268
+      ],
+      "transparent": 0.741,
+      "aspect": 0.895
+    },
+    {
+      "id": "liu_bang",
+      "kind": "sd",
+      "frame": 3,
+      "box": [
+        80,
+        35,
+        269,
+        268
+      ],
+      "transparent": 0.752,
+      "aspect": 0.811
+    },
+    {
+      "id": "liu_bang",
+      "kind": "duel",
+      "frame": 0,
+      "box": [
+        48,
+        50,
+        208,
+        230
+      ],
+      "transparent": 0.806,
+      "aspect": 0.889
+    },
+    {
+      "id": "liu_bang",
+      "kind": "duel",
+      "frame": 1,
+      "box": [
+        41,
+        54,
+        214,
+        230
+      ],
+      "transparent": 0.767,
+      "aspect": 0.983
+    },
+    {
+      "id": "liu_bang",
+      "kind": "duel",
+      "frame": 2,
+      "box": [
+        48,
+        52,
+        207,
+        230
+      ],
+      "transparent": 0.781,
+      "aspect": 0.893
+    },
+    {
+      "id": "liu_bang",
+      "kind": "duel",
+      "frame": 3,
+      "box": [
+        57,
+        56,
+        199,
+        230
+      ],
+      "transparent": 0.791,
+      "aspect": 0.816
+    },
+    {
+      "id": "yu_ji",
+      "kind": "sd",
+      "frame": 0,
+      "box": [
+        117,
+        68,
+        233,
+        268
+      ],
+      "transparent": 0.84,
+      "aspect": 0.58
+    },
+    {
+      "id": "yu_ji",
+      "kind": "sd",
+      "frame": 1,
+      "box": [
+        90,
+        70,
+        260,
+        268
+      ],
+      "transparent": 0.808,
+      "aspect": 0.859
+    },
+    {
+      "id": "yu_ji",
+      "kind": "sd",
+      "frame": 2,
+      "box": [
+        74,
+        72,
+        276,
+        268
+      ],
+      "transparent": 0.789,
+      "aspect": 1.031
+    },
+    {
+      "id": "yu_ji",
+      "kind": "sd",
+      "frame": 3,
+      "box": [
+        98,
+        71,
+        251,
+        268
+      ],
+      "transparent": 0.81,
+      "aspect": 0.777
+    },
+    {
+      "id": "yu_ji",
+      "kind": "duel",
+      "frame": 0,
+      "box": [
+        75,
+        48,
+        181,
+        230
+      ],
+      "transparent": 0.801,
+      "aspect": 0.582
+    },
+    {
+      "id": "yu_ji",
+      "kind": "duel",
+      "frame": 1,
+      "box": [
+        50,
+        49,
+        205,
+        230
+      ],
+      "transparent": 0.761,
+      "aspect": 0.856
+    },
+    {
+      "id": "yu_ji",
+      "kind": "duel",
+      "frame": 2,
+      "box": [
+        36,
+        52,
+        219,
+        230
+      ],
+      "transparent": 0.741,
+      "aspect": 1.028
+    },
+    {
+      "id": "yu_ji",
+      "kind": "duel",
+      "frame": 3,
+      "box": [
+        58,
+        51,
+        197,
+        230
+      ],
+      "transparent": 0.766,
+      "aspect": 0.777
+    }
+  ]
+}

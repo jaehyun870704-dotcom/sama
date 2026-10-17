@@ -21,8 +21,9 @@ a=im.getchannel('A').point(lambda v:255 if v>8 else 0)
 def split(projection):
  n=len(projection)
  gaps=[i for i in range(int(n*.3),int(n*.7)) if not projection[i]]
- if not gaps: raise ValueError('No transparent gutter between poses')
- return min(gaps,key=lambda i:abs(i-n/2))
+ # 생성 원본은 2×2 사분면이다. 말꼬리·망토가 중앙선에 닿아도 원본의
+ # 사분면은 유지되므로, 빈 선이 없을 때만 정확한 중앙을 쓴다.
+ return min(gaps,key=lambda i:abs(i-n/2)) if gaps else n//2
 sy=split(a.getprojection()[1]); out=[]
 for top,bottom in [(0,sy),(sy,im.height)]:
  sx=split(a.crop((0,top,im.width,bottom)).getprojection()[0])
