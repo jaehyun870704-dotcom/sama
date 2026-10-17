@@ -1146,11 +1146,11 @@ export function specialBackdropCell(art:number,place:string){
 const PAINTED:Painted[]=[
   ...ROOMS,
   // 알현실·군막·성문·시장·감옥 v2는 여러 장을 이어 붙인 콜라주라 검수 불합격(2026-10-17) — 한 장면으로 그린 v1을 쓴다.
-  compactRoom('scenario-backgrounds-v2/audience-hall-v1.webp',['palace','throne','hall'],/궁정 알현실|알현실|皇宮 알현|황궁 알현|어전|옥좌/,250,{figScale:1.08,blocks:[[[500,0],[780,0],[780,250],[500,250]]]}),
-  compactRoom('scenario-backgrounds-v2/command-tent-v1.webp',['tent','hall'],/전략 군막|전략 회의|군략 회의|작전 회의/,270,{figScale:1.06,blocks:[[[450,260],[830,260],[830,470],[450,470]]]}),
-  compactRoom('scenario-backgrounds-v2/city-gate-v1.webp',['wall','fort','gatehouse'],/성문|성문 앞|성문 위|성벽 위|관문/,250,{figScale:1.08,blocks:[[[440,0],[840,0],[840,300],[440,300]]]}),
-  compactRoom('scenario-backgrounds-v2/market-street-v1.webp',['town','home','hall'],/시장|저자|장터|마을|거리|민가/,285,{figScale:1.06,blocks:[[[0,250],[250,250],[250,520],[0,520]],[[1030,250],[1280,250],[1280,520],[1030,520]]]}),
-  compactRoom('scenario-backgrounds-v2/prison-room-v1.webp',['store','hall','home'],/감옥|옥사|옥중|뇌옥|포로실/,300,{figScale:1.02,blocks:[[[0,180],[260,180],[260,500],[0,500]],[[1020,180],[1280,180],[1280,500],[1020,500]]]}),
+  compactRoom('scenario-backgrounds-v2/audience-hall-v2.webp',['palace','throne','hall'],/궁정 알현실|알현실|皇宮 알현|황궁 알현|어전|옥좌/,250,{figScale:1.08,blocks:[[[500,0],[780,0],[780,250],[500,250]]]}),
+  compactRoom('scenario-backgrounds-v2/command-tent-v2.webp',['tent','hall'],/전략 군막|전략 회의|군략 회의|작전 회의/,270,{figScale:1.06,blocks:[[[450,260],[830,260],[830,470],[450,470]]]}),
+  compactRoom('scenario-backgrounds-v2/city-gate-v2.webp',['wall','fort','gatehouse'],/성문|성문 앞|성문 위|성벽 위|관문/,250,{figScale:1.08,blocks:[[[440,0],[840,0],[840,300],[440,300]]]}),
+  compactRoom('scenario-backgrounds-v2/market-street-v2.webp',['town','home','hall'],/시장|저자|장터|마을|거리|민가/,285,{figScale:1.06,blocks:[[[0,250],[250,250],[250,520],[0,520]],[[1030,250],[1280,250],[1280,520],[1030,520]]]}),
+  compactRoom('scenario-backgrounds-v2/prison-room-v2.webp',['store','hall','home'],/감옥|옥사|옥중|뇌옥|포로실/,300,{figScale:1.02,blocks:[[[0,180],[260,180],[260,500],[0,500]],[[1020,180],[1280,180],[1280,500],[1020,500]]]}),
   compactRoom('scenario-backgrounds-v2/residence-inn-v1.webp',['home','hall','study'],/장수 거처|장수의 거처|객잔|여관|숙소|저택|사저/,280,{figScale:1.06,blocks:[[[0,220],[250,220],[250,500],[0,500]],[[1030,220],[1280,220],[1280,500],[1030,500]]]}),
   compactRoom('scenario-backgrounds-v2/temple-monastery-v1.webp',['hall','home','study'],/사찰|도관|도사|절|사원|암자|승려/,280,{figScale:1.04,blocks:[[[480,0],[800,0],[800,300],[480,300]]]}),
   compactRoom('scenario-backgrounds-v2/river-harbor-v1.webp',['deck','river','camp'],/항구|수채|부두|나루|선착장|수송대 집결지/,270,{figScale:1.04,blocks:[[[0,250],[300,250],[300,520],[0,520]],[[980,250],[1280,250],[1280,520],[980,520]]]}),

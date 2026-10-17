@@ -37,12 +37,12 @@ const BY_LOOK:Record<Look,Sheet>={
   elephant:S('units-extra-v1.webp',4,1),
 };
 const NPC_SHEETS:Record<string,Sheet>={
-  messenger:S('npc-messenger-sd-v1.webp',1,0),merchant:S('npc-merchant-sd-v1.webp',1,0),
-  artisan:S('npc-artisan-sd-v1.webp',1,0),horseKeeper:S('npc-horse-keeper-sd-v1.webp',1,0),
-  fisherman:S('npc-fisherman-sd-v1.webp',1,0),palaceMaid:S('npc-palace-maid-sd-v1.webp',1,0),
-  grainCarrier:S('npc-grain-carrier-sd-v1.webp',1,0),scout:S('npc-scout-sd-v1.webp',1,0),
-  spy:S('npc-spy-sd-v1.webp',1,0),refugee:S('npc-refugee-sd-v1.webp',1,0),
-  commoner:S('npc-commoner-sd-v1.webp',1,0),envoy:S('npc-envoy-sd-v1.webp',1,0),
+  messenger:S('npc-messenger-sd-v8.webp',1,0),merchant:S('npc-merchant-sd-v8.webp',1,0),
+  artisan:S('npc-artisan-sd-v8.webp',1,0),horseKeeper:S('npc-horse-keeper-sd-v8.webp',1,0),
+  fisherman:S('npc-fisherman-sd-v8.webp',1,0),palaceMaid:S('npc-palace-maid-sd-v8.webp',1,0),
+  grainCarrier:S('npc-grain-carrier-sd-v8.webp',1,0),scout:S('npc-scout-sd-v8.webp',1,0),
+  spy:S('npc-spy-sd-v8.webp',1,0),refugee:S('npc-refugee-sd-v8.webp',1,0),
+  commoner:S('npc-commoner-sd-v8.webp',1,0),envoy:S('npc-envoy-sd-v8.webp',1,0),
 };
 for(const s of Object.values(BY_LOOK))if(s.walk)s.walk.url=s.url.replace('-v1','-walk-v1');
 const OFFICERS={url:'officer-story-v1.webp',rows:2};
@@ -53,7 +53,7 @@ const ROBE=new Set<Look>(['strategist','civil','sage','physician','taoist']);
 const nameHash=(s:string)=>{let h=0;for(const ch of s)h=(h*31+ch.charCodeAt(0))>>>0;return h;};
 /** 이 인물을 어떤 그림으로 세우나. */
 /** NPC 전용 SD(npc-*-sd-v1) 12장은 검수 불합격(한 그림을 확대·잘라 네 칸에 복사, 2026-10-17) — 다시 그려질 때까지 쓰지 않는다. */
-const NPC_ART_READY=false;
+const NPC_ART_READY=true;
 export function figArtFor(name:string,look:Look):FigArt{
   if(NPC_ART_READY){const a=npcArtFor(name);if(a)return a;}
   return figArtBase(name,look);

@@ -86,8 +86,8 @@ export const officerManifest:OfficerEntry[]=[
 const COMPLETE_ART_IDS=['sun_jian','sun_ce','taishi_ci','cheng_pu','zhou_tai','ling_tong','yuan_shao','dong_zhuo','hua_xiong','gongsun_zan','zhang_jiao','gao_shun','ma_teng','liu_biao','xu_shu','zhang_ren','zhou_cang','jian_yong','mi_zhu','sun_qian','liao_hua','zhang_yi','li_yan','chen_shi','deng_zhi','wen_yang','zhang_chunhua','zhen_shi','wang_shuang','wen_qin','han_dang','zhang_qin','pan_zhang','lu_kang','diaochan','li_jue','guo_si','yuan_shu'] as const;
 // 흉상(-bust-v1)은 38장 모두 같은 여성 대체 그림이 잘못 들어가 지웠다(2026-10-15) — 대화창은 각자의 초상으로 선다.
 // 흉상(-bust-v1) 38장은 2026-10-17 검수 불합격(체크무늬가 그림에 박힘) — 투명 배경 판이 올 때까지 대화창은 초상으로 선다.
-const BUST_READY=false;
-for(const id of COMPLETE_ART_IDS){const e=officerManifest.find(x=>x.id===id);if(e){if(BUST_READY)e.bust=`officers/${id}-bust-v1.webp`;e.duel=`officers/${id}-duel-v1.webp`;}}
+const BUST_READY=true;
+for(const id of COMPLETE_ART_IDS){const e=officerManifest.find(x=>x.id===id);if(e){if(BUST_READY)e.bust=`officers/${id}-bust-v8.webp`;e.duel=`officers/${id}-duel-v1.webp`;}}
 // 장수 그림 한 벌(디자인 지시서 docs/design/장수-디자인-긴급지시.md): 병종과 무관한 SD 시트 하나(1400×280, 칸 350×280)와
 // 일기토 하나(1024×256). 이 장수들은 옛 병종별 시트·옛 일기토를 쓰지 않는다(파일도 지웠다). 목상 제갈량의 수레는 그대로 둔다.
 // 2차(2026-10-13 납품 중 칸·일기토가 맞는 19명). 촉 문관·무장 가운데 색인에 없던 10명은 이름으로 찾도록 새로 넣는다.
@@ -118,7 +118,7 @@ const SD_VERSIONS:Readonly<Record<string,readonly [number,number]>>={
   yuan_shu:[2,2],yuan_shao:[2,2],yue_jin:[3,3],dai_ling:[3,3],zhong_hui:[4,7],deng_ai:[3,3],li_dian:[3,3],guo_jia:[2,2],xun_you:[2,2],cheng_yu:[2,2],dian_wei:[2,2],pang_de:[2,2],gongsun_zan:[2,2],liu_biao:[2,2],ma_teng:[2,2],gao_lan:[2,2],wen_qin:[1,2],wen_yang:[1,2],yang_ang:[1,2],lu_fan:[1,2],sun_shao:[1,2],yu_ji:[1,2],han_xin:[1,2],
   cao_xiu:[3,2],gongsun_yuan:[3,2],wen_chou:[4,7],xu_huang:[2,2],xu_sheng:[3,2],yu_jin:[3,2],yuan_shang:[3,2],
 };
-const SD_VERSION_OVERRIDES:Readonly<Record<string,readonly [number,number]>>={...SD_REDESIGN_VERSIONS,yue_jin:[3,8],zhong_hui:[3,8],deng_ai:[3,8],li_dian:[3,8],wen_chou:[2,8],zhang_chunhua:[2,8],liu_bang:[1,8],yu_ji:[1,8]};
+const SD_VERSION_OVERRIDES:Readonly<Record<string,readonly [number,number]>>={...SD_REDESIGN_VERSIONS,yue_jin:[8,8],zhong_hui:[8,8],deng_ai:[8,8],li_dian:[8,8],wen_chou:[8,8],zhang_chunhua:[8,8],cheng_pu:[8,2],lu_fan:[8,2],sun_shao:[8,2],yang_ang:[8,2],liu_bang:[1,8],yu_ji:[8,8],fa_zheng:[8,3],jian_yong:[8,3],li_yan:[8,3],ma_liang:[8,3],dai_ling:[8,3]};
 export const UNIFIED_SD_FILES:Readonly<Record<string,{sd:string;duel:string}>>=Object.fromEntries((UNIFIED_SD_IDS as readonly string[]).map(id=>{
   const [sd,duel]=SD_VERSION_OVERRIDES[id]??SD_VERSIONS[id]??[1,2],file=id==='zhuge_jun'?'jun':id;
   return [id,{sd:`${file}-sd-v${sd}.webp`,duel:`${file}-duel-v${duel}.webp`}];
@@ -129,6 +129,10 @@ for(const [id,name] of [['liu_feng','유봉'],['huang_quan','황권'],['wu_ban',
 // 2026-10-17 우선순위 ①의 8명 v8 일기토 검수 완료.
 export const DUEL_PENDING:ReadonlySet<string>=new Set();
 for(const id of UNIFIED_SD_IDS){const e=officerManifest.find(x=>x.id===id);if(!e)continue;const f=UNIFIED_SD_FILES[id]!,cart=e.battle.cart;e.battle={sd:{sheet:`officers/${f.sd}`,cell:[350,280],rows:1},...(cart?{cart}:{})};if(DUEL_PENDING.has(id))delete e.duel;else e.duel=`officers/${f.duel}`;}
+
+/** 2026-10-17 SD 규격 재검수 통과판. 일기토 파일은 기존 연결을 유지하고 전투 SD만 v8로 올린다. */
+export const SD_V8_ONLY_IDS=['cao_shen','chen_ping','cheng_pu','dai_ling','deng_ai','fa_zheng','fan_kuai','fan_zeng','guan_ying','han_xin','ji_bu','jian_yong','li_dian','li_yan','long_ju','lu_fan','ma_liang','peng_yue','sun_shao','wen_chou','yang_ang','ying_bu','yu_ji','yue_jin','zhang_chunhua','zhong_hui','zhongli_mo'] as const;
+for(const id of SD_V8_ONLY_IDS){const e=officerManifest.find(x=>x.id===id);if(e)e.battle={sd:{sheet:`officers/${id}-sd-v8.webp`,cell:[350,280],rows:1}};}
 
 // 묶음 시트(옛 맞수 판)는 마초·주유까지 통합 SD로 옮겨 모두 지웠다(6차).
 const legacySheets:readonly {id:string;url:string;rows:number;strictGrid:true;alphaCutoff:number}[]=[];
@@ -171,6 +175,7 @@ const duelRows:Record<string,{sheet:string;row:number;rows:number}>={
 };
 for(const id of COMPLETE_ART_IDS)duelRows[id]={sheet:`officers/${id}-duel-v1.webp`,row:0,rows:1};
 for(const id of UNIFIED_SD_IDS){if(DUEL_PENDING.has(id)){delete duelRows[id];continue;}duelRows[id]={sheet:`officers/${UNIFIED_SD_FILES[id]!.duel}`,row:0,rows:1};}
+
 /** 통합 SD 한 벌(SD·일기토가 같은 화풍)을 받은 장수인가. */
 export function hasUnifiedSd(u:OfficerLike){const e=officerEntry(u);return !!e&&(UNIFIED_SD_IDS as readonly string[]).includes(e.id);}
 export function officerDuelModel(u:OfficerLike){const e=officerEntry(u);return e?duelRows[e.id]:undefined;}

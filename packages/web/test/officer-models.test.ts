@@ -2,12 +2,12 @@ import {describe,expect,it} from 'vitest';
 import {existsSync,readFileSync} from 'node:fs';
 // 장수 그림 한 벌(디자인 지시서: SD 1400×280)이 들어온 장수는 병종과 무관하게 그 시트를 쓴다.
 // 새 일기토가 들어온 장수는 그 시트를 쓴다(옛 -v1은 지운다). 파일 이름(판 번호)은 장수마다 UNIFIED_SD_FILES에 적혀 있다.
-import {DUEL_PENDING,UNIFIED_SD_FILES,UNIFIED_SD_IDS,officerBattleSheet,officerDuelModel,officerDuelModelStyle,officerDuelMounted,officerEntry,officerManifest,officerModelSheets} from '../src/officer-models.ts';
+import {DUEL_PENDING,SD_V8_ONLY_IDS,UNIFIED_SD_FILES,UNIFIED_SD_IDS,officerBattleSheet,officerDuelModel,officerDuelModelStyle,officerDuelMounted,officerEntry,officerManifest,officerModelSheets} from '../src/officer-models.ts';
 // 4차 납품에서 통합 SD가 아닌 장수 8명은 일기토만 SD 비례 duel-v2로 바뀌었다.
 const DUEL_V2=['bi_yan','gongsun_yuan','lu_fan','meng_yan','sun_shao','wang_ling','yang_ang','zhuge_ke'];
 const duelFile=(id:string)=>UNIFIED_SD_FILES[id]?.duel??`${id}-duel-v${DUEL_V2.includes(id)?2:1}.webp`;
-const hasSd=(id:string)=>!!UNIFIED_SD_FILES[id];
-const sdFile=(id:string)=>UNIFIED_SD_FILES[id]!.sd;
+const hasSd=(id:string)=>!!UNIFIED_SD_FILES[id]||(SD_V8_ONLY_IDS as readonly string[]).includes(id);
+const sdFile=(id:string)=>UNIFIED_SD_FILES[id]?.sd??`${id}-sd-v8.webp`;
 
 const lordIds=['cao_cao','cao_pi','cao_rui','liu_bei','sun_quan','gongsun_yuan','yuan_tan','yuan_shang','liu_bang','xiang_yu'] as const;
 const priorityDuelIds=['huang_zhong','zhao_yun','sun_quan','lu_meng','wei_yan','lu_xun','gongsun_yuan','yang_ang','lu_fan','sun_shao','meng_da','ma_su','wang_ping','gao_xiang','meng_yan','bi_yan','zhu_ran','zhuge_ke','wang_ling'] as const;
