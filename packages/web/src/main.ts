@@ -18,7 +18,7 @@ import {watchCssAtlases} from './css-atlas.ts';
 import {actionNames,duelActionNames,duelLine,temperNames,type DuelAction,type DuelKind} from './duel.ts';
 import {spriteAtlas} from './sprite-atlas.ts';
 import {paintedTroopArt} from './painted-troops.ts';
-import {officerDuelModelStyle,officerDuelMounted,officerBattleSheet,officerDuelSheetUrl,hasUnifiedSd} from './officer-models.ts';
+import {officerDebateModelStyle,officerDuelModelStyle,officerDuelMounted,officerBattleSheet,officerDuelSheetUrl,hasUnifiedSd} from './officer-models.ts';
 import {MOUNTED_FAMILIES} from './armor.ts';
 import {coachStep,COACH_KEY} from './tutorial.ts';
 import {dueLines} from './battle-lines.ts';
@@ -1127,6 +1127,8 @@ function describe(e:LogEntry){const name=(id:string)=>session.state.find(id)?.na
 }}
 function consumeLog(){const logs=session.state.log.slice(lastLog);lastLog=session.state.log.length;if(logs.some(e=>e.t==='terrain'||e.t==='gate'))field.repaintTerrain();field.play(logs);hudFight(logs);for(const e of logs){const line=describe(e);if(line)$('#latest-log').textContent=line;if(e.t==='pickup')toast(line,supplyIcon(e.item,consumable(e.item)?.name??e.item));if(e.t==='turnStart'){const banner=$('#phase-banner');banner.textContent=`${sideNames[e.side]}의 차례`;banner.classList.add('show');setTimeout(()=>banner.classList.remove('show'),1300);sound.event({kind:'turn',side:e.side});if(e.side!=='player')sound.focus=undefined;}}}
 function portraitFor(u:Unit,reaction=false,contestKind?:DuelKind):string{
+  const debate=contestKind==='debate'?officerDebateModelStyle(u,reaction?3:0):undefined;
+  if(debate)return `<span class="battle-model officer-battle-model" role="img" aria-label="${unitName(u)} 설전 도보 모델" style="${debate}"></span>`;
   // 설전은 궁정·군막에서 말없이 논하는 장면이다. 기마 장수의 전용 일기토 시트 대신
   // 같은 비율의 도보 책사 모델을 세워 마초 같은 장수가 말을 탄 채 궁정에 들어오지 않게 한다.
   if(contestKind==='debate'&&(officerDuelMounted(u)||(!hasUnifiedSd(u)&&(MOUNTED_FAMILIES.has(familyOf(u.unitClass))||u.unitClass.startsWith('mounted')))))return '<span class="battle-model" role="img" aria-label="설전 도보 모델" style="background-image:var(--four-stage-strategist-atlas);background-size:400% 400%;background-position:0 0"></span>';
